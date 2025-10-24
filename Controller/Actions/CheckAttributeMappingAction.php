@@ -93,13 +93,13 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
                 
                 // Nutze den Form Key aus performAdminLogin
                 if (!empty($this->adminFormKey)) {
-                    $adminUrl = $this->backendUrl->getUrl('', [
+                    $adminUrl = $this->backendUrl->getUrl('admin', [
                         'key' => $this->adminFormKey
                     ]);
                     error_log("Using saved form key for URL: " . $this->adminFormKey);
                 } else {
                     // Fallback ohne key
-                $adminUrl = $this->backendUrl->getUrl('');                    
+                $adminUrl = $this->backendUrl->getUrl('admin');                    
                 error_log("No form key available, using URL without key");
                 }
                 
