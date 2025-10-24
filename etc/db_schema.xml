@@ -1,0 +1,64 @@
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+   <table name="miniorange_oauth_client_apps" resource="default" engine="innodb" comment="Miniorange OAuth Client Apps">
+      <column xsi:type="smallint" name="id" padding="7" unsigned="true" nullable="false" identity="true" comment="ID" />
+      <column xsi:type="text" name="app_name" nullable="false" comment="The type of app" />
+      <column xsi:type="text" name="callback_uri" nullable="false" comment="The callback uri of the Provider" />
+      <column xsi:type="text" name="clientID" nullable="false" comment="The client ID of the Provider" />
+      <column xsi:type="text" name="client_secret" nullable="false" comment="The client secret of the Provider" />
+      <column xsi:type="text" name="scope" nullable="false" comment="The scope of the Provider" />
+      <column xsi:type="text" name="endsession_endpoint" nullable="false" comment="The endsession endpoint" />
+      <column xsi:type="text" name="authorize_endpoint" nullable="false" comment="The authorize endpoint" />
+      <column xsi:type="text" name="access_token_endpoint" nullable="false" comment="The token endpoint" />
+      <column xsi:type="text" name="user_info_endpoint" nullable="false" comment="The user info endpoint" />
+      <column xsi:type="text" name="jwks_endpoint" nullable="false" comment="The JWKS endpoint" />
+      <column xsi:type="text" name="values_in_header" nullable="false" comment="Send values in header" />
+      <column xsi:type="text" name="values_in_body" nullable="false" comment="Send values in body" />
+      <column xsi:type="text" name="grant_type" nullable="false" comment="Grant Type Selected" />
+      <column xsi:type="text" name="pkce_flow" nullable="false" comment="PKCE flow" />
+      <column xsi:type="text" name="well_known_config_url" nullable="false" comment="Well Known Config URL" />
+      <column xsi:type="text" name="post_logout_url" nullable="false" comment="Post Logout URL" />
+      <column xsi:type="text" name="email_attribute" nullable="false" comment="The email attribute of the provider" />
+      <column xsi:type="text" name="username_attribute" nullable="false" comment="The username attribute of the provider" />
+      <column xsi:type="text" name="firstname_attribute" nullable="false" comment="The first name attribute of the provider" />
+      <column xsi:type="text" name="lastname_attribute" nullable="false" comment="The Last name attribute of the provider" />
+      <column xsi:type="text" name="group_attribute" nullable="false" comment="The group name attribute" />
+      <column xsi:type="text" name="billing_city_attribute" nullable="false" comment="The billing_city attribute" />
+      <column xsi:type="text" name="billing_state_attribute" nullable="false" comment="The billing_state attribute" />
+      <column xsi:type="text" name="billing_country_attribute" nullable="false" comment="The billing_country attribute" />
+      <column xsi:type="text" name="billing_address_attribute" nullable="false" comment="The billing_address attribute" />
+      <column xsi:type="text" name="billing_phone_attribute" nullable="false" comment="The billing_Telephone attribute" />
+      <column xsi:type="text" name="billing_zip_attribute" nullable="false" comment="The billing_zip code attribute" />
+      <column xsi:type="text" name="shipping_city_attribute" nullable="false" comment="The shipping_city attribute" />
+      <column xsi:type="text" name="shipping_state_attribute" nullable="false" comment="The shipping_state attribute" />
+      <column xsi:type="text" name="shipping_country_attribute" nullable="false" comment="The shipping_country attribute" />
+      <column xsi:type="text" name="shipping_address_attribute" nullable="false" comment="The shipping_address attribute" />
+      <column xsi:type="text" name="shipping_phone_attribute" nullable="false" comment="The shipping_Telephone attribute" />
+      <column xsi:type="text" name="shipping_zip_attribute" nullable="false" comment="The shipping_zip code attribute" />
+
+      <column xsi:type="text" name="default_group" nullable="false" comment="Default Group for Frontend Users" />
+      <column xsi:type="text" name="default_role" nullable="false" comment="Default Role for Backend Users" />
+      <column xsi:type="text" name="oauth_customer_group_mapping" nullable="false" comment="Group Mapping for Frontend Users" />
+      <column xsi:type="text" name="oauth_admin_role_mapping" nullable="false" comment="Role Mapping for Backend Users" />
+      <column xsi:type="text" name="mo_oauth_auto_create_customer" nullable="false" comment="Auto create Customer" />
+      <column xsi:type="text" name="mo_oauth_auto_create_admin" nullable="false" comment="Auto create Admin" />
+      <column xsi:type="text" name="show_customer_link" nullable="false" comment="Show Customer SSO Link" />
+      <column xsi:type="text" name="show_admin_link" nullable="false" comment="Show Admin SSO Link" />
+      <column xsi:type="text" name="autoredirect" nullable="false" comment="Auto redirect Users from Login Page" />
+      <column xsi:type="text" name="all_page_autoredirect" nullable="false" comment="Auto Redirect Users from Any Page" />
+      <column xsi:type="text" name="mo_oauth_dont_create_user_if_role_not_mapped" nullable="false" comment="Do not create users if role not mapped" />
+      <column xsi:type="text" name="mo_oauth_create_user_in_magento_by_using" nullable="false" comment="Create User in Magento based on this attribute" />
+      <column xsi:type="text" name="update_backend_roles_on_sso" nullable="false" comment="Update backend user roles after each Admin SSO" />
+      <column xsi:type="text" name="update_frontend_groups_on_sso" nullable="false" comment="Update frontend user groups after each Customer SSO" />
+      <column xsi:type="text" name="groups_mapped" nullable="false" comment="The customer Group Mapping" />
+      <column xsi:type="text" name="roles_mapped" nullable="false" comment="The Admin Role Mapping" />
+      <column xsi:type="text" name="custom_tablename" nullable="false" comment="Custom table name" />
+      <column xsi:type="text" name="custom_attributes" nullable="false" comment="Custom attributes" />
+      <column xsi:type="text" name="update_attributes_on_login" nullable="false" comment="Update attributes on every sso" />
+      <column xsi:type="text" name="oauth_am_billingandshipping" nullable="false" comment="enable billing and shipping address" />
+      <column xsi:type="text" name="oauth_am_sameasbilling" nullable="false" comment="Same as billing address" />
+
+      <constraint xsi:type="primary" referenceId="PRIMARY">
+         <column name="id" />
+      </constraint>
+   </table>
+</schema>

@@ -1,0 +1,98 @@
+<?xml version="1.0"?>
+
+<!-- This XML is used to add a menu item to our Magento Admin Backend Settings Page -->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
+    <menu>
+
+		<!-- Adding a OAuth Client menu item in admin backend for access to other sub settings -->
+        <add id="MiniOrange_OAuth::OAuth"
+        	 title="OAuth Client"
+        	 module="MiniOrange_OAuth"
+        	 sortOrder="52"
+        	 resource="MiniOrange_OAuth::OAuth" />
+
+
+		<!--
+        	Adding a OAuth Provider sub menu item to show settings that IDP needs
+        	Parent Menu Item is the miniOrange OAuth menu item mentioned above.
+        	Action is the controllerAction to be called when menu item is clicked.
+    		-->
+		<add id="MiniOrange_OAuth::oauth_settings"
+        	 title="OAuth Settings"
+        	 module="MiniOrange_OAuth"
+        	 sortOrder="0"
+        	 parent="MiniOrange_OAuth::OAuth"
+        	 action="mooauth/oauthsettings"
+        	 resource="MiniOrange_OAuth::oauth_settings"/>
+		<!--
+        	Adding a Sign In Settings sub menu item to show Sign In Settings Tab
+        	Parent Menu Item is the miniOrange OAuth menu item mentioned above.
+        	Action is the controllerAction to be called when menu item is clicked.
+    		-->
+		<add id="MiniOrange_OAuth::signin_settings"
+        	 title="Sign In Settings"
+        	 module="MiniOrange_OAuth"
+        	 sortOrder="1"
+        	 parent="MiniOrange_OAuth::OAuth"
+        	 action="mooauth/signinsettings"
+        	 resource="MiniOrange_OAuth::signin_settings"/>
+		<!--
+             Adding a Attribute / Role Mapping sub menu item to handle Role Mapping settings
+             Parent Menu Item is the miniOrange OAuth menu item mentioned above.
+             Action is the controllerAction to be called when menu item is clicked.
+             -->
+		<add id="MiniOrange_OAuth::attr_settings"
+			 title="Attribute Mapping"
+			 module="MiniOrange_OAuth"
+			 sortOrder="2"
+			 parent="MiniOrange_OAuth::OAuth"
+			 action="mooauth/attrsettings"
+			 resource="MiniOrange_OAuth::attr_settings"/>
+
+
+
+
+		<!--
+             Adding a Role Mapping sub menu item to handle Role Mapping settings
+             Parent Menu Item is the miniOrange OAuth menu item mentioned above.
+             Action is the controllerAction to be called when menu item is clicked.
+             -->
+		<add id="MiniOrange_OAuth::role_settings"
+			 title="Role Mapping"
+			 module="MiniOrange_OAuth"
+			 sortOrder="3"
+			 parent="MiniOrange_OAuth::OAuth"
+			 action="mooauth/rolesettings"
+			 resource="MiniOrange_OAuth::role_settings"/>
+
+		<!--
+        	Adding a Account sub menu item to handle miniorange account related settings
+        	Parent Menu Item is the miniOrange SP menu item mentioned above.
+        	Action is the controllerAction to be called when menu item is clicked.
+    		-->
+         <add id="MiniOrange_OAuth::account_settings"
+        	 title="Account"
+        	 module="MiniOrange_OAuth"
+        	 sortOrder="4"
+        	 parent="MiniOrange_OAuth::OAuth"
+        	 action="mooauth/account"
+        	 resource="MiniOrange_OAuth::account_settings"/>
+
+		<!--
+        	Adding a upgrade menu item to show users the different plans
+			that we have and that user can upgrade to. Parent Menu Item is the
+			miniOrange OAuth menu item mentioned above. Action is the controllerAction
+			to be called when menu item is clicked.
+    		-->
+		<add id="MiniOrange_OAuth::upgrade"
+        	 title="Upgrade"
+        	 module="MiniOrange_OAuth"
+        	 sortOrder="5"
+        	 parent="MiniOrange_OAuth::OAuth"
+        	 action="mooauth/upgrade"
+        	 resource="MiniOrange_OAuth::upgrade"/>
+
+
+    </menu>
+</config>

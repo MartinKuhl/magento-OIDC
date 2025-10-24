@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+		xsi:noNamespaceSchemaLocation="urn:magento:framework:App/etc/routes.xsd">
+    <!-- Routing Configuration -->
+    <router id="admin">
+    	<!-- 
+    		Define the <frontName> to use for the module instead of the regular
+    		long module name <moduleRoot>_<moduleName>. Full URL of the module 
+    		action is <frontName>/<controllerFolderName>/<controllerClassName>
+    		-->
+        <route id="mooauth" frontName="mooauth">
+            <module name="MiniOrange_OAuth" before="Magento_Backend" />
+        </route>
+    </router>
+</config>
