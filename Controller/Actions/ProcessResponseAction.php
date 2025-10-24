@@ -38,31 +38,36 @@ class ProcessResponseAction extends BaseAction
      * @throws IncorrectUserInfoDataException
      */
     public function execute()
-    {$this->oauthUtility->customlog("processResponseAction: execute")  ;
-
+    {
+        $this->oauthUtility->customlog("processResponseAction: execute");
         $this->validateUserInfoData();
-
         $userInfoResponse = $this->userInfoResponse;
         
         // flatten the nested OAuth response
         $flattenedUserInfoResponse = [];
         $flattenedUserInfoResponse = $this->getflattenedArray("", $userInfoResponse, $flattenedUserInfoResponse);
-
         
         $userEmail = $this->findUserEmail($userInfoResponse);
-
-
         if (empty($userEmail)) {
             return $this->getResponse()->setBody("Email address not received. Please check attribute mapping.");
         }
-
-        $this->attrMappingAction->setUserInfoResponse($userInfoResponse)
-                                ->setFlattenedUserInfoResponse($flattenedUserInfoResponse)
-                                ->setUserEmail($userEmail)->execute();
+        
+        // GEÄNDERT: Gebe Response zurück
+        $result = $this->attrMappingAction->setUserInfoResponse($userInfoResponse)
+            ->setFlattenedUserInfoResponse($flattenedUserInfoResponse)
+            ->setUserEmail($userEmail)->execute();
+        
+        // Debug: Prüfe was zurückkommt
+        error_log("ProcessResponseAction: attrMappingAction returned: " . 
+            ($result ? get_class($result) : 'NULL'));
+        
+        return $result;
     }
 
+
     private function findUserEmail($arr)
-    { $this->oauthUtility->customlog("processResponseAction: findUserEmail") ;
+    { 
+        $this->oauthUtility->customlog("processResponseAction: findUserEmail");
 
         if ($arr) {
             foreach ($arr as $value) {
@@ -70,7 +75,7 @@ class ProcessResponseAction extends BaseAction
                     $value = $this->findUserEmail($value);
                 }
                 if (filter_var($value, FILTER_VALIDATE_EMAIL)) {
-                    $this->oauthUtility->customlog("processResponseAction: findUserEmail :".$value) ;
+                    $this->oauthUtility->customlog("processResponseAction: findUserEmail :".$value);
                     return $value;
                 }
             }

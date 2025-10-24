@@ -40,12 +40,12 @@ class ReadAuthorizationResponse extends BaseAction
  */
     public function execute()
     {
-         // Session für SSO konfigurieren
-         SessionHelper::configureSSOSession();
-         SessionHelper::updateSessionCookies();
+        // Session für SSO konfigurieren
+        SessionHelper::configureSSOSession();
+        SessionHelper::updateSessionCookies();
          
-         // read the response
-         $params = $this->getRequest()->getParams();
+        // read the response
+        $params = $this->getRequest()->getParams();
         $Log_file_time= $this->oauthUtility->getStoreConfig(OAuthConstants::LOG_FILE_TIME);
         $current_time = time();
         $chk_enable_log =1;
@@ -232,11 +232,24 @@ class ReadAuthorizationResponse extends BaseAction
 
         if(is_array($userInfoResponseData)){
             $userInfoResponseData['relayState']= $relayState;
-        }
-        else{
+        } else {
             $userInfoResponseData->relayState= $relayState;
         }
-        $this->processResponseAction->setUserInfoResponse($userInfoResponseData)->execute();
+
+        error_log("ReadAuthorizationResponse: Calling processResponseAction->execute()");
+        $result = $this->processResponseAction->setUserInfoResponse($userInfoResponseData)->execute();
+
+        error_log("ReadAuthorizationResponse: processResponseAction returned: " . 
+            ($result ? get_class($result) : 'NULL'));
+
+        // ENTFERNE DIESE ZEILEN (falls vorhanden):
+        // if ($result instanceof \Magento\Framework\Controller\ResultInterface) { ... }
+        // ob_start(); $result->renderResult(...); ...
+
+        error_log("ReadAuthorizationResponse: Returning result now...");
+        return $result;
+        // HIER ENDE - KEIN CODE NACH DEM RETURN!
+
     }
 
     /** Setter for the request Parameter */
