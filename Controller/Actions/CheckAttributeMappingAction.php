@@ -99,8 +99,7 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
                     error_log("Using saved form key for URL: " . $this->adminFormKey);
                 } else {
                     // Fallback ohne key
-                    $adminUrl = $this->backendUrl->getUrl('adminhtml/dashboard');
-                    error_log("No form key available, using URL without key");
+                $adminUrl = $this->backendUrl->getUrl('admin/index/index');                    error_log("No form key available, using URL without key");
                 }
                 
                 error_log("Redirecting to: " . $adminUrl);
@@ -399,3 +398,4 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
         return $this;
     }
 }
+
