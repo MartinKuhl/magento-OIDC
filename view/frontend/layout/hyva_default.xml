@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+          <referenceContainer name="head.additional">
+            <block class="MiniOrange\OAuth\Block\OAuth" name="miniorange.oauth.sso.data" template="MiniOrange_OAuth::authentication_popup_data.phtml"/>
+        </referenceContainer>
+        <referenceBlock name="authentication-popup">
+<action method="setTemplate">
+<argument name="template" xsi:type="string">MiniOrange_OAuth::account/authentication-popup.phtml</argument>
+</action>
+</referenceBlock>
+    
+        <referenceContainer name="footer">
+    <block class="MiniOrange\OAuth\Block\OAuth" name="miniorange.oauth.customer.invalidate" template="MiniOrange_OAuth::invalidate.phtml" />
+        </referenceContainer>
+        
+    </body>
+</page>
+
+

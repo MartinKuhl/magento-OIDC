@@ -1,0 +1,17 @@
+<?php
+echo '
+    <div class="sso-divider">
+        <svg class="sso-line" height="5" width="215">
+            <line x1="0" y1="0" x2="210" y2="0"></line>
+        </svg>
+        <span class="sso-or-text">OR</span>
+        <svg class="sso-line" height="5" width="210">
+            <line x1="0" y1="0" x2="210" y2="0"></line>
+        </svg>
+    </div>
+    <div class="sso-button-container">
+       <a href="'. $block->escapeUrl($block->getSPInitiatedUrl(null, $block->getAppName())) .'" class="sso-button">
+    <span>' .$block->escapeHtml($block->getSSOButtonText()) .'</span>
+        </a>
+    </div>';
+?>

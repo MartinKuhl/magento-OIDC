@@ -1,0 +1,52 @@
+<script>
+    // Define the mo_invalidate function
+    function mo_invalidate($, fullname, firstname) {
+        $('.greet.welcome').html('<span data-bind="text: new String(\'Welcome, %1!\').replace(\'%1\', customer().firstname)">Welcome, ' + firstname + '!</span>');
+        $('.customer-name span').html(fullname);
+    }
+
+    // Function to reload customer data without require
+    function reloadCustomerData() {
+        if (window.customerData) {
+            window.customerData.reload(['customer', 'compare-products', 'last-ordered-items', 'cart']);
+        }
+    }
+
+    // Call the reload when document is ready
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof jQuery !== 'undefined') {
+            reloadCustomerData();
+        }
+    });
+</script>
+
+<?php
+$customerSession = $this->getCustomerSession();
+if ($customerSession->isLoggedIn()) {
+    $fullname = $customerSession->getCustomer()->getName();
+    $fname = $customerSession->getCustomer()->getFirstname();
+    if (!empty($fullname)) {
+?>
+<script>
+    // Execute on window load
+    window.addEventListener('load', function() {
+        if (typeof jQuery !== 'undefined') {
+            reloadCustomerData();
+            
+            // Setup the same delay mechanism
+            var delay = 0;
+            while (delay < 5000) {
+                (function(d) {
+                    setTimeout(function() {
+                        mo_invalidate(jQuery, "<?php echo $block->escapeJs($fullname); ?>", "<?php echo $block->escapeJs($fname); ?>");
+                    }, d);
+                })(delay);
+                delay += 100;
+            }
+        }
+    });
+</script>
+<?php
+    }
+}
+?>

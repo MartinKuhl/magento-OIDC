@@ -1,0 +1,154 @@
+<!--
+    This template file is for the SAML Attribute/Role Mapping settings.
+    File acts as a view file for our attribute / role mapping page.
+-->
+
+<?php
+    //Attribute mapping
+    // initialze all values required to be shown on the page
+    $roles = $this->getAllRoles();
+    $groups = $this->getAllGroups();
+
+    $isEnabled = $this->isEnabled();
+    $disabled = !$isEnabled ? "disabled" : "";
+    $oauth_am_username = $this->getUserNameMapping();
+    $oauth_am_email = $this->getUserEmailMapping();
+    $oauth_am_first_name = $this->getFirstNameMapping();
+    $oauth_am_last_name = $this->getLastNameMapping();
+    $oauth_am_table = $this->getTable();
+    $oauth_am_country= $this->getCountryMapping();
+    $oauth_am_company = $this->getCompanyMapping();
+    $oauth_am_group_name = $this->getGroupMapping();
+
+    $oauth_am_account_matcher = $this->getAccountMatcher();
+
+    $emailSelected = $oauth_am_account_matcher == 'email' ? 'selected="selected"' : "";
+    $usernameSelected = $oauth_am_account_matcher == 'username' ? 'selected="selected"' : "";
+
+    $oauth_am_dont_allow_unlisted_user_role = $this->getDisallowUnlistedUserRole();
+    $mo_oauth_dont_create_user_if_role_not_mapped = $this->getDisallowUserCreationIfRoleNotMapped();
+
+    $default_role = $this->getDefaultRole();
+    $premiumlink = $this->getExtensionPageUrl('upgrade');
+
+echo '
+<div class="row">
+<div class="col-sm-7 page_margin" >
+    <div class="page" id="attrmapping">
+        <div class="mooauth_table_layout">
+           <form name="f" method="post" action="">
+                <input name="form_key" type="hidden" value="'. $block->escapeHtmlAttr($block->getFormKey()) .'" />
+                <input type="hidden" name="option" value="saveAttrSettings">
+                <h3>Attribute Mapping (Optional)</h3><hr>
+                <table>
+                    <tr>
+                        <td colspan="2">
+                            <div class="mo_note" >
+                                <span class="btn-link " >What is Attribute Mapping? <span style="color:red">&nbsp &nbsp &nbsp &nbsp &nbsp &nbsp *</span> <span style="color:black;font-weight:normal" > (Available in the <a href="' . $this->escapeHtmlAttr($premiumlink) . '" class="premium btn-link">premium</a> version)</span></span></span>
+
+                                <div hidden class="show_info">
+                                    <ol>
+                                        
+                                        <li>Attributes are user details that are stored in your Identity Provider.</li>
+                                        <li>Attribute Mapping helps you to get user attributes from your IdP and map them to
+                                            Magento user attributes like firstname, lastname etc.</li>
+                                        <li>While auto registering the users in your Magento site these attributes will automatically
+                                            get mapped to your Magento user details.</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr><td colspan="2"><input type="checkbox" id="update_attribute" 
+                    name="oauth_am_update_attribue" value="checked" 
+                    disabled  disabled>
+                    &nbsp;&nbsp;Update Attribute. <span style="margin-left:351px;font-style: italic">(Email cannot be update)</span></td></tr>
+                    
+                <tr>
+                    <td colspan="2"><b>Users in Magento will be searched (existing Magento users) or created (new users) based
+                     on the Email attribute.</td>
+                </tr>
+                
+      <tr class="mo_premium_option">
+                    <td style="width:200px;"><strong>Login/Create Magento account by: </strong></td>
+                    <td><select name="oauth_am_account_matcher" disabled id="oauth_am_account_matcher" >
+                        <option value="email"> Email </option>
+                        <option value="username" > Username </option>
+                    </select>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td style="width:150px;"><strong>Username <span style="color:red;">*</span>:</strong></td>
+                    <td><input type="text" disabled name="oauth_am_username" placeholder="Enter attribute name for User Name"
+                    value="" /></td>
+                </tr>
+                <tr>
+                    <td><strong>Email <span style="color:red;">*</span>:</strong></td>
+                    <td><input type="text" disabled name="oauth_am_email" placeholder="Enter attribute name for User Email"
+                   /></td>
+                </tr>
+                <tr>
+                    <td><strong>First Name:</strong></td>
+                    <td><input type="text" disabled name="oauth_am_first_name" placeholder="Enter attribute name for First Name"
+                    /></td>
+                </tr>
+                <tr>
+                    <td><strong>Last Name:</strong></td>
+                    <td><input type="text" disabled name="oauth_am_last_name" placeholder="Enter attribute name for Last Name" 
+                       /></td>
+                </tr>
+
+                <tr class="mo_premium_option">
+                    <td><strong>Group/Role:</strong></td>
+                    <td><input type="text" disabled name="oauth_am_group_name" placeholder="Enter attribute name for Group/Role" 
+                       /></td>
+                </tr>
+                 <tr><td>
+                 <br>
+                 </td>
+                 </tr>
+                <tr for="chkSelect">
+                <td colspan="2"><input type="checkbox" id="chkSelect" style="width=100px" disabled />
+                        <strong>Map Billing/Shipping Address</strong>
+                     <tr>
+                        <td>&nbsp;</td>
+                        <td><br ><input class="btn-round" type="submit" style="width:100px;" name="submit" value="Save"
+                         disabled > &nbsp;
+                        <br ><br >
+                        </td>
+                    </tr>
+                </table>
+           </form>
+          <br><br>
+           <form name="f" method="post" action="">
+         <input name="form_key" type="hidden" value="'. $block->escapeHtmlAttr($block->getFormKey()) .'" />
+          <input type="hidden" name="option" value="saveAttrSettings" >
+          <h3>Custom Mapping</h3><hr>
+          <fieldset disabled="disabled">
+            <table>
+              <tr>
+                <td><strong>Table:</strong>
+                <input type="text" name="saml_am_table" disabled placeholder="Enter attribute name for Email"
+                 value="' . $this->escapeHtmlAttr($oauth_am_table) . '" required ></td>
+              </tr>
+             </table>
+           <div>
+              <div class="form-group same-row hmargin">
+                <label for="this_attribute"><b>Enter Attribute Name: </b></label>
+              </div>
+              <div class="form-group same-row hmargin">
+                <input class="form-control" {log} disabled id="this_attribute" name="this_attribute" type="text" value = "">
+                <button class="btn btn-primary btn-round" type="button" disabled {log}  onClick="addCustomAttribute()">Add (+)</button>
+                <button class="btn btn-primary btn-round" type="button" disabled {log}  onClick="deleteCustomAttribute()">Delete (-)</button>
+              </div>
+            </div>
+            <div id="submit_custom_attr" class="form-group">
+            <br><input type="submit" class="btn-round" disabled style="width:100px;" name="submit" value="Save"
+              > &nbsp;
+            <br ><br>
+            </div>
+         </fieldset>
+         </form>
+      </div>
+    </div>';

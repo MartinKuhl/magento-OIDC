@@ -1,0 +1,39 @@
+<?php /**  * SSO Script for Hyvä Theme  */ ?>
+<script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', function() {
+        'use strict';
+
+        window.ssoData = {
+            ssoUrl: "<?= $this->escapeJsQuote($this->getSPInitiatedUrl(null, $this->getAppName())) ?>",
+            ssoButtonText: "<?= $this->escapeJsQuote($this->getSSOButtonText()) ?>"
+        };
+
+        document.addEventListener('click', function(e) {
+            if (e.target && (
+                e.target.closest('#authentication-popup .sso-button-container a') || 
+                (e.target.closest('#authentication-popup a') && 
+                 e.target.closest('a').href && 
+                 e.target.closest('a').href.includes(window.ssoData.ssoUrl))
+            )) {
+                e.preventDefault();
+                var clickedLink = e.target.closest('a');
+                var originalHref = clickedLink.getAttribute('href');
+                
+                if (originalHref) {
+                    var modifiedHref = originalHref.indexOf('?') > -1
+                        ? originalHref + '&from_popup=1'
+                        : originalHref + '?from_popup=1';
+                    
+                    window.location.href = modifiedHref;
+                }
+            }
+        });
+        
+        // If you need URL builder functionality, you can use Hyvä's approach
+        // Hyvä typically exposes these utilities via the window object
+        // Example of how you might access URL functionality in Hyvä if needed:
+        // const buildUrl = function(path) {
+        //     return window.BASE_URL + path;
+        // };
+    });
+</script>

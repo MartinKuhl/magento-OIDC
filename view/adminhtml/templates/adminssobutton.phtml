@@ -1,0 +1,16 @@
+<!-- 
+        This template shows a SSO box on the admin backend pages
+        Use this if you want to show a sso button on your backend pages
+    -->
+<?php
+
+echo
+    '<div class="actions" style="text-align:center;">
+            <svg height="5" width="131">
+                <line x1="0" y1="0" x2="127" y2="0" style="stroke:#969393;stroke-width:3" ></line>
+            </svg>OR
+            <svg height="5" width="133">
+                <line x1="0" y1="0" x2="128" y2="0" style="stroke:#969393;stroke-width:3" ></line>
+            </svg>
+            <button type="button" class="action-login action-primary" style="margin-top:3%; padding: 3% 14%; width:100%; text-align:center;" onclick="window.location.href=\'' . $this->escapeUrl($this->getSPInitiatedUrl(null, $this->getAppName())) . '\';">' . $this->escapeHtml($this->getSSOButtonText()) . '</button>
+    </div>';

@@ -1,0 +1,7 @@
+<!-- 
+        This template shows a SSO link on the customer frontend pages 
+        Use this if you want to show a sso link on your frontend pages
+    -->
+<?php
+
+echo '  <a href="'.$block->escapeUrl($this->getSPInitiatedUrl()).'"><span>'.$block->escapeHtml($this->getSSOButtonText()).'</span></a>';

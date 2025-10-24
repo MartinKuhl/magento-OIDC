@@ -1,0 +1,44 @@
+<?php
+
+$supportUrl=$this->getUrl('mooauth/support/index');
+
+echo '
+    <div class="pull-right" style="float:right;">
+        <div class="page" id="minisupport"  style="margin-top:11px;">
+            <div class="mosp_table_layout">
+                <h3>Request a FREE Trial / Contact Us</h3>
+                <hr>
+                <form name="f" method="post" action="' . $this->escapeHtmlAttr($supportUrl) . '">
+                   <input name="form_key" type="hidden" value="'. $block->escapeHtmlAttr($block->getFormKey()) .'" />
+                    <div><b>Need any help? Just send us a query so we can help you.</b><br ><br></div>
+                    <input type="hidden" name="option" value="supportQuery" >
+                    <div>
+                        <table>
+                            <tr><td>
+                                <input type="email" class="mosp_table_textbox" id="query_email" name="email" value="" placeholder="Enter your email" required="true" >
+                                </td>
+                                </tr>
+                                <tr><td>
+                                <input type="text" class="mosp_table_textbox" name="phone" id="query_phone" title="Phone with country code eg. +1xxxxxxxxxx" placeholder="Phone with country code eg. +1xxxxxxxxxx" value="" pattern="[\+]?[0-9]{1,4}\s?[0-9]{10}">
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <textarea id="query" name="query" style="resize:vertical;height:120px;" onkeyup="mosp_valid(this)" onblur="mosp_valid(this)" onkeypress="mosp_valid(this)" placeholder="Write your query here"></textarea>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div style="text-align:center">
+                    <input type="submit" class="btn-round" name="send_query" id="send_query" value="Submit Query" style="margin-left:1%;" >
+                    </div>
+                </form>
+                
+
+                <br>			
+            </div>
+            <br>
+        </div>
+    </div>
+</div>
+</div>';

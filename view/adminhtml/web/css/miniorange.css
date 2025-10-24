@@ -1,0 +1,21 @@
+.admin__menu .item-oauth.parent.level-0 > a:before,
+.admin__menu .item-oauth.level-0 > a:before  { /* oauth is name of menu.xml parent  */
+    content: url('../images/mo.png');
+    display: block; /* Ensures that margin-bottom works properly */
+    width: 50px;
+    height: 42px;
+    margin: 0 auto 5px auto; /* Center horizontally and add oauthace below */
+    text-transform: none;
+    color: #b9944c;
+    text-decoration: underline;
+    text-decoration: solid;
+    font-weight: bold;
+    text-transform: none;
+}
+
+.admin__menu .item-oauth.level-0 > a {
+    color: #eca311;
+    font-weight: bold;
+    text-transform: none; /* Ensure the text isn't capitalized */
+}
+

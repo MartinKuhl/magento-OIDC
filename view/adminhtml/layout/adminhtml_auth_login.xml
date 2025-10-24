@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <update handle="admin_login" />
+    <body>
+        <!-- 
+            Defining our block and phtml file for adding a sso link
+            to the admin login page
+        -->
+        <referenceContainer name="form.buttons">
+             <block class="MiniOrange\OAuth\Block\OAuth" 
+                            name="miniorange.oauth.admin.link" 
+                            ifconfig="miniorange/oauth/showadminlink"
+                            template="adminssobutton.phtml" />
+        </referenceContainer>
+    </body>
+</page>

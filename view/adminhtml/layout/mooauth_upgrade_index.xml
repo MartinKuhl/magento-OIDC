@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	  xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <head>
+        <css src="MiniOrange_OAuth::css/adminSettings.css"/>
+    </head>
+    <body>
+    	<!-- 
+            Defining our block and phtml file for License settings.
+            Calls our Admin Block for some common functionality.
+            -->
+        <referenceContainer name="content">
+            <!-- This adds the navbar to the phtml file for easy navigation -->
+            <block class="MiniOrange\OAuth\Block\OAuth" 
+            	   name="miniorange.oauth.navbar" 
+            	   template="navbar.phtml" />
+            <block class="MiniOrange\OAuth\Block\OAuth" 
+            	   name="miniorange.oauth.admin.upgrade" 
+            	   template="upgrade.phtml" />
+        </referenceContainer>
+        <!-- 
+            Defining our block and phtml file for adding common
+            javascript file to all of our pages
+            -->
+        <referenceContainer name="before.body.end">
+            <block class="MiniOrange\OAuth\Block\OAuth" 
+                    template="js.phtml" 
+                    name="before_body_js"/>
+        </referenceContainer>
+    </body>
+</page>

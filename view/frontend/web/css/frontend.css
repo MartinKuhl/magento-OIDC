@@ -1,0 +1,49 @@
+.sso-divider {
+    display: flex;
+    margin-top: 2%;
+    width: 100%;
+    gap: 10px;
+}
+
+.sso-line line {
+    stroke: #969393;
+    stroke-width: 3;
+}
+
+.sso-or-text {
+    white-space: nowrap;
+    font-weight: bold;
+    margin-top: -0.5%;
+}
+
+/* SSO Button Styling */
+.sso-button-container {
+    display: flex;
+    margin-top: 1%;
+    text-decoration: none;
+}
+
+.sso-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 470px;
+    height: 45px; /* Adjust for proper vertical alignment */
+    font-weight: bold;
+    text-align: center;
+    background-color: #2055e8;
+    color: white;
+    border-radius: 4px;
+    text-decoration: none;
+    transition: background-color 0.3s ease-in-out;
+}
+
+.sso-button-container a:visited{
+    color: white;
+}
+
+.sso-button:hover {
+    color: white;
+    text-decoration: none;
+    background-color: #113fc0;
+}
