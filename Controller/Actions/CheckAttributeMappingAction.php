@@ -91,20 +91,75 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
             if ($this->performAdminLogin($userEmail)) {
                 $this->oauthUtility->customlog("Admin login successful!");
                 
-               if (!empty($this->adminFormKey)) {
-                    $adminUrl = '/admin?key=' . $this->adminFormKey;
-                } else {
-                    $adminUrl = '/admin';
+                // Admin-Pfad bestimmen
+                $adminPath = $this->adminConfig->getValue('admin/url/use_custom_path')
+                    ? $this->adminConfig->getValue('admin/url/custom_path')
+                    : 'admin';
+                
+                $storeManager = $this->_objectManager->get(\Magento\Store\Model\StoreManagerInterface::class);
+                $baseUrl = $storeManager->getStore()->getBaseUrl();
+                $adminUrl = rtrim($baseUrl, '/') . '/' . $adminPath;
+                
+                if (!empty($this->adminFormKey)) {
+                    $adminUrl .= '?key=' . $this->adminFormKey;
                 }
                 
                 error_log("Redirecting to: " . $adminUrl);
                 
-                // Direkter Redirect
-                $this->getResponse()->setRedirect($adminUrl);
+                // WICHTIG: Nicht sofort redirecten, sondern HTML mit Auto-Submit-Form ausgeben
+                $formKey = $this->adminFormKey;
+                
+                $html = '<!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Admin Login Erfolgreich</title>
+        <style>
+            body { font-family: Arial, sans-serif; text-align: center; padding-top: 50px; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+            .success { color: green; }
+            .spinner { 
+                width: 40px; height: 40px; 
+                border: 5px solid rgba(0,0,0,0.1); 
+                border-radius: 50%;
+                border-top-color: #07d; 
+                animation: spin 1s ease-in-out infinite;
+                margin: 20px auto;
+            }
+            @keyframes spin { to { transform: rotate(360deg); } }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1 class="success">Admin Login erfolgreich!</h1>
+            <p>Sie werden zum Magento Admin-Bereich weitergeleitet...</p>
+            <div class="spinner"></div>
+            <p>Falls die automatische Weiterleitung nicht funktioniert:</p>
+            <form id="redirectForm" method="GET" action="' . htmlspecialchars($adminUrl) . '">
+                <input type="hidden" name="form_key" value="' . htmlspecialchars($formKey) . '">
+                <button type="submit">Zum Admin-Bereich</button>
+            </form>
+        </div>
+        <script>
+            try {
+                localStorage.setItem("form_key", "' . $formKey . '");
+                console.log("Form Key im localStorage gesetzt");
+            } catch(e) {
+                console.error("Fehler beim Setzen des Form Keys:", e);
+            }
+            
+            // Verzögerung für Cookie-Verarbeitung
+            setTimeout(function() {
+                document.getElementById("redirectForm").submit();
+            }, 1500);
+        </script>
+    </body>
+    </html>';
+                
+                $this->getResponse()->setBody($html);
                 return $this->getResponse();
                 
             } else {
-                // Admin login fehlgeschlagen
                 error_log("performAdminLogin returned FALSE");
                 $this->oauthUtility->customlog("Admin login failed - redirecting to admin login");
                 
@@ -112,7 +167,6 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
                     __('Admin login via OIDC failed. Please contact administrator.')
                 );
                 
-                // Redirect zur Admin-Login-Seite
                 $loginUrl = $this->backendUrl->getUrl('admin');
                 $this->getResponse()->setRedirect($loginUrl);
                 return $this->getResponse();
