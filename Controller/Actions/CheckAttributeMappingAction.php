@@ -204,13 +204,7 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
         try {
             error_log("=== performAdminLogin START for: " . $userEmail);
             
-            // WICHTIG: PHP Session starten
-            if (session_status() === PHP_SESSION_NONE) {
-                session_start();
-                error_log("PHP session started: " . session_id());
-            }
-            
-            // Finde Admin-User per Email
+            // User finden
             $userCollection = $this->userFactory->create()->getCollection()
                 ->addFieldToFilter('email', $userEmail);
             
@@ -228,7 +222,7 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
                 return false;
             }
             
-            // Admin-Session im aktuellen Context setzen
+            // Admin-Session setzen
             error_log("Setting admin session in current context");
             $this->adminSession->setUser($user);
             $this->adminSession->processLogin();
@@ -250,17 +244,13 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
             // ACL laden
             $this->adminSession->refreshAcl();
             
-            // Session explizit speichern ABER NICHT schließen!
-            $this->adminSession->writeClose();
-            
-            // WICHTIG: Hole die Session-ID NACH writeClose()
+            // WICHTIG: Session ID VORHER holen, aber NICHT schließen!
             $magentoSessionId = $this->adminSession->getSessionId();
             $phpSessionId = session_id();
             
             error_log("Magento Session ID: " . $magentoSessionId);
             error_log("PHP Session ID: " . $phpSessionId);
             
-            // Verwende die PHP Session ID für Cookies
             $sessionIdToUse = !empty($phpSessionId) ? $phpSessionId : $magentoSessionId;
             
             // Session-Cookies setzen
@@ -269,8 +259,11 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
             // WICHTIG: Speichere Form Key für URL-Generierung
             $this->adminFormKey = $formKey;
             
-            // ===== DEBUG-CODE HIER EINFÜGEN =====
-            // Session-Daten in Datei prüfen
+            // Session JETZT schließen (nachdem alle Daten gesetzt sind)
+            $this->adminSession->writeClose();
+            error_log("Session written and closed");
+            
+            // Debug: Session-Datei prüfen
             $sessionPath = BP . '/var/session';
             if (!is_dir($sessionPath)) {
                 $sessionPath = session_save_path();
@@ -283,9 +276,15 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
             if (file_exists($sessionFile)) {
                 $content = file_get_contents($sessionFile);
                 error_log("Session file size: " . strlen($content) . " bytes");
-                error_log("Session file content (first 200 chars): " . substr($content, 0, 200));
+                error_log("Session file content (first 500 chars): " . substr($content, 0, 500));
+                
+                // Prüfe ob User-ID in Session ist
+                if (strpos($content, 'user_id') !== false || strpos($content, '"' . $userId . '"') !== false) {
+                    error_log("✓ User ID found in session file!");
+                } else {
+                    error_log("✗ WARNING: User ID NOT found in session file!");
+                }
             }
-            // ===== ENDE DEBUG-CODE =====
             
             error_log("=== performAdminLogin: SUCCESS ===");
             return true;
