@@ -269,6 +269,24 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
             // WICHTIG: Speichere Form Key für URL-Generierung
             $this->adminFormKey = $formKey;
             
+            // ===== DEBUG-CODE HIER EINFÜGEN =====
+            // Session-Daten in Datei prüfen
+            $sessionPath = BP . '/var/session';
+            if (!is_dir($sessionPath)) {
+                $sessionPath = session_save_path();
+            }
+            
+            $sessionFile = $sessionPath . '/sess_' . $sessionIdToUse;
+            error_log("Expected session file: " . $sessionFile);
+            error_log("Session file exists: " . (file_exists($sessionFile) ? 'YES' : 'NO'));
+            
+            if (file_exists($sessionFile)) {
+                $content = file_get_contents($sessionFile);
+                error_log("Session file size: " . strlen($content) . " bytes");
+                error_log("Session file content (first 200 chars): " . substr($content, 0, 200));
+            }
+            // ===== ENDE DEBUG-CODE =====
+            
             error_log("=== performAdminLogin: SUCCESS ===");
             return true;
             
