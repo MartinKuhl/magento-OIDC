@@ -91,16 +91,10 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
             if ($this->performAdminLogin($userEmail)) {
                 $this->oauthUtility->customlog("Admin login successful!");
                 
-                // Nutze den Form Key aus performAdminLogin
-                if (!empty($this->adminFormKey)) {
-                    $adminUrl = $this->backendUrl->getUrl('admin', [
-                        'key' => $this->adminFormKey
-                    ]);
-                    error_log("Using saved form key for URL: " . $this->adminFormKey);
+               if (!empty($this->adminFormKey)) {
+                    $adminUrl = '/admin?key=' . $this->adminFormKey;
                 } else {
-                    // Fallback ohne key
-                $adminUrl = $this->backendUrl->getUrl('admin');                    
-                error_log("No form key available, using URL without key");
+                    $adminUrl = '/admin';
                 }
                 
                 error_log("Redirecting to: " . $adminUrl);
@@ -156,6 +150,12 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
         try {
             error_log("=== performAdminLogin START for: " . $userEmail);
             
+            // WICHTIG: PHP Session starten
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+                error_log("PHP session started: " . session_id());
+            }
+            
             // Finde Admin-User per Email
             $userCollection = $this->userFactory->create()->getCollection()
                 ->addFieldToFilter('email', $userEmail);
@@ -179,33 +179,15 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
             $this->adminSession->setUser($user);
             $this->adminSession->processLogin();
             
-            // Session ID holen
-            $sessionId = $this->adminSession->getSessionId();
-            error_log("Session ID: " . $sessionId);
-            
-            if (empty($sessionId)) {
-                error_log("ERROR: No session ID generated!");
-                return false;
-            }
-            
-            // WICHTIG: Versuche zuerst Form Key aus Admin Session
+            // Form Key generieren
             $formKey = $this->adminSession->getFormKey();
-            error_log("Admin session form key: '" . $formKey . "'");
-            
-            // Falls leer, generiere manuell
             if (empty($formKey)) {
-                error_log("Admin session form key empty, generating manual key...");
                 $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
                 $formKeyGenerator = $objectManager->get(\Magento\Framework\Data\Form\FormKey::class);
                 $formKey = $formKeyGenerator->getFormKey();
-                
-                // Falls immer noch leer, erzeuge eigenen
                 if (empty($formKey)) {
                     $formKey = md5(uniqid(rand(), true));
-                    error_log("Generated random form key: " . $formKey);
                 }
-                
-                // Setze in Admin Session zurück
                 $this->adminSession->setData('form_key', $formKey);
             }
             
@@ -214,12 +196,21 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
             // ACL laden
             $this->adminSession->refreshAcl();
             
-            // Session explizit speichern
+            // Session explizit speichern ABER NICHT schließen!
             $this->adminSession->writeClose();
-            error_log("Session written and closed");
+            
+            // WICHTIG: Hole die Session-ID NACH writeClose()
+            $magentoSessionId = $this->adminSession->getSessionId();
+            $phpSessionId = session_id();
+            
+            error_log("Magento Session ID: " . $magentoSessionId);
+            error_log("PHP Session ID: " . $phpSessionId);
+            
+            // Verwende die PHP Session ID für Cookies
+            $sessionIdToUse = !empty($phpSessionId) ? $phpSessionId : $magentoSessionId;
             
             // Session-Cookies setzen
-            $this->setAdminCookies($sessionId, $formKey);
+            $this->setAdminCookies($sessionIdToUse, $formKey);
             
             // WICHTIG: Speichere Form Key für URL-Generierung
             $this->adminFormKey = $formKey;
@@ -244,61 +235,35 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
             $domain = $_SERVER['HTTP_HOST'] ?? '';
             $isSecure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
             
-            // 1. Admin-Session-Cookie (PHPSESSID)
-            $adminCookieName = $this->adminSession->getName();
-            error_log("Admin cookie name: " . $adminCookieName);
+            // Verwende setcookie() wie in direct-admin-login.php
+            $cookieOptions = [
+                'expires' => time() + 3600,
+                'path' => '/',
+                'domain' => $domain,
+                'secure' => $isSecure,
+                'httponly' => true,
+                'samesite' => 'Lax'
+            ];
             
-            $cookieMetadata = $this->cookieMetadataFactory->createPublicCookieMetadata()
-                ->setDuration(3600)
-                ->setPath($this->adminConfig->getCookiePath())
-                ->setDomain($this->adminConfig->getCookieDomain())
-                ->setSecure($this->adminConfig->getCookieSecure())
-                ->setHttpOnly($this->adminConfig->getCookieHttpOnly());
+            // 1. PHPSESSID
+            setcookie('PHPSESSID', $sessionId, $cookieOptions);
+            error_log("Set cookie: PHPSESSID=" . $sessionId);
             
-            if (method_exists($cookieMetadata, 'setSameSite')) {
-                $cookieMetadata->setSameSite('Lax');
-            }
-            
-            $this->cookieManager->setPublicCookie($adminCookieName, $sessionId, $cookieMetadata);
-            error_log("Set cookie: " . $adminCookieName . "=" . $sessionId);
-            
-            // 2. Admin-spezifisches Cookie (falls anders als PHPSESSID)
-            // Admin-Backend nutzt oft ein separates "admin" Cookie
-            $adminPath = $this->adminConfig->getCookiePath();
-            if ($adminCookieName === 'PHPSESSID' && !empty($adminPath)) {
-                $adminCookieMetadata = $this->cookieMetadataFactory->createPublicCookieMetadata()
-                    ->setDuration(3600)
-                    ->setPath($adminPath)
-                    ->setDomain($this->adminConfig->getCookieDomain())
-                    ->setSecure($this->adminConfig->getCookieSecure())
-                    ->setHttpOnly(true);
+            // 2. Admin Cookie
+            $adminPath = $this->adminConfig->getValue('admin/url/use_custom_path')
+                ? $this->adminConfig->getValue('admin/url/custom_path')
+                : 'admin';
                 
-                if (method_exists($adminCookieMetadata, 'setSameSite')) {
-                    $adminCookieMetadata->setSameSite('Lax');
-                }
-                
-                $this->cookieManager->setPublicCookie('admin', $sessionId, $adminCookieMetadata);
-                error_log("Set cookie: admin=" . $sessionId . " (path: " . $adminPath . ")");
-            }
+            $adminCookieOptions = $cookieOptions;
+            $adminCookieOptions['path'] = '/' . $adminPath;
+            setcookie('admin', $sessionId, $adminCookieOptions);
+            error_log("Set cookie: admin=" . $sessionId . " (path: /" . $adminPath . ")");
             
-            // 3. Form-Key-Cookie (NUR wenn nicht leer!)
-            if (!empty($formKey)) {
-                $formKeyCookieMetadata = $this->cookieMetadataFactory->createPublicCookieMetadata()
-                    ->setDuration(3600)
-                    ->setPath('/')
-                    ->setDomain($domain)
-                    ->setSecure($isSecure)
-                    ->setHttpOnly(false); // JavaScript-Zugriff erforderlich
-                
-                if (method_exists($formKeyCookieMetadata, 'setSameSite')) {
-                    $formKeyCookieMetadata->setSameSite('Lax');
-                }
-                
-                $this->cookieManager->setPublicCookie('form_key', $formKey, $formKeyCookieMetadata);
-                error_log("Set cookie: form_key=" . $formKey);
-            } else {
-                error_log("WARNING: form_key is empty, cookie not set!");
-            }
+            // 3. Form Key Cookie
+            $formKeyCookieOptions = $cookieOptions;
+            $formKeyCookieOptions['httponly'] = false; // JavaScript braucht Zugriff
+            setcookie('form_key', $formKey, $formKeyCookieOptions);
+            error_log("Set cookie: form_key=" . $formKey);
             
             error_log("All admin cookies set successfully");
             
