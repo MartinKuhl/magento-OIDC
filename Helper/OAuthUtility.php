@@ -451,10 +451,11 @@ class OAuthUtility extends Data
 		$licenseKey = $this->getStoreConfig(OAuthConstants::SAMLSP_LK);
 		return $isVerified == "true" ? TRUE : FALSE;
 	}
-public function isLogEnable()
-{
-    return $this->getStoreConfig(OAuthConstants::ENABLE_DEBUG_LOG);
-}
+    
+    public function isLogEnable()
+    {
+        return (bool) $this->getStoreConfig('miniorange/oauth/debug_log');
+    }
 
     /**
      *Common Log Method .. Accessible in all classes through
