@@ -1,12 +1,10 @@
 <?php
-
 namespace MiniOrange\OAuth\Observer;
 
 use Magento\Framework\App\Request\Http;
 use Magento\Framework\App\RequestInterface;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Message\ManagerInterface;
-use MiniOrange\OAuth\Controller\Actions\AdminLoginAction;
 use MiniOrange\OAuth\Controller\Actions\ShowTestResultsAction;
 use MiniOrange\OAuth\Helper\OAuthMessages;
 use Magento\Framework\Event\Observer;
@@ -24,20 +22,16 @@ use Psr\Log\LoggerInterface;
  */
 class OAuthObserver implements ObserverInterface
 {
-    private $requestParams =  [
+    private $requestParams = [
         'option'
     ];
-
     private $messageManager;
     private $logger;
     private $readAuthorizationResponse;
     private $oauthUtility;
-    private $adminLoginAction;
     private $testAction;
-
     private $currentControllerName;
     private $currentActionName;
-//    private $requestInterface;
     private $request;
 
     public function __construct(
@@ -45,7 +39,6 @@ class OAuthObserver implements ObserverInterface
         LoggerInterface $logger,
         ReadAuthorizationResponse $readAuthorizationResponse,
         OAuthUtility $oauthUtility,
-        AdminLoginAction $adminLoginAction,
         Http $httpRequest,
         RequestInterface $request,
         ShowTestResultsAction $testAction
@@ -55,7 +48,6 @@ class OAuthObserver implements ObserverInterface
         $this->logger = $logger;
         $this->readAuthorizationResponse = $readAuthorizationResponse;
         $this->oauthUtility = $oauthUtility;
-        $this->adminLoginAction = $adminLoginAction;
         $this->currentControllerName = $httpRequest->getControllerName();
         $this->currentActionName = $httpRequest->getActionName();
         $this->request = $request;
@@ -71,9 +63,8 @@ class OAuthObserver implements ObserverInterface
      */
     public function execute(Observer $observer)
     {
-        $keys             = array_keys($this->request->getParams());
-        $operation         = array_intersect($keys, $this->requestParams);
-
+        $keys = array_keys($this->request->getParams());
+        $operation = array_intersect($keys, $this->requestParams);
 
         try {
             $params = $this->request->getParams(); // get params
@@ -83,18 +74,15 @@ class OAuthObserver implements ObserverInterface
             // request has values then it takes priority over others
             if (count($operation) > 0) {
                 $this->_route_data(array_values($operation)[0], $observer, $params, $postData);
-
             }
         } catch (\Exception $e) {
             if ($isTest) { // show a failed validation screen
                 $this->testAction->setOAuthException($e)->setHasExceptionOccurred(true)->execute();
             }
             $this->messageManager->addErrorMessage($e->getMessage());
-            $this->oauthUtility->customlog($e->getMessage())  ;
-   
+            $this->oauthUtility->customlog($e->getMessage());
         }
     }
-
 
     /**
      * Route the request data to appropriate functions for processing.
@@ -108,9 +96,10 @@ class OAuthObserver implements ObserverInterface
     {
         switch ($op) {
             case $this->requestParams[0]:
-                if ($params['option']==OAuthConstants::LOGIN_ADMIN_OPT) {
-                    $this->adminLoginAction->execute();
-                }
+                // Admin login is now handled via OIDC callback flow
+                // through Controller/Adminhtml/Actions/Oidccallback.php
+                // Legacy LOGIN_ADMIN_OPT parameter handling removed
+                $this->oauthUtility->customlog('Admin login request detected but handled via OIDC callback');
                 break;
         }
     }

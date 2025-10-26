@@ -1,5 +1,4 @@
 <?php
-
 namespace MiniOrange\OAuth\Observer;
 
 use Magento\Framework\Event\ObserverInterface;
@@ -19,32 +18,26 @@ use Magento\Framework\App\Response\RedirectInterface;
  */
 class OAuthLogoutObserver implements ObserverInterface
 {
-    private $requestParams =  [
+    private $requestParams = [
         'option'
     ];
-
     private $messageManager;
     private $logger;
     private $readAuthorizationResponse;
     private $oauthUtility;
-    private $adminLoginAction;
     private $testAction;
-
     private $currentControllerName;
     private $currentActionName;
     private $requestInterface;
     private $request;
-
     protected $_redirect;
     protected $_response;
 
-    
     public function __construct(
         \Magento\Framework\Message\ManagerInterface $messageManager,
         \Psr\Log\LoggerInterface $logger,
         \MiniOrange\OAuth\Controller\Actions\ReadAuthorizationResponse $readAuthorizationResponse,
         \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
-        \MiniOrange\OAuth\Controller\Actions\AdminLoginAction $adminLoginAction,
         \Magento\Framework\App\Request\Http $httpRequest,
         \Magento\Framework\App\RequestInterface $request,
         \MiniOrange\OAuth\Controller\Actions\ShowTestResultsAction $testAction,
@@ -56,7 +49,6 @@ class OAuthLogoutObserver implements ObserverInterface
         $this->logger = $logger;
         $this->readAuthorizationResponse = $readAuthorizationResponse;
         $this->oauthUtility = $oauthUtility;
-        $this->adminLoginAction = $adminLoginAction;
         $this->currentControllerName = $httpRequest->getControllerName();
         $this->currentActionName = $httpRequest->getActionName();
         $this->request = $request;
@@ -77,7 +69,7 @@ class OAuthLogoutObserver implements ObserverInterface
     {
         $logoutUrl = $this->oauthUtility->getStoreConfig(OAuthConstants::OAUTH_LOGOUT_URL);
         if (!empty($logoutUrl)) {
-            $temp =  '<script>window.location = "'.$logoutUrl.'";</script>';
+            $temp = '<script>window.location = "'.$logoutUrl.'";</script>';
             return $this->_response->setBody($temp);
         }
     }
