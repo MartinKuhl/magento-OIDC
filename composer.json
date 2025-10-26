@@ -1,18 +1,6 @@
 {
     "name": "miniorange_inc/miniorange-oauth-sso",
     "description": "miniOrange OAuth free SSO extension support login into Magento using any OAuth or OpenID Connect provider",
-    "keywords": ["OAuth", "Service Provider", "Identity Provider", "SSO", "Single Sign On", "Authentication","Magento sso",
-        "Magento 2 sso",
-       "Magento 2 single sign-on",
-       "Magento single sign-on",
-       "magento oauth sso",
-       "magento oauth",
-       "magento oauth single sign on",
-       "magento 2 oauth",
-       "oauth magento 2",
-       "magento oauth 2.0",
-       "magento 2 oauth 2.0"],
-
     "type": "magento2-module",
     "version": "4.3.0",
      "license": [

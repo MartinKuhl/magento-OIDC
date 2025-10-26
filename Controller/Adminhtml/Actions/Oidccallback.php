@@ -1,11 +1,11 @@
 <?php
-
 namespace MiniOrange\OAuth\Controller\Adminhtml\Actions;
 
 use Magento\Framework\App\Action\HttpGetActionInterface;
 use Magento\Framework\App\ActionInterface;
 use Magento\Framework\App\RequestInterface;
 use Magento\Framework\Controller\ResultFactory;
+use Magento\Framework\Message\ManagerInterface;
 
 /**
  * OIDC Callback Controller for Admin Login
@@ -29,19 +29,22 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
     protected $resultFactory;
     protected $request;
     protected $oauthUtility;
+    protected $messageManager;
 
     public function __construct(
         \Magento\User\Model\UserFactory $userFactory,
         \Magento\Backend\Model\Auth\Session $authSession,
         ResultFactory $resultFactory,
         RequestInterface $request,
-        \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+        \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
+        ManagerInterface $messageManager
     ) {
         $this->userFactory = $userFactory;
         $this->authSession = $authSession;
         $this->resultFactory = $resultFactory;
         $this->request = $request;
         $this->oauthUtility = $oauthUtility;
+        $this->messageManager = $messageManager;
     }
 
     /**
@@ -59,6 +62,10 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
         if (empty($email)) {
             $this->oauthUtility->customlog("ERROR: Email parameter is empty, redirecting to admin login");
             
+            $this->messageManager->addErrorMessage(
+                __('Authentication fehlgeschlagen: Keine E-Mail-Adresse vom OIDC-Provider erhalten.')
+            );
+            
             $resultRedirect = $this->resultFactory->create(ResultFactory::TYPE_REDIRECT);
             $resultRedirect->setPath('admin');
             return $resultRedirect;
@@ -73,6 +80,15 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
 
             if ($userCollection->getSize() === 0) {
                 $this->oauthUtility->customlog("ERROR: Admin user not found for email: " . $email);
+                
+                $this->messageManager->addErrorMessage(
+                    __(
+                        'Admin-Zugang verweigert: Für die E-Mail-Adresse "%1" ist kein Administrator-Konto in Magento hinterlegt. '
+                        . 'Bitte wenden Sie sich an Ihren Systemadministrator.',
+                        $email
+                    )
+                );
+                
                 throw new \Exception('Admin user not found: ' . $email);
             }
 
@@ -82,6 +98,15 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
             // Verify user is active
             if (!$user->getIsActive()) {
                 $this->oauthUtility->customlog("ERROR: Admin user is inactive (ID: " . $user->getId() . ")");
+                
+                $this->messageManager->addErrorMessage(
+                    __(
+                        'Admin-Zugang verweigert: Das Administrator-Konto für "%1" ist deaktiviert. '
+                        . 'Bitte kontaktieren Sie Ihren Systemadministrator zur Aktivierung.',
+                        $email
+                    )
+                );
+                
                 throw new \Exception('Admin user is inactive');
             }
 
@@ -99,6 +124,10 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
 
             if ($isLoggedIn) {
                 $this->oauthUtility->customlog("SUCCESS: Admin login successful, redirecting to dashboard");
+                
+                $this->messageManager->addSuccessMessage(
+                    __('Willkommen zurück, %1!', $user->getFirstname() ?: $user->getUsername())
+                );
             } else {
                 $this->oauthUtility->customlog("WARNING: Login processed but isLoggedIn() returned false");
             }
@@ -111,6 +140,16 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
         } catch (\Exception $e) {
             $this->oauthUtility->customlog("EXCEPTION in OIDC admin callback: " . $e->getMessage());
             $this->oauthUtility->customlog("Stack trace: " . $e->getTraceAsString());
+            
+            // Only show generic error if no specific error message was already set
+            if (!$this->messageManager->hasMessages()) {
+                $this->messageManager->addErrorMessage(
+                    __(
+                        'Die Anmeldung über Authelia ist fehlgeschlagen. '
+                        . 'Bitte versuchen Sie es erneut oder wenden Sie sich an Ihren Administrator.'
+                    )
+                );
+            }
             
             // Redirect to admin login on any error
             $resultRedirect = $this->resultFactory->create(ResultFactory::TYPE_REDIRECT);
