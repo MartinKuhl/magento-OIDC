@@ -10,10 +10,12 @@
 
 ## Installation
 
-1. Copy plugin to `app/code/MiniOrange/OAuth/`
+1. xxx
 2. Run setup commands:
 
-
+```bash
+    composer require xxx
+```
 ## Admin Auto-Login
 
 After successful OIDC authentication, admin users are automatically logged in without requiring additional credentials. The system:

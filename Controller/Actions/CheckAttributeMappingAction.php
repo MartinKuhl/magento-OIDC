@@ -7,10 +7,13 @@ use MiniOrange\OAuth\Helper\OAuthConstants;
 use Magento\Framework\App\Action\HttpPostActionInterface;
 
 /**
- * Check and process SAML/OAuth attribute mapping
+ * Check and process OAuth/OIDC attribute mapping
  * 
- * This controller handles attribute mapping after successful authentication
- * and routes admin users to a separate login endpoint.
+ * This controller handles attribute mapping after successful authentication.
+ * Admin users are redirected to a separate login endpoint that runs in the
+ * adminhtml area context. Customer users proceed with the normal login flow.
+ * 
+ * @package MiniOrange\OAuth\Controller\Actions
  */
 class CheckAttributeMappingAction extends BaseAction implements HttpPostActionInterface
 {
@@ -34,6 +37,16 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
     protected $userFactory;
     protected $backendUrl;
 
+    /**
+     * Constructor with dependency injection
+     * 
+     * @param \Magento\Framework\App\Action\Context $context
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     * @param \MiniOrange\OAuth\Controller\Actions\ShowTestResultsAction $testAction
+     * @param \MiniOrange\OAuth\Controller\Actions\ProcessUserAction $processUserAction
+     * @param \Magento\User\Model\UserFactory $userFactory
+     * @param \Magento\Backend\Model\UrlInterface $backendUrl
+     */
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
         \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
@@ -44,16 +57,24 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
     ) {
         // Initialize attribute mappings from configuration
         $this->emailAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_EMAIL);
-        $this->emailAttribute = $oauthUtility->isBlank($this->emailAttribute) ? OAuthConstants::DEFAULT_MAP_EMAIL : $this->emailAttribute;
+        $this->emailAttribute = $oauthUtility->isBlank($this->emailAttribute) 
+            ? OAuthConstants::DEFAULT_MAP_EMAIL 
+            : $this->emailAttribute;
         
         $this->usernameAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_USERNAME);
-        $this->usernameAttribute = $oauthUtility->isBlank($this->usernameAttribute) ? OAuthConstants::DEFAULT_MAP_USERN : $this->usernameAttribute;
+        $this->usernameAttribute = $oauthUtility->isBlank($this->usernameAttribute) 
+            ? OAuthConstants::DEFAULT_MAP_USERN 
+            : $this->usernameAttribute;
         
         $this->firstName = $oauthUtility->getStoreConfig(OAuthConstants::MAP_FIRSTNAME);
-        $this->firstName = $oauthUtility->isBlank($this->firstName) ? OAuthConstants::DEFAULT_MAP_FN : $this->firstName;
+        $this->firstName = $oauthUtility->isBlank($this->firstName) 
+            ? OAuthConstants::DEFAULT_MAP_FN 
+            : $this->firstName;
         
         $this->lastName = $oauthUtility->getStoreConfig(OAuthConstants::MAP_LASTNAME);
-        $this->lastName = $oauthUtility->isBlank($this->lastName) ? OAuthConstants::DEFAULT_MAP_LN : $this->lastName;
+        $this->lastName = $oauthUtility->isBlank($this->lastName) 
+            ? OAuthConstants::DEFAULT_MAP_LN 
+            : $this->lastName;
         
         $this->checkIfMatchBy = $oauthUtility->getStoreConfig(OAuthConstants::MAP_MAP_BY);
         
@@ -66,10 +87,12 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
     }
 
     /**
-     * Execute attribute mapping and route users
+     * Execute attribute mapping and route users accordingly
      * 
-     * Admin users are redirected to a separate callback endpoint,
-     * regular users proceed with normal customer login flow.
+     * Admin users are redirected to a separate callback endpoint that handles
+     * admin authentication. Regular users proceed with the normal customer login flow.
+     * 
+     * @return \Magento\Framework\Controller\ResultInterface
      */
     public function execute()
     {
@@ -82,33 +105,35 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
         $this->oauthUtility->customlog("Is admin user: " . ($isAdminLogin ? 'YES' : 'NO'));
         
         if ($isAdminLogin) {
+            // Redirect admin users to dedicated admin login endpoint
             $this->oauthUtility->customlog("Admin user detected, redirecting to admin callback");
             
-            // Redirect to admin login endpoint (runs in adminhtml area)
             $adminCallbackUrl = $this->backendUrl->getUrl('mooauth/actions/oidccallback', [
                 'email' => $userEmail
             ]);
             
-            $this->oauthUtility->customlog("Redirecting to admin callback: " . $adminCallbackUrl);
+            $this->oauthUtility->customlog("Redirecting to: " . $adminCallbackUrl);
             
             $this->getResponse()->setRedirect($adminCallbackUrl);
             return $this->getResponse();
         }
         
         // Regular customer login flow
-        $this->oauthUtility->customlog("Not admin user, proceeding with normal flow");
+        $this->oauthUtility->customlog("Customer user, proceeding with normal flow");
         return $this->moOAuthCheckMapping($attrs, $flattenedAttrs, $userEmail);
     }
     
     /**
      * Check if the email belongs to an admin user
      * 
-     * @param string $email User email address
-     * @return bool True if admin user exists
+     * Checks both username and email fields in the admin_user table.
+     * 
+     * @param string $email User email or username
+     * @return bool True if admin user exists and is active
      */
     private function isAdminUser($email)
     {
-        $this->oauthUtility->customlog("isAdminUser: Checking email: " . $email);
+        $this->oauthUtility->customlog("Checking for admin user: " . $email);
         
         // Try username lookup first
         $user = $this->userFactory->create()->loadByUsername($email);
@@ -128,11 +153,20 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
     }
 
     /**
-     * Process OAuth attribute mapping for customer users
+     * Process OAuth/OIDC attribute mapping for customer users
+     * 
+     * Maps OAuth attributes to Magento customer fields based on
+     * the configuration set in the admin panel.
+     * 
+     * @param array $attrs Raw OAuth response attributes
+     * @param array $flattenedAttrs Flattened attribute array
+     * @param string $userEmail User email from OAuth response
+     * @return \Magento\Framework\Controller\ResultInterface
+     * @throws MissingAttributesException
      */
     private function moOAuthCheckMapping($attrs, $flattenedAttrs, $userEmail)
     {
-        $this->oauthUtility->customlog("moOAuthCheckMapping: START");
+        $this->oauthUtility->customlog("Processing attribute mapping");
        
         if (empty($attrs)) {
             throw new MissingAttributesException;
@@ -146,21 +180,41 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
         return $this->processResult($attrs, $flattenedAttrs, $userEmail);
     }
 
+    /**
+     * Process the result - either show test screen or login/create user
+     * 
+     * @param array $attrs Raw attributes
+     * @param array $flattenedattrs Flattened attributes
+     * @param string $email User email
+     * @return \Magento\Framework\Controller\ResultInterface
+     */
     private function processResult($attrs, $flattenedattrs, $email)
     {
-        $this->oauthUtility->customlog("processResult: START");
+        $this->oauthUtility->customlog("Processing result");
      
         $isTest = $this->oauthUtility->getStoreConfig(OAuthConstants::IS_TEST);
 
         if ($isTest == true) {
+            // Test mode - show attribute mapping test results
             $this->oauthUtility->setStoreConfig(OAuthConstants::IS_TEST, false);
             $this->oauthUtility->flushCache();
             return $this->testAction->setAttrs($flattenedattrs)->setUserEmail($email)->execute();
         } else {
-            return $this->processUserAction->setFlattenedAttrs($flattenedattrs)->setAttrs($attrs)->setUserEmail($email)->execute();
+            // Production mode - process user login/registration
+            return $this->processUserAction
+                ->setFlattenedAttrs($flattenedattrs)
+                ->setAttrs($attrs)
+                ->setUserEmail($email)
+                ->execute();
         }
     }
 
+    /**
+     * Process first name attribute
+     * Falls back to email prefix if not provided
+     * 
+     * @param array $attrs Attribute array
+     */
     private function processFirstName(&$attrs)
     {
         if (!isset($attrs[$this->firstName])) {
@@ -169,6 +223,12 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
         }
     }
 
+    /**
+     * Process last name attribute
+     * Falls back to email domain if not provided
+     * 
+     * @param array $attrs Attribute array
+     */
     private function processLastName(&$attrs)
     {
         if (!isset($attrs[$this->lastName])) {
@@ -177,6 +237,12 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
         }
     }
 
+    /**
+     * Process username attribute
+     * Falls back to email if not provided
+     * 
+     * @param array $attrs Attribute array
+     */
     private function processUserName(&$attrs)
     {
         if (!isset($attrs[$this->usernameAttribute])) {
@@ -184,6 +250,12 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
         }
     }
 
+    /**
+     * Process email attribute
+     * Falls back to userEmail if not provided
+     * 
+     * @param array $attrs Attribute array
+     */
     private function processEmail(&$attrs)
     {
         if (!isset($attrs[$this->emailAttribute])) {
@@ -191,6 +263,12 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
         }
     }
 
+    /**
+     * Process group/role name attribute
+     * Defaults to empty array if not provided
+     * 
+     * @param array $attrs Attribute array
+     */
     private function processGroupName(&$attrs)
     {
         if (!isset($attrs[$this->groupName])) {
@@ -198,26 +276,50 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
         }
     }
 
-    // Setter methods for dependency injection
-    
+    // Setter methods for dependency injection pattern
+
+    /**
+     * Set user info response
+     * 
+     * @param array $userInfoResponse
+     * @return $this
+     */
     public function setUserInfoResponse($userInfoResponse)
     {
         $this->userInfoResponse = $userInfoResponse;
         return $this;
     }
 
+    /**
+     * Set flattened user info response
+     * 
+     * @param array $flattenedUserInfoResponse
+     * @return $this
+     */
     public function setFlattenedUserInfoResponse($flattenedUserInfoResponse)
     {
         $this->flattenedUserInfoResponse = $flattenedUserInfoResponse;
         return $this;
     }
 
+    /**
+     * Set user email
+     * 
+     * @param string $userEmail
+     * @return $this
+     */
     public function setUserEmail($userEmail)
     {
         $this->userEmail = $userEmail;
         return $this;
     }
 
+    /**
+     * Set relay state
+     * 
+     * @param string $relayState
+     * @return $this
+     */
     public function setRelayState($relayState)
     {
         $this->relayState = $relayState;
