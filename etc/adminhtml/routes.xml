@@ -2,6 +2,12 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
         xsi:noNamespaceSchemaLocation="urn:magento:framework:App/etc/routes.xsd">
     <router id="admin">
+        <!-- Haupt-Route für bestehende Admin-Seiten -->
+        <route id="mooauth" frontName="mooauth">
+            <module name="MiniOrange_OAuth" />
+        </route>
+        
+        <!-- Zusätzliche Route für OIDC Callback -->
         <route id="mooauth_admin" frontName="mooauth_admin">
             <module name="MiniOrange_OAuth" />
         </route>
