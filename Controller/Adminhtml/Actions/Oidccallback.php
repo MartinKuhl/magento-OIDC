@@ -1,15 +1,23 @@
 <?php
+
 namespace MiniOrange\OAuth\Controller\Adminhtml\Actions;
 
 use Magento\Framework\App\Action\HttpGetActionInterface;
 use Magento\Framework\App\ActionInterface;
 use Magento\Framework\App\RequestInterface;
-use Magento\Framework\App\ResponseInterface;
 use Magento\Framework\Controller\ResultFactory;
 
 /**
- * WICHTIG: Nicht von Backend\App\Action erben!
- * Das würde Admin-Auth erzwingen.
+ * OIDC Callback Controller for Admin Login
+ * 
+ * This controller handles admin user login after successful OIDC authentication.
+ * It does NOT extend Backend\App\Action to avoid authentication middleware,
+ * allowing unauthenticated access for the login process itself.
+ * 
+ * Security: Only authenticates users that exist in the admin_user table
+ * and are marked as active.
+ * 
+ * @package MiniOrange\OAuth\Controller\Adminhtml\Actions
  */
 class Oidccallback implements ActionInterface, HttpGetActionInterface
 {
@@ -30,61 +38,49 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
         $this->request = $request;
     }
 
+    /**
+     * Execute admin login after OIDC authentication
+     * 
+     * @return \Magento\Framework\Controller\Result\Redirect
+     */
     public function execute()
     {
-        error_log("=== OidcCallback::execute() START ===");
-        
         $email = $this->request->getParam('email');
-        error_log("Email parameter: " . ($email ?? 'NULL'));
         
         if (empty($email)) {
-            error_log("ERROR: Email parameter is empty!");
-            
             $resultRedirect = $this->resultFactory->create(ResultFactory::TYPE_REDIRECT);
             $resultRedirect->setPath('admin');
             return $resultRedirect;
         }
 
         try {
-            error_log("Searching for user with email: " . $email);
-            
-            // User finden
+            // Find admin user by email
             $userCollection = $this->userFactory->create()->getCollection()
                 ->addFieldToFilter('email', $email);
 
             if ($userCollection->getSize() === 0) {
-                error_log("ERROR: User not found!");
-                throw new \Exception('User not found: ' . $email);
+                throw new \Exception('Admin user not found: ' . $email);
             }
 
             $user = $userCollection->getFirstItem();
-            error_log("User found - ID: " . $user->getId());
             
+            // Verify user is active
             if (!$user->getIsActive()) {
-                error_log("ERROR: User is inactive!");
-                throw new \Exception('User is inactive');
+                throw new \Exception('Admin user is inactive');
             }
 
-            // Login durchführen
-            error_log("Performing login...");
+            // Perform login
             $this->authSession->setUser($user);
             $this->authSession->processLogin();
             $this->authSession->refreshAcl();
-            
-            error_log("Login successful - isLoggedIn: " . ($this->authSession->isLoggedIn() ? 'YES' : 'NO'));
-            error_log("Session User ID: " . ($this->authSession->getUser() ? $this->authSession->getUser()->getId() : 'NULL'));
 
-            // Zum Dashboard weiterleiten
-            error_log("Redirecting to admin/dashboard");
-            
+            // Redirect to admin dashboard
             $resultRedirect = $this->resultFactory->create(ResultFactory::TYPE_REDIRECT);
             $resultRedirect->setPath('admin/dashboard');
             return $resultRedirect;
 
         } catch (\Exception $e) {
-            error_log("EXCEPTION in OidcCallback: " . $e->getMessage());
-            error_log("Stack trace: " . $e->getTraceAsString());
-            
+            // Redirect to admin login on any error
             $resultRedirect = $this->resultFactory->create(ResultFactory::TYPE_REDIRECT);
             $resultRedirect->setPath('admin');
             return $resultRedirect;

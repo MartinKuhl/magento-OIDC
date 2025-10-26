@@ -6,6 +6,12 @@ use MiniOrange\OAuth\Helper\Exception\MissingAttributesException;
 use MiniOrange\OAuth\Helper\OAuthConstants;
 use Magento\Framework\App\Action\HttpPostActionInterface;
 
+/**
+ * Check and process SAML/OAuth attribute mapping
+ * 
+ * This controller handles attribute mapping after successful authentication
+ * and routes admin users to a separate login endpoint.
+ */
 class CheckAttributeMappingAction extends BaseAction implements HttpPostActionInterface
 {
     const TEST_VALIDATE_RELAYSTATE = OAuthConstants::TEST_RELAYSTATE;
@@ -36,7 +42,7 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
         \Magento\User\Model\UserFactory $userFactory,
         \Magento\Backend\Model\UrlInterface $backendUrl
     ) {
-        // Initialisiere Attribute-Mappings
+        // Initialize attribute mappings from configuration
         $this->emailAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_EMAIL);
         $this->emailAttribute = $oauthUtility->isBlank($this->emailAttribute) ? OAuthConstants::DEFAULT_MAP_EMAIL : $this->emailAttribute;
         
@@ -59,6 +65,12 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
         parent::__construct($context, $oauthUtility);
     }
 
+    /**
+     * Execute attribute mapping and route users
+     * 
+     * Admin users are redirected to a separate callback endpoint,
+     * regular users proceed with normal customer login flow.
+     */
     public function execute()
     {
         $attrs = $this->userInfoResponse;
@@ -72,38 +84,40 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
         if ($isAdminLogin) {
             $this->oauthUtility->customlog("Admin user detected, redirecting to admin callback");
             
-            // Debug: Route-ID ausgeben
-            error_log("=== DEBUG: Generating admin callback URL ===");
-            error_log("Route to use: mooauth_admin/actions/oidccallback");
-            
+            // Redirect to admin login endpoint (runs in adminhtml area)
             $adminCallbackUrl = $this->backendUrl->getUrl('mooauth/actions/oidccallback', [
                 'email' => $userEmail
             ]);
             
-            error_log("Generated URL: " . $adminCallbackUrl);
             $this->oauthUtility->customlog("Redirecting to admin callback: " . $adminCallbackUrl);
             
             $this->getResponse()->setRedirect($adminCallbackUrl);
             return $this->getResponse();
         }
         
-        // Kein Admin-User, normaler Flow
+        // Regular customer login flow
         $this->oauthUtility->customlog("Not admin user, proceeding with normal flow");
         return $this->moOAuthCheckMapping($attrs, $flattenedAttrs, $userEmail);
     }
     
+    /**
+     * Check if the email belongs to an admin user
+     * 
+     * @param string $email User email address
+     * @return bool True if admin user exists
+     */
     private function isAdminUser($email)
     {
         $this->oauthUtility->customlog("isAdminUser: Checking email: " . $email);
         
-        // Versuche Username
+        // Try username lookup first
         $user = $this->userFactory->create()->loadByUsername($email);
         if ($user && $user->getId()) {
             $this->oauthUtility->customlog("Found admin by username, ID: " . $user->getId());
             return true;
         }
         
-        // Versuche E-Mail
+        // Try email lookup
         $userCollection = $this->userFactory->create()->getCollection()
             ->addFieldToFilter('email', $email);
         
@@ -113,6 +127,9 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
         return $found;
     }
 
+    /**
+     * Process OAuth attribute mapping for customer users
+     */
     private function moOAuthCheckMapping($attrs, $flattenedAttrs, $userEmail)
     {
         $this->oauthUtility->customlog("moOAuthCheckMapping: START");
@@ -181,6 +198,8 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
         }
     }
 
+    // Setter methods for dependency injection
+    
     public function setUserInfoResponse($userInfoResponse)
     {
         $this->userInfoResponse = $userInfoResponse;
