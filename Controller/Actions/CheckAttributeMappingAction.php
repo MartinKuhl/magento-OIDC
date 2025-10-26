@@ -13,6 +13,9 @@ use Magento\Framework\App\Action\HttpPostActionInterface;
  * Admin users are redirected to a separate login endpoint that runs in the
  * adminhtml area context. Customer users proceed with the normal login flow.
  * 
+ * All logging respects the plugin's logging configuration and writes to
+ * var/log/mo_oauth.log when enabled.
+ * 
  * @package MiniOrange\OAuth\Controller\Actions
  */
 class CheckAttributeMappingAction extends BaseAction implements HttpPostActionInterface
@@ -100,26 +103,28 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
         $flattenedAttrs = $this->flattenedUserInfoResponse;
         $userEmail = $this->userEmail;
         
-        $this->oauthUtility->customlog("Checking if admin user: " . $userEmail);
+        $this->oauthUtility->customlog("=== CheckAttributeMappingAction: Processing authentication for: " . $userEmail);
+        
+        // Check if user is an admin
         $isAdminLogin = $this->isAdminUser($userEmail);
-        $this->oauthUtility->customlog("Is admin user: " . ($isAdminLogin ? 'YES' : 'NO'));
+        $this->oauthUtility->customlog("User type detection - Admin: " . ($isAdminLogin ? 'YES' : 'NO'));
         
         if ($isAdminLogin) {
             // Redirect admin users to dedicated admin login endpoint
-            $this->oauthUtility->customlog("Admin user detected, redirecting to admin callback");
+            $this->oauthUtility->customlog("Routing admin user to admin callback endpoint");
             
             $adminCallbackUrl = $this->backendUrl->getUrl('mooauth/actions/oidccallback', [
                 'email' => $userEmail
             ]);
             
-            $this->oauthUtility->customlog("Redirecting to: " . $adminCallbackUrl);
+            $this->oauthUtility->customlog("Admin callback URL: " . $adminCallbackUrl);
             
             $this->getResponse()->setRedirect($adminCallbackUrl);
             return $this->getResponse();
         }
         
         // Regular customer login flow
-        $this->oauthUtility->customlog("Customer user, proceeding with normal flow");
+        $this->oauthUtility->customlog("Routing customer user to normal login flow");
         return $this->moOAuthCheckMapping($attrs, $flattenedAttrs, $userEmail);
     }
     
@@ -133,12 +138,12 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
      */
     private function isAdminUser($email)
     {
-        $this->oauthUtility->customlog("Checking for admin user: " . $email);
+        $this->oauthUtility->customlog("Checking if user is admin: " . $email);
         
         // Try username lookup first
         $user = $this->userFactory->create()->loadByUsername($email);
         if ($user && $user->getId()) {
-            $this->oauthUtility->customlog("Found admin by username, ID: " . $user->getId());
+            $this->oauthUtility->customlog("Admin user found by username - ID: " . $user->getId() . ", Active: " . ($user->getIsActive() ? 'YES' : 'NO'));
             return true;
         }
         
@@ -146,10 +151,14 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
         $userCollection = $this->userFactory->create()->getCollection()
             ->addFieldToFilter('email', $email);
         
-        $found = ($userCollection->getSize() > 0);
-        $this->oauthUtility->customlog("Found admin by email: " . ($found ? 'YES' : 'NO'));
+        if ($userCollection->getSize() > 0) {
+            $user = $userCollection->getFirstItem();
+            $this->oauthUtility->customlog("Admin user found by email - ID: " . $user->getId() . ", Active: " . ($user->getIsActive() ? 'YES' : 'NO'));
+            return true;
+        }
         
-        return $found;
+        $this->oauthUtility->customlog("User is not an admin");
+        return false;
     }
 
     /**
@@ -166,17 +175,22 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
      */
     private function moOAuthCheckMapping($attrs, $flattenedAttrs, $userEmail)
     {
-        $this->oauthUtility->customlog("Processing attribute mapping");
+        $this->oauthUtility->customlog("Starting attribute mapping for customer user");
        
         if (empty($attrs)) {
+            $this->oauthUtility->customlog("ERROR: Empty attributes received from OAuth provider");
             throw new MissingAttributesException;
         }
 
         $this->checkIfMatchBy = OAuthConstants::DEFAULT_MAP_BY;
+        
+        // Process required attributes
         $this->processUserName($flattenedAttrs);
         $this->processEmail($flattenedAttrs);
         $this->processGroupName($flattenedAttrs);
 
+        $this->oauthUtility->customlog("Attribute mapping completed, proceeding to user processing");
+        
         return $this->processResult($attrs, $flattenedAttrs, $userEmail);
     }
 
@@ -190,17 +204,17 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
      */
     private function processResult($attrs, $flattenedattrs, $email)
     {
-        $this->oauthUtility->customlog("Processing result");
-     
         $isTest = $this->oauthUtility->getStoreConfig(OAuthConstants::IS_TEST);
 
         if ($isTest == true) {
             // Test mode - show attribute mapping test results
+            $this->oauthUtility->customlog("Test mode enabled - showing attribute test results");
             $this->oauthUtility->setStoreConfig(OAuthConstants::IS_TEST, false);
             $this->oauthUtility->flushCache();
             return $this->testAction->setAttrs($flattenedattrs)->setUserEmail($email)->execute();
         } else {
             // Production mode - process user login/registration
+            $this->oauthUtility->customlog("Production mode - processing user login/registration");
             return $this->processUserAction
                 ->setFlattenedAttrs($flattenedattrs)
                 ->setAttrs($attrs)
@@ -220,6 +234,7 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
         if (!isset($attrs[$this->firstName])) {
             $parts = explode("@", $this->userEmail);
             $attrs[$this->firstName] = $parts[0];
+            $this->oauthUtility->customlog("First name not provided, using email prefix: " . $parts[0]);
         }
     }
 
@@ -234,6 +249,7 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
         if (!isset($attrs[$this->lastName])) {
             $parts = explode("@", $this->userEmail);
             $attrs[$this->lastName] = isset($parts[1]) ? $parts[1] : '';
+            $this->oauthUtility->customlog("Last name not provided, using email domain: " . ($parts[1] ?? 'empty'));
         }
     }
 
@@ -247,6 +263,7 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
     {
         if (!isset($attrs[$this->usernameAttribute])) {
             $attrs[$this->usernameAttribute] = $this->userEmail;
+            $this->oauthUtility->customlog("Username not provided, using email: " . $this->userEmail);
         }
     }
 
@@ -260,6 +277,7 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
     {
         if (!isset($attrs[$this->emailAttribute])) {
             $attrs[$this->emailAttribute] = $this->userEmail;
+            $this->oauthUtility->customlog("Email attribute not mapped, using userEmail: " . $this->userEmail);
         }
     }
 
@@ -273,6 +291,7 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
     {
         if (!isset($attrs[$this->groupName])) {
             $this->groupName = [];
+            $this->oauthUtility->customlog("Group name not provided, using empty array");
         }
     }
 
