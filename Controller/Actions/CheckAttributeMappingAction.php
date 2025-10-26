@@ -222,11 +222,30 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
                 return false;
             }
             
-            // Admin-Session setzen
-            error_log("Setting admin session in current context");
+            // ===== WICHTIG: Area Code auf adminhtml setzen =====
+            $state = $this->_objectManager->get(\Magento\Framework\App\State::class);
+            try {
+                $currentArea = $state->getAreaCode();
+                error_log("Current area code: " . $currentArea);
+                
+                if ($currentArea !== 'adminhtml') {
+                    $state->setAreaCode('adminhtml');
+                    error_log("Area code changed to: adminhtml");
+                }
+            } catch (\Exception $e) {
+                error_log("Area code change failed: " . $e->getMessage());
+            }
+            // ===== ENDE Area Code =====
+            
+            // Admin-Session setzen (jetzt im richtigen Context!)
+            error_log("Setting admin session in adminhtml context");
             $this->adminSession->setUser($user);
             $this->adminSession->processLogin();
             
+            error_log("Session after processLogin - isLoggedIn: " . ($this->adminSession->isLoggedIn() ? 'YES' : 'NO'));
+            error_log("Session user ID: " . ($this->adminSession->getUser() ? $this->adminSession->getUser()->getId() : 'NULL'));
+            
+            // Rest des Codes bleibt gleich...
             // Form Key generieren
             $formKey = $this->adminSession->getFormKey();
             if (empty($formKey)) {
@@ -244,7 +263,7 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
             // ACL laden
             $this->adminSession->refreshAcl();
             
-            // WICHTIG: Session ID VORHER holen, aber NICHT schließen!
+            // Session ID holen
             $magentoSessionId = $this->adminSession->getSessionId();
             $phpSessionId = session_id();
             
@@ -256,14 +275,14 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
             // Session-Cookies setzen
             $this->setAdminCookies($sessionIdToUse, $formKey);
             
-            // WICHTIG: Speichere Form Key für URL-Generierung
+            // Form Key speichern
             $this->adminFormKey = $formKey;
             
-            // Session JETZT schließen (nachdem alle Daten gesetzt sind)
+            // Session schließen
             $this->adminSession->writeClose();
             error_log("Session written and closed");
             
-            // Debug: Session-Datei prüfen
+            // Debug
             $sessionPath = BP . '/var/session';
             if (!is_dir($sessionPath)) {
                 $sessionPath = session_save_path();
@@ -271,14 +290,12 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
             
             $sessionFile = $sessionPath . '/sess_' . $sessionIdToUse;
             error_log("Expected session file: " . $sessionFile);
-            error_log("Session file exists: " . (file_exists($sessionFile) ? 'YES' : 'NO'));
             
             if (file_exists($sessionFile)) {
                 $content = file_get_contents($sessionFile);
                 error_log("Session file size: " . strlen($content) . " bytes");
-                error_log("Session file content (first 500 chars): " . substr($content, 0, 500));
+                error_log("Session file content: " . $content);
                 
-                // Prüfe ob User-ID in Session ist
                 if (strpos($content, 'user_id') !== false || strpos($content, '"' . $userId . '"') !== false) {
                     error_log("✓ User ID found in session file!");
                 } else {
