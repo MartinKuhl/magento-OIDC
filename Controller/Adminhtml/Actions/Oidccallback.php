@@ -1,43 +1,48 @@
 <?php
 namespace MiniOrange\OAuth\Controller\Adminhtml\Actions;
 
-use Magento\Backend\App\Action;
-use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpGetActionInterface;
-use Magento\Framework\Controller\Result\RedirectFactory;
+use Magento\Framework\App\ActionInterface;
+use Magento\Framework\App\RequestInterface;
+use Magento\Framework\App\ResponseInterface;
+use Magento\Framework\Controller\ResultFactory;
 
-class Oidccallback extends Action implements HttpGetActionInterface
+/**
+ * WICHTIG: Nicht von Backend\App\Action erben!
+ * Das würde Admin-Auth erzwingen.
+ */
+class Oidccallback implements ActionInterface, HttpGetActionInterface
 {
     protected $userFactory;
     protected $authSession;
-    protected $resultRedirectFactory;
+    protected $resultFactory;
+    protected $request;
 
     public function __construct(
-        Context $context,
         \Magento\User\Model\UserFactory $userFactory,
         \Magento\Backend\Model\Auth\Session $authSession,
-        RedirectFactory $resultRedirectFactory
+        ResultFactory $resultFactory,
+        RequestInterface $request
     ) {
-        parent::__construct($context);
         $this->userFactory = $userFactory;
         $this->authSession = $authSession;
-        $this->resultRedirectFactory = $resultRedirectFactory;
+        $this->resultFactory = $resultFactory;
+        $this->request = $request;
     }
 
     public function execute()
     {
-        // WICHTIG: Logging am Anfang
         error_log("=== OidcCallback::execute() START ===");
         
-        $email = $this->getRequest()->getParam('email');
+        $email = $this->request->getParam('email');
         error_log("Email parameter: " . ($email ?? 'NULL'));
         
         if (empty($email)) {
             error_log("ERROR: Email parameter is empty!");
-            $this->messageManager->addErrorMessage(__('Email parameter missing'));
             
-            $resultRedirect = $this->resultRedirectFactory->create();
-            return $resultRedirect->setPath('admin');
+            $resultRedirect = $this->resultFactory->create(ResultFactory::TYPE_REDIRECT);
+            $resultRedirect->setPath('admin');
+            return $resultRedirect;
         }
 
         try {
@@ -72,29 +77,17 @@ class Oidccallback extends Action implements HttpGetActionInterface
             // Zum Dashboard weiterleiten
             error_log("Redirecting to admin/dashboard");
             
-            $resultRedirect = $this->resultRedirectFactory->create();
-            return $resultRedirect->setPath('admin/dashboard');
+            $resultRedirect = $this->resultFactory->create(ResultFactory::TYPE_REDIRECT);
+            $resultRedirect->setPath('admin/dashboard');
+            return $resultRedirect;
 
         } catch (\Exception $e) {
             error_log("EXCEPTION in OidcCallback: " . $e->getMessage());
             error_log("Stack trace: " . $e->getTraceAsString());
             
-            $this->messageManager->addErrorMessage(__('Login failed: %1', $e->getMessage()));
-            
-            $resultRedirect = $this->resultRedirectFactory->create();
-            return $resultRedirect->setPath('admin');
+            $resultRedirect = $this->resultFactory->create(ResultFactory::TYPE_REDIRECT);
+            $resultRedirect->setPath('admin');
+            return $resultRedirect;
         }
-    }
-
-    /**
-     * Check if admin has permissions to access this controller
-     * 
-     * @return bool
-     */
-    protected function _isAllowed()
-    {
-        // WICHTIG: TRUE zurückgeben, da dies ein Pre-Login-Endpoint ist
-        error_log("=== OidcCallback::_isAllowed() called ===");
-        return true;
     }
 }
