@@ -72,10 +72,10 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
         if ($isAdminLogin) {
             $this->oauthUtility->customlog("Admin user detected, redirecting to admin callback");
             
-            // Redirect zum Admin-Login-Endpoint
-            $adminCallbackUrl = $this->backendUrl->getUrl('mooauth/actions/oidccallback', [
-                'email' => $userEmail,
-                '_nosid' => true
+            // KORRIGIERT: Verwende die richtige Route-ID
+            $adminCallbackUrl = $this->backendUrl->getUrl('mooauth_admin/actions/oidccallback', [
+                'email' => $userEmail
+                // '_nosid' entfernt - wird nicht gebraucht
             ]);
             
             $this->oauthUtility->customlog("Redirecting to admin callback: " . $adminCallbackUrl);
