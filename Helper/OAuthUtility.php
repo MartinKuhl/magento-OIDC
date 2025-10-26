@@ -452,9 +452,25 @@ class OAuthUtility extends Data
 		return $isVerified == "true" ? TRUE : FALSE;
 	}
     
+    /**
+     * Check if debug logging is enabled
+     * Uses the existing configuration path from the database
+     * 
+     * @return bool
+     */
     public function isLogEnable()
     {
-        return (bool) $this->getStoreConfig('miniorange/oauth/debug_log');
+        // Verwende die existierende Konfiguration über die Konstante
+        $configValue = $this->getStoreConfig(OAuthConstants::ENABLE_DEBUG_LOG);
+        
+        // Wenn die neue Config existiert, bevorzuge diese
+        $newConfigValue = $this->getStoreConfig('miniorange/oauth/debug_log');
+        if ($newConfigValue !== null) {
+            return (bool)$newConfigValue;
+        }
+        
+        // Fallback auf alte Konfiguration
+        return (bool)$configValue;
     }
 
     /**
