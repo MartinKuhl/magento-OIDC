@@ -76,7 +76,7 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
             error_log("=== DEBUG: Generating admin callback URL ===");
             error_log("Route to use: mooauth_admin/actions/oidccallback");
             
-            $adminCallbackUrl = $this->backendUrl->getUrl('mooauth_admin/actions/oidccallback', [
+            $adminCallbackUrl = $this->backendUrl->getUrl('mooauth/actions/oidccallback', [
                 'email' => $userEmail
             ]);
             
