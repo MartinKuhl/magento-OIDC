@@ -6,7 +6,7 @@ use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpGetActionInterface;
 use Magento\Framework\Controller\Result\RedirectFactory;
 
-class OidcCallback extends Action implements HttpGetActionInterface
+class Oidccallback extends Action implements HttpGetActionInterface
 {
     protected $userFactory;
     protected $authSession;
