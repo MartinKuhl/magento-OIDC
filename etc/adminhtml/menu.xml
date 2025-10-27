@@ -48,5 +48,15 @@
             action="mooauth/attrsettings"
             resource="MiniOrange_OAuth::attr_settings"/>
 
+        <!-- Debug Menu Item (nur für Entwicklung/Troubleshooting) -->
+        <add id="MiniOrange_OAuth::debug"
+            title="Debug"
+            module="MiniOrange_OAuth"
+            sortOrder="99"
+            parent="MiniOrange_OAuth::OAuth"
+            action="mooauth/adminhtml_actions/debug"
+            resource="MiniOrange_OAuth::oauth_settings"/>
+
+
     </menu>
 </config>

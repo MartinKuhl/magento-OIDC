@@ -32,5 +32,6 @@ Navigate to: **Stores → Configuration → MiniOrange → OAuth/OIDC**
 ## ToDo
 - Fix Test configuration option
 - Fix Attribute Mapping
+- look into scope extension
 - Fix LOGIN / LOGOUT OPTIONS
-- Rename Authelia OIDC
+- Rename: --> Authelia OIDC

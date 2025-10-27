@@ -176,7 +176,11 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
     private function moOAuthCheckMapping($attrs, $flattenedAttrs, $userEmail)
     {
         $this->oauthUtility->customlog("Starting attribute mapping for customer user");
-       
+        
+        // Save debug data
+        $this->saveDebugData($attrs);
+
+
         if (empty($attrs)) {
             $this->oauthUtility->customlog("ERROR: Empty attributes received from OAuth provider");
             throw new MissingAttributesException;
@@ -344,4 +348,32 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
         $this->relayState = $relayState;
         return $this;
     }
+
+    /**
+     * Save OAuth response for debugging
+     * 
+     * @param array $attrs
+     */
+    protected function saveDebugData($attrs)
+    {
+        try {
+            $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+            $customerSession = $objectManager->get(\Magento\Customer\Model\Session::class);
+            
+            $debugData = [
+                'timestamp' => date('Y-m-d H:i:s'),
+                'raw_attributes' => $this->userInfoResponse,
+                'flattened_attributes' => $attrs,
+                'email_found' => isset($attrs[$this->emailAttribute]) ? $attrs[$this->emailAttribute] : null,
+                'username_found' => isset($attrs[$this->usernameAttribute]) ? $attrs[$this->usernameAttribute] : null
+            ];
+            
+            $customerSession->setData('mo_oauth_debug_response', json_encode($debugData));
+            
+            $this->oauthUtility->customlog("Debug data saved to session");
+        } catch (\Exception $e) {
+            $this->oauthUtility->customlog("Could not save debug data: " . $e->getMessage());
+        }
+    }
+
 }
