@@ -2,21 +2,24 @@
 <page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
     <update handle="admin_login" />
     <body>
-        <!-- 
-            OIDC Error Message Block - Shows authentication errors
-            Displayed BEFORE the login form for better visibility
-        -->
+        <!-- OIDC Error Message - Multiple placement attempts -->
+        
+        <!-- Versuch 1: Im content Container ganz oben -->
         <referenceContainer name="content">
             <block class="MiniOrange\OAuth\Block\Adminhtml\OidcErrorMessage" 
                    name="oidc_error_message" 
-                   template="MiniOrange_OAuth::oidc_error_message.phtml" 
-                   before="admin.login.container"/>
+                   template="MiniOrange_OAuth::oidc_error_message.phtml" />
         </referenceContainer>
         
-        <!-- 
-            SSO Button Block - Adds OAuth/OIDC login button
-            to the admin login page
-        -->
+        <!-- Versuch 2: Direkt im root -->
+        <referenceContainer name="root">
+            <block class="MiniOrange\OAuth\Block\Adminhtml\OidcErrorMessage" 
+                   name="oidc_error_message_root" 
+                   template="MiniOrange_OAuth::oidc_error_message.phtml" 
+                   before="-"/>
+        </referenceContainer>
+        
+        <!-- Original SSO Button -->
         <referenceContainer name="form.buttons">
             <block class="MiniOrange\OAuth\Block\OAuth" 
                    name="miniorange.oauth.admin.link" 

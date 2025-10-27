@@ -2,21 +2,23 @@
 namespace MiniOrange\OAuth\Block\Adminhtml;
 
 use Magento\Framework\View\Element\Template;
-use Magento\Framework\App\RequestInterface;
+use Magento\Backend\Block\Template\Context;
 
 /**
  * Block to display OIDC error messages on admin login page
  */
 class OidcErrorMessage extends Template
 {
-    protected $request;
-
+    /**
+     * Constructor
+     * 
+     * @param Context $context
+     * @param array $data
+     */
     public function __construct(
-        Template\Context $context,
-        RequestInterface $request,
+        Context $context,
         array $data = []
     ) {
-        $this->request = $request;
         parent::__construct($context, $data);
     }
 
@@ -27,7 +29,7 @@ class OidcErrorMessage extends Template
      */
     public function getOidcErrorMessage()
     {
-        $encodedMessage = $this->request->getParam('oidc_error');
+        $encodedMessage = $this->getRequest()->getParam('oidc_error');
         if ($encodedMessage) {
             return base64_decode($encodedMessage);
         }

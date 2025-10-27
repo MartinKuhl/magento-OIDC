@@ -5,15 +5,30 @@
  * @var \MiniOrange\OAuth\Block\Adminhtml\OidcErrorMessage $block
  */
 ?>
-<?php if ($block->hasOidcError()): ?>
-<div class="message message-error error" style="margin-bottom: 20px;">
-    <div style="padding: 15px; background-color: #fff0f0; border: 1px solid #e22626; border-radius: 3px;">
-        <strong style="color: #e22626;">
+<!-- OIDC ERROR MESSAGE BLOCK - DEBUG START -->
+<?php 
+// Debug: Immer anzeigen, um zu sehen ob Block geladen wird
+$hasError = $block->hasOidcError();
+$errorMessage = $block->getOidcErrorMessage();
+?>
+
+<div style="background: #ffcccc; border: 2px solid red; padding: 20px; margin: 20px;">
+    <h2>DEBUG: OIDC Error Block wird geladen!</h2>
+    <p><strong>Has Error:</strong> <?= $hasError ? 'JA' : 'NEIN' ?></p>
+    <p><strong>Error Message:</strong> <?= $block->escapeHtml($errorMessage ?: 'Keine Nachricht') ?></p>
+    <p><strong>GET Parameter 'oidc_error':</strong> <?= $block->escapeHtml($block->getRequest()->getParam('oidc_error') ?: 'Nicht vorhanden') ?></p>
+</div>
+
+<?php if ($hasError): ?>
+<div class="message message-error error" style="margin: 20px; background-color: #fff0f0; border: 2px solid #e22626; border-radius: 5px;">
+    <div style="padding: 15px;">
+        <strong style="color: #e22626; font-size: 16px;">
             <?= $block->escapeHtml(__('OIDC-Authentifizierung fehlgeschlagen')) ?>
         </strong>
-        <p style="margin: 10px 0 0 0; color: #333;">
-            <?= $block->escapeHtml($block->getOidcErrorMessage()) ?>
+        <p style="margin: 10px 0 0 0; color: #333; font-size: 14px;">
+            <?= $block->escapeHtml($errorMessage) ?>
         </p>
     </div>
 </div>
 <?php endif; ?>
+<!-- OIDC ERROR MESSAGE BLOCK - DEBUG END -->
