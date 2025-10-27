@@ -1,82 +1,38 @@
 <?php
 /**
- * Template to display OIDC error messages on admin login page
- * 
- * @var \MiniOrange\OAuth\Block\Adminhtml\OidcErrorMessage $block
+ * Kompakte Version der OIDC Error Message
  */
-
-// Verhindere Duplikate - nur einmal anzeigen
 static $displayed = false;
-if ($displayed) {
-    return;
-}
+if ($displayed) return;
 $displayed = true;
 ?>
 
 <?php if ($block->hasOidcError()): ?>
-    <?php $errorMessage = $block->getOidcErrorMessage(); ?>
-    
-    <div class="oidc-error-container" style="margin: 0 auto 30px auto; max-width: 600px;">
-        <div class="message message-error error" style="
-            background-color: #fff; 
-            border: 2px solid #e22626; 
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(226, 38, 38, 0.15);
-            overflow: hidden;
-        ">
-            <!-- Error Header -->
-            <div style="
-                background: linear-gradient(135deg, #e22626 0%, #c41e1e 100%);
-                padding: 15px 20px;
-                border-bottom: 1px solid rgba(255,255,255,0.2);
-            ">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <!-- Error Icon -->
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink: 0;">
-                        <circle cx="12" cy="12" r="10" fill="white" fill-opacity="0.2"/>
-                        <path d="M12 8V12M12 16H12.01" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                    
-                    <!-- Error Title -->
-                    <strong style="
-                        color: #ffffff; 
-                        font-size: 16px; 
-                        font-weight: 600;
-                        margin: 0;
-                        letter-spacing: 0.3px;
-                    ">
-                        <?= $block->escapeHtml(__('OIDC-Authentifizierung fehlgeschlagen')) ?>
-                    </strong>
-                </div>
-            </div>
+    <div style="
+        width: 100%;
+        max-width: 370px;
+        margin: 0 auto 15px auto;
+        background: #fff0f0;
+        border: 2px solid #e22626;
+        border-radius: 5px;
+        padding: 12px;
+        box-sizing: border-box;
+    ">
+        <div style="display: flex; align-items: flex-start; gap: 10px;">
+            <!-- Icon -->
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink: 0; margin-top: 2px;">
+                <circle cx="12" cy="12" r="10" stroke="#e22626" stroke-width="2" fill="none"/>
+                <path d="M12 8V12M12 16H12.01" stroke="#e22626" stroke-width="2" stroke-linecap="round"/>
+            </svg>
             
-            <!-- Error Message Content -->
-            <div style="padding: 20px;">
-                <p style="
-                    margin: 0; 
-                    color: #333; 
-                    font-size: 14px; 
-                    line-height: 1.6;
-                ">
-                    <?= $block->escapeHtml($errorMessage) ?>
+            <!-- Content -->
+            <div style="flex: 1;">
+                <strong style="color: #e22626; font-size: 13px; display: block; margin-bottom: 6px;">
+                    <?= $block->escapeHtml(__('OIDC-Authentifizierung fehlgeschlagen')) ?>
+                </strong>
+                <p style="margin: 0; color: #333; font-size: 12px; line-height: 1.4;">
+                    <?= $block->escapeHtml($block->getOidcErrorMessage()) ?>
                 </p>
-                
-                <!-- Help Text -->
-                <div style="
-                    margin-top: 15px; 
-                    padding-top: 15px; 
-                    border-top: 1px solid #f0f0f0;
-                ">
-                    <p style="
-                        margin: 0; 
-                        color: #666; 
-                        font-size: 13px; 
-                        line-height: 1.5;
-                    ">
-                        <strong><?= $block->escapeHtml(__('Benötigen Sie Hilfe?')) ?></strong><br>
-                        <?= $block->escapeHtml(__('Bitte versuchen Sie es erneut oder kontaktieren Sie Ihren Systemadministrator.')) ?>
-                    </p>
-                </div>
             </div>
         </div>
     </div>
