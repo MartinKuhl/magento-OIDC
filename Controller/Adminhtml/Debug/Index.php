@@ -1,5 +1,5 @@
 <?php
-namespace MiniOrange\OAuth\Controller\Adminhtml\Actions;
+namespace MiniOrange\OAuth\Controller\Adminhtml\Debug;
 
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
@@ -8,11 +8,8 @@ use MiniOrange\OAuth\Helper\OAuthUtility;
 
 /**
  * Debug Controller für Authelia OIDC Response
- * 
- * Zeigt alle Rückgabewerte von Authelia übersichtlich an
- * für einfacheres Debugging und Troubleshooting
  */
-class Debug extends Action
+class Index extends Action
 {
     /**
      * @var PageFactory

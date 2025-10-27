@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <head>
+        <css src="MiniOrange_OAuth::css/adminSettings.css"/>
+    </head>
+    <body>
+        <referenceContainer name="content">
+            <!-- Navigation Bar -->
+            <block class="MiniOrange\OAuth\Block\OAuth"
+                name="miniorange.oauth.navbar"
+                template="navbar.phtml" />
+            
+            <!-- Debug Page Content -->
+            <block class="MiniOrange\OAuth\Block\Adminhtml\Debug"
+                name="miniorange.oauth.debug"
+                template="MiniOrange_OAuth::debug.phtml" />
+        </referenceContainer>
+    </body>
+</page>
