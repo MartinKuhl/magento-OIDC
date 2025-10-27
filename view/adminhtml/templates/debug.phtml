@@ -7,7 +7,7 @@
         <div class="test-actions">
             <p><?= __('Trigger a complete OIDC authentication flow with Authelia:') ?></p>
             <div class="button-group">
-                            <a href="<?= $block->getUrl('', ['_direct' => 'mooauth/actions/readauthorizationresponse']) ?>"                   class="action-primary scalable" target="_blank">
+                <a href="<?= $block->getUrl('', ['_direct' => 'mooauth/actions/sendauthorizationrequest']) ?>"     class="action-primary scalable" target="_blank">
                     <span><?= __('Start OAuth Flow') ?></span>
                 </a>
                 <a href="<?= $block->getUrl('adminhtml/auth/logout') ?>"
