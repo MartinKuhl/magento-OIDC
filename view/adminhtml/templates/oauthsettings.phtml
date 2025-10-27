@@ -60,12 +60,6 @@
 					</tr>
 
 					<tr>
-					<td><strong>Setup Guide:</strong></td>
-					<td><p style="width: 100%;">Click <a href="https://plugins.miniorange.com/magento-sso-single-sign-on-with-oauth-openid-connect-setup-guides" target="_blank"><bold>here</bold></a> to view the setup guide page.</p>
-					</td>
-					</tr>
-
-					<tr>
 						<td style="width:200px;"><strong>OAuth Provider Name<span style="color:red;">*</span>:</strong></td>
 						<td><input type="text" <?php ; ?> name="mo_oauth_app_name"
 								style="width: 100%;" value="<?php  echo $block->escapeHtmlAttr($appName); ?>" required
@@ -85,12 +79,6 @@
 						<td><strong>Scope <span style="color:red;">*</span>:</strong></td>
 						<td><input type="text"<?php ; ?> name="mo_oauth_scope" style="width: 100%;"
 							value="<?php echo $block->escapeHtmlAttr($scope) ; ?>" required /></td>
-					</tr>
-
-					<tr>
-						<td><strong>End Session Endpoint: </strong></td>
-						<td><input type="text"<?php ; ?> name="mo_oauth_end_session_endpoint" style="width: 100%;" $disabled
-							value="<?php echo "Available in the PREMIUM version " ; ?>" disabled/></td>
 					</tr>
 					
 					<input type="hidden" value="<?php echo $block->escapeHtmlAttr($grantType); ?>" name="mo_selected_grant" id="mo_selected_grant" />
@@ -140,21 +128,16 @@
 							
 							<select name="mo_oauth_grant_type" <?php ; ?> id="mo_oauth_grant_type"  style="width: 59%;padding: 6px;margin-left: 31mm">
 								<option  value="authorization_code" <?php if($grantType=='authorization_code'){echo 'selected';}?>>Authorization Code Grant</option>
-								<option  value="implicit_grant" disabled <?php if($grantType=='implicit_grant'){echo 'selected';}?>>Implicit Grant (Available in the PREMIUM version)</option>
-								<option  value="hybrid_grant" disabled <?php if($grantType=='hybrid_grant'){echo 'selected';}?>>Hybrid Grant (Available in the PREMIUM version)</option>
-								<option  value="password_grant" disabled <?php if($grantType=='password_grant'){echo 'selected';}?>>Password Grant(Available in the PREMIUM version)</option>
-								<option  value="client_credentials_grant" disabled <?php if($grantType=='client_credentials_grant'){ echo 'selected';} ?>> Client Credentials Grant (Available in the PREMIUM version)</option>
+								<option  value="implicit_grant" disabled <?php if($grantType=='implicit_grant'){echo 'selected';}?>>Implicit Grant (maybe comming later)</option>
+								<option  value="hybrid_grant" disabled <?php if($grantType=='hybrid_grant'){echo 'selected';}?>>Hybrid Grant (maybe comming later)</option>
+								<option  value="password_grant" disabled <?php if($grantType=='password_grant'){echo 'selected';}?>>Password Grant(maybe comming later)</option>
+								<option  value="client_credentials_grant" disabled <?php if($grantType=='client_credentials_grant'){ echo 'selected';} ?>> Client Credentials Grant (maybe comming later)</option>
 							</select>
 </div>
 															<!-- OPENID FLOW -->
 					<div style="padding:10px 0px 5px 0px;margin-left: 10px ;">
 						
 </div>
-							<div class="jwks_url" style="padding-top: 10px" >
-								<lable style="margin-left:10px"><strong>JWKS URL:</strong></lable>
-								<input type="url" name="mo_oauth_jwks_url" disabled style="width: 490px ;padding: 8px;margin-left: 128px;border-color: #eee ;box-shadow: 3px 2px 4px #ebebeb; border: 1px solid #B7B5B5" value="<?php echo "Available in the PREMIUM version " ; ?>">
-							</div>
-
 
                 	<script>
     				 function radio_click()
