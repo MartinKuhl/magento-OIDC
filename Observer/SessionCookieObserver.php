@@ -1,5 +1,4 @@
 <?php
-
 namespace MiniOrange\OAuth\Observer;
 
 use Magento\Framework\Event\ObserverInterface;
@@ -35,10 +34,11 @@ class SessionCookieObserver implements ObserverInterface
     public function execute(\Magento\Framework\Event\Observer $observer)
     {
         try {
-            $this->oauthUtility->customlog("SessionCookieObserver: Modifying session cookies for SameSite=None");
+            // Entfernt: Verbose Logging
             SessionHelper::forceSameSiteNone();
         } catch (\Exception $e) {
-            $this->oauthUtility->customlog("SessionCookieObserver: Error - " . $e->getMessage());
+            // Nur kritische Fehler loggen
+            $this->oauthUtility->customlog("SessionCookieObserver: Critical error - " . $e->getMessage());
         }
     }
 }

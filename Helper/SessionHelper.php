@@ -1,5 +1,4 @@
 <?php
-
 namespace MiniOrange\OAuth\Helper;
 
 use Magento\Framework\App\ObjectManager;
@@ -23,7 +22,6 @@ class SessionHelper
         $isSessionActive = (session_status() == PHP_SESSION_ACTIVE);
         
         if ($isSessionActive) {
-            self::logDebug("SessionHelper: Session bereits aktiv, starte neue Session");
             // Session schließen, um Einstellungen ändern zu können
             session_write_close();
         }
@@ -41,13 +39,12 @@ class SessionHelper
             } else {
                 // Für ältere PHP-Versionen
                 session_set_cookie_params(
-                    0,      // Lebensdauer
-                    '/',    // Pfad
-                    '',     // Domain
-                    true,   // Secure
-                    true    // HTTPOnly
+                    0, // Lebensdauer
+                    '/', // Pfad
+                    '', // Domain
+                    true, // Secure
+                    true // HTTPOnly
                 );
-                // Keine direkte SameSite-Unterstützung, wird über setcookie später behandelt
             }
             
             // Versuche die ini-Einstellung zu ändern, nur wenn Session noch nicht aktiv ist
@@ -61,7 +58,6 @@ class SessionHelper
         // Session wieder starten, wenn sie vorher aktiv war
         if ($isSessionActive) {
             session_start();
-            self::logDebug("SessionHelper: Session neu gestartet");
         }
     }
     
@@ -77,15 +73,11 @@ class SessionHelper
             $sessionName = session_name();
             $sessionId = $isSessionActive ? session_id() : '';
             
-            // Log für Debugging
-            self::logDebug("SessionHelper: Updating session cookies. SessionName: $sessionName, SessionId: $sessionId, Active: " . ($isSessionActive ? 'yes' : 'no'));
-            
             // Wir benutzen direkt die PHP-Methoden anstatt Magento-API zu verwenden, um Fehler zu vermeiden
             
             // Behandeln des Frontend-Cookies (/ Pfad)
             if (isset($_COOKIE[$sessionName])) {
                 $cookieValue = $_COOKIE[$sessionName];
-                self::logDebug("SessionHelper: Found frontend cookie with value: $cookieValue");
                 
                 // Kompatibilitätsweise für verschiedene PHP-Versionen
                 if (PHP_VERSION_ID >= 70300) {
@@ -107,23 +99,19 @@ class SessionHelper
                     setcookie(
                         $sessionName, 
                         $cookieValue, 
-                        0,  // Session-Cookie 
+                        0, // Session-Cookie 
                         '/; SameSite=None', 
                         '',
-                        true,  // Secure
-                        true   // HttpOnly
+                        true, // Secure
+                        true // HttpOnly
                     );
                 }
-                
-                self::logDebug("SessionHelper: Updated frontend cookie with path /");
             }
             
             // Auch andere wichtige Cookies in $_COOKIE durchlaufen und aktualisieren
             foreach ($_COOKIE as $name => $value) {
                 // Admin-Cookies oder andere Session-bezogene Cookies aktualisieren
                 if ($name !== $sessionName && (strpos($name, 'admin') !== false || strpos($name, 'PHPSESSID') !== false)) {
-                    self::logDebug("SessionHelper: Found additional cookie: $name");
-                    
                     // Path basierend auf Cookie-Namen bestimmen
                     $path = (strpos($name, 'admin') !== false) ? '/admin' : '/';
                     
@@ -146,15 +134,13 @@ class SessionHelper
                         setcookie(
                             $name, 
                             $value, 
-                            0,  // Session-Cookie
+                            0, // Session-Cookie
                             $path . '; SameSite=None',
                             '',
-                            true,  // Secure
-                            true   // HttpOnly
+                            true, // Secure
+                            true // HttpOnly
                         );
                     }
-                    
-                    self::logDebug("SessionHelper: Updated cookie $name with path $path and SameSite=None");
                 }
             }
         } catch (\Exception $e) {
@@ -209,7 +195,6 @@ class SessionHelper
                 }
                 
                 header($cookie, false);
-                self::logDebug("SessionHelper: Modified cookie header: " . $cookie);
             }
             
             // Auch für das PHP-Session-Cookie - wir verwenden eine vorsichtigere Methode
@@ -238,11 +223,9 @@ class SessionHelper
                             '/; SameSite=None', // Path mit SameSite
                             '',
                             true, // Secure
-                            true  // HTTPOnly
+                            true // HTTPOnly
                         );
                     }
-                    
-                    self::logDebug("SessionHelper: Force set PHP session cookie with SameSite=None");
                 }
             }
         } catch (\Exception $e) {
