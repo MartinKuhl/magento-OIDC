@@ -43,7 +43,7 @@ class Debug extends Template
             'Authorization Endpoint' => $this->oauthUtility->getStoreConfig(OAuthConstants::AUTHORIZE_ENDPOINT),
             'Token Endpoint' => $this->oauthUtility->getStoreConfig(OAuthConstants::ACCESS_TOKEN_EP),
             'User Info Endpoint' => $this->oauthUtility->getStoreConfig(OAuthConstants::GET_USER_INFO_EP),
-            'Callback URL' =>$this->getUrl('', ['_direct' => 'mooauth/actions/readauthorizationresponse'])
+            'Callback URL' => $this->getUrl('', ['_direct' => 'mooauth/actions/readauthorizationresponse']),
             'Scope' => $this->oauthUtility->getStoreConfig(OAuthConstants::SCOPE),
             'Email Attribute Mapping' => $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_EMAIL) ?: OAuthConstants::DEFAULT_MAP_EMAIL,
             'Username Attribute Mapping' => $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_USERNAME) ?: OAuthConstants::DEFAULT_MAP_USERN,
