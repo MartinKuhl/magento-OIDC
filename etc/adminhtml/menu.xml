@@ -54,7 +54,7 @@
             module="MiniOrange_OAuth"
             sortOrder="99"
             parent="MiniOrange_OAuth::OAuth"
-            action="mooauth/adminhtml_debug/index"
+            action="mooauth/actions/debug"
             resource="MiniOrange_OAuth::oauth_settings"/>
 
 
