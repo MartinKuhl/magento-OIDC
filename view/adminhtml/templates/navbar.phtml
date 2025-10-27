@@ -7,7 +7,6 @@ use MiniOrange\OAuth\Helper\OAuthConstants;
 $oauthsettings = $this->getExtensionPageUrl('oauthsettings');
 $signinsettings = $this->getExtensionPageUrl('signinsettings');
 $attrsettings = $this->getExtensionPageUrl('attrsettings');
-$rolesettings = $this->getExtensionPageUrl('rolesettings');
 $activeTab = $this->getCurrentActiveTab();
 $checkDataAdded = $this->checkDataAdded();
 
@@ -50,6 +49,5 @@ echo'   <div style=" padding: 0 1%;">
                 <a class="nav-tab ' . $block->escapeHtmlAttr($activeTab == 'oauthsettings' ? 'active' : '') . '" href="'.$block->escapeUrl($oauthsettings).'"> OAuth Settings</a>
                 <a class="nav-tab ' . $block->escapeHtmlAttr($activeTab == 'signinsettings' ? 'active' : ''). '" href="' .$block->escapeUrl($signinsettings).'"> Sign In Settings</a>
                 <a class="nav-tab ' . $block->escapeHtmlAttr($activeTab == 'attrsettings' ? 'active' : '') .'" href="'. $block->escapeUrl($attrsettings). '"> Attribute Mapping</a>
-                <a class="nav-tab ' . $block->escapeHtmlAttr($activeTab == 'rolesettings' ? 'active' : '') . '" href="' . $block->escapeUrl($rolesettings). '"> Role Mapping</a>
             </div>
         </div>';

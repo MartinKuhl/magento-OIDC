@@ -14,8 +14,6 @@
                         <resource id="MiniOrange_OAuth::signin_settings" title="Sign In Settings" sortOrder="3"/>
                         <!-- Attribute Settings ACL definition -->
                         <resource id="MiniOrange_OAuth::attr_settings" title="Attribute Mapping Settings" sortOrder="4"/>
-                        <!-- Role Settings ACL definition -->
-                        <resource id="MiniOrange_OAuth::role_settings" title="Role Mapping Settings" sortOrder="5"/>
                     </resource>
                 </resource>
             </resource>

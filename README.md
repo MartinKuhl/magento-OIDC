@@ -31,6 +31,5 @@ Navigate to: **Stores → Configuration → MiniOrange → OAuth/OIDC**
 
 ## ToDo
 - Fix Test configuration option
-- Remove Role Mapping
 - Fix Attribute Mapping
 - Fix LOGIN / LOGOUT OPTIONS

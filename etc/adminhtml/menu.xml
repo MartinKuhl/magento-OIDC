@@ -48,18 +48,5 @@
             action="mooauth/attrsettings"
             resource="MiniOrange_OAuth::attr_settings"/>
 
-        <!--
-            Adding a Role Mapping sub menu item to handle Role Mapping settings
-            Parent Menu Item is the miniOrange OAuth menu item mentioned above.
-            Action is the controllerAction to be called when menu item is clicked.
-        -->
-        <add id="MiniOrange_OAuth::role_settings"
-            title="Role Mapping"
-            module="MiniOrange_OAuth"
-            sortOrder="3"
-            parent="MiniOrange_OAuth::OAuth"
-            action="mooauth/rolesettings"
-            resource="MiniOrange_OAuth::role_settings"/>
-
     </menu>
 </config>
