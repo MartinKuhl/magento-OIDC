@@ -52,16 +52,6 @@ class Debug extends Action
      */
     public function execute()
     {
-        // Sicherheitsprüfung: Nur mit gültigem Key zugänglich
-        $key = $this->getRequest()->getParam('key');
-        $expectedKey = hash('sha256', 'debug_authelia_oidc_' . date('Y-m-d'));
-        
-        if ($key !== $expectedKey) {
-            $this->messageManager->addErrorMessage(
-                __('Ungültiger Debug-Schlüssel. Bitte verwenden Sie den aktuellen Tagesschlüssel.')
-            );
-            return $this->resultRedirectFactory->create()->setPath('adminhtml/dashboard');
-        }
 
         // Log den Debug-Zugriff
         $this->oauthUtility->customlog('Debug-Seite wurde aufgerufen');
