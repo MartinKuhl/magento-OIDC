@@ -6,6 +6,7 @@ use Magento\Framework\App\ActionInterface;
 use Magento\Framework\App\RequestInterface;
 use Magento\Framework\Controller\ResultFactory;
 use Magento\Framework\Message\ManagerInterface;
+use Magento\Framework\UrlInterface;
 
 /**
  * OIDC Callback Controller for Admin Login
@@ -30,6 +31,7 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
     protected $request;
     protected $oauthUtility;
     protected $messageManager;
+    protected $url;
 
     public function __construct(
         \Magento\User\Model\UserFactory $userFactory,
@@ -37,7 +39,8 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
         ResultFactory $resultFactory,
         RequestInterface $request,
         \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
-        ManagerInterface $messageManager
+        ManagerInterface $messageManager,
+        UrlInterface $url
     ) {
         $this->userFactory = $userFactory;
         $this->authSession = $authSession;
@@ -45,6 +48,7 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
         $this->request = $request;
         $this->oauthUtility = $oauthUtility;
         $this->messageManager = $messageManager;
+        $this->url = $url;
     }
 
     /**
@@ -60,15 +64,10 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
         $this->oauthUtility->customlog("Email parameter: " . ($email ?? 'NULL'));
         
         if (empty($email)) {
-            $this->oauthUtility->customlog("ERROR: Email parameter is empty, redirecting to admin login");
-            
-            $this->messageManager->addErrorMessage(
-                __('Authentication fehlgeschlagen: Keine E-Mail-Adresse vom OIDC-Provider erhalten.')
+            $this->oauthUtility->customlog("ERROR: Email parameter is empty");
+            return $this->redirectToLoginWithError(
+                __('Authentifizierung fehlgeschlagen: Keine E-Mail-Adresse vom OIDC-Provider erhalten.')
             );
-            
-            $resultRedirect = $this->resultFactory->create(ResultFactory::TYPE_REDIRECT);
-            $resultRedirect->setPath('admin');
-            return $resultRedirect;
         }
 
         try {
@@ -81,15 +80,12 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
             if ($userCollection->getSize() === 0) {
                 $this->oauthUtility->customlog("ERROR: Admin user not found for email: " . $email);
                 
-                $this->messageManager->addErrorMessage(
+                return $this->redirectToLoginWithError(
                     __(
-                        'Admin-Zugang verweigert: Für die E-Mail-Adresse "%1" ist kein Administrator-Konto in Magento hinterlegt. '
-                        . 'Bitte wenden Sie sich an Ihren Systemadministrator.',
+                        'Admin-Zugang verweigert: Für die E-Mail-Adresse "%1" ist kein Administrator-Konto in Magento hinterlegt. Bitte wenden Sie sich an Ihren Systemadministrator.',
                         $email
                     )
                 );
-                
-                throw new \Exception('Admin user not found: ' . $email);
             }
 
             $user = $userCollection->getFirstItem();
@@ -99,15 +95,12 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
             if (!$user->getIsActive()) {
                 $this->oauthUtility->customlog("ERROR: Admin user is inactive (ID: " . $user->getId() . ")");
                 
-                $this->messageManager->addErrorMessage(
+                return $this->redirectToLoginWithError(
                     __(
-                        'Admin-Zugang verweigert: Das Administrator-Konto für "%1" ist deaktiviert. '
-                        . 'Bitte kontaktieren Sie Ihren Systemadministrator zur Aktivierung.',
+                        'Admin-Zugang verweigert: Das Administrator-Konto für "%1" ist deaktiviert. Bitte kontaktieren Sie Ihren Systemadministrator zur Aktivierung.',
                         $email
                     )
                 );
-                
-                throw new \Exception('Admin user is inactive');
             }
 
             // Perform login
@@ -141,20 +134,33 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
             $this->oauthUtility->customlog("EXCEPTION in OIDC admin callback: " . $e->getMessage());
             $this->oauthUtility->customlog("Stack trace: " . $e->getTraceAsString());
             
-            // Only show generic error if no specific error message was already set
-            if (!$this->messageManager->hasMessages()) {
-                $this->messageManager->addErrorMessage(
-                    __(
-                        'Die Anmeldung über Authelia ist fehlgeschlagen. '
-                        . 'Bitte versuchen Sie es erneut oder wenden Sie sich an Ihren Administrator.'
-                    )
-                );
-            }
-            
-            // Redirect to admin login on any error
-            $resultRedirect = $this->resultFactory->create(ResultFactory::TYPE_REDIRECT);
-            $resultRedirect->setPath('admin');
-            return $resultRedirect;
+            return $this->redirectToLoginWithError(
+                __(
+                    'Die Anmeldung über Authelia ist fehlgeschlagen. Bitte versuchen Sie es erneut oder wenden Sie sich an Ihren Administrator.'
+                )
+            );
         }
+    }
+
+    /**
+     * Redirect to admin login page with error message in URL
+     * Messages in URL are displayed on the login page via JavaScript or template
+     * 
+     * @param \Magento\Framework\Phrase $message
+     * @return \Magento\Framework\Controller\Result\Redirect
+     */
+    private function redirectToLoginWithError($message)
+    {
+        $resultRedirect = $this->resultFactory->create(ResultFactory::TYPE_REDIRECT);
+        
+        // Erstelle Admin-Login-URL mit Fehlerparameter
+        $loginUrl = $this->url->getUrl('admin', [
+            '_query' => [
+                'oidc_error' => base64_encode((string)$message)
+            ]
+        ]);
+        
+        $resultRedirect->setUrl($loginUrl);
+        return $resultRedirect;
     }
 }

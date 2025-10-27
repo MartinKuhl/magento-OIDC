@@ -1,0 +1,19 @@
+<?php
+/**
+ * Template to display OIDC error messages on admin login page
+ * 
+ * @var \MiniOrange\OAuth\Block\Adminhtml\OidcErrorMessage $block
+ */
+?>
+<?php if ($block->hasOidcError()): ?>
+<div class="message message-error error" style="margin-bottom: 20px;">
+    <div style="padding: 15px; background-color: #fff0f0; border: 1px solid #e22626; border-radius: 3px;">
+        <strong style="color: #e22626;">
+            <?= $block->escapeHtml(__('OIDC-Authentifizierung fehlgeschlagen')) ?>
+        </strong>
+        <p style="margin: 10px 0 0 0; color: #333;">
+            <?= $block->escapeHtml($block->getOidcErrorMessage()) ?>
+        </p>
+    </div>
+</div>
+<?php endif; ?>

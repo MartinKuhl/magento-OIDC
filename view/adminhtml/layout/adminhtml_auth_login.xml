@@ -3,14 +3,25 @@
     <update handle="admin_login" />
     <body>
         <!-- 
-            Defining our block and phtml file for adding a sso link
+            OIDC Error Message Block - Shows authentication errors
+            Displayed BEFORE the login form for better visibility
+        -->
+        <referenceContainer name="content">
+            <block class="MiniOrange\OAuth\Block\Adminhtml\OidcErrorMessage" 
+                   name="oidc_error_message" 
+                   template="MiniOrange_OAuth::oidc_error_message.phtml" 
+                   before="admin.login.container"/>
+        </referenceContainer>
+        
+        <!-- 
+            SSO Button Block - Adds OAuth/OIDC login button
             to the admin login page
         -->
         <referenceContainer name="form.buttons">
-             <block class="MiniOrange\OAuth\Block\OAuth" 
-                            name="miniorange.oauth.admin.link" 
-                            ifconfig="miniorange/oauth/showadminlink"
-                            template="adminssobutton.phtml" />
+            <block class="MiniOrange\OAuth\Block\OAuth" 
+                   name="miniorange.oauth.admin.link" 
+                   ifconfig="miniorange/oauth/showadminlink"
+                   template="adminssobutton.phtml" />
         </referenceContainer>
     </body>
 </page>
