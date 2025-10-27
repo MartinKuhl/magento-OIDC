@@ -7,7 +7,7 @@
 ?>
 <!-- BLOCK WIRD GELADEN! -->
 <div style="background: yellow; border: 3px solid red; padding: 20px; margin: 20px;">
-    <h1>DEBUG: Template wird geladen!</h1>
+    <h1 style="color: red;">DEBUG: Template wird geladen!</h1>
     <p><strong>Block Klasse:</strong> <?= get_class($block) ?></p>
     <p><strong>hasOidcError():</strong> <?= $block->hasOidcError() ? 'TRUE' : 'FALSE' ?></p>
     <p><strong>URL Parameter 'oidc_error':</strong> <?= $block->escapeHtml($block->getRequest()->getParam('oidc_error') ?: 'NICHT VORHANDEN') ?></p>
