@@ -130,4 +130,5 @@ class OAuthConstants
     const DATA_ADDED               = 'data_added';
     const PLUGIN_VERSION           = 'v4.2.0';
     const TIME_STAMP               = 'time_stamp';
+    const TEST_CONFIGURATION_OPT   = 'testConfig';
 }

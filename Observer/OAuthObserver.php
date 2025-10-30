@@ -96,11 +96,16 @@ class OAuthObserver implements ObserverInterface
     {
         switch ($op) {
             case $this->requestParams[0]:
-                // Admin login is now handled via OIDC callback flow
-                // through Controller/Adminhtml/Actions/Oidccallback.php
-                // Legacy LOGIN_ADMIN_OPT parameter handling removed
-                $this->oauthUtility->customlog('Admin login request detected but handled via OIDC callback');
+                if ($params['option']==OAuthConstants::LOGIN_ADMIN_OPT) {
+                    // Admin Login: wie bisher Callback (keine Änderung)
+                    // ggf. hier die neue Logik belassen
+                }
+                if ($params['option'] == OAuthConstants::TEST_CONFIGURATION_OPT) {
+                    // Test Konfiguration: Führe Test direkt aus!
+                    $this->testAction->execute();
+                }
                 break;
         }
     }
+
 }
