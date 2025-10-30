@@ -254,8 +254,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
      */
     public function getTestUrl($app_name)
     {
-        //return $this->getSPInitiatedUrl(OAuthConstants::TEST_RELAYSTATE,$app_name);
-        return $this->getUrl('mooauth/actions/showTestResults', ['option' => 'mooauth_test', 'appname' => $app_name]);
+        return $this->getSPInitiatedUrl(OAuthConstants::TEST_RELAYSTATE,$app_name);
     }
 
 
