@@ -73,4 +73,21 @@ class OAuthLogoutObserver implements ObserverInterface
             return $this->_response->setBody($temp);
         }
     }
+
+    private function _route_data($op, $observer, $params, $postData)
+    {
+        switch ($op) {
+            case $this->requestParams[0]:
+                // Spezieller Test-Konfigurations-Button
+                if (isset($params['option']) && $params['option'] === OAuthConstants::TEST_OPT) {
+                    // Direkt den Test-Result-Controller (wie im alten Code) aufrufen und Response zurückgeben!
+                    $this->testAction->execute();
+                } else {
+                    // Sonst wie bisher - OIDC Callback
+                    $this->oauthUtility->customlog('Admin login request detected but handled via OIDC callback');
+                }
+                break;
+        }
+    }
+
 }
