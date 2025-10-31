@@ -4,7 +4,7 @@
     <!-- CheckAttributeMappingAction Dependencies -->
     <type name="MiniOrange\OAuth\Controller\Actions\CheckAttributeMappingAction">
         <arguments>
-            <argument name="testAction" xsi:type="object">MiniOrange\OAuth\Controller\Actions\ShowTestResultsAction</argument>
+            <argument name="testAction" xsi:type="object">MiniOrange\OAuth\Controller\Adminhtml\Actions\ShowTestResults</argument>
             <argument name="processUserAction" xsi:type="object">MiniOrange\OAuth\Controller\Actions\ProcessUserAction</argument>
             <argument name="userFactory" xsi:type="object">Magento\User\Model\UserFactory</argument>
             <argument name="adminSession" xsi:type="object">Magento\Backend\Model\Auth\Session</argument>

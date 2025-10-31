@@ -45,7 +45,7 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
      * 
      * @param \Magento\Framework\App\Action\Context $context
      * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
-     * @param \MiniOrange\OAuth\Controller\Actions\ShowTestResultsAction $testAction
+     * @param \MiniOrange\OAuth\Controller\Adminhtml\Actions\ShowTestResults $testAction
      * @param \MiniOrange\OAuth\Controller\Actions\ProcessUserAction $processUserAction
      * @param \Magento\User\Model\UserFactory $userFactory
      * @param \Magento\Backend\Model\UrlInterface $backendUrl
@@ -53,7 +53,7 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
         \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
-        \MiniOrange\OAuth\Controller\Actions\ShowTestResultsAction $testAction,
+        \MiniOrange\OAuth\Controller\Adminhtml\Actions\ShowTestResults $testAction,
         \MiniOrange\OAuth\Controller\Actions\ProcessUserAction $processUserAction,
         \Magento\User\Model\UserFactory $userFactory,
         \Magento\Backend\Model\UrlInterface $backendUrl

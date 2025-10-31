@@ -5,7 +5,7 @@ use Magento\Framework\App\Request\Http;
 use Magento\Framework\App\RequestInterface;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Message\ManagerInterface;
-use MiniOrange\OAuth\Controller\Actions\ShowTestResultsAction;
+use MiniOrange\OAuth\Controller\Adminhtml\Actions\ShowTestResultsFactory;
 use MiniOrange\OAuth\Helper\OAuthMessages;
 use Magento\Framework\Event\Observer;
 use MiniOrange\OAuth\Controller\Actions\ReadAuthorizationResponse;
@@ -41,7 +41,7 @@ class OAuthObserver implements ObserverInterface
         OAuthUtility $oauthUtility,
         Http $httpRequest,
         RequestInterface $request,
-        ShowTestResultsAction $testAction
+        ShowTestResultsFactory $testActionFactory
     ) {
         //You can use dependency injection to get any class this observer may need.
         $this->messageManager = $messageManager;
@@ -51,7 +51,7 @@ class OAuthObserver implements ObserverInterface
         $this->currentControllerName = $httpRequest->getControllerName();
         $this->currentActionName = $httpRequest->getActionName();
         $this->request = $request;
-        $this->testAction = $testAction;
+        $this->testResultsFactory = $testResultsFactory;
     }
 
     /**
@@ -96,9 +96,10 @@ class OAuthObserver implements ObserverInterface
     {
         switch ($op) {
             case $this->requestParams[0]: // 'option'
-                if ($params['option'] == OAuthConstants::TEST_OAUTH_OPT) {
+                if ($params['option'] == OAuthConstants::TEST_CONFIG_OPT) {
                     // Test-Flow, NICHT redirecten!
-                    $this->testAction->execute();
+                    $testResults = $this->testResultsFactory->create();
+                    $testResults->execute();
                 } else if ($params['option']==OAuthConstants::LOGIN_ADMIN_OPT) {
                     // Echtes Admin-Login → adminLoginAction
                     $this->adminLoginAction->execute();

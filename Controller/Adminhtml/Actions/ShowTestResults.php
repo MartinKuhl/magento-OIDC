@@ -1,7 +1,8 @@
 <?php
 
-namespace MiniOrange\OAuth\Controller\Actions;
+namespace MiniOrange\OAuth\Controller\Adminhtml\Actions;
 
+use Magento\Backend\App\Action;
 use MiniOrange\OAuth\Helper\OAuthConstants;
 use MiniOrange\OAuth\Helper\Curl;
 use Magento\Framework\App\Config\ScopeConfigInterface;
@@ -16,7 +17,7 @@ use Magento\Store\Model\ScopeInterface;
  *
  * @todo - Move the html code to template files and pick it from there
  */
-class ShowTestResultsAction extends BaseAction
+class ShowTestResults extends Action
 {
     private $attrs;
     private $userEmail;
