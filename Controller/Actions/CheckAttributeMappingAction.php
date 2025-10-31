@@ -103,9 +103,21 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
         $flattenedAttrs = $this->flattenedUserInfoResponse;
         $userEmail = $this->userEmail;
         
+        $isTest = $this->oauthUtility->getStoreConfig(OAuthConstants::IS_TEST);
+
+        // Test-Konfiguration: Nicht ins Backend umleiten!
+        if ($isTest === true) {
+            $this->oauthUtility->setStoreConfig(OAuthConstants::IS_TEST, false);
+            $this->oauthUtility->flushCache();
+            return $this->testAction
+                ->setAttrs($flattenedAttrs)
+                ->setUserEmail($userEmail)
+                ->execute();
+        }
+
+        // Nur wenn KEIN Test, Admin-Logik und Redirect ausführen:
         $this->oauthUtility->customlog("=== CheckAttributeMappingAction: Processing authentication for: " . $userEmail);
         
-        // Check if user is an admin
         $isAdminLogin = $this->isAdminUser($userEmail);
         $this->oauthUtility->customlog("User type detection - Admin: " . ($isAdminLogin ? 'YES' : 'NO'));
         
