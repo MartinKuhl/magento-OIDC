@@ -95,17 +95,16 @@ class OAuthObserver implements ObserverInterface
     private function _route_data($op, $observer, $params, $postData)
     {
         switch ($op) {
-            case $this->requestParams[0]:
-                if ($params['option']==OAuthConstants::LOGIN_ADMIN_OPT) {
-                    // Admin Login: wie bisher Callback (keine Änderung)
-                    // ggf. hier die neue Logik belassen
-                }
-                if ($params['option'] == OAuthConstants::TEST_CONFIGURATION_OPT) {
-                    // Test Konfiguration: Führe Test direkt aus!
+            case $this->requestParams[0]: // 'option'
+                if ($params['option'] == OAuthConstants::TEST_OAUTH_OPT) {
+                    // Test-Flow, NICHT redirecten!
                     $this->testAction->execute();
+                } else if ($params['option']==OAuthConstants::LOGIN_ADMIN_OPT) {
+                    // Echtes Admin-Login → adminLoginAction
+                    $this->adminLoginAction->execute();
                 }
                 break;
         }
-    }
+}
 
 }
