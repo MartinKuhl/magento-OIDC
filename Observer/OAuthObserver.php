@@ -5,7 +5,7 @@ use Magento\Framework\App\Request\Http;
 use Magento\Framework\App\RequestInterface;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Message\ManagerInterface;
-use MiniOrange\OAuth\Controller\Adminhtml\Actions\ShowTestResultsFactory;
+use MiniOrange\OAuth\Controller\Adminhtml\Actions\ShowTestResults;
 use MiniOrange\OAuth\Helper\OAuthMessages;
 use Magento\Framework\Event\Observer;
 use MiniOrange\OAuth\Controller\Actions\ReadAuthorizationResponse;
@@ -41,7 +41,7 @@ class OAuthObserver implements ObserverInterface
         OAuthUtility $oauthUtility,
         Http $httpRequest,
         RequestInterface $request,
-        ShowTestResultsFactory $testActionFactory
+        ShowTestResults $testAction
     ) {
         //You can use dependency injection to get any class this observer may need.
         $this->messageManager = $messageManager;
@@ -51,7 +51,7 @@ class OAuthObserver implements ObserverInterface
         $this->currentControllerName = $httpRequest->getControllerName();
         $this->currentActionName = $httpRequest->getActionName();
         $this->request = $request;
-        $this->testResultsFactory = $testResultsFactory;
+        $this->testAction = $testAction;
     }
 
     /**
