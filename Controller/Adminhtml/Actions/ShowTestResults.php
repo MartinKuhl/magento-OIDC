@@ -183,7 +183,7 @@ class ShowTestResults extends Action
     private function processTemplateContent()
     {
         $this->commonBody = str_replace("{{email}}", $this->userEmail ?? '', $this->commonBody);
-        $tableContent = !array_filter($this->attrs) ? "No Attributes Received." : $this->getTableContent();
+        $tableContent = !array_filter($this->attrs ?? []) ? "No Attributes Received." : $this->getTableContent();
         $this->oauthUtility->customlog("ShowTestResultsAction: attribute".json_encode($this->attrs)) ;
         $this->commonBody = str_replace("{{tablecontent}}", $tableContent ?? '', $this->commonBody);
         $this->template = str_replace("{{commonbody}}", $this->commonBody ?? '', $this->template);
