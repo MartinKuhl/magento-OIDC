@@ -5,7 +5,7 @@ use Magento\Framework\App\Request\Http;
 use Magento\Framework\App\RequestInterface;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Message\ManagerInterface;
-use MiniOrange\OAuth\Controller\Adminhtml\Actions\ShowTestResults;
+use MiniOrange\OAuth\Helper\TestResults;
 use MiniOrange\OAuth\Helper\OAuthMessages;
 use Magento\Framework\Event\Observer;
 use MiniOrange\OAuth\Controller\Actions\ReadAuthorizationResponse;
@@ -41,7 +41,7 @@ class OAuthObserver implements ObserverInterface
         OAuthUtility $oauthUtility,
         Http $httpRequest,
         RequestInterface $request,
-        ShowTestResults $testAction
+        TestResults $testResults 
     ) {
         //You can use dependency injection to get any class this observer may need.
         $this->messageManager = $messageManager;
@@ -51,7 +51,7 @@ class OAuthObserver implements ObserverInterface
         $this->currentControllerName = $httpRequest->getControllerName();
         $this->currentActionName = $httpRequest->getActionName();
         $this->request = $request;
-        $this->testAction = $testAction;
+       $this->testResults = $testResults;
     }
 
     /**
@@ -77,7 +77,8 @@ class OAuthObserver implements ObserverInterface
             }
         } catch (\Exception $e) {
             if ($isTest) { // show a failed validation screen
-                $this->testAction->setOAuthException($e)->setHasExceptionOccurred(true)->execute();
+                $output = $this->testResults->output($e, true);
+                echo $output;
             }
             $this->messageManager->addErrorMessage($e->getMessage());
             $this->oauthUtility->customlog($e->getMessage());

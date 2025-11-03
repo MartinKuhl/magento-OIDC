@@ -4,6 +4,7 @@ namespace MiniOrange\OAuth\Controller\Actions;
 
 use MiniOrange\OAuth\Helper\Exception\MissingAttributesException;
 use MiniOrange\OAuth\Helper\OAuthConstants;
+use MiniOrange\OAuth\Helper\TestResults;
 use Magento\Framework\App\Action\HttpPostActionInterface;
 
 /**
@@ -34,7 +35,7 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
     private $checkIfMatchBy;
     private $groupName;
 
-    private $testAction;
+    private $testResults;
     private $processUserAction;
 
     protected $userFactory;
@@ -45,7 +46,7 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
      * 
      * @param \Magento\Framework\App\Action\Context $context
      * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
-     * @param \MiniOrange\OAuth\Controller\Adminhtml\Actions\ShowTestResults $testAction
+     * @param \MiniOrange\OAuth\Helper\TestResults $testResults
      * @param \MiniOrange\OAuth\Controller\Actions\ProcessUserAction $processUserAction
      * @param \Magento\User\Model\UserFactory $userFactory
      * @param \Magento\Backend\Model\UrlInterface $backendUrl
@@ -53,7 +54,7 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
         \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
-        \MiniOrange\OAuth\Controller\Adminhtml\Actions\ShowTestResults $testAction,
+        \MiniOrange\OAuth\Helper\TestResults $testResults, 
         \MiniOrange\OAuth\Controller\Actions\ProcessUserAction $processUserAction,
         \Magento\User\Model\UserFactory $userFactory,
         \Magento\Backend\Model\UrlInterface $backendUrl
@@ -81,7 +82,7 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
         
         $this->checkIfMatchBy = $oauthUtility->getStoreConfig(OAuthConstants::MAP_MAP_BY);
         
-        $this->testAction = $testAction;
+        $this->testResults = $testResults;
         $this->processUserAction = $processUserAction;
         $this->userFactory = $userFactory;
         $this->backendUrl = $backendUrl;
@@ -227,7 +228,17 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
             $this->oauthUtility->customlog("Test mode enabled - showing attribute test results");
             $this->oauthUtility->setStoreConfig(OAuthConstants::IS_TEST, false);
             $this->oauthUtility->flushCache();
-            return $this->testAction->setAttrs($flattenedattrs)->setUserEmail($email)->execute();
+            
+            // Hilfe: Die Daten werden an den Helper übergeben!
+            $output = $this->testResults->output(null, false, [
+                'mail'    => $email,
+                'userinfo'=> $flattenedattrs
+            ]);
+
+            // Im Controller:
+            return $this->getResponse()->setBody($output);
+            // Im Observer ggf. direkt:
+            // echo $output;
         } else {
             // Production mode - process user login/registration
             $this->oauthUtility->customlog("Production mode - processing user login/registration");
