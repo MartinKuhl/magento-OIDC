@@ -29,7 +29,7 @@ class OAuthObserver implements ObserverInterface
     private $logger;
     private $readAuthorizationResponse;
     private $oauthUtility;
-    private $testAction;
+    private TestResults $testResults;
     private $currentControllerName;
     private $currentActionName;
     private $request;
@@ -51,7 +51,7 @@ class OAuthObserver implements ObserverInterface
         $this->currentControllerName = $httpRequest->getControllerName();
         $this->currentActionName = $httpRequest->getActionName();
         $this->request = $request;
-       $this->testResults = $testResults;
+        $this->testResults = $testResults;
     }
 
     /**
@@ -98,9 +98,20 @@ class OAuthObserver implements ObserverInterface
         switch ($op) {
             case $this->requestParams[0]: // 'option'
                 if ($params['option'] == OAuthConstants::TEST_CONFIG_OPT) {
-                    // Test-Flow, NICHT redirecten!
-                    $testResults = $this->testResultsFactory->create();
-                    $testResults->execute();
+                    // Test-Flow: Ausgabe über Helper
+                    $output = $this->testResults->output(
+                        null,  // kein Exception
+                        false, // kein Fehlerfall
+                        [
+                            'mail'     => $params['mail'] ?? '',
+                            'userinfo' => $params['userinfo'] ?? [],
+                            'debug'    => $params // <-- gesamtes Array für Debug
+                        ]
+                    );
+                    // Ausgabe im Observer-Kontext (je nach Bedarf):
+                    echo $output;        
+                    // Oder, falls ein Response-Objekt existiert:
+                    // $this->getResponse()->setBody($output);
                 } else if ($params['option']==OAuthConstants::LOGIN_ADMIN_OPT) {
                     // Echtes Admin-Login → adminLoginAction
                     $this->adminLoginAction->execute();
