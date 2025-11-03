@@ -4,6 +4,7 @@ namespace MiniOrange\OAuth\Controller\Adminhtml\Actions;
 
 use Magento\Backend\App\Action;
 use MiniOrange\OAuth\Helper\OAuthConstants;
+use MiniOrange\OAuth\Helper\OAuthUtility;
 use MiniOrange\OAuth\Helper\Curl;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Store\Model\ScopeInterface;
@@ -24,6 +25,8 @@ class ShowTestResults extends Action
     protected $satus;
 
     private $oauthException;
+
+    private OAuthUtility $oauthUtility;
     private $hasExceptionOccurred;
 
     protected $request;
@@ -39,6 +42,7 @@ class ShowTestResults extends Action
                 \Magento\Framework\App\Request\Http $request,
                 ScopeConfigInterface $scopeConfig
          ){
+                $this->oauthUtility = $oauthUtility;
                 parent::__construct($context, $oauthUtility);
                 $this->scopeConfig = $scopeConfig;
                 $this->request = $request;
