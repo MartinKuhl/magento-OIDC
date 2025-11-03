@@ -182,11 +182,11 @@ class ShowTestResults extends Action
      */
     private function processTemplateContent()
     {
-        $this->commonBody = str_replace("{{email}}", $this->userEmail, $this->commonBody);
+        $this->commonBody = str_replace("{{email}}", $this->userEmail ?? '', $this->commonBody);
         $tableContent = !array_filter($this->attrs) ? "No Attributes Received." : $this->getTableContent();
         $this->oauthUtility->customlog("ShowTestResultsAction: attribute".json_encode($this->attrs)) ;
-        $this->commonBody = str_replace("{{tablecontent}}", $tableContent, $this->commonBody);
-        $this->template = str_replace("{{commonbody}}", $this->commonBody, $this->template);
+        $this->commonBody = str_replace("{{tablecontent}}", $tableContent ?? '', $this->commonBody);
+        $this->template = str_replace("{{commonbody}}", $this->commonBody ?? '', $this->template);
     }
 
 
@@ -203,7 +203,7 @@ class ShowTestResults extends Action
             }
 
             if (!in_array(null, $value)) {
-                $tableContent .= str_replace("{{key}}", $key, str_replace(
+                $tableContent .= str_replace("{{key}}", $key ?? '', str_replace(
                     "{{value}}",
                     implode("<br/>", $value),
                     $this->tableContent
@@ -220,7 +220,7 @@ class ShowTestResults extends Action
      */
     private function processTemplateFooter()
     {
-        $this->template = str_replace("{{footer}}", $this->footer, $this->template);
+        $this->template = str_replace("{{footer}}", $this->footer ?? '', $this->template);
     }
 
 
