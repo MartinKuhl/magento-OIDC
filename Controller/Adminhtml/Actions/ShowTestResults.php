@@ -34,7 +34,7 @@ class ShowTestResults extends Action
     private $status;
 
     public function __construct(
-              \Magento\Framework\App\Action\Context $context,
+              \Magento\Backend\App\Action\Context $context,
               \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
                 \Magento\Framework\App\Request\Http $request,
                 ScopeConfigInterface $scopeConfig
