@@ -11,7 +11,7 @@
 	$jwksURL = $this ->getJwksUrl();
     $x509Certificate = $this->getX509Cert();
 	$disabled = !$isEnabled ? "disabled" : "";
-	$testUrl = $this->getTestUrl($appName, $block->getFormKey());
+	$testUrl = $this->getTestUrl();
 	$premiumlink = $this->getExtensionPageUrl('upgrade');
 	$isJwksUrl = empty($jwksURL) ? "" : "checked";
  	$isCertificate = empty($x509Certificate) ? "" : "checked";
