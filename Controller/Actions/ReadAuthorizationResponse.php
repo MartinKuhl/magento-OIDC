@@ -237,6 +237,15 @@ class ReadAuthorizationResponse extends BaseAction
             $userInfoResponseData->relayState = $relayState;
         }
 
+        $isTest = ($this->oauthUtility->getStoreConfig(OAuthConstants::IS_TEST) == true)
+            || (isset($params['option']) && $params['option'] === OAuthConstants::TEST_OAUTH_OPT)
+            || (strpos($relayState, 'showTestResults') !== false);
+
+        if ($isTest) {
+            // Es ist ein TEST-Flow: Redirect zu Test-Ergebnis-Controller!
+            return $this->_redirect($relayState);
+        }
+
         $chk_enable_log ? $this->oauthUtility->customlog("ReadAuthorizationResponse: Calling processResponseAction->execute()") : NULL;
         $result = $this->processResponseAction->setUserInfoResponse($userInfoResponseData)->execute();
 
