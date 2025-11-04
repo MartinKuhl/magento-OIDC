@@ -7,23 +7,24 @@ use MiniOrange\OAuth\Helper\OAuthConstants;
 use MiniOrange\OAuth\Helper\SessionHelper;
 use Magento\Backend\App\Action;
 use MiniOrange\OAuth\Helper\OAuthUtility;
+use MiniOrange\OAuth\Controller\Actions\BaseAction;
 
 /**
  * Handles generation and sending of AuthnRequest to the IDP
  * for authentication. AuthnRequest is generated and user is
  * redirected to the IDP for authentication.
  */
-class sendAuthorizationRequest extends Action
+class sendAuthorizationRequest extends BaseAction
 {
-    private $oauthUtility;
+    protected $oauthUtility;
 
     public function __construct(
             \Magento\Backend\App\Action\Context $context,
-            OAuthUtility $oauthUtility
+            \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
             // ggf. weitere DI-Objekte
         ) {
-            $this->oauthUtility = $oauthUtility;
-            parent::__construct($context);
+            //$this->oauthUtility = $oauthUtility;
+             parent::__construct($context, $oauthUtility /* , ...weitere Argumente */);
         }
 
     /**
