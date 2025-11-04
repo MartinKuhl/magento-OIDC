@@ -79,6 +79,7 @@ class ReadAuthorizationResponse extends BaseAction
         // Extrahieren der ursprünglichen Relay-State, Session-ID und App-Name
         $parts = explode('|', $combinedRelayState);
         $relayState = $parts[0];
+        $this->oauthUtility->customlog("RelayState after return from OIDC: " . $relayState);
         $originalSessionId = isset($parts[1]) ? $parts[1] : '';
         $app_name = isset($parts[2]) ? $parts[2] : '';
         
