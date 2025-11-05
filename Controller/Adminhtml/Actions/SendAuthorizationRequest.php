@@ -134,7 +134,15 @@ class sendAuthorizationRequest extends BaseAction
         $responseType = OAuthConstants::CODE;
         $redirectURL = $this->oauthUtility->getCallBackUrl();
         
-        
+        // Sammle alle relayState-Komponenten
+        $relayState = $isFromPopup
+            ? $this->oauthUtility->getBaseUrl() . "checkout"
+            : (isset($params['relayState']) ? $params['relayState'] : '/');
+        $currentSessionId = session_id();
+        //$app_name = ...; // wie gehabt
+        $relayState = $relayState . '|' . $currentSessionId . '|' . $app_name;
+
+
         if ($isTest) {
             $testKey = bin2hex(random_bytes(16));
             $relayState = $this->getUrl(
@@ -147,7 +155,7 @@ class sendAuthorizationRequest extends BaseAction
         $this->oauthUtility->customlog("Test relayState FINAL: " . $relayState);
 
         //generate the authorization request
-        $authorizationRequest = (new AuthorizationRequest($clientID, $scope, $authorizeURL, $responseType, $redirectURL, $relayState,$params))->build();
+        $authorizationRequest = (new AuthorizationRequest($clientID, $scope, $authorizeURL, $responseType, $redirectURL, $relayState, $params))->build();
         $chk_enable_log ? $this->oauthUtility->customlog("SendAuthorizationRequest:  Authorization Request: ".$authorizationRequest) : NULL;
         
         // send oauth request over
