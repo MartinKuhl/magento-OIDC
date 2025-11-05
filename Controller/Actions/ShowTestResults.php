@@ -2,12 +2,13 @@
 
 namespace MiniOrange\OAuth\Controller\Actions;
 
-use Magento\Backend\App\Action;
 use MiniOrange\OAuth\Helper\OAuthConstants;
 use MiniOrange\OAuth\Helper\OAuthUtility;
 use MiniOrange\OAuth\Helper\Curl;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Store\Model\ScopeInterface;
+use Magento\Framework\App\Action\Action;
+use Magento\Framework\App\Action\Context;
 
 
 /**
@@ -37,16 +38,16 @@ class ShowTestResults extends Action
     private $status;
 
     public function __construct(
-              \Magento\Backend\App\Action\Context $context,
-              \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
-                \Magento\Framework\App\Request\Http $request,
-                ScopeConfigInterface $scopeConfig
-         ){
-                $this->oauthUtility = $oauthUtility;
-                parent::__construct($context, $oauthUtility);
-                $this->scopeConfig = $scopeConfig;
-                $this->request = $request;
-         }
+        Context $context,
+        OAuthUtility $oauthUtility,
+        \Magento\Framework\App\Request\Http $request,
+        ScopeConfigInterface $scopeConfig
+    ) {
+        $this->oauthUtility = $oauthUtility;
+        $this->scopeConfig = $scopeConfig;
+        $this->request = $request;
+        parent::__construct($context);
+    }
 
     private $template = '<div style="font-family:Calibri;padding:0 3%;">{{header}}{{commonbody}}{{footer}}</div>';
     private $successHeader  = ' <div style="color: #3c763d;background-color: #dff0d8; padding:2%;margin-bottom:20px;text-align:center;
