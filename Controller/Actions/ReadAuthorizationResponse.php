@@ -22,14 +22,16 @@ class ReadAuthorizationResponse extends BaseAction
     private $REQUEST;
     private $POST;
     private $processResponseAction;
+    protected $_url;
 
     public function __construct(
         Context $context,
         OAuthUtility $oauthUtility,
-        ProcessResponseAction $processResponseAction
+        ProcessResponseAction $processResponseAction,
+        \Magento\Framework\UrlInterface $url
     ) {
-        //You can use dependency injection to get any class this observer may need.
         $this->processResponseAction = $processResponseAction;
+        $this->_url = $url;
         parent::__construct($context, $oauthUtility);
     }
 
@@ -83,6 +85,24 @@ class ReadAuthorizationResponse extends BaseAction
         $originalSessionId = isset($parts[1]) ? $parts[1] : '';
         $app_name = isset($parts[2]) ? $parts[2] : '';
         
+        // *** HIER DER TESTFALL-REDIRECT-BLOCK ***
+        $isTest = (
+            ($this->oauthUtility->getStoreConfig(OAuthConstants::IS_TEST) == true)
+            || (isset($params['option']) && $params['option'] === OAuthConstants::TEST_CONFIG_OPT)
+            || (strpos($relayState, 'showTestResults') !== false)
+        );
+
+        if ($isTest) {
+            // Falls der relayState keine vollständige URL ist, dann baue sie absolut:
+            if (strpos($relayState, 'http') !== 0) {
+                $frontendUrl = $this->_url->getUrl('mooauth/actions/showTestResults', ['key' => $parts[1] ?? '']);
+            } else {
+                $frontendUrl = $relayState;
+            }
+            return $this->_redirect($frontendUrl);
+        }
+        // *** ENDE TESTFALL-REDIRECT ***
+
         $chk_enable_log ? $this->oauthUtility->customlog("ReadAuthorizationResponse: Original relayState: " . $relayState) : NULL;
         $chk_enable_log ? $this->oauthUtility->customlog("ReadAuthorizationResponse: Original sessionId: " . $originalSessionId) : NULL;
         $chk_enable_log ? $this->oauthUtility->customlog("ReadAuthorizationResponse: App name: " . $app_name) : NULL;
@@ -236,15 +256,6 @@ class ReadAuthorizationResponse extends BaseAction
             $userInfoResponseData['relayState'] = $relayState;
         } else {
             $userInfoResponseData->relayState = $relayState;
-        }
-
-        $isTest = ($this->oauthUtility->getStoreConfig(OAuthConstants::IS_TEST) == true)
-            || (isset($params['option']) && $params['option'] === OAuthConstants::TEST_CONFIG_OPT)
-            || (strpos($relayState, 'showTestResults') !== false);
-
-        if ($isTest) {
-            // Es ist ein TEST-Flow: Redirect zu Test-Ergebnis-Controller!
-            return $this->_redirect($relayState);
         }
 
         $chk_enable_log ? $this->oauthUtility->customlog("ReadAuthorizationResponse: Calling processResponseAction->execute()") : NULL;

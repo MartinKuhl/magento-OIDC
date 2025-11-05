@@ -1,6 +1,6 @@
 <?php
 
-namespace MiniOrange\OAuth\Controller\Adminhtml\Actions;
+namespace MiniOrange\OAuth\Controller\Actions;
 
 use Magento\Backend\App\Action;
 use MiniOrange\OAuth\Helper\OAuthConstants;
