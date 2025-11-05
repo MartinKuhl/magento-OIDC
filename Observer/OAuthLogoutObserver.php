@@ -40,7 +40,7 @@ class OAuthLogoutObserver implements ObserverInterface
         \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
         \Magento\Framework\App\Request\Http $httpRequest,
         \Magento\Framework\App\RequestInterface $request,
-        \MiniOrange\OAuth\Controller\Adminhtml\Actions\ShowTestResults $testAction,
+        \MiniOrange\OAuth\Controller\Actions\ShowTestResults $testAction,
         RedirectInterface $redirect,
         ResponseInterface $response
     ) {
