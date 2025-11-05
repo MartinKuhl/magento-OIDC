@@ -97,10 +97,8 @@ class SendAuthorizationRequest extends BaseAction
         // Testfall: relayState auf Testergebnis überschreiben
         if ($isTest) {
             $testKey = bin2hex(random_bytes(16));
-            $relayState = $this->urlBuilder->getUrl(
-                'mooauth/actions/showTestResults',
-                ['key' => $testKey]
-            );
+            $baseUrl = $this->oauthUtility->getBaseUrl();
+            $relayState = $baseUrl . 'mooauth/actions/showTestResults/key/' . $testKey . '/';
             $this->oauthUtility->customlog("SendAuthorizationRequest: Test-Flow, setting relayState to: " . $relayState);
         }
 
