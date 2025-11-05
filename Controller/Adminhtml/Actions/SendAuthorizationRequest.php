@@ -126,15 +126,6 @@ class sendAuthorizationRequest extends BaseAction
         if (!$clientDetails["authorize_endpoint"]) {
              return;
          }
-    
-            if ($isTest) {
-            $testKey = bin2hex(random_bytes(16));
-            $relayState = $this->getUrl(
-                'mooauth/actions/showTestResults',
-                ['key' => $testKey]
-            );
-            $this->oauthUtility->customlog("SendAuthorizationRequest: Test-Flow, setting relayState to: " . $relayState);
-        }
 
         //get required values from the database
         $clientID = $clientDetails["clientID"];
@@ -143,11 +134,23 @@ class sendAuthorizationRequest extends BaseAction
         $responseType = OAuthConstants::CODE;
         $redirectURL = $this->oauthUtility->getCallBackUrl();
         
+        
+        if ($isTest) {
+            $testKey = bin2hex(random_bytes(16));
+            $relayState = $this->getUrl(
+                'mooauth/actions/showTestResults',
+                ['key' => $testKey]
+            );
+            $this->oauthUtility->customlog("SendAuthorizationRequest: Test-Flow, setting relayState to: " . $relayState);
+        }
+
+        $this->oauthUtility->customlog("Test relayState FINAL: " . $relayState);
+
         //generate the authorization request
         $authorizationRequest = (new AuthorizationRequest($clientID, $scope, $authorizeURL, $responseType, $redirectURL, $relayState,$params))->build();
         $chk_enable_log ? $this->oauthUtility->customlog("SendAuthorizationRequest:  Authorization Request: ".$authorizationRequest) : NULL;
+        
         // send oauth request over
-        $this->oauthUtility->customlog("Test relayState FINAL: " . $relayState);
         return $this->sendHTTPRedirectRequest($authorizationRequest, $authorizeURL,$relayState,$params);
     }
 }
