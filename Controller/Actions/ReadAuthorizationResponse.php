@@ -41,9 +41,15 @@ class ReadAuthorizationResponse extends BaseAction
         if (!isset($params['code'])) {
             $relayState = isset($params['relayState']) ? $params['relayState'] : '';
             if (isset($params['error'])) {
-                return $this->sendHTTPRedirectRequest('?error=' . urlencode($params['error']), $this->oauthUtility->getBaseUrl());
+                $errorMsg = htmlspecialchars($params['error_description'] ?? $params['error']);
+                return $this->getResponse()->setBody(
+                    "<div style='color:#a94442; background:#f2dede; padding:2em; text-align:center;'>" .
+                    "<h2>OIDC Fehler: " . $errorMsg . "</h2>" .
+                    "<p>Bitte prüfen Sie Ihre OIDC-Konfiguration (Scope, Client, Redirect URI, etc.) oder wenden Sie sich an den Administrator.</p>" .
+                    "<div><button onclick='window.close()'>Fenster schließen</button></div>" .
+                    "</div>"
+                );
             }
-            return $this->sendHTTPRedirectRequest('?error=code+not+received', $this->oauthUtility->getBaseUrl(), $relayState, $params);
         }
 
         $authorizationCode = $params['code'];
