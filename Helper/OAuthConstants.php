@@ -27,7 +27,7 @@ class OAuthConstants
 
     // request option parameter values
     const LOGIN_ADMIN_OPT      = 'oauthLoginAdminUser';
-    const TEST_CONFIG_OPT      = 'testConfig';
+    const TEST_CONFIG_OPT      = 'mooauth_test'; //'testConfig';
     const TEST_OPT             = 'mooauth_test';
 
     //database keys

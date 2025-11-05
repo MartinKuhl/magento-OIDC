@@ -239,7 +239,7 @@ class ReadAuthorizationResponse extends BaseAction
         }
 
         $isTest = ($this->oauthUtility->getStoreConfig(OAuthConstants::IS_TEST) == true)
-            || (isset($params['option']) && $params['option'] === OAuthConstants::TEST_OAUTH_OPT)
+            || (isset($params['option']) && $params['option'] === OAuthConstants::TEST_CONFIG_OPT)
             || (strpos($relayState, 'showTestResults') !== false);
 
         if ($isTest) {
