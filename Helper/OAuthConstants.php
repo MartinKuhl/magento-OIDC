@@ -29,7 +29,7 @@ class OAuthConstants
     const LOGIN_ADMIN_OPT      = 'oauthLoginAdminUser';
     const TEST_CONFIG_OPT      = 'mooauth_test'; //'testConfig';
     const TEST_OPT             = 'mooauth_test';
-    const TEST_OAUTH_OPT       = 'mooauth_test';
+    const TEST_OAUTH_OPT       = 'mooauth_test'; //should be removed later
 
     //database keys
 
