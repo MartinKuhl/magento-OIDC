@@ -68,6 +68,7 @@ class ShowTestResults extends Action
         $key = $this->request->getParam('key');
         $attrs = $_SESSION['mooauth_test_results'][$key] ?? null;
         $this->setAttrs($attrs);
+        $this->setUserEmail($attrs['email']);
 
         if (ob_get_contents()) {ob_end_clean();}
         $this->oauthUtility->customlog("ShowTestResultsAction: execute");
