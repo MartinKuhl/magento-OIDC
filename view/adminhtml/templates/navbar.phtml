@@ -5,24 +5,20 @@ use MiniOrange\OAuth\Helper\OAuthConstants;
 
 // initialize all variables
 $oauthsettings = $this->getExtensionPageUrl('oauthsettings');
-$account = $this->getExtensionPageUrl('account');
 $signinsettings = $this->getExtensionPageUrl('signinsettings');
 $attrsettings = $this->getExtensionPageUrl('attrsettings');
-$rolesettings = $this->getExtensionPageUrl('rolesettings');
-$support = $this->getExtensionPageUrl('support');
-$pricing = $this->getExtensionPageUrl('upgrade');
 $activeTab = $this->getCurrentActiveTab();
 $checkDataAdded = $this->checkDataAdded();
 
 if($checkDataAdded == null)
 { 
     $timeStamp = $this->getTimeStamp();
-    $currentAdminUser =  $this->getCurrentAdminUser();  
+    $currentAdminUser = $this->getCurrentAdminUser();  
     $adminEmail = $currentAdminUser['email'];
     $domain = $this->getBaseUrl();
     $miniorangeAccountEmail = $this->getCustomerEmail();
     $pluginFirstPageVisit = $activeTab;
-    $environmentName =  $this->getEdition();
+    $environmentName = $this->getEdition();
     $environmentVersion = $this->getProductVersion();
     $freeInstalledDate = $this->getCurrentDate();
     $identityProvider = '';
@@ -30,32 +26,28 @@ if($checkDataAdded == null)
     $testFailed = '';
     $autoCreateLimit = ''; 
 
-    
-   Curl::submit_to_magento_team(
-    $timeStamp,
-     $adminEmail,
-   $domain,
-   $miniorangeAccountEmail,
-   $pluginFirstPageVisit,
-   $environmentName,
-   $environmentVersion,
-   $freeInstalledDate,
-   $identityProvider,
-   $testSuccessful,
-   $testFailed,
-   $autoCreateLimit);
+    Curl::submit_to_magento_team(
+        $timeStamp,
+        $adminEmail,
+        $domain,
+        $miniorangeAccountEmail,
+        $pluginFirstPageVisit,
+        $environmentName,
+        $environmentVersion,
+        $freeInstalledDate,
+        $identityProvider,
+        $testSuccessful,
+        $testFailed,
+        $autoCreateLimit
+    );
 
-   $this->dataAdded();
+    $this->dataAdded();
 }
 
-echo'	<div style=" padding: 0 1%;">
+echo'   <div style=" padding: 0 1%;">
             <div class="topnav" id="myTopnav">
                 <a class="nav-tab ' . $block->escapeHtmlAttr($activeTab == 'oauthsettings' ? 'active' : '') . '" href="'.$block->escapeUrl($oauthsettings).'"> OAuth Settings</a>
                 <a class="nav-tab ' . $block->escapeHtmlAttr($activeTab == 'signinsettings' ? 'active' : ''). '" href="' .$block->escapeUrl($signinsettings).'"> Sign In Settings</a>
                 <a class="nav-tab ' . $block->escapeHtmlAttr($activeTab == 'attrsettings' ? 'active' : '') .'" href="'. $block->escapeUrl($attrsettings). '"> Attribute Mapping</a>
-                <a class="nav-tab ' . $block->escapeHtmlAttr($activeTab == 'rolesettings' ? 'active' : '') . '" href="' . $block->escapeUrl($rolesettings). '"> Role Mapping</a>
-                <a class="nav-tab ' . $block->escapeHtmlAttr($activeTab == 'account' ? 'active' : '') . '" href="' . $block->escapeUrl($account) . '"> Account</a>
-                <a class="nav-tab ' . $block->escapeHtmlAttr($activeTab == 'upgrade' ? 'active' : '') . '" href="' . $block->escapeUrl($pricing) . '"> Upgrade</a>
-
             </div>
         </div>';

@@ -73,7 +73,7 @@ function mosp_valid(f) {
 }
 
 function showTestWindow() {
-    var myWindow = window.open(testURL, "TEST OAUTH", "scrollbars=1 width=800, height=600");
+    var myWindow = window.open(testURL + "?option=mooauth_test", "TEST OAUTH", "scrollbars=1 width=800, height=600");
 }
 
 function mooauth_upgradeform(planType){

@@ -9,7 +9,7 @@ use MiniOrange\OAuth\Helper\OAuthConstants;
  */
 class Curl
 {
-
+    
     public static function create_customer($email, $company, $password, $phone = '', $first_name = '', $last_name = '')
     {
         $url = OAuthConstants::HOSTNAME . '/moas/rest/customer/add';
@@ -106,81 +106,80 @@ class Curl
         return true;
     }
 
-//Tracking admin email,firstname and lastname.
-public static function submit_to_magento_team(
-    $timeStamp,
-    $adminEmail,
-    $domain,
-    $miniorangeAccountEmail,
-    $pluginFirstPageVisit,
-    $environmentName,
-    $environmentVersion,
-    $freeInstalledDate,
-    $identityProvider,
-    $testSuccessful,
-    $testFailed,
-    $autoCreateLimit
-    ) {
-    $url = OAuthConstants::PLUGIN_PORTAL_HOSTNAME . "/api/tracking";
-    $customerKey = OAuthConstants::DEFAULT_CUSTOMER_KEY;
-    $apiKey = OAuthConstants::DEFAULT_API_KEY;
+    //Tracking admin email,firstname and lastname.
+    public static function submit_to_magento_team(
+        $timeStamp,
+        $adminEmail,
+        $domain,
+        $miniorangeAccountEmail,
+        $pluginFirstPageVisit,
+        $environmentName,
+        $environmentVersion,
+        $freeInstalledDate,
+        $identityProvider,
+        $testSuccessful,
+        $testFailed,
+        $autoCreateLimit
+        ) {
+        $url = OAuthConstants::PLUGIN_PORTAL_HOSTNAME . "/api/tracking";
+        $customerKey = OAuthConstants::DEFAULT_CUSTOMER_KEY;
+        $apiKey = OAuthConstants::DEFAULT_API_KEY;
 
-    // $timeStamp = time();
-    $pluginName = OAuthConstants::MODULE_TITLE;
-    $pluginVersion = OAuthConstants::PLUGIN_VERSION;
-    $isFreeInstalled = 'Yes';
-    $isTrialInstalled = '';
-    $trialInstalledDate = '';
-    $isPremiumInstalled = '';
-    $premiumInstalledDate = '';
-    $isSandboxInstalled = '';
-    $sandboxInstalledDate = '';
-    $pluginPlan = '';
-    $serviceProvider = '';
-    $backendMethod = '';
-    $frontendMethod = '';
-    $other = '';
+        // $timeStamp = time();
+        $pluginName = OAuthConstants::MODULE_TITLE;
+        $pluginVersion = OAuthConstants::PLUGIN_VERSION;
+        $isFreeInstalled = 'Yes';
+        $isTrialInstalled = '';
+        $trialInstalledDate = '';
+        $isPremiumInstalled = '';
+        $premiumInstalledDate = '';
+        $isSandboxInstalled = '';
+        $sandboxInstalledDate = '';
+        $pluginPlan = '';
+        $serviceProvider = '';
+        $backendMethod = '';
+        $frontendMethod = '';
+        $other = '';
 
-    $fields = array(
-        'timeStamp' => $timeStamp,
-        'adminEmail' => $adminEmail,
-        'domain' => $domain,
-        'miniorangeAccountEmail' => $miniorangeAccountEmail,
-        'pluginName' => $pluginName,
-        'pluginVersion' => $pluginVersion,
-        'pluginFirstPageVisit' => $pluginFirstPageVisit,
-        'environmentName' => $environmentName,
-        'environmentVersion' => $environmentVersion,
-        'IsFreeInstalled' => $isFreeInstalled,
-        'FreeInstalledDate' => $freeInstalledDate,
-        'IsTrialInstalled' => $isTrialInstalled,
-        'TrialInstalledDate' => $trialInstalledDate,
-        'IsPremiumInstalled' => $isPremiumInstalled,
-        'PremiumInstalledDate' => $premiumInstalledDate,
-        'IsSandboxInstalled' => $isSandboxInstalled,
-        'SandboxInstalledDate' => $sandboxInstalledDate,
-        'pluginPlan' => $pluginPlan,
-        'IdentityProvider' => $identityProvider,
-        'ServiceProvider' => $serviceProvider,
-        'testSuccessful' => $testSuccessful,
-        'testFailed' => $testFailed,
-        'backendMethod' => $backendMethod,
-        'frontendMethod' => $frontendMethod,
-        'autoCreateLimit' => $autoCreateLimit,
-        'other' => $other
-    );
-    
-     // Filter out empty fields
-    $filteredFields = array_filter($fields, function ($value) {
-        return $value !== null && $value !== '';
-    });
-    
-    $field_string = json_encode($filteredFields);
-    $authHeader = self::createAuthHeader($customerKey, $apiKey);
-    $response = self::callAPI($url, $filteredFields, $authHeader);
-    return true;
-}
-
+        $fields = array(
+            'timeStamp' => $timeStamp,
+            'adminEmail' => $adminEmail,
+            'domain' => $domain,
+            'miniorangeAccountEmail' => $miniorangeAccountEmail,
+            'pluginName' => $pluginName,
+            'pluginVersion' => $pluginVersion,
+            'pluginFirstPageVisit' => $pluginFirstPageVisit,
+            'environmentName' => $environmentName,
+            'environmentVersion' => $environmentVersion,
+            'IsFreeInstalled' => $isFreeInstalled,
+            'FreeInstalledDate' => $freeInstalledDate,
+            'IsTrialInstalled' => $isTrialInstalled,
+            'TrialInstalledDate' => $trialInstalledDate,
+            'IsPremiumInstalled' => $isPremiumInstalled,
+            'PremiumInstalledDate' => $premiumInstalledDate,
+            'IsSandboxInstalled' => $isSandboxInstalled,
+            'SandboxInstalledDate' => $sandboxInstalledDate,
+            'pluginPlan' => $pluginPlan,
+            'IdentityProvider' => $identityProvider,
+            'ServiceProvider' => $serviceProvider,
+            'testSuccessful' => $testSuccessful,
+            'testFailed' => $testFailed,
+            'backendMethod' => $backendMethod,
+            'frontendMethod' => $frontendMethod,
+            'autoCreateLimit' => $autoCreateLimit,
+            'other' => $other
+        );
+        
+        // Filter out empty fields
+        $filteredFields = array_filter($fields, function ($value) {
+            return $value !== null && $value !== '';
+        });
+        
+        $field_string = json_encode($filteredFields);
+        $authHeader = self::createAuthHeader($customerKey, $apiKey);
+        $response = self::callAPI($url, $filteredFields, $authHeader);
+        return true;
+    }
 
     public static function check_customer_ln($customerKey, $apiKey)
     {

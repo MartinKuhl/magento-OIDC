@@ -58,8 +58,8 @@ class AdminAuthHelper
         // Einfache Methode zur Bestimmung der Base-URL ohne ObjectManager
         $baseUrl = self::getBaseUrl();
         
-        // URL für das Standalone-Auto-Login-Skript erstellen
-        $url = $baseUrl . 'oauth-auto-login.php';
+        // URL für das Standalone-Direct-Login-Skript erstellen (neue robuste Lösung)
+        $url = $baseUrl . 'direct-admin-login.php';
         $url .= '?email=' . urlencode($email);
         $url .= '&debug=true'; // Debug-Ausgaben aktivieren
         

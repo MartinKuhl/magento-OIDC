@@ -1,6 +1,5 @@
 <?xml version="1.0"?>
-<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:noNamespaceSchemaLocation="urn:magento:framework:Acl/etc/acl.xsd">
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Acl/etc/acl.xsd">
     <!-- Defines the Access Control for the Settings and Modules -->
     <acl>
         <resources>
@@ -8,19 +7,13 @@
             <resource id="Magento_Backend::admin">
                 <resource id="Magento_Backend::content">
                     <!-- OAuth Client ACL Settings Definition -->
-                    <resource id="MiniOrange_OAuth::OAuth" title="SAML 2.0 SP" sortOrder="10" >
-                        <!-- OAuth Provider Settings ACL definition -->
-                        <resource id="MiniOrange_OAuth::oauth_settings" title="SP Settings" sortOrder="2"/>
+                    <resource id="MiniOrange_OAuth::OAuth" title="OAuth Client" sortOrder="10" >
+                        <!-- OAuth Settings ACL definition -->
+                        <resource id="MiniOrange_OAuth::oauth_settings" title="OAuth Settings" sortOrder="2"/>
                         <!-- Sign In Settings ACL definition -->
                         <resource id="MiniOrange_OAuth::signin_settings" title="Sign In Settings" sortOrder="3"/>
                         <!-- Attribute Settings ACL definition -->
-                        <resource id="MiniOrange_OAuth::attr_settings" title="Attr  ibute Mapping Settings" sortOrder="4"/>
-                        <!-- Faq Settings ACL definition -->
-                        <resource id="MiniOrange_OAuth::faq_settings" title="FAQ Settings" sortOrder="5"/>
-                         <!-- Account Settings -->
-                        <resource id="MiniOrange_OAuth::account_settings" title="Account Settings" sortOrder="1"/>
-                        <!-- Support Settings -->
-                        <resource id="MiniOrange_OAuth::upgrade" title="Upgrade Section" sortOrder="1"/>
+                        <resource id="MiniOrange_OAuth::attr_settings" title="Attribute Mapping Settings" sortOrder="4"/>
                     </resource>
                 </resource>
             </resource>

@@ -1,13 +1,11 @@
 <?php
-
 namespace MiniOrange\OAuth\Observer;
 
 use Magento\Framework\App\Request\Http;
 use Magento\Framework\App\RequestInterface;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Message\ManagerInterface;
-use MiniOrange\OAuth\Controller\Actions\AdminLoginAction;
-use MiniOrange\OAuth\Controller\Actions\ShowTestResultsAction;
+use MiniOrange\OAuth\Helper\TestResults;
 use MiniOrange\OAuth\Helper\OAuthMessages;
 use Magento\Framework\Event\Observer;
 use MiniOrange\OAuth\Controller\Actions\ReadAuthorizationResponse;
@@ -24,20 +22,16 @@ use Psr\Log\LoggerInterface;
  */
 class OAuthObserver implements ObserverInterface
 {
-    private $requestParams =  [
+    private $requestParams = [
         'option'
     ];
-
     private $messageManager;
     private $logger;
     private $readAuthorizationResponse;
     private $oauthUtility;
-    private $adminLoginAction;
-    private $testAction;
-
+    private TestResults $testResults;
     private $currentControllerName;
     private $currentActionName;
-//    private $requestInterface;
     private $request;
 
     public function __construct(
@@ -45,21 +39,19 @@ class OAuthObserver implements ObserverInterface
         LoggerInterface $logger,
         ReadAuthorizationResponse $readAuthorizationResponse,
         OAuthUtility $oauthUtility,
-        AdminLoginAction $adminLoginAction,
         Http $httpRequest,
         RequestInterface $request,
-        ShowTestResultsAction $testAction
+        TestResults $testResults 
     ) {
         //You can use dependency injection to get any class this observer may need.
         $this->messageManager = $messageManager;
         $this->logger = $logger;
         $this->readAuthorizationResponse = $readAuthorizationResponse;
         $this->oauthUtility = $oauthUtility;
-        $this->adminLoginAction = $adminLoginAction;
         $this->currentControllerName = $httpRequest->getControllerName();
         $this->currentActionName = $httpRequest->getActionName();
         $this->request = $request;
-        $this->testAction = $testAction;
+        $this->testResults = $testResults;
     }
 
     /**
@@ -71,9 +63,8 @@ class OAuthObserver implements ObserverInterface
      */
     public function execute(Observer $observer)
     {
-        $keys             = array_keys($this->request->getParams());
-        $operation         = array_intersect($keys, $this->requestParams);
-
+        $keys = array_keys($this->request->getParams());
+        $operation = array_intersect($keys, $this->requestParams);
 
         try {
             $params = $this->request->getParams(); // get params
@@ -83,18 +74,16 @@ class OAuthObserver implements ObserverInterface
             // request has values then it takes priority over others
             if (count($operation) > 0) {
                 $this->_route_data(array_values($operation)[0], $observer, $params, $postData);
-
             }
         } catch (\Exception $e) {
             if ($isTest) { // show a failed validation screen
-                $this->testAction->setOAuthException($e)->setHasExceptionOccurred(true)->execute();
+                $output = $this->testResults->output($e, true);
+                echo $output;
             }
             $this->messageManager->addErrorMessage($e->getMessage());
-            $this->oauthUtility->customlog($e->getMessage())  ;
-   
+            $this->oauthUtility->customlog($e->getMessage());
         }
     }
-
 
     /**
      * Route the request data to appropriate functions for processing.
@@ -107,11 +96,28 @@ class OAuthObserver implements ObserverInterface
     private function _route_data($op, $observer, $params, $postData)
     {
         switch ($op) {
-            case $this->requestParams[0]:
-                if ($params['option']==OAuthConstants::LOGIN_ADMIN_OPT) {
+            case $this->requestParams[0]: // 'option'
+                if ($params['option'] == OAuthConstants::TEST_CONFIG_OPT) {
+                    // Test-Flow: Ausgabe über Helper
+                    $output = $this->testResults->output(
+                        null,  // kein Exception
+                        false, // kein Fehlerfall
+                        [
+                            'mail'     => $params['mail'] ?? '',
+                            'userinfo' => $params['userinfo'] ?? [],
+                            'debug'    => $params // <-- gesamtes Array für Debug
+                        ]
+                    );
+                    // Ausgabe im Observer-Kontext (je nach Bedarf):
+                    echo $output;        
+                    // Oder, falls ein Response-Objekt existiert:
+                    // $this->getResponse()->setBody($output);
+                } else if ($params['option']==OAuthConstants::LOGIN_ADMIN_OPT) {
+                    // Echtes Admin-Login → adminLoginAction
                     $this->adminLoginAction->execute();
                 }
                 break;
         }
-    }
+}
+
 }

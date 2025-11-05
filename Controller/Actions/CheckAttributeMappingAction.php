@@ -4,12 +4,20 @@ namespace MiniOrange\OAuth\Controller\Actions;
 
 use MiniOrange\OAuth\Helper\Exception\MissingAttributesException;
 use MiniOrange\OAuth\Helper\OAuthConstants;
+use MiniOrange\OAuth\Helper\TestResults;
 use Magento\Framework\App\Action\HttpPostActionInterface;
 
 /**
- * This class handles checking of the SAML attributes and NameID
- * coming in the response and mapping it to the attribute mapping
- * done in the plugin settings by the admin to update the user.
+ * Check and process OAuth/OIDC attribute mapping
+ * 
+ * This controller handles attribute mapping after successful authentication.
+ * Admin users are redirected to a separate login endpoint that runs in the
+ * adminhtml area context. Customer users proceed with the normal login flow.
+ * 
+ * All logging respects the plugin's logging configuration and writes to
+ * var/log/mo_oauth.log when enabled.
+ * 
+ * @package MiniOrange\OAuth\Controller\Actions
  */
 class CheckAttributeMappingAction extends BaseAction implements HttpPostActionInterface
 {
@@ -27,198 +35,368 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
     private $checkIfMatchBy;
     private $groupName;
 
-    private $testAction;
+    private $testResults;
     private $processUserAction;
 
+    protected $userFactory;
+    protected $backendUrl;
+
+    /**
+     * Constructor with dependency injection
+     * 
+     * @param \Magento\Framework\App\Action\Context $context
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     * @param \MiniOrange\OAuth\Helper\TestResults $testResults
+     * @param \MiniOrange\OAuth\Controller\Actions\ProcessUserAction $processUserAction
+     * @param \Magento\User\Model\UserFactory $userFactory
+     * @param \Magento\Backend\Model\UrlInterface $backendUrl
+     */
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
         \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
-        \MiniOrange\OAuth\Controller\Actions\ShowTestResultsAction $testAction,
-        \MiniOrange\OAuth\Controller\Actions\ProcessUserAction $processUserAction
+        \MiniOrange\OAuth\Helper\TestResults $testResults, 
+        \MiniOrange\OAuth\Controller\Actions\ProcessUserAction $processUserAction,
+        \Magento\User\Model\UserFactory $userFactory,
+        \Magento\Backend\Model\UrlInterface $backendUrl
     ) {
-        //You can use dependency injection to get any class this observer may need.
+        // Initialize attribute mappings from configuration
         $this->emailAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_EMAIL);
-        $this->emailAttribute = $oauthUtility->isBlank($this->emailAttribute) ? OAuthConstants::DEFAULT_MAP_EMAIL : $this->emailAttribute;
+        $this->emailAttribute = $oauthUtility->isBlank($this->emailAttribute) 
+            ? OAuthConstants::DEFAULT_MAP_EMAIL 
+            : $this->emailAttribute;
+        
         $this->usernameAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_USERNAME);
-        $this->usernameAttribute = $oauthUtility->isBlank($this->usernameAttribute) ? OAuthConstants::DEFAULT_MAP_USERN : $this->usernameAttribute;
+        $this->usernameAttribute = $oauthUtility->isBlank($this->usernameAttribute) 
+            ? OAuthConstants::DEFAULT_MAP_USERN 
+            : $this->usernameAttribute;
+        
         $this->firstName = $oauthUtility->getStoreConfig(OAuthConstants::MAP_FIRSTNAME);
-        $this->firstName = $oauthUtility->isBlank($this->firstName) ? OAuthConstants::DEFAULT_MAP_FN : $this->firstName;
+        $this->firstName = $oauthUtility->isBlank($this->firstName) 
+            ? OAuthConstants::DEFAULT_MAP_FN 
+            : $this->firstName;
+        
         $this->lastName = $oauthUtility->getStoreConfig(OAuthConstants::MAP_LASTNAME);
-        $this->lastName = $oauthUtility->isBlank($this->lastName) ? OAuthConstants::DEFAULT_MAP_LN : $this->lastName;
+        $this->lastName = $oauthUtility->isBlank($this->lastName) 
+            ? OAuthConstants::DEFAULT_MAP_LN 
+            : $this->lastName;
+        
         $this->checkIfMatchBy = $oauthUtility->getStoreConfig(OAuthConstants::MAP_MAP_BY);
-        $this->testAction = $testAction;
+        
+        $this->testResults = $testResults;
         $this->processUserAction = $processUserAction;
+        $this->userFactory = $userFactory;
+        $this->backendUrl = $backendUrl;
+        
         parent::__construct($context, $oauthUtility);
     }
 
     /**
-     * Execute function to execute the classes function.
+     * Execute attribute mapping and route users accordingly
+     * 
+     * Admin users are redirected to a separate callback endpoint that handles
+     * admin authentication. Regular users proceed with the normal customer login flow.
+     * 
+     * @return \Magento\Framework\Controller\ResultInterface
      */
     public function execute()
-    {$this->oauthUtility->customlog("CheckAttributeMappingAction: execute") ;
+    {
         $attrs = $this->userInfoResponse;
-        $flattenedAttrs =  $this->flattenedUserInfoResponse;
+        $flattenedAttrs = $this->flattenedUserInfoResponse;
         $userEmail = $this->userEmail;
+        
+        $isTest = $this->oauthUtility->getStoreConfig(OAuthConstants::IS_TEST);
 
-        $this->moOAuthCheckMapping($attrs, $flattenedAttrs, $userEmail);
+        // Test-Konfiguration: Nicht ins Backend umleiten!
+        if ($isTest === true) {
+            $this->oauthUtility->setStoreConfig(OAuthConstants::IS_TEST, false);
+            $this->oauthUtility->flushCache();
+            return $this->testAction
+                ->setAttrs($flattenedAttrs)
+                ->setUserEmail($userEmail)
+                ->execute();
+        }
+
+        // Nur wenn KEIN Test, Admin-Logik und Redirect ausführen:
+        $this->oauthUtility->customlog("=== CheckAttributeMappingAction: Processing authentication for: " . $userEmail);
+        
+        $isAdminLogin = $this->isAdminUser($userEmail);
+        $this->oauthUtility->customlog("User type detection - Admin: " . ($isAdminLogin ? 'YES' : 'NO'));
+        
+        if ($isAdminLogin) {
+            // Redirect admin users to dedicated admin login endpoint
+            $this->oauthUtility->customlog("Routing admin user to admin callback endpoint");
+            
+            $adminCallbackUrl = $this->backendUrl->getUrl('mooauth/actions/oidccallback', [
+                'email' => $userEmail
+            ]);
+            
+            $this->oauthUtility->customlog("Admin callback URL: " . $adminCallbackUrl);
+            
+            $this->getResponse()->setRedirect($adminCallbackUrl);
+            return $this->getResponse();
+        }
+        
+        // Regular customer login flow
+        $this->oauthUtility->customlog("Routing customer user to normal login flow");
+        return $this->moOAuthCheckMapping($attrs, $flattenedAttrs, $userEmail);
     }
     
+    /**
+     * Check if the email belongs to an admin user
+     * 
+     * Checks both username and email fields in the admin_user table.
+     * 
+     * @param string $email User email or username
+     * @return bool True if admin user exists and is active
+     */
+    private function isAdminUser($email)
+    {
+        $this->oauthUtility->customlog("Checking if user is admin: " . $email);
+        
+        // Try username lookup first
+        $user = $this->userFactory->create()->loadByUsername($email);
+        if ($user && $user->getId()) {
+            $this->oauthUtility->customlog("Admin user found by username - ID: " . $user->getId() . ", Active: " . ($user->getIsActive() ? 'YES' : 'NO'));
+            return true;
+        }
+        
+        // Try email lookup
+        $userCollection = $this->userFactory->create()->getCollection()
+            ->addFieldToFilter('email', $email);
+        
+        if ($userCollection->getSize() > 0) {
+            $user = $userCollection->getFirstItem();
+            $this->oauthUtility->customlog("Admin user found by email - ID: " . $user->getId() . ", Active: " . ($user->getIsActive() ? 'YES' : 'NO'));
+            return true;
+        }
+        
+        $this->oauthUtility->customlog("User is not an admin");
+        return false;
+    }
 
     /**
-     * This function checks the SAML Attribute Mapping done
-     * in the plugin and matches it to update the user's
-     * attributes.
-     *
-     * @param $attrs
-     * @throws MissingAttributesException;
+     * Process OAuth/OIDC attribute mapping for customer users
+     * 
+     * Maps OAuth attributes to Magento customer fields based on
+     * the configuration set in the admin panel.
+     * 
+     * @param array $attrs Raw OAuth response attributes
+     * @param array $flattenedAttrs Flattened attribute array
+     * @param string $userEmail User email from OAuth response
+     * @return \Magento\Framework\Controller\ResultInterface
+     * @throws MissingAttributesException
      */
     private function moOAuthCheckMapping($attrs, $flattenedAttrs, $userEmail)
-    {  $this->oauthUtility->customlog("CheckAttributeMappingAction: moOAuthCheckMapping");
-       
+    {
+        $this->oauthUtility->customlog("Starting attribute mapping for customer user");
+        
+        // Save debug data
+        $this->saveDebugData($attrs);
+
+
         if (empty($attrs)) {
+            $this->oauthUtility->customlog("ERROR: Empty attributes received from OAuth provider");
             throw new MissingAttributesException;
         }
 
         $this->checkIfMatchBy = OAuthConstants::DEFAULT_MAP_BY;
+        
+        // Process required attributes
         $this->processUserName($flattenedAttrs);
         $this->processEmail($flattenedAttrs);
         $this->processGroupName($flattenedAttrs);
 
-        $this->processResult($attrs, $flattenedAttrs, $userEmail);
+        $this->oauthUtility->customlog("Attribute mapping completed, proceeding to user processing");
+        
+        return $this->processResult($attrs, $flattenedAttrs, $userEmail);
     }
 
-
     /**
-     * Process the result to either show a Test result
-     * screen or log/create user in Magento.
-     *
-     * @param $attrs
+     * Process the result - either show test screen or login/create user
+     * 
+     * @param array $attrs Raw attributes
+     * @param array $flattenedattrs Flattened attributes
+     * @param string $email User email
+     * @return \Magento\Framework\Controller\ResultInterface
      */
     private function processResult($attrs, $flattenedattrs, $email)
-    {$this->oauthUtility->customlog("CheckAttributeMappingAction: processResult") ;
-     
-        $isTest =  $this->oauthUtility->getStoreConfig(OAuthConstants::IS_TEST);
+    {
+        $isTest = $this->oauthUtility->getStoreConfig(OAuthConstants::IS_TEST);
 
         if ($isTest == true) {
+            // Test mode - show attribute mapping test results
+            $this->oauthUtility->customlog("Test mode enabled - showing attribute test results");
             $this->oauthUtility->setStoreConfig(OAuthConstants::IS_TEST, false);
             $this->oauthUtility->flushCache();
-            $this->testAction->setAttrs($flattenedattrs)->setUserEmail($email)->execute();
+            
+            // Hilfe: Die Daten werden an den Helper übergeben!
+            $output = $this->testResults->output(null, false, [
+                'mail'    => $email,
+                'userinfo'=> $flattenedattrs
+            ]);
+
+            // Im Controller:
+            return $this->getResponse()->setBody($output);
+            // Im Observer ggf. direkt:
+            // echo $output;
         } else {
-            $this->processUserAction->setFlattenedAttrs($flattenedattrs)->setAttrs($attrs)->setUserEmail($email)->execute();
+            // Production mode - process user login/registration
+            $this->oauthUtility->customlog("Production mode - processing user login/registration");
+            return $this->processUserAction
+                ->setFlattenedAttrs($flattenedattrs)
+                ->setAttrs($attrs)
+                ->setUserEmail($email)
+                ->execute();
         }
     }
 
     /**
-     * Check if the attribute list has a FirstName. If
-     * no firstName is found then NameID is considered as
-     * the firstName. This is done because Magento needs
-     * a firstName for creating a new user.
-     *
-     * @param $attrs
+     * Process first name attribute
+     * Falls back to email prefix if not provided
+     * 
+     * @param array $attrs Attribute array
      */
     private function processFirstName(&$attrs)
-    { $this->oauthUtility->customlog("CheckAttributeMappingAction: processFirstName")  ;
-        if (!isset( $attrs[$this->firstName])) {
-            $parts  = explode("@", $this->userEmail);
-            $name = $parts[0];
-           $this->oauthUtility->customlog("CheckAttributeMappingAction: processFirstName: ".$name) ;
- 
-            $attrs[$this->firstName] = $name;
+    {
+        if (!isset($attrs[$this->firstName])) {
+            $parts = explode("@", $this->userEmail);
+            $attrs[$this->firstName] = $parts[0];
+            $this->oauthUtility->customlog("First name not provided, using email prefix: " . $parts[0]);
         }
     }
-
-    private function processLastName(&$attrs)
-    { $this->oauthUtility->customlog("CheckAttributeMappingAction: processLastName") ;
-   
-        if (!isset($attrs[$this->lastName])) {
-            $parts  = explode("@", $this->userEmail);
-            $name = $parts[1];
-            $this->oauthUtility->customlog("CheckAttributeMappingAction: processLastName: ".$name)  ;
-
-            $attrs[$this->lastName] = $name;
-        }
-    }
-
 
     /**
-     * Check if the attribute list has a UserName. If
-     * no UserName is found then NameID is considered as
-     * the UserName. This is done because Magento needs
-     * a UserName for creating a new user.
-     *
-     * @param $attrs
+     * Process last name attribute
+     * Falls back to email domain if not provided
+     * 
+     * @param array $attrs Attribute array
+     */
+    private function processLastName(&$attrs)
+    {
+        if (!isset($attrs[$this->lastName])) {
+            $parts = explode("@", $this->userEmail);
+            $attrs[$this->lastName] = isset($parts[1]) ? $parts[1] : '';
+            $this->oauthUtility->customlog("Last name not provided, using email domain: " . ($parts[1] ?? 'empty'));
+        }
+    }
+
+    /**
+     * Process username attribute
+     * Falls back to email if not provided
+     * 
+     * @param array $attrs Attribute array
      */
     private function processUserName(&$attrs)
-    { $this->oauthUtility->customlog("CheckAttributeMappingAction: procesUserName") ;
-
+    {
         if (!isset($attrs[$this->usernameAttribute])) {
-           
             $attrs[$this->usernameAttribute] = $this->userEmail;
-            $this->oauthUtility->customlog("CheckAttributeMappingAction: procesUserName; ".$attrs[$this->usernameAttribute]) ;
+            $this->oauthUtility->customlog("Username not provided, using email: " . $this->userEmail);
         }
     }
 
-
     /**
-     * Check if the attribute list has a Email. If
-     * no Email is found then NameID is considered as
-     * the Email. This is done because Magento needs
-     * a Email for creating a new user.
-     *
-     * @param $attrs
+     * Process email attribute
+     * Falls back to userEmail if not provided
+     * 
+     * @param array $attrs Attribute array
      */
     private function processEmail(&$attrs)
-    { $this->oauthUtility->customlog("CheckAttributeMappingAction: processEmail") ;
-     
+    {
         if (!isset($attrs[$this->emailAttribute])) {
             $attrs[$this->emailAttribute] = $this->userEmail;
-            $this->oauthUtility->customlog("CheckAttributeMappingAction: processEmail : ".$attrs[$this->emailAttribute]) ;
+            $this->oauthUtility->customlog("Email attribute not mapped, using userEmail: " . $this->userEmail);
         }
     }
-
 
     /**
-     * Check if the attribute list has a Group/Role. If
-     * no Group/Role is found then NameID is considered as
-     * the Group/Role. This is done because Magento needs
-     * a Group/Role for creating a new user.
-     *
-     * @param $attrs
+     * Process group/role name attribute
+     * Defaults to empty array if not provided
+     * 
+     * @param array $attrs Attribute array
      */
     private function processGroupName(&$attrs)
-    {$this->oauthUtility->customlog("CheckAttributeMappingAction: processGroupName")  ;
-
+    {
         if (!isset($attrs[$this->groupName])) {
             $this->groupName = [];
+            $this->oauthUtility->customlog("Group name not provided, using empty array");
         }
     }
 
+    // Setter methods for dependency injection pattern
 
-    /** Setter for the OAuth Response Parameter */
+    /**
+     * Set user info response
+     * 
+     * @param array $userInfoResponse
+     * @return $this
+     */
     public function setUserInfoResponse($userInfoResponse)
     {
         $this->userInfoResponse = $userInfoResponse;
         return $this;
     }
 
-    /** Setter for the OAuth Response Parameter */
+    /**
+     * Set flattened user info response
+     * 
+     * @param array $flattenedUserInfoResponse
+     * @return $this
+     */
     public function setFlattenedUserInfoResponse($flattenedUserInfoResponse)
     {
         $this->flattenedUserInfoResponse = $flattenedUserInfoResponse;
         return $this;
     }
 
-    /** Setter for the user email Parameter */
+    /**
+     * Set user email
+     * 
+     * @param string $userEmail
+     * @return $this
+     */
     public function setUserEmail($userEmail)
     {
         $this->userEmail = $userEmail;
         return $this;
     }
 
-    /** Setter for the RelayState Parameter */
+    /**
+     * Set relay state
+     * 
+     * @param string $relayState
+     * @return $this
+     */
     public function setRelayState($relayState)
     {
         $this->relayState = $relayState;
         return $this;
     }
+
+    /**
+     * Save OAuth response for debugging
+     * 
+     * @param array $attrs
+     */
+    protected function saveDebugData($attrs)
+    {
+        try {
+            $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+            $customerSession = $objectManager->get(\Magento\Customer\Model\Session::class);
+            
+            $debugData = [
+                'timestamp' => date('Y-m-d H:i:s'),
+                'raw_attributes' => $this->userInfoResponse,
+                'flattened_attributes' => $attrs,
+                'email_found' => isset($attrs[$this->emailAttribute]) ? $attrs[$this->emailAttribute] : null,
+                'username_found' => isset($attrs[$this->usernameAttribute]) ? $attrs[$this->usernameAttribute] : null
+            ];
+            
+            $customerSession->setData('mo_oauth_debug_response', json_encode($debugData));
+            
+            $this->oauthUtility->customlog("Debug data saved to session");
+        } catch (\Exception $e) {
+            $this->oauthUtility->customlog("Could not save debug data: " . $e->getMessage());
+        }
+    }
+
 }

@@ -1,0 +1,39 @@
+<?php
+/**
+ * Kompakte Version der OIDC Error Message
+ */
+static $displayed = false;
+if ($displayed) return;
+$displayed = true;
+?>
+
+<?php if ($block->hasOidcError()): ?>
+    <div style="
+        width: 100%;
+        max-width: 370px;
+        margin: 0 auto 15px auto;
+        background: #fff0f0;
+        border: 2px solid #e22626;
+        border-radius: 5px;
+        padding: 12px;
+        box-sizing: border-box;
+    ">
+        <div style="display: flex; align-items: flex-start; gap: 10px;">
+            <!-- Icon -->
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink: 0; margin-top: 2px;">
+                <circle cx="12" cy="12" r="10" stroke="#e22626" stroke-width="2" fill="none"/>
+                <path d="M12 8V12M12 16H12.01" stroke="#e22626" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            
+            <!-- Content -->
+            <div style="flex: 1;">
+                <strong style="color: #e22626; font-size: 13px; display: block; margin-bottom: 6px;">
+                    <?= $block->escapeHtml(__('OIDC-Authentifizierung fehlgeschlagen')) ?>
+                </strong>
+                <p style="margin: 0; color: #333; font-size: 12px; line-height: 1.4;">
+                    <?= $block->escapeHtml($block->getOidcErrorMessage()) ?>
+                </p>
+            </div>
+        </div>
+    </div>
+<?php endif; ?>

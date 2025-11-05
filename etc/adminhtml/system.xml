@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <tab id="miniorange" translate="label" sortOrder="200">
+            <label>miniOrange</label>
+        </tab>
+        
+        <section id="miniorange_oauth" translate="label" type="text" sortOrder="100" showInDefault="1" showInWebsite="1" showInStore="1">
+            <label>OAuth / OIDC Client</label>
+            <tab>miniorange</tab>
+            <resource>MiniOrange_OAuth::oauth_settings</resource>
+            
+            <group id="debug" translate="label" type="text" sortOrder="900" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Debug Settings</label>
+                
+                <field id="debug_log" translate="label comment" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable Debug Logging</label>
+                    <comment>Enable detailed logging to var/log/mo_oauth.log for troubleshooting</comment>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <config_path>miniorange/oauth/debug_log</config_path>
+                </field>
+                
+            </group>
+        </section>
+    </system>
+</config>

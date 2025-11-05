@@ -252,9 +252,9 @@ class OAuth extends \Magento\Framework\View\Element\Template
      * This function fetches/creates the TEST Configuration URL of the
      * Plugin.
      */
-    public function getTestUrl($app_name)
+    public function getTestUrl()
     {
-        return $this->getSPInitiatedUrl(OAuthConstants::TEST_RELAYSTATE,$app_name);
+        return $this->getUrl('mooauth/actions/sendAuthorizationRequest');
     }
 
 

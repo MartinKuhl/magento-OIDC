@@ -2,15 +2,36 @@
 <page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
     <update handle="admin_login" />
     <body>
-        <!-- 
-            Defining our block and phtml file for adding a sso link
-            to the admin login page
-        -->
+        <!-- OIDC Error Message - Versuch 1: content container -->
+        <referenceContainer name="content">
+            <block class="MiniOrange\OAuth\Block\Adminhtml\OidcErrorMessage" 
+                   name="oidc_error_message_content" 
+                   template="MiniOrange_OAuth::oidc_error_message.phtml" 
+                   after="-"/>
+        </referenceContainer>
+        
+        <!-- OIDC Error Message - Versuch 2: root container -->
+        <referenceContainer name="root">
+            <block class="MiniOrange\OAuth\Block\Adminhtml\OidcErrorMessage" 
+                   name="oidc_error_message_root" 
+                   template="MiniOrange_OAuth::oidc_error_message.phtml" 
+                   before="-"/>
+        </referenceContainer>
+        
+        <!-- OIDC Error Message - Versuch 3: messages container (falls vorhanden) -->
+        <referenceBlock name="messages" ifconfig="">
+            <block class="MiniOrange\OAuth\Block\Adminhtml\OidcErrorMessage" 
+                   name="oidc_error_message_messages" 
+                   template="MiniOrange_OAuth::oidc_error_message.phtml" 
+                   after="-"/>
+        </referenceBlock>
+        
+        <!-- SSO Login Button -->
         <referenceContainer name="form.buttons">
-             <block class="MiniOrange\OAuth\Block\OAuth" 
-                            name="miniorange.oauth.admin.link" 
-                            ifconfig="miniorange/oauth/showadminlink"
-                            template="adminssobutton.phtml" />
+            <block class="MiniOrange\OAuth\Block\OAuth" 
+                   name="miniorange.oauth.admin.link" 
+                   ifconfig="miniorange/oauth/showadminlink"
+                   template="adminssobutton.phtml" />
         </referenceContainer>
     </body>
 </page>
