@@ -232,10 +232,13 @@ class ProcessUserAction extends BaseAction
         return $userName .'@'.$siteurl;
     }
 
+    //to do extend with additional user creation logic and fields
+    //additionally handle admin user creation if required
     private function createNewUser($user_email, $firstName, $lastName, $userName, $user, &$admin)
     {
         $this->oauthUtility->customlog("processUserAction: createNewUser");
         
+        //To Do better handling of missing first name last name username attributes from idp
         if(empty($firstName)) {
             $parts = explode("@", $user_email);
             $firstName = $parts[0];
@@ -336,6 +339,8 @@ class ProcessUserAction extends BaseAction
         }
     }
 
+    // die Funktion muss ggf. erweitert werden, um die Rollenzuweisung zu unterstützen
+    // was ist, wenn die Rolle nicht existiert? // welche Rolle
     private function createAdminUser($userName, $email, $firstName, $lastName, $random_password, $role_assigned)
     {
         $this->oauthUtility->customlog("processUserAction: Creating Admin user"); 

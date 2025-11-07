@@ -66,6 +66,7 @@ class OAuthConstants
     const IS_TEST              = 'isTest';
 
     // attribute mapping constants
+    // ggf. extend
     const MAP_EMAIL            = 'amEmail';
     const DEFAULT_MAP_EMAIL    = 'email';
     const MAP_USERNAME         = 'amUsername';
