@@ -14,7 +14,7 @@ use Magento\Framework\UrlInterface;
 use Magento\Framework\View\Asset\Repository;
 use Magento\User\Model\UserFactory;
 use MiniOrange\OAuth\Helper\OAuthConstants;
-use MiniOrange\OAuth\Helper\Curl;
+
 use MiniOrange\OAuth\Helper\Data;
 use MiniOrange\OAuth\Helper\Exception\InvalidOperationException;
 use MiniOrange\OAuth\Helper\OAuth\SAML2Utilities;

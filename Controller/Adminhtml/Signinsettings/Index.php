@@ -16,7 +16,7 @@ use Magento\Customer\Model\ResourceModel\Group\Collection;
 use Magento\Framework\Message\ManagerInterface;
 use MiniOrange\OAuth\Helper\OAuthUtility;
 use Psr\Log\LoggerInterface;
-use MiniOrange\OAuth\Helper\Curl;
+
 
 
 /**

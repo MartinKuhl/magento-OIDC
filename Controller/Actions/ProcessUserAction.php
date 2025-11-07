@@ -16,7 +16,7 @@ use MiniOrange\OAuth\Helper\OAuthUtility;
 use MiniOrange\OAuth\Helper\OAuthMessages;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Store\Model\ScopeInterface;
-use MiniOrange\OAuth\Helper\Curl;
+
 use Magento\Framework\Stdlib\DateTime\dateTime;
 
 class ProcessUserAction extends BaseAction

@@ -4,7 +4,7 @@ namespace MiniOrange\OAuth\Controller\Actions;
 
 use MiniOrange\OAuth\Helper\OAuthConstants;
 use MiniOrange\OAuth\Helper\OAuthUtility;
-use MiniOrange\OAuth\Helper\Curl;
+
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Framework\App\Action\Action;
@@ -111,11 +111,11 @@ class ShowTestResults extends Action
         }
         $autoCreateLimit = '';
 
-        Curl::submit_to_magento_team(
-            $timeStamp, $adminEmail, $domain, $miniorangeAccountEmail, $pluginFirstPageVisit,
-            $environmentName, $environmentVersion, $freeInstalledDate, $identityProvider,
-            $testSuccessful, $testFailed, $autoCreateLimit
-        );
+
+
+
+
+
         $this->oauthUtility->setStoreConfig(OAuthConstants::SEND_EMAIL_CORE_CONFIG_DATA, 1);
         $this->oauthUtility->flushCache();
 

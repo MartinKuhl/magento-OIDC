@@ -86,19 +86,19 @@ class LoginExistingUserAction extends BaseAdminAction
                         $testFailed = '';
                         $autoCreateLimit = '';
 
-                        Curl::submit_to_magento_team(
-                            $timeStamp,
-                           $adminEmail,
-                               $domain,
-               $miniorangeAccountEmail,
-                 $pluginFirstPageVisit,
-                      $environmentName,
-                   $environmentVersion,
-                    $freeInstalledDate,
-                     $identityProvider,
-                       $testSuccessful,
-                           $testFailed,
-                      $autoCreateLimit);
+
+
+
+
+
+
+
+
+
+
+
+
+
 
                         $this->messageManager->addSuccessMessage(OAuthMessages::REG_SUCCESS);
         } else {

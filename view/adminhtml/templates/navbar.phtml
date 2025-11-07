@@ -1,53 +1,16 @@
 <?php
-
-use MiniOrange\OAuth\Helper\Curl;
 use MiniOrange\OAuth\Helper\OAuthConstants;
 
-// initialize all variables
+// Initialisiere alle Variablen
 $oauthsettings = $this->getExtensionPageUrl('oauthsettings');
 $signinsettings = $this->getExtensionPageUrl('signinsettings');
 $attrsettings = $this->getExtensionPageUrl('attrsettings');
 $activeTab = $this->getCurrentActiveTab();
-$checkDataAdded = $this->checkDataAdded();
-
-if($checkDataAdded == null)
-{ 
-    $timeStamp = $this->getTimeStamp();
-    $currentAdminUser = $this->getCurrentAdminUser();  
-    $adminEmail = $currentAdminUser['email'];
-    $domain = $this->getBaseUrl();
-    $miniorangeAccountEmail = $this->getCustomerEmail();
-    $pluginFirstPageVisit = $activeTab;
-    $environmentName = $this->getEdition();
-    $environmentVersion = $this->getProductVersion();
-    $freeInstalledDate = $this->getCurrentDate();
-    $identityProvider = '';
-    $testSuccessful = '';
-    $testFailed = '';
-    $autoCreateLimit = ''; 
-
-    Curl::submit_to_magento_team(
-        $timeStamp,
-        $adminEmail,
-        $domain,
-        $miniorangeAccountEmail,
-        $pluginFirstPageVisit,
-        $environmentName,
-        $environmentVersion,
-        $freeInstalledDate,
-        $identityProvider,
-        $testSuccessful,
-        $testFailed,
-        $autoCreateLimit
-    );
-
-    $this->dataAdded();
-}
-
-echo'   <div style=" padding: 0 1%;">
-            <div class="topnav" id="myTopnav">
-                <a class="nav-tab ' . $block->escapeHtmlAttr($activeTab == 'oauthsettings' ? 'active' : '') . '" href="'.$block->escapeUrl($oauthsettings).'"> OAuth Settings</a>
-                <a class="nav-tab ' . $block->escapeHtmlAttr($activeTab == 'signinsettings' ? 'active' : ''). '" href="' .$block->escapeUrl($signinsettings).'"> Sign In Settings</a>
-                <a class="nav-tab ' . $block->escapeHtmlAttr($activeTab == 'attrsettings' ? 'active' : '') .'" href="'. $block->escapeUrl($attrsettings). '"> Attribute Mapping</a>
-            </div>
-        </div>';
+?>
+<div style="padding: 0 1%;">
+    <div class="topnav" id="myTopnav">
+        <a class="nav-tab <?php echo $block->escapeHtmlAttr($activeTab == 'oauthsettings' ? 'active' : ''); ?>" href="<?php echo $block->escapeUrl($oauthsettings); ?>">OAuth Settings</a>
+        <a class="nav-tab <?php echo $block->escapeHtmlAttr($activeTab == 'signinsettings' ? 'active' : ''); ?>" href="<?php echo $block->escapeUrl($signinsettings); ?>">Sign In Settings</a>
+        <a class="nav-tab <?php echo $block->escapeHtmlAttr($activeTab == 'attrsettings' ? 'active' : ''); ?>" href="<?php echo $block->escapeUrl($attrsettings); ?>">Attribute Mapping</a>
+    </div>
+</div>
