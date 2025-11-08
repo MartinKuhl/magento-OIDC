@@ -9,52 +9,6 @@ use MiniOrange\OAuth\Helper\OAuthConstants;
  */
 class Curl
 {
-    
-    public static function create_customer($email, $company, $password, $phone = '', $first_name = '', $last_name = '')
-    {
-        $url = OAuthConstants::HOSTNAME . '/moas/rest/customer/add';
-        $customerKey = OAuthConstants::DEFAULT_CUSTOMER_KEY;
-        $apiKey = OAuthConstants::DEFAULT_API_KEY;
-        $fields = [
-            'companyName' => $company,
-            'areaOfInterest' => OAuthConstants::AREA_OF_INTEREST,
-            'firstname' => $first_name,
-            'lastname' => $last_name,
-            'email' => $email,
-            'phone' => $phone,
-            'password' => $password
-        ];
-        $authHeader = self::createAuthHeader($customerKey, $apiKey);
-        $response = self::callAPI($url, $fields, $authHeader);
-        return $response;
-    }
-
-    public static function get_customer_key($email, $password)
-    {
-        $url = OAuthConstants::HOSTNAME . "/moas/rest/customer/key";
-        $customerKey = OAuthConstants::DEFAULT_CUSTOMER_KEY;
-        $apiKey = OAuthConstants::DEFAULT_API_KEY;
-        $fields = [
-            'email' => $email,
-            'password' => $password
-        ];
-        $authHeader = self::createAuthHeader($customerKey, $apiKey);
-        $response = self::callAPI($url, $fields, $authHeader);
-        return $response;
-    }
-
-    public static function check_customer($email)
-    {
-        $url = OAuthConstants::HOSTNAME . "/moas/rest/customer/check-if-exists";
-        $customerKey = OAuthConstants::DEFAULT_CUSTOMER_KEY;
-        $apiKey = OAuthConstants::DEFAULT_API_KEY;
-        $fields = [
-            'email' => $email,
-        ];
-        $authHeader = self::createAuthHeader($customerKey, $apiKey);
-        $response = self::callAPI($url, $fields, $authHeader);
-        return $response;
-    }
 
     public static function mo_send_access_token_request($postData, $url, $clientID, $clientSecret,$header, $body)
     {
@@ -79,20 +33,6 @@ class Curl
     {
 
         $response = self::callAPI($url, [], $headers);
-        return $response;
-    }
-
-    public static function check_customer_ln($customerKey, $apiKey)
-    {
-        $url = OAuthConstants::HOSTNAME . '/moas/rest/customer/license';
-        $fields = [
-            'customerId' => $customerKey,
-            'applicationName' => OAuthConstants::APPLICATION_NAME,
-            'licenseType' => !MoUtility::micr() ? 'DEMO' : 'PREMIUM',
-        ];
-
-        $authHeader = self::createAuthHeader($customerKey, $apiKey);
-        $response = self::callAPI($url, $fields, $authHeader);
         return $response;
     }
 
