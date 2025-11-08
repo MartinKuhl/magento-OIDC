@@ -8,7 +8,7 @@ namespace MiniOrange\OAuth\Helper;
 class OAuthConstants
 {
     const MODULE_DIR           = 'MiniOrange_OAuth';
-    const MODULE_TITLE         = 'OAuth Client';
+    const MODULE_TITLE         = 'Authelia OIDC';
 
     //ACL Settings
     const MODULE_OAUTHSETTINGS = '::oauth_settings';
@@ -22,7 +22,7 @@ class OAuthConstants
 
     // request option parameter values
     const LOGIN_ADMIN_OPT      = 'oauthLoginAdminUser';
-    const TEST_CONFIG_OPT      = 'mooauth_test'; //'testConfig';
+    const TEST_CONFIG_OPT      = 'mooauth_test';
 
     //database keys
 
@@ -88,7 +88,6 @@ class OAuthConstants
     const IMAGE_RIGHT          = 'right.png';
     const IMAGE_WRONG          = 'wrong.png';
 
-    const TXT_ID               = 'miniorange/oauth/transactionID';
     const CALLBACK_URL         = 'mooauth/actions/ReadAuthorizationResponse';
     const CODE                 = 'code';
     const GRANT_TYPE           = 'authorization_code';
@@ -98,13 +97,11 @@ class OAuthConstants
     const HTTP_REDIRECT        = 'HttpRedirect';
 
     //Registration Status
-    const STATUS_VERIFY_LOGIN  = "MO_VERIFY_CUSTOMER";
-    const STATUS_COMPLETE_LOGIN = "MO_VERIFIED";
+    const STATUS_VERIFY_LOGIN      = "MO_VERIFY_CUSTOMER";
+    const STATUS_COMPLETE_LOGIN    = "MO_VERIFIED";
 
     //plugin constants
-    const SAMLSP_KEY           = 'customerKey';
-
-    const VERSION              = "v4.2.0";
+    const VERSION                  = "v4.2.0";
     const MAGENTO_COUNTER          = "magento_count";
 
     //Debug log

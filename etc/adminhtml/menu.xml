@@ -4,7 +4,7 @@
     <menu>
         <!-- Adding a OAuth Client menu item in admin backend for access to other sub settings -->
         <add id="MiniOrange_OAuth::OAuth"
-            title="OAuth Client"
+            title="Authelia OIDC"
             module="MiniOrange_OAuth"
             sortOrder="52"
             resource="MiniOrange_OAuth::OAuth" />

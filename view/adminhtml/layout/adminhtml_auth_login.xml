@@ -2,6 +2,7 @@
 <page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
     <update handle="admin_login" />
     <body>
+        <!-- ToDO find correct version and remove the others -->
         <!-- OIDC Error Message - Versuch 1: content container -->
         <referenceContainer name="content">
             <block class="MiniOrange\OAuth\Block\Adminhtml\OidcErrorMessage" 
