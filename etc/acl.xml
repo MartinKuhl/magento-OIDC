@@ -7,7 +7,7 @@
             <resource id="Magento_Backend::admin">
                 <resource id="Magento_Backend::content">
                     <!-- OAuth Client ACL Settings Definition -->
-                    <resource id="MiniOrange_OAuth::OAuth" title="OAuth Client" sortOrder="10" >
+                    <resource id="MiniOrange_OAuth::OAuth" title="Authelia OIDC" sortOrder="10" >
                         <!-- OAuth Settings ACL definition -->
                         <resource id="MiniOrange_OAuth::oauth_settings" title="OAuth Settings" sortOrder="2"/>
                         <!-- Sign In Settings ACL definition -->

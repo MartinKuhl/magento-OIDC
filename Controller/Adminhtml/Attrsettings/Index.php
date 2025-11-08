@@ -13,7 +13,7 @@ use MiniOrange\OAuth\Helper\OAuthMessages;
 use MiniOrange\OAuth\Controller\Actions\BaseAdminAction;
 use MiniOrange\OAuth\Helper\OAuthUtility;
 use Psr\Log\LoggerInterface;
-use MiniOrange\OAuth\Helper\Curl;
+
 
 
 /**

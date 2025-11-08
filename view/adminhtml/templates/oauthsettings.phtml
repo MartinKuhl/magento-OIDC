@@ -40,9 +40,10 @@
 ?>
 	<script>
 		var testURL = "<?php  echo $block->escapeJs($testUrl); ?>";
-	</script>	
-	<div class="row">
-<div class="col-sm-7">
+	</script>
+
+<div class="row">
+<div class="col-sm-7 page_margin">
 	<div class="page" id="oauthprovider">
 		<div class="mosp_table_layout">
 			<form name="f" method="post" action="">
@@ -51,13 +52,6 @@
 				<h3>CONFIGURE OAUTH</h3>
 				<hr>
 				<table style="width:100%;">
-
-					<tr>
-						<td><strong>Callback URL:</strong></td>
-						<td>
-							<p style="width: 100%;"><?php  echo $block->escapeHtmlAttr($callbackURL); ?></p>
-						</td>
-					</tr>
 
 					<tr>
 						<td style="width:200px;"><strong>OAuth Provider Name<span style="color:red;">*</span>:</strong></td>

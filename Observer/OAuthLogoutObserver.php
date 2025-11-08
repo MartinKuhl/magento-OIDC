@@ -79,7 +79,7 @@ class OAuthLogoutObserver implements ObserverInterface
         switch ($op) {
             case $this->requestParams[0]:
                 // Spezieller Test-Konfigurations-Button
-                if (isset($params['option']) && $params['option'] === OAuthConstants::TEST_OPT) {
+                if (isset($params['option']) && $params['option'] === OAuthConstants::TEST_CONFIG_OPT) {
                     // Direkt den Test-Result-Controller (wie im alten Code) aufrufen und Response zurückgeben!
                     $this->testAction->execute();
                 } else {

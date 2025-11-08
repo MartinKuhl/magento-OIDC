@@ -9,7 +9,7 @@ use MiniOrange\OAuth\Helper\OAuthConstants;
 use MiniOrange\OAuth\Helper\OAuthMessages;
 use MiniOrange\OAuth\Helper\OAuth\SAML2Utilities;
 use MiniOrange\OAuth\Controller\Actions\BaseAdminAction;
-use MiniOrange\OAuth\Helper\Curl;
+
 
 
 
