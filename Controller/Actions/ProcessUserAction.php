@@ -86,7 +86,7 @@ class ProcessUserAction extends BaseAction
     }
 
     public function execute()
-    { 
+    {
         try {
             $this->oauthUtility->customlog("ProcessUserAction: execute");
             if (empty($this->attrs)) {
@@ -98,23 +98,23 @@ class ProcessUserAction extends BaseAction
             $lastName = $this->flattenedattrs[$this->lastNameKey] ?? null;
             $userName = $this->flattenedattrs[$this->usernameAttribute] ?? null;
 
-            $this->oauthUtility->customlog("ProcessUserAction: first name: ".$firstName);
-            $this->oauthUtility->customlog("ProcessUserAction: last name: ".$lastName);
-            $this->oauthUtility->customlog("ProcessUserAction: username: ".$userName);
+            $this->oauthUtility->customlog("ProcessUserAction: first name: " . $firstName);
+            $this->oauthUtility->customlog("ProcessUserAction: last name: " . $lastName);
+            $this->oauthUtility->customlog("ProcessUserAction: username: " . $userName);
 
             if ($this->oauthUtility->isBlank($this->defaultRole)) {
                 $this->defaultRole = OAuthConstants::DEFAULT_ROLE;
             }
-            
+
             $this->processUserAction($this->userEmail, $firstName, $lastName, $userName, $this->defaultRole);
-            
+
         } catch (\Exception $e) {
             $this->oauthUtility->customlog("CRITICAL ERROR in execute: " . $e->getMessage());
             throw $e;
         }
     }
 
-        private function processUserAction($user_email, $firstName, $lastName, $userName, $defaultRole)
+    private function processUserAction($user_email, $firstName, $lastName, $userName, $defaultRole)
     {
         $admin = false;
         $user = $this->getCustomerFromAttributes($user_email);
@@ -137,7 +137,7 @@ class ProcessUserAction extends BaseAction
                 return $this->getResponse()->setRedirect($url)->sendResponse();
             } else {
                 $count = $this->oauthUtility->getStoreConfig(OAuthConstants::MAGENTO_COUNTER);
-                $this->oauthUtility->setStoreConfig(OAuthConstants::MAGENTO_COUNTER, $count-1);
+                $this->oauthUtility->setStoreConfig(OAuthConstants::MAGENTO_COUNTER, $count - 1);
                 $this->oauthUtility->reinitConfig();
                 $this->oauthUtility->customlog("Creating new customer");
                 $user = $this->createNewUser($user_email, $firstName, $lastName, $userName, $user, $admin);
@@ -151,64 +151,64 @@ class ProcessUserAction extends BaseAction
 
         $store_url = $this->storeManager->getStore()->getBaseUrl(\Magento\Framework\UrlInterface::URL_TYPE_WEB);
         $store_url = rtrim($store_url, '/\\');
-        
-        if (isset($this->attrs['relayState']) && !str_contains($this->attrs['relayState'], $store_url) && $this->attrs['relayState']!='/') {
+
+        if (isset($this->attrs['relayState']) && !str_contains($this->attrs['relayState'], $store_url) && $this->attrs['relayState'] != '/') {
             $this->attrs['relayState'] = $store_url;
-            $this->oauthUtility->customlog("processUserAction: changing relayState with store url " .$store_url);
+            $this->oauthUtility->customlog("processUserAction: changing relayState with store url " . $store_url);
         }
 
         $isAdminLogin = false;
         $relayState = '';
-        
+
         if (is_array($this->attrs) && isset($this->attrs['relayState'])) {
             $relayState = $this->attrs['relayState'];
         } elseif (isset($this->attrs->relayState)) {
             $relayState = $this->attrs->relayState;
         }
-        
+
         if (!empty($relayState)) {
-            $isAdminLogin = (strpos($relayState, '/admin') !== false) || 
-                           (strpos($relayState, 'admin/') !== false) || 
-                           (strpos($relayState, 'admin') === 0);
+            $isAdminLogin = (strpos($relayState, '/admin') !== false) ||
+                (strpos($relayState, 'admin/') !== false) ||
+                (strpos($relayState, 'admin') === 0);
             $this->oauthUtility->customlog("processUserAction: Relay state: " . $relayState . ", isAdmin: " . ($isAdminLogin ? "true" : "false"));
         }
 
         if ($isAdminLogin) {
             $this->oauthUtility->customlog("processUserAction: Processing as admin login");
-            
+
             try {
                 require_once dirname(__FILE__) . '/../../Helper/AdminAuthHelper.php';
-                
+
                 $adminUser = $this->getAdminUserByEmail($user_email);
                 if ($adminUser && $adminUser->getIsActive() == 1) {
                     $this->oauthUtility->customlog("processUserAction: Admin user found and is active");
-                    
+
                     $redirectUrl = \MiniOrange\OAuth\Helper\AdminAuthHelper::getStandaloneLoginUrl($user_email, $relayState);
-                    
+
                     $this->oauthUtility->customlog("processUserAction: Redirecting to: " . $redirectUrl);
                     $this->getResponse()->setRedirect($redirectUrl)->sendResponse();
                     return;
                 } else {
                     $this->oauthUtility->customlog("processUserAction: Admin user not found for email: " . $user_email);
-                    
+
                     // KORRIGIERT: Fehler über URL-Parameter weitergeben
                     $errorMessage = sprintf(
                         'Admin-Zugang verweigert: Für die E-Mail-Adresse "%s" ist kein Administrator-Konto in Magento hinterlegt. Bitte wenden Sie sich an Ihren Systemadministrator.',
                         $user_email
                     );
-                    
+
                     $loginUrl = $this->oauthUtility->getBaseUrl() . 'admin?oidc_error=' . base64_encode($errorMessage);
-                    
+
                     $this->oauthUtility->customlog("processUserAction: Redirecting to admin login with error");
                     return $this->getResponse()->setRedirect($loginUrl)->sendResponse();
                 }
             } catch (\Exception $e) {
                 $this->oauthUtility->customlog("processUserAction: Exception during admin login: " . $e->getMessage());
-                
+
                 // KORRIGIERT: Fehler über URL-Parameter weitergeben
                 $errorMessage = 'Die Anmeldung über Authelia ist fehlgeschlagen. Bitte versuchen Sie es erneut oder wenden Sie sich an Ihren Administrator.';
                 $loginUrl = $this->oauthUtility->getBaseUrl() . 'admin?oidc_error=' . base64_encode($errorMessage);
-                
+
                 return $this->getResponse()->setRedirect($loginUrl)->sendResponse();
             }
         } else {
@@ -216,7 +216,7 @@ class ProcessUserAction extends BaseAction
             $this->oauthUtility->customlog("processUserAction: Processing as customer login");
             if ($this->oauthUtility->getSessionData('guest_checkout')) {
                 $this->oauthUtility->setSessionData('guest_checkout', NULL);
-                $this->customerLoginAction->setUser($user)->setRelayState($this->oauthUtility->getBaseUrl().'checkout')->execute();
+                $this->customerLoginAction->setUser($user)->setRelayState($this->oauthUtility->getBaseUrl() . 'checkout')->execute();
             } else if (is_array($this->attrs)) {
                 $this->customerLoginAction->setUser($user)->setRelayState($this->attrs['relayState'])->execute();
             } else {
@@ -228,8 +228,8 @@ class ProcessUserAction extends BaseAction
     {
         $this->oauthUtility->customlog("processUserAction: generateEmail");
         $siteurl = $this->oauthUtility->getBaseUrl();
-        $siteurl = substr($siteurl, strpos($siteurl, '//'), strlen($siteurl)-1);
-        return $userName .'@'.$siteurl;
+        $siteurl = substr($siteurl, strpos($siteurl, '//'), strlen($siteurl) - 1);
+        return $userName . '@' . $siteurl;
     }
 
     //to do extend with additional user creation logic and fields
@@ -237,23 +237,23 @@ class ProcessUserAction extends BaseAction
     private function createNewUser($user_email, $firstName, $lastName, $userName, $user, &$admin)
     {
         $this->oauthUtility->customlog("processUserAction: createNewUser");
-        
+
         //To Do better handling of missing first name last name username attributes from idp
-        if(empty($firstName)) {
+        if (empty($firstName)) {
             $parts = explode("@", $user_email);
             $firstName = $parts[0];
-        } 
-        
-        if(empty($lastName)) {
+        }
+
+        if (empty($lastName)) {
             $parts = explode("@", $user_email);
             $lastName = $parts[1];
-        } 
-        
+        }
+
         $random_password = $this->randomUtility->getRandomString(8);
         $userName = !$this->oauthUtility->isBlank($userName) ? $userName : $user_email;
         $firstName = !$this->oauthUtility->isBlank($firstName) ? $firstName : $userName;
         $lastName = !$this->oauthUtility->isBlank($lastName) ? $lastName : $userName;
-        
+
         $user = $this->createCustomer($userName, $user_email, $firstName, $lastName, $random_password);
         return $user;
     }
@@ -264,9 +264,9 @@ class ProcessUserAction extends BaseAction
         $websiteId = $this->storeManager->getWebsite()->getWebsiteId();
         $store = $this->storeManager->getStore();
         $storeId = $store->getStoreId();
-        
-        $this->oauthUtility->customlog("processUserAction: websiteID: ".$websiteId." email: ".$email." firstName: ".$firstName." lastName: ".$lastName);
-        
+
+        $this->oauthUtility->customlog("processUserAction: websiteID: " . $websiteId . " email: " . $email . " firstName: " . $firstName . " lastName: " . $lastName);
+
         return $this->customerFactory->create()
             ->setWebsiteId($websiteId)
             ->setEmail($email)
@@ -305,7 +305,7 @@ class ProcessUserAction extends BaseAction
     private function getAdminUserByEmail($email)
     {
         $this->oauthUtility->customlog("processUserAction: getAdminUserByEmail for " . $email);
-        
+
         try {
             // Zuerst nach Benutzername suchen
             $user = $this->userFactory->create()->loadByUsername($email);
@@ -313,26 +313,26 @@ class ProcessUserAction extends BaseAction
                 $this->oauthUtility->customlog("processUserAction: Found admin user with ID " . $user->getId() . ", Username: " . $user->getUsername() . ", Is Active: " . $user->getIsActive());
                 return $user;
             }
-            
+
             // Wenn nicht gefunden, nach E-Mail-Adresse suchen
             $collection = $this->userFactory->create()->getCollection()
                 ->addFieldToFilter('email', $email);
-            
+
             if ($collection->getSize() > 0) {
                 $user = $collection->getFirstItem();
                 $this->oauthUtility->customlog("processUserAction: Found admin user by email with ID " . $user->getId() . ", Username: " . $user->getUsername() . ", Is Active: " . $user->getIsActive());
-                
+
                 // Prüfen, ob Benutzer aktiv ist
                 if ($user->getIsActive() != 1) {
                     $this->oauthUtility->customlog("processUserAction: Admin user found but is not active");
                 }
-                
+
                 return $user;
             }
-            
+
             $this->oauthUtility->customlog("processUserAction: No admin user found for email " . $email);
             return false;
-            
+
         } catch (\Exception $e) {
             $this->oauthUtility->customlog("processUserAction: Error finding admin user: " . $e->getMessage());
             return false;
@@ -343,8 +343,8 @@ class ProcessUserAction extends BaseAction
     // was ist, wenn die Rolle nicht existiert? // welche Rolle
     private function createAdminUser($userName, $email, $firstName, $lastName, $random_password, $role_assigned)
     {
-        $this->oauthUtility->customlog("processUserAction: Creating Admin user"); 
-        
+        $this->oauthUtility->customlog("processUserAction: Creating Admin user");
+
         $user = $this->userFactory->create();
         $user->setUsername($userName)
             ->setFirstname($firstName)
@@ -353,20 +353,20 @@ class ProcessUserAction extends BaseAction
             ->setPassword($random_password)
             ->setIsActive(1);
         $user->save();
-        
+
         $this->setAdminUserRole($role_assigned, $user);
-        
+
         return $user;
     }
 
     private function setAdminUserRole($role_assigned, $user)
     {
-        $this->oauthUtility->customlog("processUserAction: Set Admin User Role"); 
-        $this->oauthUtility->customlog("processUserAction: role ID: ".$role_assigned); 
-        
+        $this->oauthUtility->customlog("processUserAction: Set Admin User Role");
+        $this->oauthUtility->customlog("processUserAction: role ID: " . $role_assigned);
+
         $user->setRoleId($role_assigned);
         $user->save();
-        
+
         return $user;
     }
 }

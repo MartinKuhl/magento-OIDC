@@ -66,16 +66,17 @@ abstract class BaseAdminAction extends \Magento\Backend\App\Action
      */
     protected function checkIfRequiredFieldsEmpty($array)
     {
-        
+
         foreach ($array as $key => $value) {
-            if ((is_array($value) && ( !isset($value[$key]) || $this->oauthUtility->isBlank($value[$key])) )
-                    || $this->oauthUtility->isBlank($value)
-              ) {
+            if (
+                (is_array($value) && (!isset($value[$key]) || $this->oauthUtility->isBlank($value[$key])))
+                || $this->oauthUtility->isBlank($value)
+            ) {
                 throw new RequiredFieldsException();
             }
         }
 
-        
+
     }
 
 
@@ -89,14 +90,14 @@ abstract class BaseAdminAction extends \Magento\Backend\App\Action
      */
     public function checkIfSupportQueryFieldsEmpty($array)
     {
-        
+
         try {
             $this->checkIfRequiredFieldsEmpty($array);
         } catch (RequiredFieldsException $e) {
             throw new SupportQueryRequiredFieldsException();
         }
     }
-    
+
     /** This function is abstract that needs to be implemented by each Action Class */
     abstract public function execute();
 
@@ -116,7 +117,7 @@ abstract class BaseAdminAction extends \Magento\Backend\App\Action
      */
     protected function checkIfValidPlugin()
     {
-        
+
         if (!$this->oauthUtility->micr()) {
             throw new NotRegisteredException;
         }

@@ -54,39 +54,39 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
         \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
-        \MiniOrange\OAuth\Helper\TestResults $testResults, 
+        \MiniOrange\OAuth\Helper\TestResults $testResults,
         \MiniOrange\OAuth\Controller\Actions\ProcessUserAction $processUserAction,
         \Magento\User\Model\UserFactory $userFactory,
         \Magento\Backend\Model\UrlInterface $backendUrl
     ) {
         // Initialize attribute mappings from configuration
         $this->emailAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_EMAIL);
-        $this->emailAttribute = $oauthUtility->isBlank($this->emailAttribute) 
-            ? OAuthConstants::DEFAULT_MAP_EMAIL 
+        $this->emailAttribute = $oauthUtility->isBlank($this->emailAttribute)
+            ? OAuthConstants::DEFAULT_MAP_EMAIL
             : $this->emailAttribute;
-        
+
         $this->usernameAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_USERNAME);
-        $this->usernameAttribute = $oauthUtility->isBlank($this->usernameAttribute) 
-            ? OAuthConstants::DEFAULT_MAP_USERN 
+        $this->usernameAttribute = $oauthUtility->isBlank($this->usernameAttribute)
+            ? OAuthConstants::DEFAULT_MAP_USERN
             : $this->usernameAttribute;
-        
+
         $this->firstName = $oauthUtility->getStoreConfig(OAuthConstants::MAP_FIRSTNAME);
-        $this->firstName = $oauthUtility->isBlank($this->firstName) 
-            ? OAuthConstants::DEFAULT_MAP_FN 
+        $this->firstName = $oauthUtility->isBlank($this->firstName)
+            ? OAuthConstants::DEFAULT_MAP_FN
             : $this->firstName;
-        
+
         $this->lastName = $oauthUtility->getStoreConfig(OAuthConstants::MAP_LASTNAME);
-        $this->lastName = $oauthUtility->isBlank($this->lastName) 
-            ? OAuthConstants::DEFAULT_MAP_LN 
+        $this->lastName = $oauthUtility->isBlank($this->lastName)
+            ? OAuthConstants::DEFAULT_MAP_LN
             : $this->lastName;
-        
+
         $this->checkIfMatchBy = $oauthUtility->getStoreConfig(OAuthConstants::MAP_MAP_BY);
-        
+
         $this->testResults = $testResults;
         $this->processUserAction = $processUserAction;
         $this->userFactory = $userFactory;
         $this->backendUrl = $backendUrl;
-        
+
         parent::__construct($context, $oauthUtility);
     }
 
@@ -103,7 +103,7 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
         $attrs = $this->userInfoResponse;
         $flattenedAttrs = $this->flattenedUserInfoResponse;
         $userEmail = $this->userEmail;
-        
+
         $isTest = $this->oauthUtility->getStoreConfig(OAuthConstants::IS_TEST);
 
         // Test-Konfiguration: Nicht ins Backend umleiten!
@@ -118,29 +118,29 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
 
         // Nur wenn KEIN Test, Admin-Logik und Redirect ausführen:
         $this->oauthUtility->customlog("=== CheckAttributeMappingAction: Processing authentication for: " . $userEmail);
-        
+
         $isAdminLogin = $this->isAdminUser($userEmail);
         $this->oauthUtility->customlog("User type detection - Admin: " . ($isAdminLogin ? 'YES' : 'NO'));
-        
+
         if ($isAdminLogin) {
             // Redirect admin users to dedicated admin login endpoint
             $this->oauthUtility->customlog("Routing admin user to admin callback endpoint");
-            
+
             $adminCallbackUrl = $this->backendUrl->getUrl('mooauth/actions/oidccallback', [
                 'email' => $userEmail
             ]);
-            
+
             $this->oauthUtility->customlog("Admin callback URL: " . $adminCallbackUrl);
-            
+
             $this->getResponse()->setRedirect($adminCallbackUrl);
             return $this->getResponse();
         }
-        
+
         // Regular customer login flow
         $this->oauthUtility->customlog("Routing customer user to normal login flow");
         return $this->moOAuthCheckMapping($attrs, $flattenedAttrs, $userEmail);
     }
-    
+
     /**
      * Check if the email belongs to an admin user
      * 
@@ -152,24 +152,24 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
     private function isAdminUser($email)
     {
         $this->oauthUtility->customlog("Checking if user is admin: " . $email);
-        
+
         // Try username lookup first
         $user = $this->userFactory->create()->loadByUsername($email);
         if ($user && $user->getId()) {
             $this->oauthUtility->customlog("Admin user found by username - ID: " . $user->getId() . ", Active: " . ($user->getIsActive() ? 'YES' : 'NO'));
             return true;
         }
-        
+
         // Try email lookup
         $userCollection = $this->userFactory->create()->getCollection()
             ->addFieldToFilter('email', $email);
-        
+
         if ($userCollection->getSize() > 0) {
             $user = $userCollection->getFirstItem();
             $this->oauthUtility->customlog("Admin user found by email - ID: " . $user->getId() . ", Active: " . ($user->getIsActive() ? 'YES' : 'NO'));
             return true;
         }
-        
+
         $this->oauthUtility->customlog("User is not an admin");
         return false;
     }
@@ -189,7 +189,7 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
     private function moOAuthCheckMapping($attrs, $flattenedAttrs, $userEmail)
     {
         $this->oauthUtility->customlog("Starting attribute mapping for customer user");
-        
+
         // Save debug data
         $this->saveDebugData($attrs);
 
@@ -200,14 +200,14 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
         }
 
         $this->checkIfMatchBy = OAuthConstants::DEFAULT_MAP_BY;
-        
+
         // Process required attributes
         $this->processUserName($flattenedAttrs);
         $this->processEmail($flattenedAttrs);
         $this->processGroupName($flattenedAttrs);
 
         $this->oauthUtility->customlog("Attribute mapping completed, proceeding to user processing");
-        
+
         return $this->processResult($attrs, $flattenedAttrs, $userEmail);
     }
 
@@ -228,11 +228,11 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
             $this->oauthUtility->customlog("Test mode enabled - showing attribute test results");
             $this->oauthUtility->setStoreConfig(OAuthConstants::IS_TEST, false);
             $this->oauthUtility->flushCache();
-            
+
             // Hilfe: Die Daten werden an den Helper übergeben!
             $output = $this->testResults->output(null, false, [
-                'mail'    => $email,
-                'userinfo'=> $flattenedattrs
+                'mail' => $email,
+                'userinfo' => $flattenedattrs
             ]);
 
             // Im Controller:
@@ -382,7 +382,7 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
         try {
             $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
             $customerSession = $objectManager->get(\Magento\Customer\Model\Session::class);
-            
+
             $debugData = [
                 'timestamp' => date('Y-m-d H:i:s'),
                 'raw_attributes' => $this->userInfoResponse,
@@ -390,9 +390,9 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
                 'email_found' => isset($attrs[$this->emailAttribute]) ? $attrs[$this->emailAttribute] : null,
                 'username_found' => isset($attrs[$this->usernameAttribute]) ? $attrs[$this->usernameAttribute] : null
             ];
-            
+
             $customerSession->setData('mo_oauth_debug_response', json_encode($debugData));
-            
+
             $this->oauthUtility->customlog("Debug data saved to session");
         } catch (\Exception $e) {
             $this->oauthUtility->customlog("Could not save debug data: " . $e->getMessage());

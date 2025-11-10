@@ -27,9 +27,9 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
         ResponseFactory $responseFactory
     ) {
         //You can use dependency injection to get any class this observer may need.
-            $this->customerSession = $customerSession;
-            $this->responseFactory = $responseFactory;
-            parent::__construct($context, $oauthUtility);
+        $this->customerSession = $customerSession;
+        $this->responseFactory = $responseFactory;
+        parent::__construct($context, $oauthUtility);
     }
 
     /**
@@ -39,19 +39,21 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
     {
         if (!isset($this->relayState)) {
             $this->relayState = $this->oauthUtility->getBaseUrl() . "customer/account";
-        }      $this->oauthUtility->customlog("CustomerLoginAction: execute") ;
+        }
+        $this->oauthUtility->customlog("CustomerLoginAction: execute");
 
         $this->customerSession->setCustomerAsLoggedIn($this->user);
         return $this->getResponse()->setRedirect($this->oauthUtility->getUrl($this->relayState))->sendResponse();
     }
 
 
-     /** Setter for the user Parameter
-      * @param $user
-      * @return CustomerLoginAction
-      */
+    /** Setter for the user Parameter
+     * @param $user
+     * @return CustomerLoginAction
+     */
     public function setUser($user)
-    {  $this->oauthUtility->customlog("CustomerLoginAction: setUser")  ;
+    {
+        $this->oauthUtility->customlog("CustomerLoginAction: setUser");
 
         $this->user = $user;
         return $this;

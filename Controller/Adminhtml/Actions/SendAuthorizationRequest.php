@@ -34,7 +34,7 @@ class SendAuthorizationRequest extends BaseAction
         $islogEnable = $this->oauthUtility->getStoreConfig(OAuthConstants::ENABLE_DEBUG_LOG);
         $log_file_exist = $this->oauthUtility->isCustomLogExist();
 
-        if ((($Log_file_time != NULL && ($current_time - $Log_file_time) >= 60*60*24*7) && $islogEnable) || ($islogEnable == 0 && $log_file_exist)) {
+        if ((($Log_file_time != NULL && ($current_time - $Log_file_time) >= 60 * 60 * 24 * 7) && $islogEnable) || ($islogEnable == 0 && $log_file_exist)) {
             $this->oauthUtility->setStoreConfig(OAuthConstants::ENABLE_DEBUG_LOG, 0);
             $chk_enable_log = 0;
             $this->oauthUtility->setStoreConfig(OAuthConstants::LOG_FILE_TIME, NULL);

@@ -16,7 +16,7 @@ class ProcessResponseAction extends BaseAction
     private $userInfoResponse;
     private $testAction;
     private $processUserAction;
-    
+
     /**
      * @var CheckAttributeMappingAction
      */
@@ -41,29 +41,29 @@ class ProcessResponseAction extends BaseAction
         $this->oauthUtility->customlog("processResponseAction: execute");
         $this->validateUserInfoData();
         $userInfoResponse = $this->userInfoResponse;
-        
+
         // flatten the nested OAuth response
         $flattenedUserInfoResponse = [];
         $flattenedUserInfoResponse = $this->getflattenedArray("", $userInfoResponse, $flattenedUserInfoResponse);
-        
+
         $userEmail = $this->findUserEmail($userInfoResponse);
         if (empty($userEmail)) {
             return $this->getResponse()->setBody("Email address not received. Please check attribute mapping.");
         }
-        
+
         $result = $this->attrMappingAction->setUserInfoResponse($userInfoResponse)
             ->setFlattenedUserInfoResponse($flattenedUserInfoResponse)
             ->setUserEmail($userEmail)->execute();
-        
+
         // Debug: Prüfe was zurückkommt
-        $this->oauthUtility->customlog("ProcessResponseAction: attrMappingAction returned: " . 
+        $this->oauthUtility->customlog("ProcessResponseAction: attrMappingAction returned: " .
             ($result ? get_class($result) : 'NULL'));
-        
+
         return $result;
     }
 
     private function findUserEmail($arr)
-    { 
+    {
         $this->oauthUtility->customlog("processResponseAction: findUserEmail");
         if ($arr) {
             foreach ($arr as $value) {
@@ -104,7 +104,7 @@ class ProcessResponseAction extends BaseAction
     private function validateUserInfoData()
     {
         $this->oauthUtility->customlog("processResponseAction: validateUserInfoData");
-        
+
         $userInfo = $this->userInfoResponse;
         if (isset($userInfo->error)) {
             throw new IncorrectUserInfoDataException();
@@ -115,7 +115,7 @@ class ProcessResponseAction extends BaseAction
     public function setUserInfoResponse($userInfoResponse)
     {
         $this->oauthUtility->customlog("processResponseAction: setUserInfoResponse");
-        
+
         $this->userInfoResponse = $userInfoResponse;
         return $this;
     }

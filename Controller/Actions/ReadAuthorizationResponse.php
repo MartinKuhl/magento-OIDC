@@ -110,7 +110,7 @@ class ReadAuthorizationResponse extends BaseAction
         if (!($userInfoURL == NULL || $userInfoURL == '') && isset($accessTokenResponseData['access_token'])) {
             $accessToken = $accessTokenResponseData['access_token'];
             $headerAuth = "Bearer " . $accessToken;
-            $authHeader = [ "Authorization: $headerAuth" ];
+            $authHeader = ["Authorization: $headerAuth"];
             $userInfoResponse = Curl::mo_send_user_info_request($userInfoURL, $authHeader);
             $userInfoResponseData = json_decode($userInfoResponse, true);
         } elseif (isset($accessTokenResponseData['id_token'])) {
@@ -118,7 +118,7 @@ class ReadAuthorizationResponse extends BaseAction
             if (!empty($idToken)) {
                 $idTokenArray = explode(".", $idToken);
                 $userInfoResponseData = $idTokenArray[1];
-                $userInfoResponseData = (array) json_decode((string)base64_decode($userInfoResponseData));
+                $userInfoResponseData = (array) json_decode((string) base64_decode($userInfoResponseData));
             }
         } else {
             return $this->getResponse()->setBody("Invalid response. Please try again.");

@@ -59,10 +59,10 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
     public function execute()
     {
         $email = $this->request->getParam('email');
-        
+
         $this->oauthUtility->customlog("OIDC Admin Callback: Starting authentication");
         $this->oauthUtility->customlog("Email parameter: " . ($email ?? 'NULL'));
-        
+
         if (empty($email)) {
             $this->oauthUtility->customlog("ERROR: Email parameter is empty");
             return $this->redirectToLoginWithError(
@@ -72,14 +72,14 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
 
         try {
             $this->oauthUtility->customlog("Searching for admin user with email: " . $email);
-            
+
             // Find admin user by email
             $userCollection = $this->userFactory->create()->getCollection()
                 ->addFieldToFilter('email', $email);
 
             if ($userCollection->getSize() === 0) {
                 $this->oauthUtility->customlog("ERROR: Admin user not found for email: " . $email);
-                
+
                 return $this->redirectToLoginWithError(
                     __(
                         'Admin-Zugang verweigert: Für die E-Mail-Adresse "%1" ist kein Administrator-Konto in Magento hinterlegt. Bitte wenden Sie sich an Ihren Systemadministrator.',
@@ -90,11 +90,11 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
 
             $user = $userCollection->getFirstItem();
             $this->oauthUtility->customlog("Admin user found - ID: " . $user->getId() . ", Username: " . $user->getUsername());
-            
+
             // Verify user is active
             if (!$user->getIsActive()) {
                 $this->oauthUtility->customlog("ERROR: Admin user is inactive (ID: " . $user->getId() . ")");
-                
+
                 return $this->redirectToLoginWithError(
                     __(
                         'Admin-Zugang verweigert: Das Administrator-Konto für "%1" ist deaktiviert. Bitte kontaktieren Sie Ihren Systemadministrator zur Aktivierung.',
@@ -112,12 +112,12 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
             // Verify login success
             $isLoggedIn = $this->authSession->isLoggedIn();
             $sessionUserId = $this->authSession->getUser() ? $this->authSession->getUser()->getId() : 'NULL';
-            
+
             $this->oauthUtility->customlog("Login result - isLoggedIn: " . ($isLoggedIn ? 'YES' : 'NO') . ", Session User ID: " . $sessionUserId);
 
             if ($isLoggedIn) {
                 $this->oauthUtility->customlog("SUCCESS: Admin login successful, redirecting to dashboard");
-                
+
                 $this->messageManager->addSuccessMessage(
                     __('Willkommen zurück, %1!', $user->getFirstname() ?: $user->getUsername())
                 );
@@ -133,7 +133,7 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
         } catch (\Exception $e) {
             $this->oauthUtility->customlog("EXCEPTION in OIDC admin callback: " . $e->getMessage());
             $this->oauthUtility->customlog("Stack trace: " . $e->getTraceAsString());
-            
+
             return $this->redirectToLoginWithError(
                 __(
                     'Die Anmeldung über Authelia ist fehlgeschlagen. Bitte versuchen Sie es erneut oder wenden Sie sich an Ihren Administrator.'
@@ -152,14 +152,14 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
     private function redirectToLoginWithError($message)
     {
         $resultRedirect = $this->resultFactory->create(ResultFactory::TYPE_REDIRECT);
-        
+
         // Erstelle Admin-Login-URL mit Fehlerparameter
         $loginUrl = $this->url->getUrl('admin', [
             '_query' => [
-                'oidc_error' => base64_encode((string)$message)
+                'oidc_error' => base64_encode((string) $message)
             ]
         ]);
-        
+
         $resultRedirect->setUrl($loginUrl);
         return $resultRedirect;
     }

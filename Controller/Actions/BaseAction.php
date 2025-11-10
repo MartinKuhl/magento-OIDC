@@ -40,9 +40,10 @@ abstract class BaseAction extends \Magento\Framework\App\Action\Action
     {
         foreach ($array as $key => $value) {
 
-            if ((is_array($value) && ( !isset($value[$key]) || $this->oauthUtility->isBlank($value[$key])) )
+            if (
+                (is_array($value) && (!isset($value[$key]) || $this->oauthUtility->isBlank($value[$key])))
                 || $this->oauthUtility->isBlank($value)
-              ) {
+            ) {
                 throw new RequiredFieldsException();
             }
         }
@@ -62,18 +63,18 @@ abstract class BaseAction extends \Magento\Framework\App\Action\Action
     protected function sendHTTPRedirectRequest($oauthRequest, $authorizeUrl, $relayState = '', $params = [])
     {
         $this->oauthUtility->customlog("BaseAction: sendHTTPRedirectRequest - Ensuring PHP session is properly saved before redirect");
-        
+
         // Stellt sicher, dass alle Session-Daten richtig gespeichert werden, bevor wir umleiten
         if (session_status() === PHP_SESSION_ACTIVE) {
             $this->oauthUtility->customlog("BaseAction: Current session ID: " . session_id());
             session_write_close();
         }
-        
+
         $oauthRequest = $authorizeUrl . $oauthRequest;
         return $this->resultRedirectFactory->create()->setUrl($oauthRequest);
     }
 
-    
+
     /** This function is abstract that needs to be implemented by each Action Class */
     abstract public function execute();
 
@@ -92,7 +93,7 @@ abstract class BaseAction extends \Magento\Framework\App\Action\Action
      */
     protected function checkIfValidPlugin()
     {
-        
+
         if (!$this->oauthUtility->micr()) {
             throw new NotRegisteredException;
         }

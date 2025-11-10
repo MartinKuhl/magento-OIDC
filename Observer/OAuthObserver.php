@@ -41,7 +41,7 @@ class OAuthObserver implements ObserverInterface
         OAuthUtility $oauthUtility,
         Http $httpRequest,
         RequestInterface $request,
-        TestResults $testResults 
+        TestResults $testResults
     ) {
         //You can use dependency injection to get any class this observer may need.
         $this->messageManager = $messageManager;
@@ -103,21 +103,21 @@ class OAuthObserver implements ObserverInterface
                         null,  // kein Exception
                         false, // kein Fehlerfall
                         [
-                            'mail'     => $params['mail'] ?? '',
+                            'mail' => $params['mail'] ?? '',
                             'userinfo' => $params['userinfo'] ?? [],
-                            'debug'    => $params // <-- gesamtes Array für Debug
+                            'debug' => $params // <-- gesamtes Array für Debug
                         ]
                     );
                     // Ausgabe im Observer-Kontext (je nach Bedarf):
-                    echo $output;        
+                    echo $output;
                     // Oder, falls ein Response-Objekt existiert:
                     // $this->getResponse()->setBody($output);
-                } else if ($params['option']==OAuthConstants::LOGIN_ADMIN_OPT) {
+                } else if ($params['option'] == OAuthConstants::LOGIN_ADMIN_OPT) {
                     // Echtes Admin-Login → adminLoginAction
                     $this->adminLoginAction->execute();
                 }
                 break;
         }
-}
+    }
 
 }

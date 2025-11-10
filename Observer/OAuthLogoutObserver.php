@@ -69,7 +69,7 @@ class OAuthLogoutObserver implements ObserverInterface
     {
         $logoutUrl = $this->oauthUtility->getStoreConfig(OAuthConstants::OAUTH_LOGOUT_URL);
         if (!empty($logoutUrl)) {
-            $temp = '<script>window.location = "'.$logoutUrl.'";</script>';
+            $temp = '<script>window.location = "' . $logoutUrl . '";</script>';
             return $this->_response->setBody($temp);
         }
     }
