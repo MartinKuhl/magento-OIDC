@@ -83,7 +83,7 @@ class sendAuthorizationRequest extends BaseAction
         $this->oauthUtility->setSessionData(OAuthConstants::APP_NAME, $app_name);
 
         $collection = $this->oauthUtility->getOAuthClientApps();
-        $this->oauthUtility->log_debug("SendAuthorizationRequest: collection :", count($collection));
+        //$this->oauthUtility->log_debug("SendAuthorizationRequest: collection :", count($collection));
         foreach ($collection as $item) {
             if ($item->getData()["app_name"] === $app_name) {
                 $clientDetails = $item->getData();

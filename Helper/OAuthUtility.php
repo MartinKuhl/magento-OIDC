@@ -13,8 +13,8 @@ use Magento\Framework\Url;
 use Magento\Framework\UrlInterface;
 use Magento\Framework\View\Asset\Repository;
 use Magento\User\Model\UserFactory;
-use MiniOrange\OAuth\Helper\OAuthConstants;
 
+use MiniOrange\OAuth\Helper\OAuthConstants;
 use MiniOrange\OAuth\Helper\Data;
 use MiniOrange\OAuth\Helper\Exception\InvalidOperationException;
 use MiniOrange\OAuth\Helper\OAuth\SAML2Utilities;
@@ -479,14 +479,14 @@ class OAuthUtility extends Data
     public function log_debug($msg="", $obj=null){
 
         if(is_object($msg)){
-             $this->customlog("MO OAuth Free : ".print_r($obj,true)) ;
+             $this->customlog(print_r($obj,true)) ;
         }else{
-             $this->customlog("MO OAuth Free : ".$msg) ;
+             $this->customlog($msg) ;
 
         }
 
         if($obj!=null){
-         $this->customlog("MO OAuth Free : ".var_export($obj,true))  ;
+         $this->customlog(var_export($obj,true))  ;
 
 
         }
@@ -532,7 +532,7 @@ class OAuthUtility extends Data
     }
 
     public function getCurrentDate(){
-        $dateTimeZone = new \DateTimeZone('Asia/Calcutta'); 
+        $dateTimeZone = new \DateTimeZone('Europe/Berlin'); 
         $dateTime = new \DateTime('now', $dateTimeZone);
         return $dateTime->format('n/j/Y, g:i:s a');
     }
