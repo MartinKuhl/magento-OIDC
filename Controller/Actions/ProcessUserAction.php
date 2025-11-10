@@ -181,14 +181,12 @@ class ProcessUserAction extends Action
             $this->oauthUtility->customlog("processUserAction: Processing as admin login");
 
             try {
-                //require_once dirname(__FILE__) . '/../../Helper/AdminAuthHelper.php';
 
                 $adminUser = $this->getAdminUserByEmail($user_email);
                 if ($adminUser && $adminUser->getIsActive() == 1) {
                     $this->oauthUtility->customlog("processUserAction: Admin user found and is active");
 
                     $redirectUrl = $this->adminAuthHelper->getStandaloneLoginUrl($user_email, $relayState);
-                    //$redirectUrl = \MiniOrange\OAuth\Helper\AdminAuthHelper::getStandaloneLoginUrl($user_email, $relayState);
 
                     $this->oauthUtility->customlog("processUserAction: Redirecting to: " . $redirectUrl);
                     $this->getResponse()->setRedirect($redirectUrl)->sendResponse();
