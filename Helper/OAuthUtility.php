@@ -65,28 +65,28 @@ class OAuthUtility extends Data
         \MiniOrange\OAuth\Model\MiniorangeOauthClientAppsFactory $miniorangeOauthClientAppsFactory,
         dateTime $dateTime
     ) {
-                        $this->adminSession = $adminSession;
-                        $this->customerSession = $customerSession;
-                        $this->authSession = $authSession;
-                        $this->cacheTypeList = $cacheTypeList;
-                        $this->cacheFrontendPool = $cacheFrontendPool;
-                        $this->fileSystem = $fileSystem;
-                        $this->logger = $logger;
-                        $this->reinitableConfig = $reinitableConfig;
-                        $this->_logger = $logger2;
-                        $this->productMetadata = $productMetadata;
-                        $this->dateTime=$dateTime;
-                       parent::__construct(
-                           $scopeConfig,
-                           $adminFactory,
-                           $customerFactory,
-                           $urlInterface,
-                           $configWriter,
-                           $assetRepo,
-                           $helperBackend,
-                           $frontendUrl,
-                           $miniorangeOauthClientAppsFactory
-                       );
+        $this->adminSession = $adminSession;
+        $this->customerSession = $customerSession;
+        $this->authSession = $authSession;
+        $this->cacheTypeList = $cacheTypeList;
+        $this->cacheFrontendPool = $cacheFrontendPool;
+        $this->fileSystem = $fileSystem;
+        $this->logger = $logger;
+        $this->reinitableConfig = $reinitableConfig;
+        $this->_logger = $logger2;
+        $this->productMetadata = $productMetadata;
+        $this->dateTime = $dateTime;
+        parent::__construct(
+            $scopeConfig,
+            $adminFactory,
+            $customerFactory,
+            $urlInterface,
+            $configWriter,
+            $assetRepo,
+            $helperBackend,
+            $frontendUrl,
+            $miniorangeOauthClientAppsFactory
+        );
     }
 
     /**
@@ -107,28 +107,30 @@ class OAuthUtility extends Data
      * This function print custom log in var/log/mo_oauth.log file.
      */
     public function customlog($txt)
-    {   
-        $this->isLogEnable() ? $this->_logger->debug($txt): NULL; 
+    {
+        $this->isLogEnable() ? $this->_logger->debug($txt) : NULL;
     }
-       /**
-    * This function check whether any custom log file exist or not. 
-     */ 
+    /**
+     * This function check whether any custom log file exist or not. 
+     */
     public function isCustomLogExist()
-    {   if($this->fileSystem->isExists("../var/log/mo_oauth.log")){
-        return 1;
-    }elseif($this->fileSystem->isExists("var/log/mo_oauth.log")){
-        return 1;
+    {
+        if ($this->fileSystem->isExists("../var/log/mo_oauth.log")) {
+            return 1;
+        } elseif ($this->fileSystem->isExists("var/log/mo_oauth.log")) {
+            return 1;
+        }
+        return 0;
     }
-      return 0; 
-    }
-    
+
     public function deleteCustomLogFile()
-    {if($this->fileSystem->isExists("../var/log/mo_oauth.log")){
-        $this->fileSystem->deleteFile("../var/log/mo_oauth.log");
-    }elseif($this->fileSystem->isExists("var/log/mo_oauth.log")){
-        $this->fileSystem->deleteFile("var/log/mo_oauth.log");
+    {
+        if ($this->fileSystem->isExists("../var/log/mo_oauth.log")) {
+            $this->fileSystem->deleteFile("../var/log/mo_oauth.log");
+        } elseif ($this->fileSystem->isExists("var/log/mo_oauth.log")) {
+            $this->fileSystem->deleteFile("var/log/mo_oauth.log");
+        }
     }
-}
     /**
      * This function checks if a value is set or
      * empty. Returns true if value is empty
@@ -138,7 +140,7 @@ class OAuthUtility extends Data
      */
     public function isBlank($value)
     {
-        if (! isset($value) || empty($value)) {
+        if (!isset($value) || empty($value)) {
             return true;
         }
         return false;
@@ -186,15 +188,15 @@ class OAuthUtility extends Data
      */
     public function getHiddenEmail($email)
     {
-        if (!isset($email) || trim($email)==='') {
+        if (!isset($email) || trim($email) === '') {
             return "";
         }
 
         $emailsize = strlen($email);
         $partialemail = substr($email, 0, 1);
         $temp = strrpos($email, "@");
-        $endemail = substr($email, $temp-1, $emailsize);
-        for ($i=1; $i<$temp; $i++) {
+        $endemail = substr($email, $temp - 1, $emailsize);
+        for ($i = 1; $i < $temp; $i++) {
             $partialemail = $partialemail . 'x';
         }
 
@@ -202,9 +204,9 @@ class OAuthUtility extends Data
 
         return $hiddenemail;
     }
-/***
- * @return \Magento\Backend\Model\Session
- */
+    /***
+     * @return \Magento\Backend\Model\Session
+     */
     public function getAdminSession()
     {
         return $this->adminSession;
@@ -298,7 +300,7 @@ class OAuthUtility extends Data
      */
     public function micr()
     {
-              $email = $this->getStoreConfig(OAuthConstants::CUSTOMER_EMAIL);
+        $email = $this->getStoreConfig(OAuthConstants::CUSTOMER_EMAIL);
         $key = $this->getStoreConfig(OAuthConstants::CUSTOMER_KEY);
         return !$this->isBlank($email) && !$this->isBlank($key) ? true : false;
     }
@@ -312,7 +314,7 @@ class OAuthUtility extends Data
     public function isUserLoggedIn()
     {
         return $this->customerSession->isLoggedIn()
-                || $this->authSession->isLoggedIn();
+            || $this->authSession->isLoggedIn();
     }
 
     /**
@@ -346,7 +348,7 @@ class OAuthUtility extends Data
      */
     public function getAdminPageUrl()
     {
-            return $this->getAdminBaseUrl();
+        return $this->getAdminBaseUrl();
     }
 
     /**
@@ -430,28 +432,29 @@ class OAuthUtility extends Data
 
     public function removeSignInSettings()
     {
-            $this->setStoreConfig(OAuthConstants::SHOW_CUSTOMER_LINK, 0);
-            $this->setStoreConfig(OAuthConstants::SHOW_ADMIN_LINK, 0);
+        $this->setStoreConfig(OAuthConstants::SHOW_CUSTOMER_LINK, 0);
+        $this->setStoreConfig(OAuthConstants::SHOW_ADMIN_LINK, 0);
     }
-    public function reinitConfig(){
+    public function reinitConfig()
+    {
 
-            $this->reinitableConfig->reinit();
+        $this->reinitableConfig->reinit();
     }
 
-        /**
+    /**
      * This function is used to check if customer has completed
      * the registration process. Returns TRUE or FALSE. Checks
      * for the email and customerkey in the database are set
      * or not. Then checks if license key has been verified.
      */
-	public function mclv()
-	{
-		$token = $this->getStoreConfig(OAuthConstants::TOKEN);
-		$isVerified = AESEncryption::decrypt_data($this->getStoreConfig(OAuthConstants::SAMLSP_CKL),$token);
-		$licenseKey = $this->getStoreConfig(OAuthConstants::SAMLSP_LK);
-		return $isVerified == "true" ? TRUE : FALSE;
-	}
-    
+    public function mclv()
+    {
+        $token = $this->getStoreConfig(OAuthConstants::TOKEN);
+        $isVerified = AESEncryption::decrypt_data($this->getStoreConfig(OAuthConstants::SAMLSP_CKL), $token);
+        $licenseKey = $this->getStoreConfig(OAuthConstants::SAMLSP_LK);
+        return $isVerified == "true" ? TRUE : FALSE;
+    }
+
     /**
      * Check if debug logging is enabled
      * Uses the existing configuration path from the database
@@ -462,31 +465,32 @@ class OAuthUtility extends Data
     {
         // Verwende die existierende Konfiguration über die Konstante
         $configValue = $this->getStoreConfig(OAuthConstants::ENABLE_DEBUG_LOG);
-        
+
         // Wenn die neue Config existiert, bevorzuge diese
         $newConfigValue = $this->getStoreConfig('miniorange/oauth/debug_log');
         if ($newConfigValue !== null) {
-            return (bool)$newConfigValue;
+            return (bool) $newConfigValue;
         }
-        
+
         // Fallback auf alte Konfiguration
-        return (bool)$configValue;
+        return (bool) $configValue;
     }
 
     /**
      *Common Log Method .. Accessible in all classes through
      **/
-    public function log_debug($msg="", $obj=null){
+    public function log_debug($msg = "", $obj = null)
+    {
 
-        if(is_object($msg)){
-             $this->customlog(print_r($obj,true)) ;
-        }else{
-             $this->customlog($msg) ;
+        if (is_object($msg)) {
+            $this->customlog(print_r($obj, true));
+        } else {
+            $this->customlog($msg);
 
         }
 
-        if($obj!=null){
-         $this->customlog(var_export($obj,true))  ;
+        if ($obj != null) {
+            $this->customlog(var_export($obj, true));
 
 
         }
@@ -498,7 +502,7 @@ class OAuthUtility extends Data
      */
     public function getClientDetails()
     {
-        $appName = $this->getStoreConfig(OAuthConstants::APP_NAME);       
+        $appName = $this->getStoreConfig(OAuthConstants::APP_NAME);
         $clientDetails = null;
         $collection = $this->getOAuthClientApps();
         $this->log_debug("SendAuthorizationRequest: collection :", count($collection));
@@ -513,26 +517,29 @@ class OAuthUtility extends Data
         $scope = $clientDetails["scope"];
         $header = $clientDetails["values_in_header"];
         $body = $clientDetails["values_in_body"];
-        $getuserinfo_url =$clientDetails['user_info_endpoint'];
+        $getuserinfo_url = $clientDetails['user_info_endpoint'];
         $authorize_url = $clientDetails['authorize_endpoint'];
         $endpoint_url = $clientDetails['well_known_config_url'];
         $show_customer_link = $this->getStoreConfig(OAuthConstants::SHOW_CUSTOMER_LINK);
-        $attribute_email = $this->getStoreConfig(OAuthConstants::MAP_EMAIL );
+        $attribute_email = $this->getStoreConfig(OAuthConstants::MAP_EMAIL);
         $attribute_username = $this->getStoreConfig(OAuthConstants::MAP_USERNAME);
         $customer_email = $this->getStoreConfig(OAuthConstants::DEFAULT_MAP_EMAIL);
-        return array($appName,$scope,$clientID,$clientSecret,$authorize_url,$accesstoken_url,$getuserinfo_url, $header,$body,$endpoint_url, $show_customer_link,$attribute_email,$attribute_username,$customer_email);
+        return array($appName, $scope, $clientID, $clientSecret, $authorize_url, $accesstoken_url, $getuserinfo_url, $header, $body, $endpoint_url, $show_customer_link, $attribute_email, $attribute_username, $customer_email);
     }
 
-    public function getProductVersion(){
-        return  $this->productMetadata->getVersion(); 
+    public function getProductVersion()
+    {
+        return $this->productMetadata->getVersion();
     }
 
-    public function getEdition(){
-        return $this->productMetadata->getEdition() == 'Community' ? 'Magento Open Source':'Adobe Commerce Enterprise/Cloud';
+    public function getEdition()
+    {
+        return $this->productMetadata->getEdition() == 'Community' ? 'Magento Open Source' : 'Adobe Commerce Enterprise/Cloud';
     }
 
-    public function getCurrentDate(){
-        $dateTimeZone = new \DateTimeZone('Europe/Berlin'); 
+    public function getCurrentDate()
+    {
+        $dateTimeZone = new \DateTimeZone('Europe/Berlin');
         $dateTime = new \DateTime('now', $dateTimeZone);
         return $dateTime->format('n/j/Y, g:i:s a');
     }

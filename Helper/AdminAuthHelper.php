@@ -29,11 +29,11 @@ class AdminAuthHelper
                 // Fallback-Methode bei Fehlern
             }
         }
-        
+
         // Fallback: URL aus $_SERVER ermitteln
         $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
         $domainName = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'];
-        
+
         // Basis-Pfad der Magento-Installation ermitteln
         $basePath = '';
         $scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
@@ -43,7 +43,7 @@ class AdminAuthHelper
                 $basePath = '';
             }
         }
-        
+
         return $protocol . $domainName . $basePath . '/';
     }
     /**
@@ -57,21 +57,21 @@ class AdminAuthHelper
     {
         // Einfache Methode zur Bestimmung der Base-URL ohne ObjectManager
         $baseUrl = self::getBaseUrl();
-        
+
         // URL für das Standalone-Direct-Login-Skript erstellen (neue robuste Lösung)
         $url = $baseUrl . 'direct-admin-login.php';
         $url .= '?email=' . urlencode($email);
         $url .= '&debug=true'; // Debug-Ausgaben aktivieren
-        
+
         if (!empty($redirectUrl)) {
             $url .= '&redirect=' . urlencode($redirectUrl);
         }
-        
+
         $url .= '&ts=' . time(); // Timestamp zur Cache-Vermeidung
-        
+
         return $url;
     }
-    
+
     /**
      * Einfache Log-Funktion
      * 

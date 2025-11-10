@@ -16,7 +16,7 @@ class MoCurl extends \Magento\Framework\HTTP\Adapter\Curl
 {
     protected $_header;
     protected $_body;
-    
+
     public function __construct()
     {
         /**
@@ -28,10 +28,10 @@ class MoCurl extends \Magento\Framework\HTTP\Adapter\Curl
         $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
         $productMetadata = $objectManager->get('Magento\Framework\App\ProductMetadataInterface');
         $version = $productMetadata->getVersion();
-        if ($version<2.2) {
+        if ($version < 2.2) {
             parent::__construct();
         }
-           $this->_config['verifypeer'] = false;
+        $this->_config['verifypeer'] = false;
         $this->_config['verifyhost'] = false;
         $this->_config['header'] = false;
     }

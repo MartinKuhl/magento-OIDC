@@ -42,11 +42,11 @@ class Data extends AbstractHelper
         $this->assetRepo = $assetRepo;
         $this->helperBackend = $helperBackend;
         $this->frontendUrl = $frontendUrl;
-        $this->_miniorangeOauthClientAppsFactory=$miniorangeOauthClientAppsFactory;
+        $this->_miniorangeOauthClientAppsFactory = $miniorangeOauthClientAppsFactory;
     }
 
 
-     /**
+    /**
      * Set the entry in the OAuthClientApp Table
      *
      * @param $mo_oauth_app_name
@@ -61,36 +61,35 @@ class Data extends AbstractHelper
      * @param  $send_header
      * @param  $send_body
      * @param  $jwksURL
-     */  
+     */
 
-     public function setOAuthClientApps(
-                $mo_oauth_app_name,
-                $mo_oauth_client_id,
-                $mo_oauth_client_secret,
-                $mo_oauth_scope,
-                $mo_oauth_authorize_url,
-                $mo_oauth_accesstoken_url,
-                $mo_oauth_getuserinfo_url,
-                $mo_oauth_well_known_config_url,
-                $mo_oauth_grant_type,
-                $send_header,
-                $send_body,
-        )
-    {
+    public function setOAuthClientApps(
+        $mo_oauth_app_name,
+        $mo_oauth_client_id,
+        $mo_oauth_client_secret,
+        $mo_oauth_scope,
+        $mo_oauth_authorize_url,
+        $mo_oauth_accesstoken_url,
+        $mo_oauth_getuserinfo_url,
+        $mo_oauth_well_known_config_url,
+        $mo_oauth_grant_type,
+        $send_header,
+        $send_body,
+    ) {
         $model = $this->_miniorangeOauthClientAppsFactory->create();
         $model->addData([
-        "app_name" => $mo_oauth_app_name,
-        "callback_uri" => '',
-        "clientID" => $mo_oauth_client_id,
-        "client_secret" => $mo_oauth_client_secret,
-        "scope" => $mo_oauth_scope,
-        "authorize_endpoint" => $mo_oauth_authorize_url,
-        "access_token_endpoint" => $mo_oauth_accesstoken_url,
-        "user_info_endpoint" => $mo_oauth_getuserinfo_url,
-        "well_known_config_url"=> $mo_oauth_well_known_config_url,
-        "grant_type" => $mo_oauth_grant_type,
-        "values_in_header" => $send_header,
-        "values_in_body" =>$send_body 
+            "app_name" => $mo_oauth_app_name,
+            "callback_uri" => '',
+            "clientID" => $mo_oauth_client_id,
+            "client_secret" => $mo_oauth_client_secret,
+            "scope" => $mo_oauth_scope,
+            "authorize_endpoint" => $mo_oauth_authorize_url,
+            "access_token_endpoint" => $mo_oauth_accesstoken_url,
+            "user_info_endpoint" => $mo_oauth_getuserinfo_url,
+            "well_known_config_url" => $mo_oauth_well_known_config_url,
+            "grant_type" => $mo_oauth_grant_type,
+            "values_in_header" => $send_header,
+            "values_in_body" => $send_body
         ]);
         $model->save();
     }
@@ -99,12 +98,12 @@ class Data extends AbstractHelper
      * Delete all the records
      */
     public function deleteAllRecords()
-{
-    $this->_miniorangeOauthClientAppsFactory
-        ->create()
-        ->getCollection()
-        ->walk('delete');
-}
+    {
+        $this->_miniorangeOauthClientAppsFactory
+            ->create()
+            ->getCollection()
+            ->walk('delete');
+    }
     /**
      * Get All the entry from the OAuthClientApp Table
      */
@@ -154,7 +153,7 @@ class Data extends AbstractHelper
     public function setStoreConfig($config, $value)
     {
         $this->configWriter->save('miniorange/oauth/' . $config, $value);
-        
+
         // Wenn es sich um Admin- oder Kunden-Link-Einstellungen handelt, aktualisieren Sie auch die OAuth-Client-App-Tabelle
         if ($config === OAuthConstants::SHOW_ADMIN_LINK || $config === OAuthConstants::SHOW_CUSTOMER_LINK) {
             try {
@@ -171,7 +170,7 @@ class Data extends AbstractHelper
             }
         }
     }
-    
+
 
     /**
      * This function is used to save user attributes to the
@@ -214,11 +213,11 @@ class Data extends AbstractHelper
      */
     private function saveAdminStoreConfig($url, $value, $id)
     {
-        $data = [$url=>$value];
+        $data = [$url => $value];
         $model = $this->adminFactory->create()->load($id)->addData($data);
         $model->setId($id)->save();
     }
-    
+
 
     /**
      * Function to extract information stored in the customer user table.
@@ -244,7 +243,7 @@ class Data extends AbstractHelper
      */
     private function saveCustomerStoreConfig($url, $value, $id)
     {
-        $data = [$url=>$value];
+        $data = [$url => $value];
         $model = $this->customerFactory->create()->load($id)->addData($data);
         $model->setId($id)->save();
     }
@@ -255,7 +254,7 @@ class Data extends AbstractHelper
      */
     public function getBaseUrl()
     {
-        return  $this->urlInterface->getBaseUrl();
+        return $this->urlInterface->getBaseUrl();
     }
 
 
@@ -264,7 +263,7 @@ class Data extends AbstractHelper
      */
     public function getCurrentUrl()
     {
-        return  $this->urlInterface->getCurrentUrl();
+        return $this->urlInterface->getCurrentUrl();
     }
 
 
@@ -275,7 +274,7 @@ class Data extends AbstractHelper
      */
     public function getUrl($url, $params = [])
     {
-        return  $this->urlInterface->getUrl($url, ['_query'=>$params]);
+        return $this->urlInterface->getUrl($url, ['_query' => $params]);
     }
 
 
@@ -286,7 +285,7 @@ class Data extends AbstractHelper
      */
     public function getFrontendUrl($url, $params = [])
     {
-        return  $this->frontendUrl->getUrl($url, ['_query'=>$params]);
+        return $this->frontendUrl->getUrl($url, ['_query' => $params]);
     }
 
 
@@ -306,7 +305,7 @@ class Data extends AbstractHelper
      */
     public function getImageUrl($image)
     {
-        return $this->assetRepo->getUrl(OAuthConstants::MODULE_DIR.OAuthConstants::MODULE_IMAGES.$image);
+        return $this->assetRepo->getUrl(OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_IMAGES . $image);
     }
 
 
@@ -315,7 +314,7 @@ class Data extends AbstractHelper
      */
     public function getAdminCssUrl($css)
     {
-        return $this->assetRepo->getUrl(OAuthConstants::MODULE_DIR.OAuthConstants::MODULE_CSS.$css, ['area'=>'adminhtml']);
+        return $this->assetRepo->getUrl(OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_CSS . $css, ['area' => 'adminhtml']);
     }
 
 
@@ -324,7 +323,7 @@ class Data extends AbstractHelper
      */
     public function getAdminJSUrl($js)
     {
-        return $this->assetRepo->getUrl(OAuthConstants::MODULE_DIR.OAuthConstants::MODULE_JS.$js, ['area'=>'adminhtml']);
+        return $this->assetRepo->getUrl(OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_JS . $js, ['area' => 'adminhtml']);
     }
 
 
@@ -333,7 +332,7 @@ class Data extends AbstractHelper
      */
     public function getMetadataUrl()
     {
-        return $this->assetRepo->getUrl(OAuthConstants::MODULE_DIR.OAuthConstants::MODULE_METADATA, ['area'=>'adminhtml']);
+        return $this->assetRepo->getUrl(OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_METADATA, ['area' => 'adminhtml']);
     }
 
 
@@ -342,8 +341,8 @@ class Data extends AbstractHelper
      */
     public function getMetadataFilePath()
     {
-        return $this->assetRepo->createAsset(OAuthConstants::MODULE_DIR.OAuthConstants::MODULE_METADATA, ['area'=>'adminhtml'])
-                    ->getSourceFile();
+        return $this->assetRepo->createAsset(OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_METADATA, ['area' => 'adminhtml'])
+            ->getSourceFile();
     }
 
 
@@ -355,8 +354,8 @@ class Data extends AbstractHelper
     public function getResourcePath($key)
     {
         return $this->assetRepo
-                    ->createAsset(OAuthConstants::MODULE_DIR.OAuthConstants::MODULE_CERTS.$key, ['area'=>'adminhtml'])
-                    ->getSourceFile();
+            ->createAsset(OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_CERTS . $key, ['area' => 'adminhtml'])
+            ->getSourceFile();
     }
 
 
@@ -377,7 +376,7 @@ class Data extends AbstractHelper
      */
     public function getAdminUrl($url, $params = [])
     {
-        return $this->helperBackend->getUrl($url, ['_query'=>$params]);
+        return $this->helperBackend->getUrl($url, ['_query' => $params]);
     }
 
 
@@ -390,7 +389,7 @@ class Data extends AbstractHelper
      */
     public function getAdminSecureUrl($url, $params = [])
     {
-        return $this->helperBackend->getUrl($url, ['_secure'=>true,'_query'=>$params]);
+        return $this->helperBackend->getUrl($url, ['_secure' => true, '_query' => $params]);
     }
 
 
@@ -399,18 +398,18 @@ class Data extends AbstractHelper
      *
      * @param $relayState
      */
-    public function getSPInitiatedUrl($relayState = null,$app_name=NULL)
+    public function getSPInitiatedUrl($relayState = null, $app_name = NULL)
     {
-        $relayState = is_null($relayState) ?$this->getCurrentUrl() : $relayState;
-        
+        $relayState = is_null($relayState) ? $this->getCurrentUrl() : $relayState;
+
         // Wenn app_name nicht gesetzt ist, versuchen Sie es aus der Konfiguration zu holen
         if (empty($app_name)) {
             $app_name = $this->getStoreConfig(OAuthConstants::APP_NAME);
         }
-        
+
         return $this->getFrontendUrl(
             OAuthConstants::OAUTH_LOGIN_URL,
-            ["relayState"=>$relayState]
-        )."&app_name=".$app_name;
+            ["relayState" => $relayState]
+        ) . "&app_name=" . $app_name;
     }
 }
