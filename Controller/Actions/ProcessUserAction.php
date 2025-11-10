@@ -16,10 +16,11 @@ use MiniOrange\OAuth\Helper\OAuthUtility;
 use MiniOrange\OAuth\Helper\OAuthMessages;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Store\Model\ScopeInterface;
-
+use Magento\Framework\App\Action\Action;
+use MiniOrange\OAuth\Helper\AdminAuthHelper;
 use Magento\Framework\Stdlib\DateTime\dateTime;
 
-class ProcessUserAction extends BaseAction
+class ProcessUserAction extends Action
 {
     private $attrs;
     private $flattenedattrs;
@@ -42,6 +43,7 @@ class ProcessUserAction extends BaseAction
     private $storeManager;
     protected $scopeConfig;
     protected $dateTime;
+    protected $adminAuthHelper;
 
     public function __construct(
         Context $context,
@@ -57,7 +59,8 @@ class ProcessUserAction extends BaseAction
         UserFactory $userFactory,
         Random $randomUtility,
         dateTime $dateTime,
-        ScopeConfigInterface $scopeConfig
+        ScopeConfigInterface $scopeConfig,
+        AdminAuthHelper $adminAuthHelper
     ) {
         $this->emailAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_EMAIL);
         $this->emailAttribute = $oauthUtility->isBlank($this->emailAttribute) ? OAuthConstants::DEFAULT_MAP_EMAIL : $this->emailAttribute;
@@ -82,6 +85,7 @@ class ProcessUserAction extends BaseAction
         $this->randomUtility = $randomUtility;
         $this->scopeConfig = $scopeConfig;
         $this->dateTime = $dateTime;
+        $this->adminAuthHelper = $adminAuthHelper;
         parent::__construct($context, $oauthUtility);
     }
 
@@ -177,13 +181,14 @@ class ProcessUserAction extends BaseAction
             $this->oauthUtility->customlog("processUserAction: Processing as admin login");
 
             try {
-                require_once dirname(__FILE__) . '/../../Helper/AdminAuthHelper.php';
+                //require_once dirname(__FILE__) . '/../../Helper/AdminAuthHelper.php';
 
                 $adminUser = $this->getAdminUserByEmail($user_email);
                 if ($adminUser && $adminUser->getIsActive() == 1) {
                     $this->oauthUtility->customlog("processUserAction: Admin user found and is active");
 
-                    $redirectUrl = \MiniOrange\OAuth\Helper\AdminAuthHelper::getStandaloneLoginUrl($user_email, $relayState);
+                    $redirectUrl = $this->adminAuthHelper->getStandaloneLoginUrl($user_email, $relayState);
+                    //$redirectUrl = \MiniOrange\OAuth\Helper\AdminAuthHelper::getStandaloneLoginUrl($user_email, $relayState);
 
                     $this->oauthUtility->customlog("processUserAction: Redirecting to: " . $redirectUrl);
                     $this->getResponse()->setRedirect($redirectUrl)->sendResponse();
@@ -224,6 +229,7 @@ class ProcessUserAction extends BaseAction
             }
         }
     }
+
     private function generateEmail($userName)
     {
         $this->oauthUtility->customlog("processUserAction: generateEmail");
