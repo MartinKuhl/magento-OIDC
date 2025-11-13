@@ -111,11 +111,6 @@ class ShowTestResults extends Action
         }
         $autoCreateLimit = '';
 
-
-
-
-
-
         $this->oauthUtility->setStoreConfig(OAuthConstants::SEND_EMAIL_CORE_CONFIG_DATA, 1);
         $this->oauthUtility->flushCache();
 
@@ -135,7 +130,7 @@ class ShowTestResults extends Action
     {
         $this->commonBody = str_replace("{{email}}", $this->userEmail ?? '', $this->commonBody);
         $tableContent = !array_filter($this->attrs ?? []) ? "No Attributes Received." : $this->getTableContent();
-        $this->oauthUtility->customlog("ShowTestResultsAction: attribute" . json_encode($this->attrs));
+        //$this->oauthUtility->customlog("ShowTestResultsAction: attribute" . json_encode($this->attrs));
         $this->commonBody = str_replace("{{tablecontent}}", $tableContent ?? '', $this->commonBody);
         $this->template = str_replace("{{commonbody}}", $this->commonBody ?? '', $this->template);
     }
@@ -166,7 +161,7 @@ class ShowTestResults extends Action
     public function setAttrs($attrs)
     {
         $this->attrs = $attrs;
-        $this->oauthUtility->customlog("attributes: " . print_r($attrs, true));
+        //$this->oauthUtility->customlog("attributes: " . print_r($attrs, true));
         return $this;
     }
 
