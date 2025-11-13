@@ -44,11 +44,13 @@ class ProcessUserAction extends Action
     protected $scopeConfig;
     protected $dateTime;
     protected $adminAuthHelper;
+    protected $oauthUtility;
+
 
     public function __construct(
         Context $context,
         OAuthUtility $oauthUtility,
-        \Magento\Customer\Model\ResourceModel\Group\Collection $userGroupModel,
+        Collection $userGroupModel,
         Collection $adminRoleModel,
         User $adminUserModel,
         Customer $customerModel,
@@ -86,6 +88,7 @@ class ProcessUserAction extends Action
         $this->scopeConfig = $scopeConfig;
         $this->dateTime = $dateTime;
         $this->adminAuthHelper = $adminAuthHelper;
+        $this->oauthUtility = $oauthUtility;
         parent::__construct($context, $oauthUtility);
     }
 
