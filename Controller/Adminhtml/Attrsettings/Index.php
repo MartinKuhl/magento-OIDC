@@ -84,8 +84,12 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
      */
     private function processValuesAndSaveData($params)
     {
+          //ToDo extend for other attributes like first name, last name if needed
           $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_USERNAME, $params['oauth_am_username']);
           $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_EMAIL, $params['oauth_am_email']);
+
+          $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_FIRSTNAME, $params['oauth_am_first_name']);
+          $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_LASTNAME, $params['oauth_am_last_name']);
 
         if (isset($params['dont_create_user_if_role_not_mapped'])) {
             $this->oauthUtility->setStoreConfig(OAuthConstants::CREATEIFNOTMAP, $params['dont_create_user_if_role_not_mapped']);

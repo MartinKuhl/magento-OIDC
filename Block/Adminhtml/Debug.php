@@ -37,6 +37,7 @@ class Debug extends Template
      */
     public function getOidcConfiguration()
     {
+        // ToDo: Fetch actual configuration values
         return [
             'Client ID' => $this->oauthUtility->getStoreConfig(OAuthConstants::CLIENT_ID),
             'Client Secret' => $this->maskSecret($this->oauthUtility->getStoreConfig(OAuthConstants::CLIENT_SECRET)),

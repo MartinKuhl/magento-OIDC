@@ -29,7 +29,6 @@
     $mo_oauth_dont_create_user_if_role_not_mapped = $this->getDisallowUserCreationIfRoleNotMapped();
 
     $default_role = $this->getDefaultRole();
-    $premiumlink = $this->getExtensionPageUrl('upgrade');
 
 echo '
 <div class="row">
@@ -61,7 +60,7 @@ echo '
                     </tr>
                     <tr><td colspan="2"><input type="checkbox" id="update_attribute" 
                     name="oauth_am_update_attribue" value="checked" 
-                    disabled  disabled>
+                    enabled  enabled>
                     &nbsp;&nbsp;Update Attribute. <span style="margin-left:351px;font-style: italic">(Email cannot be update)</span></td></tr>
                     
                 <tr>
@@ -71,7 +70,7 @@ echo '
                 
       <tr class="mo_premium_option">
                     <td style="width:200px;"><strong>Login/Create Magento account by: </strong></td>
-                    <td><select name="oauth_am_account_matcher" disabled id="oauth_am_account_matcher" >
+                    <td><select name="oauth_am_account_matcher" enabled id="oauth_am_account_matcher" >
                         <option value="email"> Email </option>
                         <option value="username" > Username </option>
                     </select>
@@ -80,30 +79,30 @@ echo '
 
                 <tr>
                     <td style="width:150px;"><strong>Username <span style="color:red;">*</span>:</strong></td>
-                    <td><input type="text" disabled name="oauth_am_username" placeholder="Enter attribute name for User Name"
-                    value="" /></td>
+                    <td><input type="text" enabled name="oauth_am_username" placeholder="Enter attribute name for User Name"
+                    value="' . $this->escapeHtmlAttr($oauth_am_username) . '" /></td>
                 </tr>
                 <tr>
                     <td><strong>Email <span style="color:red;">*</span>:</strong></td>
-                    <td><input type="text" disabled name="oauth_am_email" placeholder="Enter attribute name for User Email"
-                   /></td>
+                    <td><input type="text" enabled name="oauth_am_email" placeholder="Enter attribute name for User Email"
+                    value="' . $this->escapeHtmlAttr($oauth_am_email) . '" /></td>
                 </tr>
                 <tr>
                     <td><strong>First Name:</strong></td>
-                    <td><input type="text" disabled name="oauth_am_first_name" placeholder="Enter attribute name for First Name"
-                    /></td>
+                    <td><input type="text" enabled name="oauth_am_first_name" placeholder="Enter attribute name for First Name"
+                    value="' . $this->escapeHtmlAttr($oauth_am_first_name) . '" /></td>
                 </tr>
                 <tr>
                     <td><strong>Last Name:</strong></td>
-                    <td><input type="text" disabled name="oauth_am_last_name" placeholder="Enter attribute name for Last Name" 
-                       /></td>
+                    <td><input type="text" enabled name="oauth_am_last_name" placeholder="Enter attribute name for Last Name"
+                    value="' . $this->escapeHtmlAttr($oauth_am_last_name) . '" /></td>
                 </tr>
                  </td>
                  </tr>
 
                         <td>&nbsp;</td>
                         <td><br ><input class="btn-round" type="submit" style="width:100px;" name="submit" value="Save"
-                         disabled > &nbsp;
+                         enabled > &nbsp;
                         <br ><br >
                         </td>
                     </tr>
