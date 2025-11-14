@@ -310,6 +310,16 @@ class OAuth extends \Magento\Framework\View\Element\Template
         return $this->oauthUtility->mclv();
     }
 
+    
+    public function autoCreateAdmin()
+    {
+        return $this->oauthUtility->getStoreConfig(OAuthConstants::AUTO_CREATE_ADMIN);
+    }
+
+    public function autoCreateCustomer()
+    {
+        return $this->oauthUtility->getStoreConfig(OAuthConstants::AUTO_CREATE_CUSTOMER);
+    }
 
     /**
      * Is the option to show SSO link on the Admin login page enabled

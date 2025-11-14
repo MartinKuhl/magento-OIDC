@@ -64,6 +64,8 @@ class OAuthConstants
     const TOKEN                = 'token';
     const BUTTON_TEXT          = 'buttonText';
     const IS_TEST              = 'isTest';
+    const AUTO_CREATE_ADMIN    = 'autoCreateAdmin';
+    const AUTO_CREATE_CUSTOMER = 'autoCreateCustomer';
 
     // attribute mapping constants
     // ggf. extend

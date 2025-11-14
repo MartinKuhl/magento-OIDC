@@ -126,6 +126,7 @@ class ProcessUserAction extends Action
         $admin = false;
         $user = $this->getCustomerFromAttributes($user_email);
 
+        //Todo_MK: Umbau von Counter auf Auto Create Config
         if (!$user) {
             $this->oauthUtility->customlog("User Not found. Inside autocreate user tab");
             $donotCreateUsers = $this->oauthUtility->getStoreConfig(OAuthConstants::MAGENTO_COUNTER);
@@ -197,7 +198,7 @@ class ProcessUserAction extends Action
                 } else {
                     $this->oauthUtility->customlog("processUserAction: Admin user not found for email: " . $user_email);
 
-                    // KORRIGIERT: Fehler über URL-Parameter weitergeben
+                    //Todo_MK: Umbau wenn Auto Create Admin aktiviert ist, dann Admin User erstellen
                     $errorMessage = sprintf(
                         'Admin-Zugang verweigert: Für die E-Mail-Adresse "%s" ist kein Administrator-Konto in Magento hinterlegt. Bitte wenden Sie sich an Ihren Systemadministrator.',
                         $user_email
@@ -211,7 +212,6 @@ class ProcessUserAction extends Action
             } catch (\Exception $e) {
                 $this->oauthUtility->customlog("processUserAction: Exception during admin login: " . $e->getMessage());
 
-                // KORRIGIERT: Fehler über URL-Parameter weitergeben
                 $errorMessage = 'Die Anmeldung über Authelia ist fehlgeschlagen. Bitte versuchen Sie es erneut oder wenden Sie sich an Ihren Administrator.';
                 $loginUrl = $this->oauthUtility->getBaseUrl() . 'admin?oidc_error=' . base64_encode($errorMessage);
 
@@ -245,7 +245,6 @@ class ProcessUserAction extends Action
     {
         $this->oauthUtility->customlog("processUserAction: createNewUser");
 
-        //To Do better handling of missing first name last name username attributes from idp
         if (empty($firstName)) {
             $parts = explode("@", $user_email);
             $firstName = $parts[0];
