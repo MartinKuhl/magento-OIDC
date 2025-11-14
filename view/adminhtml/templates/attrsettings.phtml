@@ -107,36 +107,4 @@ echo '
                         </td>
                     </tr>
                 </table>
-           </form>
-          <br><br>
-           <form name="f" method="post" action="">
-         <input name="form_key" type="hidden" value="'. $block->escapeHtmlAttr($block->getFormKey()) .'" />
-          <input type="hidden" name="option" value="saveAttrSettings" >
-          <h3>Custom Mapping</h3><hr>
-          <fieldset disabled="disabled">
-            <table>
-              <tr>
-                <td><strong>Table:</strong>
-                <input type="text" name="saml_am_table" disabled placeholder="Enter attribute name for Email"
-                 value="' . $this->escapeHtmlAttr($oauth_am_table) . '" required ></td>
-              </tr>
-             </table>
-           <div>
-              <div class="form-group same-row hmargin">
-                <label for="this_attribute"><b>Enter Attribute Name: </b></label>
-              </div>
-              <div class="form-group same-row hmargin">
-                <input class="form-control" {log} disabled id="this_attribute" name="this_attribute" type="text" value = "">
-                <button class="btn btn-primary btn-round" type="button" disabled {log}  onClick="addCustomAttribute()">Add (+)</button>
-                <button class="btn btn-primary btn-round" type="button" disabled {log}  onClick="deleteCustomAttribute()">Delete (-)</button>
-              </div>
-            </div>
-            <div id="submit_custom_attr" class="form-group">
-            <br><input type="submit" class="btn-round" disabled style="width:100px;" name="submit" value="Save"
-              > &nbsp;
-            <br ><br>
-            </div>
-         </fieldset>
-         </form>
-      </div>
-    </div>';
+           </form>';
