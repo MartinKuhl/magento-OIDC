@@ -137,6 +137,7 @@ class ProcessUserAction extends Action
                 $donotCreateUsers = $this->oauthUtility->getStoreConfig(OAuthConstants::MAGENTO_COUNTER);
             }
 
+            //Todo_MK: Umbau wenn Auto Create Customer deaktiviert ist, dann hier abbrechen mit Fehlermeldung
             if ($donotCreateUsers < 1) {
                 $this->oauthUtility->customlog("Auto Create User Limit exceeded");
                 // [Auto-create limit logic bleibt gleich - gekürzt für Übersicht]
@@ -198,7 +199,7 @@ class ProcessUserAction extends Action
                 } else {
                     $this->oauthUtility->customlog("processUserAction: Admin user not found for email: " . $user_email);
 
-                    //Todo_MK: Umbau wenn Auto Create Admin aktiviert ist, dann Admin User erstellen
+                    //Todo_MK: Umbau wenn Auto Create Admin aktiviert ist, dann Admin User erstellen und Teil der Admin-Gruppe sein
                     $errorMessage = sprintf(
                         'Admin-Zugang verweigert: Für die E-Mail-Adresse "%s" ist kein Administrator-Konto in Magento hinterlegt. Bitte wenden Sie sich an Ihren Systemadministrator.',
                         $user_email
