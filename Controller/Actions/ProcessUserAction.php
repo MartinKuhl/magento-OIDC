@@ -127,6 +127,7 @@ class ProcessUserAction extends Action
         $user = $this->getCustomerFromAttributes($user_email);
 
         //Todo_MK: Umbau von Counter auf Auto Create Config
+        // If is user and not admin!
         if (!$user) {
             $this->oauthUtility->customlog("User Not found. Inside autocreate user tab");
             $donotCreateUsers = $this->oauthUtility->getStoreConfig(OAuthConstants::MAGENTO_COUNTER);
@@ -137,7 +138,8 @@ class ProcessUserAction extends Action
                 $donotCreateUsers = $this->oauthUtility->getStoreConfig(OAuthConstants::MAGENTO_COUNTER);
             }
 
-            //Todo_MK: Umbau wenn Auto Create Customer deaktiviert ist, dann hier abbrechen mit Fehlermeldung
+            // Todo_MK: Umbau wenn Auto Create Customer deaktiviert ist, dann hier abbrechen mit Fehlermeldung
+            // Todo_MK: Prüfen der Unterscheidung zwischen User und Admin-User (Unterscheidung anhand der URL?)
             if ($donotCreateUsers < 1) {
                 $this->oauthUtility->customlog("Auto Create User Limit exceeded");
                 // [Auto-create limit logic bleibt gleich - gekürzt für Übersicht]
@@ -174,7 +176,7 @@ class ProcessUserAction extends Action
         } elseif (isset($this->attrs->relayState)) {
             $relayState = $this->attrs->relayState;
         }
-
+        //To Do_MK: Check der Admin-Login Erkennung
         if (!empty($relayState)) {
             $isAdminLogin = (strpos($relayState, '/admin') !== false) ||
                 (strpos($relayState, 'admin/') !== false) ||
