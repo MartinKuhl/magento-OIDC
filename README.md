@@ -30,10 +30,30 @@ After successful OIDC authentication, admin users are automatically logged in wi
 Navigate to: **Stores → Configuration → MiniOrange → OAuth/OIDC**
 
 ## ToDo
-- Fix Test configuration option
-- Fix Debug OAuth Flow
 
 - Fix Attribute Mapping
-- look into scope extension
+    email: m...k..@gmx.net
+    groups: admins
+    name: Martin Kuhl
+        Split (Part0/1)
+    preferred_username: martin
+
+Username:   preferred_username
+E-Mail:     email
+Firstname   Split 0 - name
+Last Name   Split 1 - name
+    Split Option
+
+
+- fix hello to prefered User Name
+
+Create User : extended fields
+Create admin : only for users with group (include admin lowerstring instring)
+
+- update attributes options
+
 - Fix LOGIN / LOGOUT OPTIONS
-- Rename: --> Authelia OIDC
+
+- handling additional scopes (phone & address)
+
+- Rename: --> Authelia OIDC (in Code)
