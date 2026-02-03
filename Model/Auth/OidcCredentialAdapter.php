@@ -311,6 +311,9 @@ class OidcCredentialAdapter implements StorageInterface
      * This magic method forwards those calls to the actual User object, making
      * the adapter act as a transparent proxy.
      *
+     * This includes support for magic getters/setters like getReloadAclFlag() which
+     * are handled by AbstractModel's magic methods rather than being actual methods.
+     *
      * @param string $method Method name
      * @param array $args Method arguments
      * @return mixed
@@ -319,11 +322,13 @@ class OidcCredentialAdapter implements StorageInterface
     public function __call($method, $args)
     {
         // If we have a user object, proxy the method call to it
-        if ($this->user && method_exists($this->user, $method)) {
+        // Don't check method_exists() because User model has magic methods (__call)
+        // that handle getters/setters like getReloadAclFlag()
+        if ($this->user) {
             return call_user_func_array([$this->user, $method], $args);
         }
 
-        // If no user or method doesn't exist, throw exception
+        // If no user, throw exception
         throw new \BadMethodCallException(
             sprintf(
                 'Call to undefined method %s::%s()',
