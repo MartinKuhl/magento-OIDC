@@ -57,3 +57,8 @@ Create admin : only for users with group (include admin lowerstring instring)
 - handling additional scopes (phone & address)
 
 - Rename: --> Authelia OIDC (in Code)
+
+2. **Helper** (`Helper/AdminAuthHelper.php`):
+   - `getStandaloneLoginUrl()`: Generates URL to `direct-admin-login.php` script
+   - Script must be placed at Magento root to bypass bootstrap restrictions
+   --> can this be improves to be more aligned with the Magento standard approach?
