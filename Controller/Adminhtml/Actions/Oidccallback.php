@@ -26,7 +26,7 @@ use Magento\Framework\UrlInterface;
 class Oidccallback implements ActionInterface, HttpGetActionInterface
 {
     protected $userFactory;
-    protected $authSession;
+    protected $auth;
     protected $resultFactory;
     protected $request;
     protected $oauthUtility;
@@ -35,7 +35,7 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
 
     public function __construct(
         \Magento\User\Model\UserFactory $userFactory,
-        \Magento\Backend\Model\Auth\Session $authSession,
+        \Magento\Backend\Model\Auth $auth,
         ResultFactory $resultFactory,
         RequestInterface $request,
         \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
@@ -43,7 +43,7 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
         UrlInterface $url
     ) {
         $this->userFactory = $userFactory;
-        $this->authSession = $authSession;
+        $this->auth = $auth;
         $this->resultFactory = $resultFactory;
         $this->request = $request;
         $this->oauthUtility = $oauthUtility;
@@ -103,26 +103,31 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
                 );
             }
 
-            // Perform login
-            $this->oauthUtility->customlog("Performing admin login for user ID: " . $user->getId());
-            $this->authSession->setUser($user);
-            $this->authSession->processLogin();
-            $this->authSession->refreshAcl();
+            // Perform login via standard Auth orchestrator
+            $this->oauthUtility->customlog("Performing admin login via Auth::login() for user ID: " . $user->getId());
 
-            // Verify login success
-            $isLoggedIn = $this->authSession->isLoggedIn();
-            $sessionUserId = $this->authSession->getUser() ? $this->authSession->getUser()->getId() : 'NULL';
+            try {
+                // Use standard Auth::login() with OIDC token marker
+                // This triggers the OidcCredentialPlugin and fires all security events
+                $this->auth->login($email, 'OIDC_VERIFIED_USER');
 
-            $this->oauthUtility->customlog("Login result - isLoggedIn: " . ($isLoggedIn ? 'YES' : 'NO') . ", Session User ID: " . $sessionUserId);
+                $this->oauthUtility->customlog("SUCCESS: Auth::login() completed successfully");
 
-            if ($isLoggedIn) {
-                $this->oauthUtility->customlog("SUCCESS: Admin login successful, redirecting to dashboard");
+                // Verify login success
+                if ($this->auth->isLoggedIn()) {
+                    $loggedInUser = $this->auth->getUser();
+                    $this->oauthUtility->customlog("Authenticated user ID: " . $loggedInUser->getId());
 
-                $this->messageManager->addSuccessMessage(
-                    __('Willkommen zurück, %1!', $user->getFirstname() ?: $user->getUsername())
-                );
-            } else {
-                $this->oauthUtility->customlog("WARNING: Login processed but isLoggedIn() returned false");
+                    $this->messageManager->addSuccessMessage(
+                        __('Willkommen zurück, %1!', $loggedInUser->getFirstname() ?: $loggedInUser->getUsername())
+                    );
+                } else {
+                    $this->oauthUtility->customlog("WARNING: Login processed but isLoggedIn() returned false");
+                }
+
+            } catch (\Magento\Framework\Exception\AuthenticationException $e) {
+                $this->oauthUtility->customlog("ERROR: Authentication failed: " . $e->getMessage());
+                return $this->redirectToLoginWithError(__($e->getMessage()));
             }
 
             // Redirect to admin dashboard
