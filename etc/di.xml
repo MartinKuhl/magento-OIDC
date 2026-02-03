@@ -15,6 +15,56 @@
         </arguments>
     </type>
 
+    <!-- OIDC Credential Adapter Configuration -->
+    <type name="MiniOrange\OAuth\Model\Auth\OidcCredentialAdapter">
+        <arguments>
+            <argument name="userFactory" xsi:type="object">Magento\User\Model\UserFactory</argument>
+            <argument name="eventManager" xsi:type="object">Magento\Framework\Event\ManagerInterface</argument>
+            <argument name="oauthUtility" xsi:type="object">MiniOrange\OAuth\Helper\OAuthUtility</argument>
+        </arguments>
+    </type>
+
+    <!-- OIDC Credential Plugin Configuration -->
+    <type name="MiniOrange\OAuth\Plugin\Auth\OidcCredentialPlugin">
+        <arguments>
+            <argument name="oidcCredentialAdapter" xsi:type="object">MiniOrange\OAuth\Model\Auth\OidcCredentialAdapter</argument>
+            <argument name="oauthUtility" xsi:type="object">MiniOrange\OAuth\Helper\OAuthUtility</argument>
+        </arguments>
+    </type>
+
+    <!-- OIDC Admin Callback Controller Configuration -->
+    <type name="MiniOrange\OAuth\Controller\Adminhtml\Actions\Oidccallback">
+        <arguments>
+            <argument name="userFactory" xsi:type="object">Magento\User\Model\UserFactory</argument>
+            <argument name="auth" xsi:type="object">Magento\Backend\Model\Auth</argument>
+            <argument name="resultFactory" xsi:type="object">Magento\Framework\Controller\ResultFactory</argument>
+            <argument name="oauthUtility" xsi:type="object">MiniOrange\OAuth\Helper\OAuthUtility</argument>
+            <argument name="messageManager" xsi:type="object">Magento\Framework\Message\ManagerInterface</argument>
+            <argument name="url" xsi:type="object">Magento\Framework\UrlInterface</argument>
+        </arguments>
+    </type>
+
+    <!-- Plugin to inject OIDC Credential Adapter when OIDC token detected -->
+    <type name="Magento\Backend\Model\Auth">
+        <plugin name="oidc_credential_interceptor"
+                type="MiniOrange\OAuth\Plugin\Auth\OidcCredentialPlugin"
+                sortOrder="10"/>
+    </type>
+
+    <!-- CAPTCHA Bypass Plugin for OIDC Authentication -->
+    <type name="MiniOrange\OAuth\Plugin\Captcha\OidcCaptchaBypassPlugin">
+        <arguments>
+            <argument name="oauthUtility" xsi:type="object">MiniOrange\OAuth\Helper\OAuthUtility</argument>
+        </arguments>
+    </type>
+
+    <!-- Plugin to bypass CAPTCHA validation for OIDC-authenticated users -->
+    <type name="Magento\Captcha\Observer\CheckUserLoginBackendObserver">
+        <plugin name="oidc_captcha_bypass"
+                type="MiniOrange\OAuth\Plugin\Captcha\OidcCaptchaBypassPlugin"
+                sortOrder="10"/>
+    </type>
+
     <!-- MiniOrange Custom Logger Configuration -->
     <type name="MiniOrange\OAuth\Logger\Handler">
         <arguments>
