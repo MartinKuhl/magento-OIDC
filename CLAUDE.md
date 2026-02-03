@@ -50,6 +50,27 @@ tail -f var/log/exception.log
 php bin/magento module:status MiniOrange_OAuth
 ```
 
+## Recent Changes (Last Merge: 5ea0025)
+
+The last merge implemented **native Magento login integration** for admin users, replacing the previous session manipulation approach with Magento's standard authentication flow:
+
+### Native Login Implementation (PR #4 - task-magento-nativ-login)
+
+**Key improvements:**
+- Admin login now uses `Auth::login()` instead of directly manipulating session
+- OIDC authentication integrates seamlessly with Magento's security events
+- CAPTCHA is automatically bypassed for OIDC-authenticated users
+- All standard authentication checks and events fire properly
+
+**New Components:**
+1. **OidcCredentialAdapter** (`Model/Auth/OidcCredentialAdapter.php`) - Implements Magento's `StorageInterface` to bridge OIDC authentication with native Magento auth system
+2. **OidcCredentialPlugin** (`Plugin/Auth/OidcCredentialPlugin.php`) - Intercepts `Auth::getCredentialStorage()` to inject OIDC adapter when OIDC token marker is detected
+3. **OidcCaptchaBypassPlugin** (`Plugin/Captcha/OidcCaptchaBypassPlugin.php`) - Bypasses CAPTCHA validation for OIDC users (authentication already happened at IdP)
+
+**Modified Components:**
+- `Controller/Adminhtml/Actions/Oidccallback.php` - Now calls `Auth::login($email, 'OIDC_VERIFIED_USER')` instead of direct session manipulation
+- `etc/di.xml` - Added DI configuration for new adapter and plugins
+
 ## Architecture
 
 ### Authentication Flow
@@ -64,12 +85,16 @@ The module implements a dual authentication flow for admin and customer users:
    - Attribute Mapping: `CheckAttributeMappingAction` → Maps OIDC claims
    - Login: `CustomerLoginAction` → Creates Magento customer session
 
-2. **Admin Flow** (Backend):
+2. **Admin Flow** (Backend) - **Uses Native Magento Authentication:**
    - Route: `mooauth` (defined in etc/adminhtml/routes.xml)
    - Same initial flow as customer
    - **Critical difference**: In `CheckAttributeMappingAction:101-130`, admin users are detected by checking if email exists in `admin_user` table
-   - Admin users are redirected to a separate admin callback endpoint in the adminhtml area
-   - Admin session is created using `AdminAuthHelper` which provides a standalone login URL
+   - Admin users are redirected to `Oidccallback` controller in adminhtml area
+   - **Native integration**: `Oidccallback` calls `Auth::login($email, 'OIDC_VERIFIED_USER')`
+   - `OidcCredentialPlugin` detects the special token marker and injects `OidcCredentialAdapter`
+   - `OidcCredentialAdapter` authenticates the user without password verification (already done at IdP)
+   - `OidcCaptchaBypassPlugin` skips CAPTCHA validation for OIDC auth
+   - All standard Magento security events fire correctly
 
 ### Key Components
 
@@ -81,10 +106,27 @@ The module implements a dual authentication flow for admin and customer users:
 - `CheckAttributeMappingAction.php`: Routes users based on admin/customer detection and maps OIDC attributes
 - `ProcessUserAction.php`: Creates or updates Magento users based on OIDC data
 - `ShowTestResults.php`: Displays test results for attribute mapping
+- `Adminhtml/Actions/Oidccallback.php`: Admin callback that performs native Magento login via `Auth::login()`
+
+#### Authentication Integration (Model/Auth/)
+- `OidcCredentialAdapter.php`: Implements `StorageInterface` to bridge OIDC with Magento's native auth
+  - Validates OIDC token marker instead of password verification
+  - Fires all standard authentication events
+  - Handles serialization for session storage
+  - Proxies User model methods via `__call()` magic method
+
+#### Plugins (Plugin/)
+- `Auth/OidcCredentialPlugin.php`: Intercepts `Auth::getCredentialStorage()` to inject OIDC adapter
+  - `beforeLogin()`: Detects OIDC token marker and sets flag
+  - `aroundGetCredentialStorage()`: Returns OIDC adapter when flag is set
+  - `afterLogin()`: Cleans up flag after login completes
+- `Captcha/OidcCaptchaBypassPlugin.php`: Bypasses CAPTCHA for OIDC-authenticated users
+  - Intercepts `CheckUserLoginBackendObserver::execute()`
+  - Skips CAPTCHA validation when `oidc_auth` marker is present in event data
 
 #### Helpers (Helper/)
 - `OAuthUtility.php`: Core utility class extending Data class, provides common functions
-- `AdminAuthHelper.php`: Handles admin authentication, generates standalone login URLs
+- `AdminAuthHelper.php`: Handles admin authentication, generates standalone login URLs (deprecated by native login)
 - `SessionHelper.php`: Manages session cookies with SameSite=None for cross-origin SSO
 - `OAuthConstants.php`: Constants for config paths and defaults
 - `OAuthMessages.php`: User-facing messages
@@ -102,7 +144,12 @@ The module implements a dual authentication flow for admin and customer users:
 - `OAuthLogoutObserver.php`: Manages logout flow with OIDC provider
 
 #### Configuration
-- Dependency injection: `etc/di.xml` defines constructor arguments for `CheckAttributeMappingAction` with admin-related dependencies
+- Dependency injection: `etc/di.xml` defines:
+  - Constructor arguments for `CheckAttributeMappingAction` with admin-related dependencies
+  - DI configuration for `OidcCredentialAdapter`, `OidcCredentialPlugin`, and `Oidccallback` controller
+  - Plugin configuration:
+    - `oidc_credential_interceptor` plugin on `Magento\Backend\Model\Auth` (sortOrder: 10)
+    - `oidc_captcha_bypass` plugin on `Magento\Captcha\Observer\CheckUserLoginBackendObserver` (sortOrder: 10)
 - Events: `etc/events.xml` and `etc/adminhtml/events.xml`
 - Routes: `etc/frontend/routes.xml` and `etc/adminhtml/routes.xml` both use `mooauth` as frontName
 - ACL: `etc/acl.xml`
@@ -115,20 +162,48 @@ The module implements a dual authentication flow for admin and customer users:
 
 ### Admin Auto-Login Implementation
 
-The admin auto-login feature is split across multiple files:
+**Current Implementation (Native Magento Integration):**
+
+The admin auto-login now uses Magento's native authentication system:
 
 1. **Detection** (`Controller/Actions/CheckAttributeMappingAction.php:101-130`):
    - Checks if authenticated email exists in `admin_user` table
    - If admin exists, stores user info in session and redirects to admin callback
 
-2. **Helper** (`Helper/AdminAuthHelper.php`):
-   - `getStandaloneLoginUrl()`: Generates URL to `direct-admin-login.php` script
-   - Script must be placed at Magento root to bypass bootstrap restrictions
+2. **Native Authentication Flow** (`Controller/Adminhtml/Actions/Oidccallback.php`):
+   - Calls `Auth::login($email, 'OIDC_VERIFIED_USER')` with special token marker
+   - Plugin system intercepts and injects OIDC credential adapter
+   - All security events fire properly (pre/post authentication, ACL refresh, etc.)
+   - CAPTCHA is automatically bypassed via plugin
 
-3. **Session Management** (`Helper/SessionHelper.php`):
-   - `configureSSOSession()`: Sets SameSite=None on session cookies
-   - `updateSessionCookies()`: Updates existing cookies for cross-origin compatibility
-   - `forceSameSiteNone()`: Response observer hook to enforce cookie settings
+3. **OIDC Adapter** (`Model/Auth/OidcCredentialAdapter.php`):
+   - Implements `StorageInterface` required by Magento's Auth class
+   - Validates OIDC token marker instead of password
+   - Loads user from database, checks active status and role assignment
+   - Records login and reloads user data
+   - Handles session serialization via `__sleep()` and `__wakeup()`
+
+4. **Plugin Orchestration**:
+   - `OidcCredentialPlugin` detects token marker and injects adapter
+   - `OidcCaptchaBypassPlugin` skips CAPTCHA for OIDC auth
+   - Fires `admin_user_authenticate_before` and `admin_user_authenticate_after` events with `oidc_auth` marker
+
+**Technical Benefits:**
+- ✅ All standard Magento authentication events fire correctly
+- ✅ No need for external PHP scripts or bootstrap bypassing
+- ✅ Works seamlessly with Magento's security layer (CAPTCHA, rate limiting, etc.)
+- ✅ Proper ACL initialization and session management
+- ✅ Maintains compatibility with other authentication plugins
+- ✅ Clean separation of concerns via adapter pattern
+
+**Legacy Components (Deprecated):**
+- `Helper/AdminAuthHelper.php`: Previously generated standalone login URLs (no longer needed)
+- `direct-admin-login.php`: External script approach (replaced by native integration)
+
+**Session Management** (`Helper/SessionHelper.php`):
+- `configureSSOSession()`: Sets SameSite=None on session cookies
+- `updateSessionCookies()`: Updates existing cookies for cross-origin compatibility
+- `forceSameSiteNone()`: Response observer hook to enforce cookie settings
 
 ### Attribute Mapping
 
@@ -153,6 +228,19 @@ The TODO in README.md mentions fixing attribute mapping, particularly:
 4. **Greeting**: Should use preferred_username instead of email
 5. **Additional Scopes**: Phone & address attributes not fully implemented
 6. **Naming**: Consider renaming to "Authelia OIDC" in code
+
+## Files Modified/Added in Last Merge (5ea0025)
+
+**New Files:**
+- `Model/Auth/OidcCredentialAdapter.php` (340 lines) - Native Magento auth adapter
+- `Plugin/Auth/OidcCredentialPlugin.php` (148 lines) - Auth interception plugin
+- `Plugin/Captcha/OidcCaptchaBypassPlugin.php` (70 lines) - CAPTCHA bypass plugin
+
+**Modified Files:**
+- `Controller/Adminhtml/Actions/Oidccallback.php` - Switched from session manipulation to `Auth::login()`
+- `etc/di.xml` - Added DI configuration for new adapter and plugins
+- `CLAUDE.md` - Documentation updates
+- `README.md` - Updated with new implementation details
 
 ## Development Workflow
 
