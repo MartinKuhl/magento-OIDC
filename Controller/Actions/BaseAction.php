@@ -2,8 +2,6 @@
 
 namespace MiniOrange\OAuth\Controller\Actions;
 
-use MiniOrange\OAuth\Helper\OAuthConstants;
-use MiniOrange\OAuth\Helper\Exception\NotRegisteredException;
 use MiniOrange\OAuth\Helper\Exception\RequiredFieldsException;
 
 /**
@@ -79,23 +77,4 @@ abstract class BaseAction extends \Magento\Framework\App\Action\Action
     abstract public function execute();
 
 
-    /* ===================================================================================================
-                THE FUNCTIONS BELOW ARE FREE PLUGIN SPECIFIC AND DIFFER IN THE PREMIUM VERSION
-       ===================================================================================================
-     */
-
-    /**
-     * This function checks if the user has registered himself
-     * and throws an Exception if not registered. Checks the
-     * if the admin key and api key are saved in the database.
-     *
-     * @throws NotRegisteredException
-     */
-    protected function checkIfValidPlugin()
-    {
-
-        if (!$this->oauthUtility->micr()) {
-            throw new NotRegisteredException;
-        }
-    }
 }

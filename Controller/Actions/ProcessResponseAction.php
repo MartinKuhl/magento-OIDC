@@ -39,7 +39,15 @@ class ProcessResponseAction extends BaseAction
     public function execute()
     {
         $this->oauthUtility->customlog("processResponseAction: execute");
-        $this->validateUserInfoData();
+
+        try {
+            $this->validateUserInfoData();
+        } catch (IncorrectUserInfoDataException $e) {
+            $this->oauthUtility->customlog("ERROR: Invalid user info data from OAuth provider - " . $e->getMessage());
+            $this->messageManager->addErrorMessage(__('Authentication failed: Invalid user information received from identity provider.'));
+            return $this->resultRedirectFactory->create()->setPath('customer/account/login');
+        }
+
         $userInfoResponse = $this->userInfoResponse;
 
         // flatten the nested OAuth response

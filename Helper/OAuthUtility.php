@@ -16,9 +16,6 @@ use Magento\User\Model\UserFactory;
 
 use MiniOrange\OAuth\Helper\OAuthConstants;
 use MiniOrange\OAuth\Helper\Data;
-use MiniOrange\OAuth\Helper\Exception\InvalidOperationException;
-use MiniOrange\OAuth\Helper\OAuth\SAML2Utilities;
-use MiniOrange\OAuth\Helper\OAuth\Lib\AESEncryption;
 use Magento\Framework\Stdlib\DateTime\dateTime;
 
 
@@ -293,20 +290,6 @@ class OAuthUtility extends Data
 
 
     /**
-     * This function is used to check if customer has completed
-     * the registration process. Returns TRUE or FALSE. Checks
-     * for the email and customerkey in the database are set
-     * or not.
-     */
-    public function micr()
-    {
-        $email = $this->getStoreConfig(OAuthConstants::CUSTOMER_EMAIL);
-        $key = $this->getStoreConfig(OAuthConstants::CUSTOMER_KEY);
-        return !$this->isBlank($email) && !$this->isBlank($key) ? true : false;
-    }
-
-
-    /**
      * Check if there's an active session of the user
      * for the frontend or the backend. Returns TRUE
      * or FALSE
@@ -439,20 +422,6 @@ class OAuthUtility extends Data
     {
 
         $this->reinitableConfig->reinit();
-    }
-
-    /**
-     * This function is used to check if customer has completed
-     * the registration process. Returns TRUE or FALSE. Checks
-     * for the email and customerkey in the database are set
-     * or not. Then checks if license key has been verified.
-     */
-    public function mclv()
-    {
-        $token = $this->getStoreConfig(OAuthConstants::TOKEN);
-        $isVerified = AESEncryption::decrypt_data($this->getStoreConfig(OAuthConstants::SAMLSP_CKL), $token);
-        $licenseKey = $this->getStoreConfig(OAuthConstants::SAMLSP_LK);
-        return $isVerified == "true" ? TRUE : FALSE;
     }
 
     /**

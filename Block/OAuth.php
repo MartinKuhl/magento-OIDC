@@ -82,17 +82,6 @@ class OAuth extends \Magento\Framework\View\Element\Template
     }
 
 
-    /**
-     * This function retrieves the miniOrange customer Email
-     * from the database. To be used on our template pages.
-     */
-
-    public function getCustomerEmail()
-    {
-        return $this->oauthUtility->getStoreConfig(OAuthConstants::CUSTOMER_EMAIL);
-    }
-
-
     public function isHeader()
     {
         return $this->oauthUtility->getStoreConfig(OAuthConstants::SEND_HEADER);
@@ -105,32 +94,52 @@ class OAuth extends \Magento\Framework\View\Element\Template
     }
 
     /**
-     * This function retrieves the miniOrange customer key from the
-     * database. To be used on our template pages.
+     * Plugin is always enabled (MiniOrange registration removed)
      */
-    public function getCustomerKey()
+    public function isEnabled()
     {
-        return $this->oauthUtility->getStoreConfig(OAuthConstants::CUSTOMER_KEY);
+        return true;
     }
 
-
     /**
-     * This function retrieves the miniOrange API key from the database.
-     * To be used on our template pages.
+     * Get the OAuth grant type from configuration
      */
-    public function getApiKey()
+    public function getGrantType()
     {
-        return $this->oauthUtility->getStoreConfig(OAuthConstants::API_KEY);
+        $appName = $this->getAppName();
+        if (!empty($appName)) {
+            $collection = $this->getAllIdpConfiguration();
+            foreach ($collection as $item) {
+                if ($item->getData()['app_name'] === $appName) {
+                    return $item->getData()['grant_type'] ?? 'authorization_code';
+                }
+            }
+        }
+        return 'authorization_code';
     }
 
+    /**
+     * Get table mapping configuration (placeholder)
+     */
+    public function getTable()
+    {
+        return '';
+    }
 
     /**
-     * This function retrieves the token key from the database.
-     * To be used on our template pages.
+     * Get country attribute mapping
      */
-    public function getToken()
+    public function getCountryMapping()
     {
-        return $this->oauthUtility->getStoreConfig(OAuthConstants::TOKEN);
+        return '';
+    }
+
+    /**
+     * Get company attribute mapping
+     */
+    public function getCompanyMapping()
+    {
+        return '';
     }
 
     /**
@@ -299,18 +308,6 @@ class OAuth extends \Magento\Framework\View\Element\Template
         return $tab;
     }
 
-        /**
-     * Just check and return if the user has verified his
-     * license key to activate the plugin. Mostly used
-     * on the account page to show the verify license key
-     * screen.
-     */
-    public function isVerified()
-    {
-        return $this->oauthUtility->mclv();
-    }
-
-    
     public function autoCreateAdmin()
     {
         return $this->oauthUtility->getStoreConfig(OAuthConstants::AUTO_CREATE_ADMIN);
@@ -474,17 +471,6 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
 
     /**
-     * This fetches the registration status in the plugin.
-     * Used to detect at what stage is the user at for
-     * registration with miniOrange
-     */
-    public function getRegistrationStatus()
-    {
-        return $this->oauthUtility->getStoreConfig(OAuthConstants::REG_STATUS);
-    }
-
-
-    /**
      * Get the Current Admin user from session
      */
     public function getCurrentAdminUser()
@@ -503,15 +489,6 @@ class OAuth extends \Magento\Framework\View\Element\Template
         $buttonText = $this->oauthUtility->getStoreConfig(OAuthConstants::BUTTON_TEXT);
         $idpName = $this->oauthUtility->getStoreConfig(OAuthConstants::APP_NAME);
         return !$this->oauthUtility->isBlank($buttonText) ?  $buttonText : 'Login with ' . $idpName;
-    }
-
-
-     /**
-      * Get base url of miniorange
-      */
-    public function getMiniOrangeUrl()
-    {
-        return $this->oauthUtility->getMiniOrangeUrl();
     }
 
 
@@ -538,21 +515,6 @@ public function isDebugLogEnable()
 {
     return $this->oauthUtility->getStoreConfig(OAuthConstants::ENABLE_DEBUG_LOG);
 }
-    /* ===================================================================================================
-                THE FUNCTIONS BELOW ARE FREE PLUGIN SPECIFIC AND DIFFER IN THE PREMIUM VERSION
-       ===================================================================================================
-     */
-
-
-    /**
-     * This function checks if the user has completed the registration
-     * and verification process. Returns TRUE or FALSE.
-     */
-    public function isEnabled()
-    {
-        return $this->oauthUtility->micr();
-    }
-
     /**
      * This function fetches the X509 cert saved by the admin for the IDP
      * in the plugin settings.

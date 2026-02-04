@@ -125,14 +125,6 @@ class Data extends AbstractHelper
     }
 
     /**
-     * Get base url of miniorange
-     */
-    public function getMiniOrangeUrl()
-    {
-        return OAuthConstants::HOSTNAME;
-    }
-
-    /**
      * Function to extract data stored in the store config table.
      *
      * @param $config

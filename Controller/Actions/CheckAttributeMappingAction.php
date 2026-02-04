@@ -138,7 +138,14 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
 
         // Regular customer login flow
         $this->oauthUtility->customlog("Routing customer user to normal login flow");
-        return $this->moOAuthCheckMapping($attrs, $flattenedAttrs, $userEmail);
+
+        try {
+            return $this->moOAuthCheckMapping($attrs, $flattenedAttrs, $userEmail);
+        } catch (MissingAttributesException $e) {
+            $this->oauthUtility->customlog("ERROR: Missing attributes - " . $e->getMessage());
+            $this->messageManager->addErrorMessage(__('Authentication failed: Required user attributes not received.'));
+            return $this->resultRedirectFactory->create()->setPath('customer/account/login');
+        }
     }
 
     /**

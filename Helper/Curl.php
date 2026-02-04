@@ -36,27 +36,11 @@ class Curl
         return $response;
     }
 
-    private static function createAuthHeader($customerKey, $apiKey)
-    {
-        $currentTimestampInMillis = round(microtime(true) * 1000);
-        $currentTimestampInMillis = number_format($currentTimestampInMillis, 0, '', '');
-
-        $stringToHash = $customerKey . $currentTimestampInMillis . $apiKey;
-        $authHeader = hash("sha512", $stringToHash);
-
-        $header = [
-            "Content-Type: application/json",
-            "Customer-Key: $customerKey",
-            "Timestamp: $currentTimestampInMillis",
-            "Authorization: $authHeader"
-        ];
-        return $header;
-    }
-
     private static function callAPI($url, $jsonData = [], $headers = ["Content-Type: application/json"])
     {
-        // Custom functionality written to be in tune with Mangento2 coding standards.
-        $curl = new MoCurl();
+        // Use Magento's standard cURL adapter
+        $curl = new \Magento\Framework\HTTP\Adapter\Curl();
+        $curl->setConfig(['header' => false]);
         $options = [
             'CURLOPT_FOLLOWLOCATION' => true,
             'CURLOPT_ENCODING' => "",

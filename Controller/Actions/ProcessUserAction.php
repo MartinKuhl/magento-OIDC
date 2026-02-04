@@ -17,7 +17,6 @@ use MiniOrange\OAuth\Helper\OAuthMessages;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Framework\App\Action\Action;
-use MiniOrange\OAuth\Helper\AdminAuthHelper;
 use Magento\Framework\Stdlib\DateTime\dateTime;
 
 class ProcessUserAction extends Action
@@ -43,7 +42,6 @@ class ProcessUserAction extends Action
     private $storeManager;
     protected $scopeConfig;
     protected $dateTime;
-    protected $adminAuthHelper;
     protected $oauthUtility;
 
 
@@ -61,8 +59,7 @@ class ProcessUserAction extends Action
         UserFactory $userFactory,
         Random $randomUtility,
         dateTime $dateTime,
-        ScopeConfigInterface $scopeConfig,
-        AdminAuthHelper $adminAuthHelper
+        ScopeConfigInterface $scopeConfig
     ) {
         $this->emailAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_EMAIL);
         $this->emailAttribute = $oauthUtility->isBlank($this->emailAttribute) ? OAuthConstants::DEFAULT_MAP_EMAIL : $this->emailAttribute;
@@ -87,7 +84,6 @@ class ProcessUserAction extends Action
         $this->randomUtility = $randomUtility;
         $this->scopeConfig = $scopeConfig;
         $this->dateTime = $dateTime;
-        $this->adminAuthHelper = $adminAuthHelper;
         $this->oauthUtility = $oauthUtility;
         parent::__construct($context, $oauthUtility);
     }
@@ -115,6 +111,10 @@ class ProcessUserAction extends Action
 
             $this->processUserAction($this->userEmail, $firstName, $lastName, $userName, $this->defaultRole);
 
+        } catch (MissingAttributesException $e) {
+            $this->oauthUtility->customlog("ERROR: Missing required attributes from OAuth provider");
+            $this->messageManager->addErrorMessage(__('Authentication failed: Required user information not received from identity provider.'));
+            return $this->resultRedirectFactory->create()->setPath('customer/account/login');
         } catch (\Exception $e) {
             $this->oauthUtility->customlog("CRITICAL ERROR in execute: " . $e->getMessage());
             throw $e;

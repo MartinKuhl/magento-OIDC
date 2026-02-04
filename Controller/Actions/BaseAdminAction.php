@@ -2,8 +2,6 @@
 
 namespace MiniOrange\OAuth\Controller\Actions;
 
-use MiniOrange\OAuth\Helper\OAuthConstants;
-use MiniOrange\OAuth\Helper\Exception\NotRegisteredException;
 use MiniOrange\OAuth\Helper\Exception\RequiredFieldsException;
 use MiniOrange\OAuth\Helper\Exception\SupportQueryRequiredFieldsException;
 
@@ -94,6 +92,7 @@ abstract class BaseAdminAction extends \Magento\Backend\App\Action
         try {
             $this->checkIfRequiredFieldsEmpty($array);
         } catch (RequiredFieldsException $e) {
+            $this->oauthUtility->customlog("ERROR: Required fields missing in admin context");
             throw new SupportQueryRequiredFieldsException();
         }
     }
@@ -102,24 +101,4 @@ abstract class BaseAdminAction extends \Magento\Backend\App\Action
     abstract public function execute();
 
 
-    /* ===================================================================================================
-                THE FUNCTIONS BELOW ARE FREE PLUGIN SPECIFIC AND DIFFER IN THE PREMIUM VERSION
-       ===================================================================================================
-     */
-
-    /**
-     * This function checks if the user has registered himself
-     * and throws an Exception if not registered. Checks the
-     * if the admin key and api key are saved in the database.
-     *
-     * @throws NotRegisteredException
-     * @todo remove the comments
-     */
-    protected function checkIfValidPlugin()
-    {
-
-        if (!$this->oauthUtility->micr()) {
-            throw new NotRegisteredException;
-        }
-    }
 }

@@ -41,9 +41,9 @@ class Debug extends Template
         return [
             'Client ID' => $this->oauthUtility->getStoreConfig(OAuthConstants::CLIENT_ID),
             'Client Secret' => $this->maskSecret($this->oauthUtility->getStoreConfig(OAuthConstants::CLIENT_SECRET)),
-            'Authorization Endpoint' => $this->oauthUtility->getStoreConfig(OAuthConstants::AUTHORIZE_ENDPOINT),
-            'Token Endpoint' => $this->oauthUtility->getStoreConfig(OAuthConstants::ACCESS_TOKEN_EP),
-            'User Info Endpoint' => $this->oauthUtility->getStoreConfig(OAuthConstants::GET_USER_INFO_EP),
+            'Authorization Endpoint' => $this->oauthUtility->getStoreConfig(OAuthConstants::AUTHORIZE_URL),
+            'Token Endpoint' => $this->oauthUtility->getStoreConfig(OAuthConstants::ACCESSTOKEN_URL),
+            'User Info Endpoint' => $this->oauthUtility->getStoreConfig(OAuthConstants::GETUSERINFO_URL),
             'Callback URL' => $this->getUrl('', ['_direct' => 'mooauth/actions/readauthorizationresponse']),
             'Scope' => $this->oauthUtility->getStoreConfig(OAuthConstants::SCOPE),
             'Email Attribute Mapping' => $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_EMAIL) ?: OAuthConstants::DEFAULT_MAP_EMAIL,
@@ -108,19 +108,19 @@ class Debug extends Template
         $results = [];
         
         // Test Authorization Endpoint
-        $authEndpoint = $this->oauthUtility->getStoreConfig(OAuthConstants::AUTHORIZE_ENDPOINT);
+        $authEndpoint = $this->oauthUtility->getStoreConfig(OAuthConstants::AUTHORIZE_URL);
         if ($authEndpoint) {
             $results['Authorization Endpoint'] = $this->testUrl($authEndpoint);
         }
 
         // Test Token Endpoint
-        $tokenEndpoint = $this->oauthUtility->getStoreConfig(OAuthConstants::ACCESS_TOKEN_EP);
+        $tokenEndpoint = $this->oauthUtility->getStoreConfig(OAuthConstants::ACCESSTOKEN_URL);
         if ($tokenEndpoint) {
             $results['Token Endpoint'] = $this->testUrl($tokenEndpoint);
         }
 
         // Test UserInfo Endpoint
-        $userInfoEndpoint = $this->oauthUtility->getStoreConfig(OAuthConstants::GET_USER_INFO_EP);
+        $userInfoEndpoint = $this->oauthUtility->getStoreConfig(OAuthConstants::GETUSERINFO_URL);
         if ($userInfoEndpoint) {
             $results['UserInfo Endpoint'] = $this->testUrl($userInfoEndpoint);
         }
