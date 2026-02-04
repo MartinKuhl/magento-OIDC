@@ -8,10 +8,10 @@
     $adminLink = $this->showAdminLink() ?'checked':'';
     $autoCreateAdmin = $this->autoCreateAdmin() ?'checked':'';
     $autoCreateCustomer = $this->autoCreateCustomer() ?'checked':'';
+    $enableLoginRedirect = $this->isLoginRedirectEnabled() ?'checked':'';
     $isOAuthConfigured = $this->isOAuthConfigured() && $this->isEnabled();
     $disabled  = $isOAuthConfigured ? "" : 'disabled title="Disabled. Configure your Service Provider" ';
     $logoutUrl = $this->getAdminLogoutUrl();
-    $premiumlink = $this->getExtensionPageUrl('upgrade');
     $enabledebuglog = $this->isDebugLogEnable() ? 'checked':'';
 echo '
 <div class="row">
@@ -51,8 +51,8 @@ echo '
                <input type="checkbox" enabled  name="mo_sso_auto_create_admin" id="mo_sso_auto_create_admin" 
                ' . $this->escapeHtmlAttr($autoCreateAdmin) . ' value="true" /> Auto Create Admin users while SSO, if they do not exist.
                 <br><br>
-                   <input type="checkbox" enabled  name="mo_sso_auto_create_customer" id="mo_sso_auto_create_customer" 
-                   ' . $this->escapeHtmlAttr($autoCreateCustomer) . ' value="true"/> Auto Create Customer while SSO, if they do not exist.
+               <input type="checkbox" enabled  name="mo_sso_auto_create_customer" id="mo_sso_auto_create_customer" 
+               ' . $this->escapeHtmlAttr($autoCreateCustomer) . ' value="true"/> Auto Create Customer while SSO, if they do not exist.
               </div>
               
        </td></tr>
@@ -62,7 +62,8 @@ echo '
        <lable ><strong>User Auto Redirect Settings: </strong></lable>
        <div style="margin-left:17px;margin-top:2%; width: 100%">	
        
-       <input type="checkbox" disabled  name="mo_saml_enable_login_redirect" value="true" 
+       <input type="checkbox" enabled  name="mo_saml_enable_login_redirect" 
+       ' . $this->escapeHtmlAttr($enableLoginRedirect) . ' value="true" 
              /> 
          Check this option to auto redirect users to IDP from login page (if not logged in).
         

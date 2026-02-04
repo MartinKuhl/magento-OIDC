@@ -184,22 +184,26 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         $mo_oauth_show_admin_link = isset($params['mo_oauth_show_admin_link']) ? 1 : 0;
         $mo_sso_auto_create_admin = isset($params['mo_sso_auto_create_admin']) ? 1 : 0;
         $mo_sso_auto_create_customer = isset($params['mo_sso_auto_create_customer']) ? 1 : 0;
+        $mo_saml_enable_login_redirect = isset($params['mo_saml_enable_login_redirect']) ? 1 : 0;
 
         $this->oauthUtility->customlog("SignInSettings: Saving customer link setting: " . $mo_oauth_show_customer_link);
         $this->oauthUtility->customlog("SignInSettings: Saving admin link setting: " . $mo_oauth_show_admin_link);
         $this->oauthUtility->customlog("SignInSettings: Saving auto create admin setting: " . $mo_sso_auto_create_admin);
         $this->oauthUtility->customlog("SignInSettings: Saving auto create customer setting: " . $mo_sso_auto_create_customer);
+        $this->oauthUtility->customlog("SignInSettings: Saving login redirect setting: " . $mo_saml_enable_login_redirect);
         
         $this->oauthUtility->setStoreConfig(OAuthConstants::SHOW_CUSTOMER_LINK, $mo_oauth_show_customer_link);
         $this->oauthUtility->setStoreConfig(OAuthConstants::SHOW_ADMIN_LINK, $mo_oauth_show_admin_link);
         $this->oauthUtility->setStoreConfig(OAuthConstants::AUTO_CREATE_ADMIN, $mo_sso_auto_create_admin);
         $this->oauthUtility->setStoreConfig(OAuthConstants::AUTO_CREATE_CUSTOMER, $mo_sso_auto_create_customer);
+        $this->oauthUtility->setStoreConfig(OAuthConstants::ENABLE_LOGIN_REDIRECT, $mo_saml_enable_login_redirect);
         
         // Stellen Sie sicher, dass die Config-Werte gespeichert wurden
         $this->oauthUtility->customlog("SignInSettings: Saved customer link value: " . $this->oauthUtility->getStoreConfig(OAuthConstants::SHOW_CUSTOMER_LINK));
         $this->oauthUtility->customlog("SignInSettings: Saved admin link value: " . $this->oauthUtility->getStoreConfig(OAuthConstants::SHOW_ADMIN_LINK));
         $this->oauthUtility->customlog("SignInSettings: Saved auto create admin value: " . $this->oauthUtility->getStoreConfig(OAuthConstants::AUTO_CREATE_ADMIN));
         $this->oauthUtility->customlog("SignInSettings: Saved auto create customer value: " . $this->oauthUtility->getStoreConfig(OAuthConstants::AUTO_CREATE_CUSTOMER));
+        $this->oauthUtility->customlog("SignInSettings: Saved login redirect value: " . $this->oauthUtility->getStoreConfig(OAuthConstants::ENABLE_LOGIN_REDIRECT));
     }
 
 private function customerConfigurationSettings( $values)
@@ -218,6 +222,7 @@ private function customerConfigurationSettings( $values)
     $this->oauthUtility->customlog("Attribute_email: ".$values[9]);
     $this->oauthUtility->customlog("Attribute_username: ".$values[10]);
     $this->oauthUtility->customlog("Customer_email: ".$values[11]);
+    $this->oauthUtility->customlog("Enable login redirect: ".$values[15]);
     $this->oauthUtility->customlog("......................................................................");
 }
 

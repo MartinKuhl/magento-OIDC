@@ -55,6 +55,7 @@ class OAuthConstants
     const IS_TEST              = 'isTest';
     const AUTO_CREATE_ADMIN    = 'autoCreateAdmin';
     const AUTO_CREATE_CUSTOMER = 'autoCreateCustomer';
+    const ENABLE_LOGIN_REDIRECT= 'enableLoginRedirect';
 
     // attribute mapping constants
     // ggf. extend
