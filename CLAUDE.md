@@ -50,27 +50,6 @@ tail -f var/log/exception.log
 php bin/magento module:status MiniOrange_OAuth
 ```
 
-## Recent Changes (Last Merge: 5ea0025)
-
-The last merge implemented **native Magento login integration** for admin users, replacing the previous session manipulation approach with Magento's standard authentication flow:
-
-### Native Login Implementation (PR #4 - task-magento-nativ-login)
-
-**Key improvements:**
-- Admin login now uses `Auth::login()` instead of directly manipulating session
-- OIDC authentication integrates seamlessly with Magento's security events
-- CAPTCHA is automatically bypassed for OIDC-authenticated users
-- All standard authentication checks and events fire properly
-
-**New Components:**
-1. **OidcCredentialAdapter** (`Model/Auth/OidcCredentialAdapter.php`) - Implements Magento's `StorageInterface` to bridge OIDC authentication with native Magento auth system
-2. **OidcCredentialPlugin** (`Plugin/Auth/OidcCredentialPlugin.php`) - Intercepts `Auth::getCredentialStorage()` to inject OIDC adapter when OIDC token marker is detected
-3. **OidcCaptchaBypassPlugin** (`Plugin/Captcha/OidcCaptchaBypassPlugin.php`) - Bypasses CAPTCHA validation for OIDC users (authentication already happened at IdP)
-
-**Modified Components:**
-- `Controller/Adminhtml/Actions/Oidccallback.php` - Now calls `Auth::login($email, 'OIDC_VERIFIED_USER')` instead of direct session manipulation
-- `etc/di.xml` - Added DI configuration for new adapter and plugins
-
 ## Architecture
 
 ### Authentication Flow
@@ -126,7 +105,6 @@ The module implements a dual authentication flow for admin and customer users:
 
 #### Helpers (Helper/)
 - `OAuthUtility.php`: Core utility class extending Data class, provides common functions
-- `AdminAuthHelper.php`: Handles admin authentication, generates standalone login URLs (deprecated by native login)
 - `SessionHelper.php`: Manages session cookies with SameSite=None for cross-origin SSO
 - `OAuthConstants.php`: Constants for config paths and defaults
 - `OAuthMessages.php`: User-facing messages
@@ -196,10 +174,6 @@ The admin auto-login now uses Magento's native authentication system:
 - ✅ Maintains compatibility with other authentication plugins
 - ✅ Clean separation of concerns via adapter pattern
 
-**Legacy Components (Deprecated):**
-- `Helper/AdminAuthHelper.php`: Previously generated standalone login URLs (no longer needed)
-- `direct-admin-login.php`: External script approach (replaced by native integration)
-
 **Session Management** (`Helper/SessionHelper.php`):
 - `configureSSOSession()`: Sets SameSite=None on session cookies
 - `updateSessionCookies()`: Updates existing cookies for cross-origin compatibility
@@ -213,43 +187,5 @@ OIDC claims are mapped to Magento user attributes via configuration stored in th
 - First name: `firstname_attribute` (default: "name" with split)
 - Last name: `lastname_attribute` (default: "name" with split)
 - Groups: `group_attribute` (for role/group mapping)
-
-The TODO in README.md mentions fixing attribute mapping, particularly:
-- Splitting name field (Part 0/1 for first/last name)
-- Handling additional scopes (phone & address)
-- Extending user creation fields
-- Auto-creating admins only for users with "admin" in group attribute
-
-## Current Known Issues (from README.md)
-
-1. **Attribute Mapping**: Name splitting and extended fields need work
-2. **User Creation**: Need to implement auto-admin creation based on group membership
-3. **Login/Logout Options**: Configuration needs fixing
-4. **Greeting**: Should use preferred_username instead of email
-5. **Additional Scopes**: Phone & address attributes not fully implemented
-6. **Naming**: Consider renaming to "Authelia OIDC" in code
-
-## Files Modified/Added in Last Merge (5ea0025)
-
-**New Files:**
-- `Model/Auth/OidcCredentialAdapter.php` (340 lines) - Native Magento auth adapter
-- `Plugin/Auth/OidcCredentialPlugin.php` (148 lines) - Auth interception plugin
-- `Plugin/Captcha/OidcCaptchaBypassPlugin.php` (70 lines) - CAPTCHA bypass plugin
-
-**Modified Files:**
-- `Controller/Adminhtml/Actions/Oidccallback.php` - Switched from session manipulation to `Auth::login()`
-- `etc/di.xml` - Added DI configuration for new adapter and plugins
-- `CLAUDE.md` - Documentation updates
-- `README.md` - Updated with new implementation details
-
-## Development Workflow
-
-When making changes:
-
-1. If modifying database schema: Update `etc/db_schema.xml` → Run `setup:db-schema:upgrade`
-2. If adding new classes or constructor changes: Run `setup:di:compile`
-3. If modifying templates: Run `setup:static-content:deploy -f`
-4. Always clear cache: `cache:flush`
-5. Check logs in `var/log/mo_oauth.log` for debugging
 
 The module configuration is accessed via: **Stores → Configuration → MiniOrange → OAuth/OIDC**
