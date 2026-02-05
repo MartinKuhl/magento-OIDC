@@ -41,6 +41,9 @@
             <argument name="oauthUtility" xsi:type="object">MiniOrange\OAuth\Helper\OAuthUtility</argument>
             <argument name="messageManager" xsi:type="object">Magento\Framework\Message\ManagerInterface</argument>
             <argument name="url" xsi:type="object">Magento\Framework\UrlInterface</argument>
+            <argument name="cookieManager" xsi:type="object">Magento\Framework\Stdlib\CookieManagerInterface</argument>
+            <argument name="cookieMetadataFactory" xsi:type="object">Magento\Framework\Stdlib\Cookie\CookieMetadataFactory</argument>
+            <argument name="backendUrl" xsi:type="object">Magento\Backend\Model\UrlInterface</argument>
         </arguments>
     </type>
 
@@ -49,6 +52,19 @@
         <plugin name="oidc_credential_interceptor"
                 type="MiniOrange\OAuth\Plugin\Auth\OidcCredentialPlugin"
                 sortOrder="10"/>
+        <plugin name="oidc_logout_cookie_cleanup"
+                type="MiniOrange\OAuth\Plugin\Auth\OidcLogoutPlugin"
+                sortOrder="20"/>
+    </type>
+
+    <!-- OIDC Logout Plugin Configuration -->
+    <type name="MiniOrange\OAuth\Plugin\Auth\OidcLogoutPlugin">
+        <arguments>
+            <argument name="cookieManager" xsi:type="object">Magento\Framework\Stdlib\CookieManagerInterface</argument>
+            <argument name="cookieMetadataFactory" xsi:type="object">Magento\Framework\Stdlib\Cookie\CookieMetadataFactory</argument>
+            <argument name="backendUrl" xsi:type="object">Magento\Backend\Model\UrlInterface</argument>
+            <argument name="oauthUtility" xsi:type="object">MiniOrange\OAuth\Helper\OAuthUtility</argument>
+        </arguments>
     </type>
 
     <!-- CAPTCHA Bypass Plugin for OIDC Authentication -->
@@ -63,6 +79,50 @@
         <plugin name="oidc_captcha_bypass"
                 type="MiniOrange\OAuth\Plugin\Captcha\OidcCaptchaBypassPlugin"
                 sortOrder="10"/>
+    </type>
+
+    <!-- OIDC Identity Verification Bypass Plugin Configuration -->
+    <type name="MiniOrange\OAuth\Plugin\User\OidcIdentityVerificationPlugin">
+        <arguments>
+            <argument name="cookieManager" xsi:type="object">Magento\Framework\Stdlib\CookieManagerInterface</argument>
+            <argument name="oauthUtility" xsi:type="object">MiniOrange\OAuth\Helper\OAuthUtility</argument>
+        </arguments>
+    </type>
+
+    <!-- Plugin to bypass identity verification for OIDC-authenticated admin users -->
+    <type name="Magento\User\Model\User">
+        <plugin name="oidc_identity_verification_bypass"
+                type="MiniOrange\OAuth\Plugin\User\OidcIdentityVerificationPlugin"
+                sortOrder="10"/>
+    </type>
+
+    <!-- OIDC Identity Field Plugin Configuration -->
+    <type name="MiniOrange\OAuth\Plugin\User\Block\OidcIdentityFieldPlugin">
+        <arguments>
+            <argument name="cookieManager" xsi:type="object">Magento\Framework\Stdlib\CookieManagerInterface</argument>
+            <argument name="oauthUtility" xsi:type="object">MiniOrange\OAuth\Helper\OAuthUtility</argument>
+        </arguments>
+    </type>
+
+    <!-- Plugin to remove required validation from identity field for OIDC users (User Edit) -->
+    <type name="Magento\User\Block\User\Edit\Tab\Main">
+        <plugin name="oidc_identity_field_user"
+                type="MiniOrange\OAuth\Plugin\User\Block\OidcIdentityFieldPlugin"
+                sortOrder="20"/>
+    </type>
+
+    <!-- Plugin to remove required validation from identity field for OIDC users (Role Edit) -->
+    <type name="Magento\User\Block\Role\Tab\Info">
+        <plugin name="oidc_identity_field_role"
+                type="MiniOrange\OAuth\Plugin\User\Block\OidcIdentityFieldPlugin"
+                sortOrder="20"/>
+    </type>
+
+    <!-- Plugin to remove required validation from identity field for OIDC users (Account Edit) -->
+    <type name="Magento\Backend\Block\System\Account\Edit\Form">
+        <plugin name="oidc_identity_field_account"
+                type="MiniOrange\OAuth\Plugin\User\Block\OidcIdentityFieldPlugin"
+                sortOrder="20"/>
     </type>
 
     <!-- MiniOrange Custom Logger Configuration -->

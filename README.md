@@ -47,6 +47,8 @@ Last Name   Split 1 - name
 
 - fix hello to prefered User Name
 
+rework ProcessUserAction.php
+
 Create User : extended fields
 Create admin : only for users with group (include admin lowerstring instring)
 --> Admin users must be pre-created in Magento

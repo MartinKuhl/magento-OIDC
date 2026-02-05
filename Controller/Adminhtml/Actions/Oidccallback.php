@@ -7,20 +7,23 @@ use Magento\Framework\App\RequestInterface;
 use Magento\Framework\Controller\ResultFactory;
 use Magento\Framework\Message\ManagerInterface;
 use Magento\Framework\UrlInterface;
+use Magento\Framework\Stdlib\CookieManagerInterface;
+use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
+use Magento\Backend\Model\UrlInterface as BackendUrlInterface;
 
 /**
  * OIDC Callback Controller for Admin Login
- * 
+ *
  * This controller handles admin user login after successful OIDC authentication.
  * It does NOT extend Backend\App\Action to avoid authentication middleware,
  * allowing unauthenticated access for the login process itself.
- * 
+ *
  * All logging is done via OAuthUtility to respect the plugin's logging configuration.
  * Logs are written to var/log/mo_oauth.log when logging is enabled.
- * 
+ *
  * Security: Only authenticates users that exist in the admin_user table
  * and are marked as active.
- * 
+ *
  * @package MiniOrange\OAuth\Controller\Adminhtml\Actions
  */
 class Oidccallback implements ActionInterface, HttpGetActionInterface
@@ -32,6 +35,9 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
     protected $oauthUtility;
     protected $messageManager;
     protected $url;
+    protected $cookieManager;
+    protected $cookieMetadataFactory;
+    protected $backendUrl;
 
     public function __construct(
         \Magento\User\Model\UserFactory $userFactory,
@@ -40,7 +46,10 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
         RequestInterface $request,
         \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
         ManagerInterface $messageManager,
-        UrlInterface $url
+        UrlInterface $url,
+        CookieManagerInterface $cookieManager,
+        CookieMetadataFactory $cookieMetadataFactory,
+        BackendUrlInterface $backendUrl
     ) {
         $this->userFactory = $userFactory;
         $this->auth = $auth;
@@ -49,11 +58,14 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
         $this->oauthUtility = $oauthUtility;
         $this->messageManager = $messageManager;
         $this->url = $url;
+        $this->cookieManager = $cookieManager;
+        $this->cookieMetadataFactory = $cookieMetadataFactory;
+        $this->backendUrl = $backendUrl;
     }
 
     /**
      * Execute admin login after OIDC authentication
-     * 
+     *
      * @return \Magento\Framework\Controller\Result\Redirect
      */
     public function execute()
@@ -113,10 +125,21 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
 
                 $this->oauthUtility->customlog("SUCCESS: Auth::login() completed successfully");
 
-                // Verify login success
+                // Verify login success and set OIDC cookie
                 if ($this->auth->isLoggedIn()) {
                     $loggedInUser = $this->auth->getUser();
                     $this->oauthUtility->customlog("Authenticated user ID: " . $loggedInUser->getId());
+
+                    // Set OIDC authentication cookie (persists across session boundary)
+                    $adminPath = '/' . $this->backendUrl->getAreaFrontName();
+                    $metadata = $this->cookieMetadataFactory->createPublicCookieMetadata()
+                        ->setDuration(86400) // 24 hours
+                        ->setPath($adminPath)
+                        ->setHttpOnly(true)
+                        ->setSecure(true);
+                    $this->cookieManager->setPublicCookie('oidc_authenticated', '1', $metadata);
+
+                    $this->oauthUtility->customlog("OIDC cookie set for path: " . $adminPath);
 
                     $this->messageManager->addSuccessMessage(
                         __('Willkommen zurück, %1!', $loggedInUser->getFirstname() ?: $loggedInUser->getUsername())
@@ -150,7 +173,7 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
     /**
      * Redirect to admin login page with error message in URL
      * Messages in URL are displayed on the login page via JavaScript or template
-     * 
+     *
      * @param \Magento\Framework\Phrase $message
      * @return \Magento\Framework\Controller\Result\Redirect
      */
