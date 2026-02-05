@@ -57,6 +57,10 @@ class OAuthConstants
     const AUTO_CREATE_CUSTOMER = 'autoCreateCustomer';
     const ENABLE_LOGIN_REDIRECT= 'enableLoginRedirect';
 
+    // Login type constants for differentiating admin vs customer OIDC login
+    const LOGIN_TYPE_CUSTOMER  = 'customer';
+    const LOGIN_TYPE_ADMIN     = 'admin';
+
     // attribute mapping constants
     // ggf. extend
     const MAP_EMAIL            = 'amEmail';

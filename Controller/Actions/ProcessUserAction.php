@@ -168,69 +168,23 @@ class ProcessUserAction extends Action
             $this->oauthUtility->customlog("processUserAction: changing relayState with store url " . $store_url);
         }
 
-        $isAdminLogin = false;
-        $relayState = '';
+        // Customer login flow (admin routing is now handled by CheckAttributeMappingAction)
+        $this->oauthUtility->customlog("processUserAction: Processing as customer login");
 
+        $relayState = '';
         if (is_array($this->attrs) && isset($this->attrs['relayState'])) {
             $relayState = $this->attrs['relayState'];
         } elseif (isset($this->attrs->relayState)) {
             $relayState = $this->attrs->relayState;
         }
-        //To Do_MK: Check der Admin-Login Erkennung
-        if (!empty($relayState)) {
-            $isAdminLogin = (strpos($relayState, '/admin') !== false) ||
-                (strpos($relayState, 'admin/') !== false) ||
-                (strpos($relayState, 'admin') === 0);
-            $this->oauthUtility->customlog("processUserAction: Relay state: " . $relayState . ", isAdmin: " . ($isAdminLogin ? "true" : "false"));
-        }
 
-        if ($isAdminLogin) {
-            $this->oauthUtility->customlog("processUserAction: Processing as admin login");
-
-            try {
-
-                $adminUser = $this->getAdminUserByEmail($user_email);
-                if ($adminUser && $adminUser->getIsActive() == 1) {
-                    $this->oauthUtility->customlog("processUserAction: Admin user found and is active");
-
-                    $redirectUrl = $this->adminAuthHelper->getStandaloneLoginUrl($user_email, $relayState);
-
-                    $this->oauthUtility->customlog("processUserAction: Redirecting to: " . $redirectUrl);
-                    $this->getResponse()->setRedirect($redirectUrl)->sendResponse();
-                    return;
-                } else {
-                    $this->oauthUtility->customlog("processUserAction: Admin user not found for email: " . $user_email);
-
-                    //Todo_MK: Umbau wenn Auto Create Admin aktiviert ist, dann Admin User erstellen und Teil der Admin-Gruppe sein
-                    $errorMessage = sprintf(
-                        'Admin-Zugang verweigert: Für die E-Mail-Adresse "%s" ist kein Administrator-Konto in Magento hinterlegt. Bitte wenden Sie sich an Ihren Systemadministrator.',
-                        $user_email
-                    );
-
-                    $loginUrl = $this->oauthUtility->getBaseUrl() . 'admin?oidc_error=' . base64_encode($errorMessage);
-
-                    $this->oauthUtility->customlog("processUserAction: Redirecting to admin login with error");
-                    return $this->getResponse()->setRedirect($loginUrl)->sendResponse();
-                }
-            } catch (\Exception $e) {
-                $this->oauthUtility->customlog("processUserAction: Exception during admin login: " . $e->getMessage());
-
-                $errorMessage = 'Die Anmeldung über Authelia ist fehlgeschlagen. Bitte versuchen Sie es erneut oder wenden Sie sich an Ihren Administrator.';
-                $loginUrl = $this->oauthUtility->getBaseUrl() . 'admin?oidc_error=' . base64_encode($errorMessage);
-
-                return $this->getResponse()->setRedirect($loginUrl)->sendResponse();
-            }
+        if ($this->oauthUtility->getSessionData('guest_checkout')) {
+            $this->oauthUtility->setSessionData('guest_checkout', NULL);
+            $this->customerLoginAction->setUser($user)->setRelayState($this->oauthUtility->getBaseUrl() . 'checkout')->execute();
+        } else if (!empty($relayState)) {
+            $this->customerLoginAction->setUser($user)->setRelayState($relayState)->execute();
         } else {
-            // Standard customer login flow
-            $this->oauthUtility->customlog("processUserAction: Processing as customer login");
-            if ($this->oauthUtility->getSessionData('guest_checkout')) {
-                $this->oauthUtility->setSessionData('guest_checkout', NULL);
-                $this->customerLoginAction->setUser($user)->setRelayState($this->oauthUtility->getBaseUrl() . 'checkout')->execute();
-            } else if (is_array($this->attrs)) {
-                $this->customerLoginAction->setUser($user)->setRelayState($this->attrs['relayState'])->execute();
-            } else {
-                $this->customerLoginAction->setUser($user)->setRelayState($this->attrs->relayState)->execute();
-            }
+            $this->customerLoginAction->setUser($user)->setRelayState('/')->execute();
         }
     }
 

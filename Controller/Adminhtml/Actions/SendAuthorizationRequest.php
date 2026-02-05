@@ -83,11 +83,12 @@ class SendAuthorizationRequest extends BaseAction
         $responseType = OAuthConstants::CODE;
         $redirectURL = $this->oauthUtility->getCallBackUrl();
 
-        // relayState Standardwert
+        // relayState Standardwert mit Login-Typ für Admin
         $relayState = $isFromPopup
             ? $this->oauthUtility->getBaseUrl() . "checkout"
             : (isset($params['relayState']) ? $params['relayState'] : '/');
-        $relayState = $relayState . '|' . $currentSessionId . '|' . $app_name;
+        // Format: originalRelayState|sessionId|appName|loginType
+        $relayState = $relayState . '|' . $currentSessionId . '|' . $app_name . '|' . OAuthConstants::LOGIN_TYPE_ADMIN;
 
         $isTest = (
             ($this->oauthUtility->getStoreConfig(OAuthConstants::IS_TEST) == true)

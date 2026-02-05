@@ -57,9 +57,9 @@ class sendAuthorizationRequest extends BaseAction
         $app_name = isset($params['app_name']) ? $params['app_name'] : $this->oauthUtility->getStoreConfig(OAuthConstants::APP_NAME);
         $this->oauthUtility->customlog("SendAuthorizationRequest: Using app_name: " . $app_name);
 
-        // Kombiniere den relayState mit der Session-ID und App-Namen in einem kodierten Format
-        // Format: originalRelayState|sessionId|appName
-        $relayState = $relayState . '|' . $currentSessionId . '|' . $app_name;
+        // Kombiniere den relayState mit der Session-ID, App-Namen und Login-Typ in einem kodierten Format
+        // Format: originalRelayState|sessionId|appName|loginType
+        $relayState = $relayState . '|' . $currentSessionId . '|' . $app_name . '|' . OAuthConstants::LOGIN_TYPE_CUSTOMER;
         $this->oauthUtility->customlog("SendAuthorizationRequest: Combined relayState: " . $relayState);
 
         if (strpos($relayState, OAuthConstants::TEST_RELAYSTATE) !== false) {

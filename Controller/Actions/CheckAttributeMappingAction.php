@@ -27,6 +27,7 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
     private $flattenedUserInfoResponse;
     private $relayState;
     private $userEmail;
+    private $loginType;
 
     private $emailAttribute;
     private $usernameAttribute;
@@ -119,25 +120,37 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
         // Nur wenn KEIN Test, Admin-Logik und Redirect ausführen:
         $this->oauthUtility->customlog("=== CheckAttributeMappingAction: Processing authentication for: " . $userEmail);
 
-        $isAdminLogin = $this->isAdminUser($userEmail);
-        $this->oauthUtility->customlog("User type detection - Admin: " . ($isAdminLogin ? 'YES' : 'NO'));
+        // Use explicit loginType for routing decision instead of just checking admin_user table
+        $isAdminLoginIntent = ($this->loginType === OAuthConstants::LOGIN_TYPE_ADMIN);
+        $this->oauthUtility->customlog("Login type: " . ($this->loginType ?? 'not set') . ", Admin intent: " . ($isAdminLoginIntent ? 'YES' : 'NO'));
 
-        if ($isAdminLogin) {
-            // Redirect admin users to dedicated admin login endpoint
-            $this->oauthUtility->customlog("Routing admin user to admin callback endpoint");
+        if ($isAdminLoginIntent) {
+            // User initiated login from admin page - verify they have admin account
+            $hasAdminAccount = $this->isAdminUser($userEmail);
+            $this->oauthUtility->customlog("Admin login intent detected. Has admin account: " . ($hasAdminAccount ? 'YES' : 'NO'));
 
-            $adminCallbackUrl = $this->backendUrl->getUrl('mooauth/actions/oidccallback', [
-                'email' => $userEmail
-            ]);
+            if ($hasAdminAccount) {
+                // Redirect admin users to dedicated admin login endpoint
+                $this->oauthUtility->customlog("Routing admin user to admin callback endpoint");
 
-            $this->oauthUtility->customlog("Admin callback URL: " . $adminCallbackUrl);
+                $adminCallbackUrl = $this->backendUrl->getUrl('mooauth/actions/oidccallback', [
+                    'email' => $userEmail
+                ]);
 
-            $this->getResponse()->setRedirect($adminCallbackUrl);
-            return $this->getResponse();
+                $this->oauthUtility->customlog("Admin callback URL: " . $adminCallbackUrl);
+
+                $this->getResponse()->setRedirect($adminCallbackUrl);
+                return $this->getResponse();
+            } else {
+                // User tried to login as admin but has no admin account
+                $this->oauthUtility->customlog("ERROR: Admin login attempted but no admin account exists for: " . $userEmail);
+                $this->messageManager->addErrorMessage(__('No admin account found for this email address.'));
+                return $this->resultRedirectFactory->create()->setPath('admin');
+            }
         }
 
-        // Regular customer login flow
-        $this->oauthUtility->customlog("Routing customer user to normal login flow");
+        // Customer login flow (either explicit customer intent or default)
+        $this->oauthUtility->customlog("Routing to customer login flow for: " . $userEmail);
 
         try {
             return $this->moOAuthCheckMapping($attrs, $flattenedAttrs, $userEmail);
@@ -369,13 +382,25 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
 
     /**
      * Set relay state
-     * 
+     *
      * @param string $relayState
      * @return $this
      */
     public function setRelayState($relayState)
     {
         $this->relayState = $relayState;
+        return $this;
+    }
+
+    /**
+     * Set login type (admin or customer)
+     *
+     * @param string $loginType
+     * @return $this
+     */
+    public function setLoginType($loginType)
+    {
+        $this->loginType = $loginType;
         return $this;
     }
 

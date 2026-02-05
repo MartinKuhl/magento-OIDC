@@ -59,9 +59,20 @@ class ProcessResponseAction extends BaseAction
             return $this->getResponse()->setBody("Email address not received. Please check attribute mapping.");
         }
 
+        // Extract loginType from userInfoResponse (defaults to customer for backward compatibility)
+        $loginType = OAuthConstants::LOGIN_TYPE_CUSTOMER;
+        if (is_array($userInfoResponse) && isset($userInfoResponse['loginType'])) {
+            $loginType = $userInfoResponse['loginType'];
+        } elseif (is_object($userInfoResponse) && isset($userInfoResponse->loginType)) {
+            $loginType = $userInfoResponse->loginType;
+        }
+        $this->oauthUtility->customlog("ProcessResponseAction: loginType = " . $loginType);
+
         $result = $this->attrMappingAction->setUserInfoResponse($userInfoResponse)
             ->setFlattenedUserInfoResponse($flattenedUserInfoResponse)
-            ->setUserEmail($userEmail)->execute();
+            ->setUserEmail($userEmail)
+            ->setLoginType($loginType)
+            ->execute();
 
         // Debug: Prüfe was zurückkommt
         $this->oauthUtility->customlog("ProcessResponseAction: attrMappingAction returned: " .

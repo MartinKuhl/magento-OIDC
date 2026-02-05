@@ -343,11 +343,20 @@ class OAuth extends \Magento\Framework\View\Element\Template
     }
 
     /**
-     * Create/Get the SP initiated URL for the site.
+     * Create/Get the SP initiated URL for the site (frontend/customer login).
      */
     public function getSPInitiatedUrl($relayState = null, $app_name = null)
     {
         return $this->oauthUtility->getSPInitiatedUrl($relayState,$app_name);
+    }
+
+    /**
+     * Create/Get the Admin SP initiated URL (admin backend OIDC login).
+     * Uses the admin controller which sets loginType=admin.
+     */
+    public function getAdminSPInitiatedUrl($relayState = null, $app_name = null)
+    {
+        return $this->oauthUtility->getAdminSPInitiatedUrl($relayState, $app_name);
     }
 
     /**

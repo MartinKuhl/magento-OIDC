@@ -386,9 +386,10 @@ class Data extends AbstractHelper
 
 
     /**
-     * Get the SP InitiatedURL
+     * Get the SP InitiatedURL (for frontend/customer OIDC login)
      *
      * @param $relayState
+     * @param $app_name
      */
     public function getSPInitiatedUrl($relayState = null, $app_name = NULL)
     {
@@ -403,5 +404,27 @@ class Data extends AbstractHelper
             OAuthConstants::OAUTH_LOGIN_URL,
             ["relayState" => $relayState]
         ) . "&app_name=" . $app_name;
+    }
+
+    /**
+     * Get the Admin SP InitiatedURL (for admin backend OIDC login)
+     * Uses the admin controller which sets loginType=admin
+     *
+     * @param $relayState
+     * @param $app_name
+     */
+    public function getAdminSPInitiatedUrl($relayState = null, $app_name = NULL)
+    {
+        $relayState = is_null($relayState) ? $this->getCurrentUrl() : $relayState;
+
+        if (empty($app_name)) {
+            $app_name = $this->getStoreConfig(OAuthConstants::APP_NAME);
+        }
+
+        // Use admin URL to route to admin SendAuthorizationRequest controller
+        return $this->getAdminUrl(
+            OAuthConstants::OAUTH_LOGIN_URL,
+            ["relayState" => $relayState, "app_name" => $app_name]
+        );
     }
 }

@@ -59,6 +59,8 @@ class ReadAuthorizationResponse extends BaseAction
 
         $originalSessionId = isset($parts[1]) ? $parts[1] : '';
         $app_name = isset($parts[2]) ? $parts[2] : '';
+        // Parse loginType from relayState (defaults to customer for backward compatibility)
+        $loginType = isset($parts[3]) ? $parts[3] : OAuthConstants::LOGIN_TYPE_CUSTOMER;
 
         // ... Session zurückwechseln, app_name auslesen wie gehabt ...
 
@@ -149,8 +151,10 @@ class ReadAuthorizationResponse extends BaseAction
         // Normale Response-Action
         if (is_array($userInfoResponseData)) {
             $userInfoResponseData['relayState'] = $relayState;
+            $userInfoResponseData['loginType'] = $loginType;
         } else {
             $userInfoResponseData->relayState = $relayState;
+            $userInfoResponseData->loginType = $loginType;
         }
         $result = $this->processResponseAction->setUserInfoResponse($userInfoResponseData)->execute();
         return $result;

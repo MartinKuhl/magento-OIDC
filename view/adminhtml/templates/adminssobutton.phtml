@@ -12,5 +12,5 @@ echo
             <svg height="5" width="133">
                 <line x1="0" y1="0" x2="128" y2="0" style="stroke:#969393;stroke-width:3" ></line>
             </svg>
-            <button type="button" class="action-login action-primary" style="margin-top:3%; padding: 3% 14%; width:100%; text-align:center;" onclick="window.location.href=\'' . $this->escapeUrl($this->getSPInitiatedUrl(null, $this->getAppName())) . '\';">' . $this->escapeHtml($this->getSSOButtonText()) . '</button>
+            <button type="button" class="action-login action-primary" style="margin-top:3%; padding: 3% 14%; width:100%; text-align:center;" onclick="window.location.href=\'' . $this->escapeUrl($this->getAdminSPInitiatedUrl(null, $this->getAppName())) . '\';">' . $this->escapeHtml($this->getSSOButtonText()) . '</button>
     </div>';
