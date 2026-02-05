@@ -2,52 +2,52 @@
     This template file is for the SAML Attribute/Role Mapping settings.
     File acts as a view file for our attribute / role mapping page.
 -->
-
 <?php
-    //Attribute mapping
-    // initialze all values required to be shown on the page
-    $roles = $this->getAllRoles();
-    $groups = $this->getAllGroups();
+// Initialize all values required to be shown on the page
+$roles = $this->getAllRoles();
+$groups = $this->getAllGroups();
 
-    $isEnabled = $this->isEnabled();
-    $disabled = !$isEnabled ? "disabled" : "";
-    $oauth_am_username = $this->getUserNameMapping();
-    $oauth_am_email = $this->getUserEmailMapping();
-    $oauth_am_first_name = $this->getFirstNameMapping();
-    $oauth_am_last_name = $this->getLastNameMapping();
-    $oauth_am_table = $this->getTable();
-    $oauth_am_country= $this->getCountryMapping();
-    $oauth_am_company = $this->getCompanyMapping();
-    $oauth_am_group_name = $this->getGroupMapping();
+$isEnabled = $this->isEnabled();
+$disabled = !$isEnabled ? "disabled" : "";
+$oauth_am_username = $this->getUserNameMapping();
+$oauth_am_email = $this->getUserEmailMapping();
+$oauth_am_first_name = $this->getFirstNameMapping();
+$oauth_am_last_name = $this->getLastNameMapping();
+$oauth_am_table = $this->getTable();
+$oauth_am_country = $this->getCountryMapping();
+$oauth_am_company = $this->getCompanyMapping();
+$oauth_am_group_name = $this->getGroupMapping();
 
-    $oauth_am_account_matcher = $this->getAccountMatcher();
+$oauth_am_account_matcher = $this->getAccountMatcher();
+$emailSelected = $oauth_am_account_matcher == 'email' ? 'selected="selected"' : "";
+$usernameSelected = $oauth_am_account_matcher == 'username' ? 'selected="selected"' : "";
 
-    $emailSelected = $oauth_am_account_matcher == 'email' ? 'selected="selected"' : "";
-    $usernameSelected = $oauth_am_account_matcher == 'username' ? 'selected="selected"' : "";
+$oauth_am_dont_allow_unlisted_user_role = $this->getDisallowUnlistedUserRole();
+$mo_oauth_dont_create_user_if_role_not_mapped = $this->getDisallowUserCreationIfRoleNotMapped();
+$default_role = $this->getDefaultRole();
+?>
 
-    $oauth_am_dont_allow_unlisted_user_role = $this->getDisallowUnlistedUserRole();
-    $mo_oauth_dont_create_user_if_role_not_mapped = $this->getDisallowUserCreationIfRoleNotMapped();
-
-    $default_role = $this->getDefaultRole();
-
-echo '
 <div class="row">
-<div class="col-sm-7 page_margin" >
-    <div class="page" id="attrmapping">
-        <div class="mooauth_table_layout">
-           <form name="f" method="post" action="">
-                <input name="form_key" type="hidden" value="'. $block->escapeHtmlAttr($block->getFormKey()) .'" />
+    <div class="col-sm-7 page_margin">
+        <div class="page" id="attrmapping">
+            <div class="mosp_table_layout">
+                <h3>ATTRIBUTE MAPPING (OPTIONAL)</h3>
+                <hr>
+            </div>
+
+            <!-- Attribute Mapping Form -->
+            <form name="f" method="post" action="">
+                <input name="form_key" type="hidden" value="<?= $block->escapeHtmlAttr($block->getFormKey()) ?>" />
                 <input type="hidden" name="option" value="saveAttrSettings">
-                <h3>Attribute Mapping (Optional)</h3><hr>
+
                 <table>
+                    <!-- What is Attribute Mapping Info -->
                     <tr>
                         <td colspan="2">
-                            <div class="mo_note" >
-                                <span class="btn-link " >What is Attribute Mapping?</span>
-
+                            <div class="mo_note">
+                                <span class="btn-link">What is Attribute Mapping?</span>
                                 <div hidden class="show_info">
                                     <ol>
-                                        
                                         <li>Attributes are user details that are stored in your Identity Provider.</li>
                                         <li>Attribute Mapping helps you to get user attributes from your IdP and map them to
                                             Magento user attributes like firstname, lastname etc.</li>
@@ -58,53 +58,114 @@ echo '
                             </div>
                         </td>
                     </tr>
-                    <tr><td colspan="2"><input type="checkbox" id="update_attribute" 
-                    name="oauth_am_update_attribue" value="checked" 
-                    enabled  enabled>
-                    &nbsp;&nbsp;Update Attribute. <span style="margin-left:351px;font-style: italic">(Email cannot be update)</span></td></tr>
-                    
-                <tr>
-                    <td colspan="2"><b>Users in Magento will be searched (existing Magento users) or created (new users) based
-                     on the Email attribute.</td>
-                </tr>
-                
-      <tr class="mo_premium_option">
-                    <td style="width:200px;"><strong>Login/Create Magento account by: </strong></td>
-                    <td><select name="oauth_am_account_matcher" enabled id="oauth_am_account_matcher" >
-                        <option value="email"> Email </option>
-                        <option value="username" > Username </option>
-                    </select>
-                    </td>
-                </tr>
 
-                <tr>
-                    <td style="width:150px;"><strong>Username <span style="color:red;">*</span>:</strong></td>
-                    <td><input type="text" enabled name="oauth_am_username" placeholder="Enter attribute name for User Name"
-                    value="' . $this->escapeHtmlAttr($oauth_am_username) . '" /></td>
-                </tr>
-                <tr>
-                    <td><strong>Email <span style="color:red;">*</span>:</strong></td>
-                    <td><input type="text" enabled name="oauth_am_email" placeholder="Enter attribute name for User Email"
-                    value="' . $this->escapeHtmlAttr($oauth_am_email) . '" /></td>
-                </tr>
-                <tr>
-                    <td><strong>First Name:</strong></td>
-                    <td><input type="text" enabled name="oauth_am_first_name" placeholder="Enter attribute name for First Name"
-                    value="' . $this->escapeHtmlAttr($oauth_am_first_name) . '" /></td>
-                </tr>
-                <tr>
-                    <td><strong>Last Name:</strong></td>
-                    <td><input type="text" enabled name="oauth_am_last_name" placeholder="Enter attribute name for Last Name"
-                    value="' . $this->escapeHtmlAttr($oauth_am_last_name) . '" /></td>
-                </tr>
-                 </td>
-                 </tr>
+                    <!-- Update Attribute Checkbox -->
+                    <tr>
+                        <td colspan="2">
+                            <input type="checkbox"
+                                   id="update_attribute"
+                                   name="oauth_am_update_attribue"
+                                   value="checked"
+                                   <?= $block->escapeHtmlAttr($disabled) ?>>
+                            &nbsp;&nbsp;Update Attribute.
+                            <span style="margin-left: 351px; font-style: italic;">(Email cannot be updated)</span>
+                        </td>
+                    </tr>
 
+                    <!-- Info Text -->
+                    <tr>
+                        <td colspan="2">
+                            <b>Users in Magento will be searched (existing Magento users) or created (new users) based
+                            on the Email attribute.</b>
+                        </td>
+                    </tr>
+
+                    <!-- Login/Create Account By -->
+                    <tr class="mo_premium_option">
+                        <td style="width: 200px;">
+                            <label><strong>Login/Create Magento account by:</strong></label>
+                        </td>
+                        <td>
+                            <select name="oauth_am_account_matcher"
+                                    id="oauth_am_account_matcher"
+                                    <?= $block->escapeHtmlAttr($disabled) ?>>
+                                <option value="email" <?= $emailSelected ?>>Email</option>
+                                <option value="username" <?= $usernameSelected ?>>Username</option>
+                            </select>
+                        </td>
+                    </tr>
+
+                    <!-- Username -->
+                    <tr>
+                        <td style="width: 150px;">
+                            <label><strong>Username<span style="color:red;">*</span>:</strong></label>
+                        </td>
+                        <td>
+                            <input type="text"
+                                   name="oauth_am_username"
+                                   placeholder="Enter attribute name for User Name"
+                                   value="<?= $block->escapeHtmlAttr($oauth_am_username) ?>"
+                                   <?= $block->escapeHtmlAttr($disabled) ?> />
+                        </td>
+                    </tr>
+
+                    <!-- Email -->
+                    <tr>
+                        <td>
+                            <label><strong>Email<span style="color:red;">*</span>:</strong></label>
+                        </td>
+                        <td>
+                            <input type="text"
+                                   name="oauth_am_email"
+                                   placeholder="Enter attribute name for User Email"
+                                   value="<?= $block->escapeHtmlAttr($oauth_am_email) ?>"
+                                   <?= $block->escapeHtmlAttr($disabled) ?> />
+                        </td>
+                    </tr>
+
+                    <!-- First Name -->
+                    <tr>
+                        <td>
+                            <label><strong>First Name:</strong></label>
+                        </td>
+                        <td>
+                            <input type="text"
+                                   name="oauth_am_first_name"
+                                   placeholder="Enter attribute name for First Name"
+                                   value="<?= $block->escapeHtmlAttr($oauth_am_first_name) ?>"
+                                   <?= $block->escapeHtmlAttr($disabled) ?> />
+                        </td>
+                    </tr>
+
+                    <!-- Last Name -->
+                    <tr>
+                        <td>
+                            <label><strong>Last Name:</strong></label>
+                        </td>
+                        <td>
+                            <input type="text"
+                                   name="oauth_am_last_name"
+                                   placeholder="Enter attribute name for Last Name"
+                                   value="<?= $block->escapeHtmlAttr($oauth_am_last_name) ?>"
+                                   <?= $block->escapeHtmlAttr($disabled) ?> />
+                        </td>
+                    </tr>
+
+                    <!-- Save Button -->
+                    <tr>
                         <td>&nbsp;</td>
-                        <td><br ><input class="btn-round" type="submit" style="width:100px;" name="submit" value="Save"
-                         enabled > &nbsp;
-                        <br ><br >
+                        <td>
+                            <br>
+                            <input class="btn-round"
+                                   type="submit"
+                                   style="width: 100px;"
+                                   name="submit"
+                                   value="Save"
+                                   <?= $block->escapeHtmlAttr($disabled) ?> />
                         </td>
                     </tr>
                 </table>
-           </form>';
+            </form>
+        </div>
+    </div>
+</div>

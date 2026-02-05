@@ -53,8 +53,10 @@ Create admin : only for users with group (include admin lowerstring instring)
 
 - update attributes options
 
-- Fix LOGIN / LOGOUT OPTIONS
+- Implement User Auto Redirect Settings for Admin Users
 
 - handling additional scopes (phone & address)
 
 - Rename: --> Authelia OIDC (in Code)
+
+- Storage of settings in 2 different tables why -> merging?

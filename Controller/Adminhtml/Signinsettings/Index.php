@@ -185,18 +185,22 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         $mo_sso_auto_create_admin = isset($params['mo_sso_auto_create_admin']) ? 1 : 0;
         $mo_sso_auto_create_customer = isset($params['mo_sso_auto_create_customer']) ? 1 : 0;
         $mo_saml_enable_login_redirect = isset($params['mo_saml_enable_login_redirect']) ? 1 : 0;
+        $mo_oauth_logout_redirect_url = isset($params['mo_oauth_logout_redirect_url']) ? $params['mo_oauth_logout_redirect_url'] : '';
 
         $this->oauthUtility->customlog("SignInSettings: Saving customer link setting: " . $mo_oauth_show_customer_link);
         $this->oauthUtility->customlog("SignInSettings: Saving admin link setting: " . $mo_oauth_show_admin_link);
         $this->oauthUtility->customlog("SignInSettings: Saving auto create admin setting: " . $mo_sso_auto_create_admin);
         $this->oauthUtility->customlog("SignInSettings: Saving auto create customer setting: " . $mo_sso_auto_create_customer);
         $this->oauthUtility->customlog("SignInSettings: Saving login redirect setting: " . $mo_saml_enable_login_redirect);
+        $this->oauthUtility->customlog("SignInSettings: Saving logout redirect url: " . $mo_oauth_logout_redirect_url);
+        
         
         $this->oauthUtility->setStoreConfig(OAuthConstants::SHOW_CUSTOMER_LINK, $mo_oauth_show_customer_link);
         $this->oauthUtility->setStoreConfig(OAuthConstants::SHOW_ADMIN_LINK, $mo_oauth_show_admin_link);
         $this->oauthUtility->setStoreConfig(OAuthConstants::AUTO_CREATE_ADMIN, $mo_sso_auto_create_admin);
         $this->oauthUtility->setStoreConfig(OAuthConstants::AUTO_CREATE_CUSTOMER, $mo_sso_auto_create_customer);
         $this->oauthUtility->setStoreConfig(OAuthConstants::ENABLE_LOGIN_REDIRECT, $mo_saml_enable_login_redirect);
+        $this->oauthUtility->setStoreConfig(OAuthConstants::OAUTH_LOGOUT_URL, $mo_oauth_logout_redirect_url);
     }
 
 private function customerConfigurationSettings( $values)
