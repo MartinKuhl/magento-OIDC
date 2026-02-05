@@ -72,7 +72,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
 
             // check if form options are being saved
             if ($this->isFormOptionBeingSaved($params)) {
-                if($params['option']=='saveSingInSettings')
+                if($params['option']=='saveSignInSettings')
                 {$this->processValuesAndSaveData($params);
                 $this->oauthUtility->flushCache();
                 $this->messageManager->addSuccessMessage(OAuthMessages::SETTINGS_SAVED);
