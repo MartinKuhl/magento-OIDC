@@ -29,6 +29,12 @@ class ShowTestResults extends Action
                               <div style="display:block;text-align:center;margin-bottom:4%;"><img style="width:15%;" src="{{right}}"></div>';
     private $errorHeader    = '<div style="color: #a94442;background-color: #f2dede;padding: 15px;margin-bottom: 20px;text-align:center; border:1px solid #E6B3B2;font-size:18pt;">TEST FAILED</div>
                               <div style="display:block;text-align:center;margin-bottom:4%;"><img style="width:15%;"src="{{wrong}}"></div>';
+    private $unsuccessfulHeader = '<div style="color: #a94442;background-color: #f2dede;padding: 15px;margin-bottom: 20px;text-align:center; border:1px solid #E6B3B2;font-size:18pt;">TEST UNSUCCESSFUL</div>
+                              <div style="display:block;text-align:center;margin-bottom:4%;"><img style="width:15%;"src="{{wrong}}"></div>';
+    private $errorBody = '<div style="font-size:14pt;padding:15px;background-color:#fff3cd;border:1px solid #ffc107;border-radius:4px;margin-bottom:20px;">
+                            <p style="font-weight:bold;color:#856404;margin:0 0 10px 0;">Error Message:</p>
+                            <p style="color:#856404;margin:0;">{{error_message}}</p>
+                          </div>';
     private $commonBody  = '<span style="font-size:14pt;"><b>Hello</b>, {{email}}</span><br/>
                                 <p style="font-weight:bold;font-size:14pt;margin-left:1%;">ATTRIBUTES RECEIVED:</p>
                                 <table style="border-collapse:collapse;border-spacing:0; display:table;width:100%;
@@ -42,7 +48,7 @@ class ShowTestResults extends Action
                             <input style="padding:1%;width:100px;background: #0091CD none repeat scroll 0% 0%;cursor: pointer;
                                 font-size:15px;border-width: 1px;border-style: solid;border-radius: 3px;white-space: nowrap;
                                     box-sizing: border-box;border-color: #0073AA;box-shadow: 0px 1px 0px rgba(120, 200, 230, 0.6) inset;
-                                    color: #FFF;" type="button" value="Done" onClick="self.close();"></div>';
+                                    color: #FFF;" type="button" value="Done" onClick="window.close();"></div>';
 
     private $tableContent = "<tr><td style='font-weight:bold;border:2px solid #949090;padding:2%;'>{{key}}</td><td style='padding:2%;
                                     border:2px solid #949090; word-wrap:break-word;'>{{value}}</td></tr>";
@@ -64,15 +70,21 @@ class ShowTestResults extends Action
      */
     public function execute()
     {
+        // Check for OIDC error first
+        $oidcError = $this->request->getParam('oidc_error');
+        if ($oidcError) {
+            return $this->handleOidcError($oidcError);
+        }
+
         // Test-Key aus URL lesen
         $key = $this->request->getParam('key');
         $attrs = $_SESSION['mooauth_test_results'][$key] ?? null;
         $this->setAttrs($attrs);
-        $this->setUserEmail($attrs['email']);
+        $this->setUserEmail($attrs['email'] ?? null);
 
         if (ob_get_contents()) {ob_end_clean();}
         $this->oauthUtility->customlog("ShowTestResultsAction: execute");
-        
+
         $this->processTemplateHeader();
         if (!$this->hasExceptionOccurred) {
             $this->processTemplateContent();
@@ -115,6 +127,34 @@ class ShowTestResults extends Action
         $this->oauthUtility->flushCache();
 
         $this->getResponse()->setBody($this->template);
+    }
+
+    /**
+     * Handle OIDC error and display TEST UNSUCCESSFUL page
+     */
+    private function handleOidcError($encodedError)
+    {
+        if (ob_get_contents()) {ob_end_clean();}
+        $this->oauthUtility->customlog("ShowTestResultsAction: handleOidcError");
+
+        $errorMessage = base64_decode($encodedError);
+        $this->status = "TEST UNSUCCESSFUL";
+        $this->hasExceptionOccurred = true;
+
+        // Build the error template
+        $header = $this->unsuccessfulHeader;
+        $header = str_replace("{{wrong}}", $this->oauthUtility->getImageUrl(OAuthConstants::IMAGE_WRONG), $header);
+        $this->template = str_replace("{{header}}", $header, $this->template);
+
+        // Add error body
+        $errorBodyContent = str_replace("{{error_message}}", htmlspecialchars($errorMessage), $this->errorBody);
+        $this->template = str_replace("{{commonbody}}", $errorBodyContent, $this->template);
+
+        // Add footer
+        $this->template = str_replace("{{footer}}", $this->footer ?? '', $this->template);
+
+        $this->getResponse()->setBody($this->template);
+        return $this->getResponse();
     }
 
     private function processTemplateHeader()

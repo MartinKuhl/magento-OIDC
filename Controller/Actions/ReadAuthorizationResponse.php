@@ -39,16 +39,43 @@ class ReadAuthorizationResponse extends BaseAction
         // ... Vorbereitende Logik & Logging wie gehabt ...
 
         if (!isset($params['code'])) {
-            $relayState = isset($params['relayState']) ? $params['relayState'] : '';
+            // Parse loginType from state even on error (state is still passed by OAuth provider)
+            $loginType = OAuthConstants::LOGIN_TYPE_CUSTOMER; // default to customer
+            if (isset($params['state'])) {
+                $parts = explode('|', $params['state']);
+                $loginType = isset($parts[3]) ? $parts[3] : OAuthConstants::LOGIN_TYPE_CUSTOMER;
+            }
+
             if (isset($params['error'])) {
-                $errorMsg = htmlspecialchars($params['error_description'] ?? $params['error']);
-                return $this->getResponse()->setBody(
-                    "<div style='color:#a94442; background:#f2dede; padding:2em; text-align:center;'>" .
-                    "<h2>OIDC Fehler: " . $errorMsg . "</h2>" .
-                    "<p>Bitte prüfen Sie Ihre OIDC-Konfiguration (Scope, Client, Redirect URI, etc.) oder wenden Sie sich an den Administrator.</p>" .
-                    "<div><button onclick='window.close()'>Fenster schließen</button></div>" .
-                    "</div>"
+                $errorMsg = $params['error_description'] ?? $params['error'];
+                $encodedError = base64_encode($errorMsg);
+
+                // Check if this is a test flow by examining the relayState
+                $relayState = '';
+                if (isset($params['state'])) {
+                    $parts = explode('|', $params['state']);
+                    $relayState = $parts[0] ?? '';
+                }
+
+                $isTest = (
+                    ($this->oauthUtility->getStoreConfig(OAuthConstants::IS_TEST) == true)
+                    || (strpos($relayState, 'showTestResults') !== false)
                 );
+
+                if ($isTest && strpos($relayState, 'showTestResults') !== false) {
+                    // Test mode: redirect to showTestResults with error
+                    $errorUrl = $relayState . (strpos($relayState, '?') !== false ? '&' : '?') . 'oidc_error=' . $encodedError;
+                    return $this->_redirect($errorUrl);
+                }
+
+                if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
+                    // Admin: redirect to admin login page
+                    $loginUrl = $this->_url->getUrl('admin', ['_query' => ['oidc_error' => $encodedError]]);
+                } else {
+                    // Customer: redirect to customer login page
+                    $loginUrl = $this->_url->getUrl('customer/account/login', ['_query' => ['oidc_error' => $encodedError]]);
+                }
+                return $this->_redirect($loginUrl);
             }
         }
 

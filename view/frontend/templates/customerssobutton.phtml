@@ -8,7 +8,36 @@ echo '
         <svg class="sso-line" height="5" width="210">
             <line x1="0" y1="0" x2="210" y2="0"></line>
         </svg>
+    </div>';
+?>
+<?php if ($block->hasOidcError()): ?>
+    <div style="
+        width: 470px;
+        margin: 10px 0 15px 0;
+        background: #fff0f0;
+        border: 2px solid #e22626;
+        border-radius: 5px;
+        padding: 12px;
+        box-sizing: border-box;
+    ">
+        <div style="display: flex; align-items: flex-start; gap: 10px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink: 0; margin-top: 2px;">
+                <circle cx="12" cy="12" r="10" stroke="#e22626" stroke-width="2" fill="none"/>
+                <path d="M12 8V12M12 16H12.01" stroke="#e22626" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <div style="flex: 1;">
+                <strong style="color: #e22626; font-size: 13px; display: block; margin-bottom: 6px;">
+                    <?= $block->escapeHtml(__('OIDC-Authentifizierung fehlgeschlagen')) ?>
+                </strong>
+                <p style="margin: 0; color: #333; font-size: 12px; line-height: 1.4;">
+                    <?= $block->escapeHtml($block->getOidcErrorMessage()) ?>
+                </p>
+            </div>
+        </div>
     </div>
+<?php endif; ?>
+<?php
+echo '
     <div class="sso-button-container">
        <a href="'. $block->escapeUrl($block->getSPInitiatedUrl(null, $block->getAppName())) .'" class="sso-button">
     <span>' .$block->escapeHtml($block->getSSOButtonText()) .'</span>
