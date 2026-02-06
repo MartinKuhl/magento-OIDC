@@ -12,6 +12,8 @@
             <argument name="adminConfig" xsi:type="object">Magento\Backend\Model\Session\AdminConfig</argument>
             <argument name="cookieMetadataFactory" xsi:type="object">Magento\Framework\Stdlib\Cookie\CookieMetadataFactory</argument>
             <argument name="backendUrl" xsi:type="object">Magento\Backend\Model\UrlInterface</argument>
+            <argument name="roleCollection" xsi:type="object">Magento\Authorization\Model\ResourceModel\Role\Collection</argument>
+            <argument name="randomUtility" xsi:type="object">Magento\Framework\Math\Random</argument>
         </arguments>
     </type>
 

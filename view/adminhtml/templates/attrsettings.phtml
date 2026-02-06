@@ -25,6 +25,9 @@ $usernameSelected = $oauth_am_account_matcher == 'username' ? 'selected="selecte
 $oauth_am_dont_allow_unlisted_user_role = $this->getDisallowUnlistedUserRole();
 $mo_oauth_dont_create_user_if_role_not_mapped = $this->getDisallowUserCreationIfRoleNotMapped();
 $default_role = $this->getDefaultRole();
+
+// Admin Role Mapping settings
+$oauth_am_admin_role_mappings = $this->getAdminRoleMappings();
 ?>
 
 <div class="row">
@@ -151,6 +154,114 @@ $default_role = $this->getDefaultRole();
                         </td>
                     </tr>
 
+                    <!-- Admin Role Mapping Section -->
+                    <tr>
+                        <td colspan="2">
+                            <br>
+                            <h4 style="margin-top: 20px; border-top: 1px solid #ccc; padding-top: 15px;">
+                                ADMIN ROLE MAPPING (for Auto-Create Admin)
+                            </h4>
+                            <p style="font-style: italic; color: #666;">
+                                Configure how OIDC groups map to Magento admin roles when auto-creating admin users.
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Group Attribute Name -->
+                    <tr>
+                        <td style="width: 200px;">
+                            <label><strong>Group Attribute Name:</strong></label>
+                        </td>
+                        <td>
+                            <input type="text"
+                                   name="oauth_am_group"
+                                   placeholder="e.g., groups, roles, memberOf"
+                                   value="<?= $block->escapeHtmlAttr($oauth_am_group_name) ?>"
+                                   <?= $block->escapeHtmlAttr($disabled) ?> />
+                            <br>
+                            <small style="color: #666;">The OIDC claim that contains group/role information</small>
+                        </td>
+                    </tr>
+
+                    <!-- Default Admin Role -->
+                    <tr>
+                        <td>
+                            <label><strong>Default Admin Role:</strong></label>
+                        </td>
+                        <td>
+                            <select name="oauth_am_default_role"
+                                    id="oauth_am_default_role"
+                                    <?= $block->escapeHtmlAttr($disabled) ?>>
+                                <option value="">-- Select Default Role --</option>
+                                <?php foreach ($roles as $role): ?>
+                                    <option value="<?= $block->escapeHtmlAttr($role['value']) ?>"
+                                        <?= ($default_role == $role['value']) ? 'selected="selected"' : '' ?>>
+                                        <?= $block->escapeHtml($role['label']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <br>
+                            <small style="color: #666;">Used when no group mapping matches</small>
+                        </td>
+                    </tr>
+
+                    <!-- Role Mappings -->
+                    <tr>
+                        <td style="vertical-align: top;">
+                            <label><strong>Role Mappings:</strong></label>
+                        </td>
+                        <td>
+                            <div id="admin-role-mappings">
+                                <?php if (!empty($oauth_am_admin_role_mappings)): ?>
+                                    <?php foreach ($oauth_am_admin_role_mappings as $index => $mapping): ?>
+                                        <div class="mapping-row" style="margin-bottom: 10px;">
+                                            <input type="text"
+                                                   name="oauth_role_mapping[<?= $index ?>][group]"
+                                                   placeholder="OIDC Group Name"
+                                                   value="<?= $block->escapeHtmlAttr($mapping['group'] ?? '') ?>"
+                                                   style="width: 200px;"
+                                                   <?= $block->escapeHtmlAttr($disabled) ?> />
+                                            <span style="margin: 0 10px;">&rarr;</span>
+                                            <select name="oauth_role_mapping[<?= $index ?>][role]"
+                                                    <?= $block->escapeHtmlAttr($disabled) ?>>
+                                                <option value="">-- Select Role --</option>
+                                                <?php foreach ($roles as $role): ?>
+                                                    <option value="<?= $block->escapeHtmlAttr($role['value']) ?>"
+                                                        <?= (isset($mapping['role']) && $mapping['role'] == $role['value']) ? 'selected="selected"' : '' ?>>
+                                                        <?= $block->escapeHtml($role['label']) ?>
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                            <button type="button" onclick="removeRoleMapping(this)" style="margin-left: 10px;" <?= $disabled ?>>Remove</button>
+                                        </div>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <div class="mapping-row" style="margin-bottom: 10px;">
+                                        <input type="text"
+                                               name="oauth_role_mapping[0][group]"
+                                               placeholder="OIDC Group Name"
+                                               style="width: 200px;"
+                                               <?= $block->escapeHtmlAttr($disabled) ?> />
+                                        <span style="margin: 0 10px;">&rarr;</span>
+                                        <select name="oauth_role_mapping[0][role]"
+                                                <?= $block->escapeHtmlAttr($disabled) ?>>
+                                            <option value="">-- Select Role --</option>
+                                            <?php foreach ($roles as $role): ?>
+                                                <option value="<?= $block->escapeHtmlAttr($role['value']) ?>">
+                                                    <?= $block->escapeHtml($role['label']) ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                        <button type="button" onclick="removeRoleMapping(this)" style="margin-left: 10px;" <?= $disabled ?>>Remove</button>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                            <button type="button" onclick="addRoleMapping()" style="margin-top: 5px;" <?= $disabled ?>>+ Add Mapping</button>
+                            <br>
+                            <small style="color: #666;">Map OIDC group names to Magento admin roles</small>
+                        </td>
+                    </tr>
+
                     <!-- Save Button -->
                     <tr>
                         <td>&nbsp;</td>
@@ -169,3 +280,43 @@ $default_role = $this->getDefaultRole();
         </div>
     </div>
 </div>
+
+<script>
+var roleMappingIndex = <?= count($oauth_am_admin_role_mappings) > 0 ? count($oauth_am_admin_role_mappings) : 1 ?>;
+
+function addRoleMapping() {
+    var container = document.getElementById('admin-role-mappings');
+    var rolesOptions = '<?php
+        $options = '<option value="">-- Select Role --</option>';
+        foreach ($roles as $role) {
+            $options .= '<option value="' . $block->escapeHtmlAttr($role['value']) . '">' . $block->escapeHtml($role['label']) . '</option>';
+        }
+        echo addslashes($options);
+    ?>';
+
+    var newRow = document.createElement('div');
+    newRow.className = 'mapping-row';
+    newRow.style.marginBottom = '10px';
+    newRow.innerHTML = '<input type="text" name="oauth_role_mapping[' + roleMappingIndex + '][group]" placeholder="OIDC Group Name" style="width: 200px;" />' +
+        '<span style="margin: 0 10px;">&rarr;</span>' +
+        '<select name="oauth_role_mapping[' + roleMappingIndex + '][role]">' + rolesOptions + '</select>' +
+        '<button type="button" onclick="removeRoleMapping(this)" style="margin-left: 10px;">Remove</button>';
+
+    container.appendChild(newRow);
+    roleMappingIndex++;
+}
+
+function removeRoleMapping(button) {
+    var row = button.parentElement;
+    var container = document.getElementById('admin-role-mappings');
+
+    // Keep at least one row
+    if (container.getElementsByClassName('mapping-row').length > 1) {
+        row.remove();
+    } else {
+        // Clear the values instead of removing
+        row.querySelector('input').value = '';
+        row.querySelector('select').selectedIndex = 0;
+    }
+}
+</script>

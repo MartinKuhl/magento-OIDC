@@ -98,6 +98,25 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         if (isset($params['dont_allow_unlisted_user_role'])) {
             $this->oauthUtility->setStoreConfig(OAuthConstants::UNLISTED_ROLE, $params['dont_allow_unlisted_user_role']);
         }
+
+        // Save group attribute name for OIDC groups claim
+        if (isset($params['oauth_am_group'])) {
+            $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_GROUP, $params['oauth_am_group']);
+        }
+
+        // Save default admin role
+        if (isset($params['oauth_am_default_role'])) {
+            $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_DEFAULT_ROLE, $params['oauth_am_default_role']);
+        }
+
+        // Save admin role mappings as JSON (filter out empty mappings)
+        if (isset($params['oauth_role_mapping'])) {
+            $roleMappings = array_filter($params['oauth_role_mapping'], function($mapping) {
+                return !empty($mapping['group']) && !empty($mapping['role']);
+            });
+            $this->oauthUtility->setStoreConfig('adminRoleMapping', json_encode(array_values($roleMappings)));
+            $this->oauthUtility->customlog("Saved admin role mappings: " . json_encode(array_values($roleMappings)));
+        }
     }
 
     /**

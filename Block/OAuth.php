@@ -417,6 +417,21 @@ class OAuth extends \Magento\Framework\View\Element\Template
     }
 
     /**
+     * Get admin role mappings (OIDC group -> Magento role)
+     *
+     * @return array Array of mappings with 'group' and 'role' keys
+     */
+    public function getAdminRoleMappings()
+    {
+        $mappings = $this->oauthUtility->getStoreConfig('adminRoleMapping');
+        if (!$this->oauthUtility->isBlank($mappings)) {
+            $decoded = json_decode($mappings, true);
+            return is_array($decoded) ? $decoded : [];
+        }
+        return [];
+    }
+
+    /**
      * This fetches the setting saved by the admin which decides what
      * attribute in the SAML response should be mapped to the Magento
      * user's Email.

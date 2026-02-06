@@ -42,16 +42,20 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
 
     protected $userFactory;
     protected $backendUrl;
+    protected $roleCollection;
+    protected $randomUtility;
 
     /**
      * Constructor with dependency injection
-     * 
+     *
      * @param \Magento\Framework\App\Action\Context $context
      * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
      * @param \MiniOrange\OAuth\Helper\TestResults $testResults
      * @param \MiniOrange\OAuth\Controller\Actions\ProcessUserAction $processUserAction
      * @param \Magento\User\Model\UserFactory $userFactory
      * @param \Magento\Backend\Model\UrlInterface $backendUrl
+     * @param \Magento\Authorization\Model\ResourceModel\Role\Collection $roleCollection
+     * @param \Magento\Framework\Math\Random $randomUtility
      */
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
@@ -59,7 +63,9 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
         \MiniOrange\OAuth\Helper\TestResults $testResults,
         \MiniOrange\OAuth\Controller\Actions\ProcessUserAction $processUserAction,
         \Magento\User\Model\UserFactory $userFactory,
-        \Magento\Backend\Model\UrlInterface $backendUrl
+        \Magento\Backend\Model\UrlInterface $backendUrl,
+        \Magento\Authorization\Model\ResourceModel\Role\Collection $roleCollection,
+        \Magento\Framework\Math\Random $randomUtility
     ) {
         // Initialize attribute mappings from configuration
         $this->emailAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_EMAIL);
@@ -88,6 +94,8 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
         $this->processUserAction = $processUserAction;
         $this->userFactory = $userFactory;
         $this->backendUrl = $backendUrl;
+        $this->roleCollection = $roleCollection;
+        $this->randomUtility = $randomUtility;
 
         parent::__construct($context, $oauthUtility);
     }
@@ -144,11 +152,67 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
                 return $this->getResponse();
             } else {
                 // User tried to login as admin but has no admin account
-                $this->oauthUtility->customlog("ERROR: Admin login attempted but no admin account exists for: " . $userEmail);
-                $errorMessage = OAuthMessages::parse('ADMIN_ACCOUNT_NOT_FOUND', ['email' => $userEmail]);
-                $encodedError = base64_encode($errorMessage);
-                $adminLoginUrl = $this->backendUrl->getUrl('admin') . '?oidc_error=' . $encodedError;
-                return $this->getResponse()->setRedirect($adminLoginUrl)->sendResponse();
+                // Check if auto-create admin is enabled
+                $autoCreateAdmin = $this->oauthUtility->getStoreConfig(OAuthConstants::AUTO_CREATE_ADMIN);
+                $this->oauthUtility->customlog("Auto-create admin setting: " . ($autoCreateAdmin ? 'ENABLED' : 'DISABLED'));
+
+                if ($autoCreateAdmin) {
+                    $this->oauthUtility->customlog("=== Auto-creating admin user for: " . $userEmail . " ===");
+
+                    // Extract attributes using configured mappings
+                    $adminFirstName = $flattenedAttrs[$this->firstName] ?? null;
+                    $adminLastName = $flattenedAttrs[$this->lastName] ?? null;
+                    $adminUserName = $flattenedAttrs[$this->usernameAttribute] ?? $userEmail;
+
+                    $this->oauthUtility->customlog("Mapped attributes - userName: $adminUserName, firstName: $adminFirstName, lastName: $adminLastName");
+
+                    // Apply name fallbacks using explode("@", $email) if empty
+                    list($adminFirstName, $adminLastName) = $this->applyNameFallbacks($adminFirstName, $adminLastName, $userEmail);
+
+                    // Get groups from OIDC response and map to admin role
+                    $groupAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_GROUP);
+                    $userGroups = [];
+                    if (!empty($groupAttribute)) {
+                        $userGroups = $flattenedAttrs[$groupAttribute] ?? $attrs[$groupAttribute] ?? [];
+                        if (is_string($userGroups)) {
+                            $userGroups = [$userGroups];
+                        }
+                    }
+                    $this->oauthUtility->customlog("User groups from OIDC: " . json_encode($userGroups));
+
+                    // Get admin role from group mappings
+                    $adminRoleId = $this->getAdminRoleFromGroups($userGroups);
+                    $this->oauthUtility->customlog("Assigned admin role ID: " . $adminRoleId);
+
+                    // Create the admin user
+                    $adminUser = $this->createAdminUser($adminUserName, $userEmail, $adminFirstName, $adminLastName, $adminRoleId);
+
+                    if ($adminUser && $adminUser->getId()) {
+                        $this->oauthUtility->customlog("Admin user created successfully. ID: " . $adminUser->getId());
+
+                        // Redirect to admin callback for login
+                        $adminCallbackUrl = $this->backendUrl->getUrl('mooauth/actions/oidccallback', [
+                            'email' => $userEmail
+                        ]);
+                        $this->oauthUtility->customlog("Redirecting to admin callback: " . $adminCallbackUrl);
+
+                        $this->getResponse()->setRedirect($adminCallbackUrl);
+                        return $this->getResponse();
+                    } else {
+                        $this->oauthUtility->customlog("ERROR: Failed to create admin user for: " . $userEmail);
+                        $errorMessage = 'Failed to create admin account. Please contact your administrator.';
+                        $encodedError = base64_encode($errorMessage);
+                        $adminLoginUrl = $this->backendUrl->getUrl('admin') . '?oidc_error=' . $encodedError;
+                        return $this->getResponse()->setRedirect($adminLoginUrl)->sendResponse();
+                    }
+                } else {
+                    // Auto-create disabled - show error
+                    $this->oauthUtility->customlog("ERROR: Admin login attempted but no admin account exists for: " . $userEmail);
+                    $errorMessage = OAuthMessages::parse('ADMIN_ACCOUNT_NOT_FOUND', ['email' => $userEmail]);
+                    $encodedError = base64_encode($errorMessage);
+                    $adminLoginUrl = $this->backendUrl->getUrl('admin') . '?oidc_error=' . $encodedError;
+                    return $this->getResponse()->setRedirect($adminLoginUrl)->sendResponse();
+                }
             }
         }
 
@@ -198,6 +262,148 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
     }
 
     /**
+     * Apply name fallbacks from email when firstName/lastName are empty
+     *
+     * @param string|null $firstName
+     * @param string|null $lastName
+     * @param string $email
+     * @return array [firstName, lastName]
+     */
+    private function applyNameFallbacks($firstName, $lastName, $email)
+    {
+        if (empty($firstName)) {
+            $parts = explode("@", $email);
+            $firstName = $parts[0] ?? '';
+            $this->oauthUtility->customlog("firstName fallback from email prefix: " . $firstName);
+        }
+        if (empty($lastName)) {
+            $parts = explode("@", $email);
+            $lastName = isset($parts[1]) ? $parts[1] : $firstName;
+            $this->oauthUtility->customlog("lastName fallback from email domain: " . $lastName);
+        }
+        return [$firstName, $lastName];
+    }
+
+    /**
+     * Get admin role ID from OIDC groups using configured mappings
+     *
+     * @param array $userGroups Groups from OIDC response
+     * @return int Admin role ID
+     */
+    private function getAdminRoleFromGroups($userGroups)
+    {
+        // Get role mappings from configuration
+        $roleMappingsJson = $this->oauthUtility->getStoreConfig('adminRoleMapping');
+        $roleMappings = [];
+        if (!$this->oauthUtility->isBlank($roleMappingsJson)) {
+            $decoded = json_decode($roleMappingsJson, true);
+            $roleMappings = is_array($decoded) ? $decoded : [];
+        }
+
+        $this->oauthUtility->customlog("Role mappings configuration: " . json_encode($roleMappings));
+
+        // Try to find a matching role from the mappings
+        if (!empty($userGroups) && !empty($roleMappings)) {
+            foreach ($roleMappings as $mapping) {
+                $mappedGroup = $mapping['group'] ?? '';
+                $mappedRole = $mapping['role'] ?? '';
+
+                if (!empty($mappedGroup) && !empty($mappedRole)) {
+                    // Check if user has this group (case-insensitive comparison)
+                    foreach ($userGroups as $userGroup) {
+                        if (strcasecmp($userGroup, $mappedGroup) === 0) {
+                            $this->oauthUtility->customlog("Found matching role mapping: group '$userGroup' -> role ID '$mappedRole'");
+                            return (int)$mappedRole;
+                        }
+                    }
+                }
+            }
+        }
+
+        // No mapping found, use default role
+        $defaultRole = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_DEFAULT_ROLE);
+        if (!empty($defaultRole) && is_numeric($defaultRole)) {
+            $this->oauthUtility->customlog("Using configured default role ID: " . $defaultRole);
+            return (int)$defaultRole;
+        }
+
+        // Fallback: Find "Administrators" role
+        $this->oauthUtility->customlog("No default role configured, searching for Administrators role");
+        try {
+            $roles = $this->roleCollection
+                ->addFieldToFilter('role_type', 'G');
+
+            foreach ($roles as $role) {
+                if ($role->getRoleName() === 'Administrators') {
+                    $this->oauthUtility->customlog("Found Administrators role with ID: " . $role->getRoleId());
+                    return (int)$role->getRoleId();
+                }
+            }
+
+            // Return first available role if Administrators not found
+            $firstRole = $roles->getFirstItem();
+            if ($firstRole && $firstRole->getRoleId()) {
+                $this->oauthUtility->customlog("Using first available role ID: " . $firstRole->getRoleId());
+                return (int)$firstRole->getRoleId();
+            }
+        } catch (\Exception $e) {
+            $this->oauthUtility->customlog("Error getting roles: " . $e->getMessage());
+        }
+
+        // Ultimate fallback to role ID 1
+        $this->oauthUtility->customlog("Fallback to default role ID: 1");
+        return 1;
+    }
+
+    /**
+     * Create a new admin user with the given attributes
+     *
+     * @param string $userName
+     * @param string $email
+     * @param string $firstName
+     * @param string $lastName
+     * @param int $roleId
+     * @return \Magento\User\Model\User|null
+     */
+    private function createAdminUser($userName, $email, $firstName, $lastName, $roleId)
+    {
+        $this->oauthUtility->customlog("Creating admin user: userName=$userName, email=$email, firstName=$firstName, lastName=$lastName, roleId=$roleId");
+
+        try {
+            // Generate secure random password (user will authenticate via OIDC, not password)
+            $randomPassword = $this->randomUtility->getRandomString(16)
+                . $this->randomUtility->getRandomString(2, '!@#$%^&*')
+                . $this->randomUtility->getRandomString(2, '0123456789');
+
+            $user = $this->userFactory->create();
+            $user->setUsername($userName)
+                ->setFirstname($firstName)
+                ->setLastname($lastName)
+                ->setEmail($email)
+                ->setPassword($randomPassword)
+                ->setIsActive(1);
+
+            $user->save();
+            $this->oauthUtility->customlog("Admin user saved with ID: " . $user->getId());
+
+            // Assign role
+            $user->setRoleId($roleId);
+            $user->save();
+            $this->oauthUtility->customlog("Role " . $roleId . " assigned to user ID: " . $user->getId());
+
+            return $user;
+
+        } catch (\Magento\Framework\Exception\AlreadyExistsException $e) {
+            $this->oauthUtility->customlog("ERROR: Admin user already exists - " . $e->getMessage());
+            return null;
+        } catch (\Exception $e) {
+            $this->oauthUtility->customlog("ERROR creating admin user: " . $e->getMessage());
+            $this->oauthUtility->customlog("Stack trace: " . $e->getTraceAsString());
+            return null;
+        }
+    }
+
+    /**
      * Process OAuth/OIDC attribute mapping for customer users
      * 
      * Maps OAuth attributes to Magento customer fields based on
@@ -215,7 +421,6 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
 
         // Save debug data
         $this->saveDebugData($attrs);
-
 
         if (empty($attrs)) {
             $this->oauthUtility->customlog("ERROR: Empty attributes received from OAuth provider");
