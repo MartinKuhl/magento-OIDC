@@ -82,10 +82,17 @@ The module implements a dual authentication flow for admin and customer users:
 - `SendAuthorizationRequest.php`: Initiates OAuth flow
 - `ReadAuthorizationResponse.php`: Handles OAuth callback
 - `ProcessResponseAction.php`: Exchanges authorization code for access token
-- `CheckAttributeMappingAction.php`: Routes users based on admin/customer detection and maps OIDC attributes
+- `CheckAttributeMappingAction.php`: Routes users based on admin/customer detection, maps OIDC attributes, and handles admin auto-creation with group-to-role mapping
 - `ProcessUserAction.php`: Creates or updates Magento users based on OIDC data
 - `ShowTestResults.php`: Displays test results for attribute mapping
 - `Adminhtml/Actions/Oidccallback.php`: Admin callback that performs native Magento login via `Auth::login()`
+
+#### Blocks (Block/)
+- `OAuth.php`: Template block class for admin configuration pages
+  - `getAdminRoleMappings()`: Returns OIDC group to Magento admin role mappings from configuration
+
+#### Admin Controllers (Controller/Adminhtml/)
+- `Attrsettings/Index.php`: Saves attribute mapping configuration including admin role mappings as JSON
 
 #### Authentication Integration (Model/Auth/)
 - `OidcCredentialAdapter.php`: Implements `StorageInterface` to bridge OIDC with Magento's native auth
@@ -123,7 +130,10 @@ The module implements a dual authentication flow for admin and customer users:
 
 #### Configuration
 - Dependency injection: `etc/di.xml` defines:
-  - Constructor arguments for `CheckAttributeMappingAction` with admin-related dependencies
+  - Constructor arguments for `CheckAttributeMappingAction` with admin-related dependencies:
+    - `userFactory`, `backendUrl` for admin user operations
+    - `roleCollection` for querying available admin roles
+    - `randomUtility` for secure password generation during admin auto-creation
   - DI configuration for `OidcCredentialAdapter`, `OidcCredentialPlugin`, and `Oidccallback` controller
   - Plugin configuration:
     - `oidc_credential_interceptor` plugin on `Magento\Backend\Model\Auth` (sortOrder: 10)
@@ -147,6 +157,7 @@ The admin auto-login now uses Magento's native authentication system:
 1. **Detection** (`Controller/Actions/CheckAttributeMappingAction.php:101-130`):
    - Checks if authenticated email exists in `admin_user` table
    - If admin exists, stores user info in session and redirects to admin callback
+   - If admin doesn't exist and auto-create is enabled, creates admin user first (see Admin Auto-Creation below)
 
 2. **Native Authentication Flow** (`Controller/Adminhtml/Actions/Oidccallback.php`):
    - Calls `Auth::login($email, 'OIDC_VERIFIED_USER')` with special token marker
@@ -165,6 +176,29 @@ The admin auto-login now uses Magento's native authentication system:
    - `OidcCredentialPlugin` detects token marker and injects adapter
    - `OidcCaptchaBypassPlugin` skips CAPTCHA for OIDC auth
    - Fires `admin_user_authenticate_before` and `admin_user_authenticate_after` events with `oidc_auth` marker
+
+### Admin Auto-Creation
+
+When "Auto Create Admin users while SSO" is enabled in Sign In Settings, admin users are automatically created during OIDC authentication:
+
+**Flow** (`Controller/Actions/CheckAttributeMappingAction.php:152-215`):
+1. **Attribute Extraction**: Uses configured attribute mappings for firstName, lastName, userName
+2. **Name Fallbacks**: If names are empty, uses `explode("@", $email)` - email prefix for firstName, domain for lastName
+3. **Group Extraction**: Reads OIDC groups from configured group attribute claim
+4. **Role Assignment**: Maps OIDC groups to Magento admin roles using configured mappings
+5. **User Creation**: Creates admin user with random secure password (authentication is via OIDC, not password)
+6. **Login Redirect**: Redirects to admin callback for standard OIDC login flow
+
+**Role Mapping Fallback Chain**:
+1. Configured group-to-role mapping (case-insensitive group matching)
+2. Default admin role (if configured)
+3. "Administrators" role (searched by name)
+4. Role ID 1 (ultimate fallback)
+
+**Configuration UI** (Attribute Mapping page - `view/adminhtml/templates/attrsettings.phtml`):
+- **Group Attribute Name**: OIDC claim containing group/role information (e.g., `groups`, `roles`, `memberOf`)
+- **Default Admin Role**: Dropdown to select fallback role when no mapping matches
+- **Role Mappings**: Dynamic rows mapping OIDC group names to Magento admin roles
 
 **Technical Benefits:**
 - ✅ All standard Magento authentication events fire correctly
@@ -187,5 +221,11 @@ OIDC claims are mapped to Magento user attributes via configuration stored in th
 - First name: `firstname_attribute` (default: "name" with split)
 - Last name: `lastname_attribute` (default: "name" with split)
 - Groups: `group_attribute` (for role/group mapping)
+
+**Admin Role Mapping** (for auto-created admin users):
+- Group Attribute Name: OIDC claim containing groups (e.g., `groups`, `roles`)
+- Default Admin Role: Fallback role when no group mapping matches
+- Role Mappings: JSON-stored array of `{group: "OIDC_GROUP", role: "MAGENTO_ROLE_ID"}` pairs
+- Configuration saved via `Attrsettings/Index.php` controller as `adminRoleMapping` config key
 
 The module configuration is accessed via: **Stores → Configuration → MiniOrange → OAuth/OIDC**
