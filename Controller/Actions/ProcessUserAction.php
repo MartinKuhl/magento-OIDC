@@ -126,34 +126,24 @@ class ProcessUserAction extends Action
         $admin = false;
         $user = $this->getCustomerFromAttributes($user_email);
 
-        //Todo_MK: Umbau von Counter auf Auto Create Config
-        // If is user and not admin!
         if (!$user) {
-            $this->oauthUtility->customlog("User Not found. Inside autocreate user tab");
-            $donotCreateUsers = $this->oauthUtility->getStoreConfig(OAuthConstants::MAGENTO_COUNTER);
+            $this->oauthUtility->customlog("User not found. Checking auto-create configuration");
 
-            if (is_null($donotCreateUsers)) {
-                $this->oauthUtility->setStoreConfig(OAuthConstants::MAGENTO_COUNTER, 10);
-                $this->oauthUtility->reinitConfig();
-                $donotCreateUsers = $this->oauthUtility->getStoreConfig(OAuthConstants::MAGENTO_COUNTER);
+            // Check if auto-create customer is enabled in configuration
+            $autoCreateEnabled = $this->oauthUtility->getStoreConfig(OAuthConstants::AUTO_CREATE_CUSTOMER);
+
+            if (!$autoCreateEnabled) {
+                $this->oauthUtility->customlog("Auto Create Customer is disabled. Rejecting login.");
+                // Use same error handling pattern as other OIDC errors (oidc_error query param)
+                $encodedError = base64_encode(OAuthMessages::AUTO_CREATE_USER_DISABLED);
+                $loginUrl = $this->oauthUtility->getCustomerLoginUrl();
+                $loginUrl .= (strpos($loginUrl, '?') !== false ? '&' : '?') . 'oidc_error=' . $encodedError;
+                return $this->getResponse()->setRedirect($loginUrl)->sendResponse();
             }
 
-            // Todo_MK: Umbau wenn Auto Create Customer deaktiviert ist, dann hier abbrechen mit Fehlermeldung
-            // Todo_MK: Prüfen der Unterscheidung zwischen User und Admin-User (Unterscheidung anhand der URL?)
-            if ($donotCreateUsers < 1) {
-                $this->oauthUtility->customlog("Auto Create User Limit exceeded");
-                // [Auto-create limit logic bleibt gleich - gekürzt für Übersicht]
-                $this->messageManager->addErrorMessage(OAuthMessages::AUTO_CREATE_USER_LIMIT);
-                $url = $this->oauthUtility->getCustomerLoginUrl();
-                return $this->getResponse()->setRedirect($url)->sendResponse();
-            } else {
-                $count = $this->oauthUtility->getStoreConfig(OAuthConstants::MAGENTO_COUNTER);
-                $this->oauthUtility->setStoreConfig(OAuthConstants::MAGENTO_COUNTER, $count - 1);
-                $this->oauthUtility->reinitConfig();
-                $this->oauthUtility->customlog("Creating new customer");
-                $user = $this->createNewUser($user_email, $firstName, $lastName, $userName, $user, $admin);
-                $this->oauthUtility->customlog("processUserAction: user created");
-            }
+            $this->oauthUtility->customlog("Creating new customer");
+            $user = $this->createNewUser($user_email, $firstName, $lastName, $userName, $user, $admin);
+            $this->oauthUtility->customlog("processUserAction: user created");
         } else {
             $this->oauthUtility->customlog("processUserAction: User Found");
         }
