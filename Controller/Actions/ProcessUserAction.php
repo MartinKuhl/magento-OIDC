@@ -186,7 +186,6 @@ class ProcessUserAction extends Action
         return $userName . '@' . $siteurl;
     }
 
-    //to do extend with additional user creation logic and fields
     //additionally handle admin user creation if required
     private function createNewUser($user_email, $firstName, $lastName, $userName, $user, &$admin)
     {
@@ -292,8 +291,6 @@ class ProcessUserAction extends Action
         }
     }
 
-    // die Funktion muss ggf. erweitert werden, um die Rollenzuweisung zu unterstützen
-    // was ist, wenn die Rolle nicht existiert? // welche Rolle
     private function createAdminUser($userName, $email, $firstName, $lastName, $random_password, $role_assigned)
     {
         $this->oauthUtility->customlog("processUserAction: Creating Admin user");
