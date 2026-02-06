@@ -4,6 +4,7 @@ namespace MiniOrange\OAuth\Controller\Actions;
 
 use MiniOrange\OAuth\Helper\Exception\MissingAttributesException;
 use MiniOrange\OAuth\Helper\OAuthConstants;
+use MiniOrange\OAuth\Helper\OAuthMessages;
 use MiniOrange\OAuth\Helper\TestResults;
 use Magento\Framework\App\Action\HttpPostActionInterface;
 
@@ -144,8 +145,10 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
             } else {
                 // User tried to login as admin but has no admin account
                 $this->oauthUtility->customlog("ERROR: Admin login attempted but no admin account exists for: " . $userEmail);
-                $this->messageManager->addErrorMessage(__('No admin account found for this email address.'));
-                return $this->resultRedirectFactory->create()->setPath('admin');
+                $errorMessage = OAuthMessages::parse('ADMIN_ACCOUNT_NOT_FOUND', ['email' => $userEmail]);
+                $encodedError = base64_encode($errorMessage);
+                $adminLoginUrl = $this->backendUrl->getUrl('admin') . '?oidc_error=' . $encodedError;
+                return $this->getResponse()->setRedirect($adminLoginUrl)->sendResponse();
             }
         }
 

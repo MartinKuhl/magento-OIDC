@@ -68,6 +68,7 @@ class OAuthMessages
     const INVALID_EMAIL_FORMAT            = "This is not a valid email. please enter a valid email.";
     const AUTO_CREATE_USER_DISABLED       = "User does not exist and auto creation of users is disabled. Please contact your site administrator.";
     const AUTO_CREATE_ADMIN_DISABLED      = "Admin-Access declined. The admin user does not exist and auto creation of administrators is disabled. Please contact your site administrator.";
+    const ADMIN_ACCOUNT_NOT_FOUND         = "Admin login failed: No administrator account exists for '{{email}}'. This login option is only available for users with existing admin accounts. Please contact your site administrator if you believe you should have admin access.";
 
     
 
