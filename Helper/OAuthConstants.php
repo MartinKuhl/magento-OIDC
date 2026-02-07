@@ -77,6 +77,37 @@ class OAuthConstants
     const UNLISTED_ROLE        = 'unlistedRole';
     const CREATEIFNOTMAP       = 'createUserIfRoleNotMapped';
 
+    // Customer data attribute mapping constants
+    const MAP_DOB              = 'amDob';
+    const DEFAULT_MAP_DOB      = 'birthdate';
+    const MAP_GENDER           = 'amGender';
+    const DEFAULT_MAP_GENDER   = 'gender';
+    const MAP_PHONE            = 'amPhone';
+    const DEFAULT_MAP_PHONE    = 'phone_number';
+    const MAP_STREET           = 'amStreet';
+    const DEFAULT_MAP_STREET   = 'address.street_address';
+    const MAP_ZIP              = 'amZip';
+    const DEFAULT_MAP_ZIP      = 'address.postal_code';
+    const MAP_CITY             = 'amCity';
+    const DEFAULT_MAP_CITY     = 'address.locality';
+    const MAP_STATE            = 'amState';
+    const DEFAULT_MAP_STATE    = 'address.region';
+    const MAP_COUNTRY          = 'amCountry';
+    const DEFAULT_MAP_COUNTRY  = 'address.country';
+
+    // Standard OIDC Claims for dropdown selection in admin UI
+    const OIDC_STANDARD_CLAIMS = [
+        'sub', 'name', 'given_name', 'family_name', 'middle_name',
+        'nickname', 'preferred_username', 'profile', 'picture', 'website',
+        'email', 'email_verified', 'gender', 'birthdate', 'zoneinfo',
+        'locale', 'phone_number', 'phone_number_verified', 'updated_at',
+        'address.formatted', 'address.street_address', 'address.locality',
+        'address.region', 'address.postal_code', 'address.country'
+    ];
+
+    // Stores received OIDC claims from Test Configuration
+    const RECEIVED_OIDC_CLAIMS = 'receivedOidcClaims';
+
     //URLs
     const OAUTH_LOGIN_URL      = 'mooauth/actions/sendAuthorizationRequest';
 

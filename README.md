@@ -31,33 +31,10 @@ Navigate to: **Stores → Configuration → MiniOrange → OAuth/OIDC**
 
 ## ToDo
 
-- Fix Attribute Mapping
-    email: m...k..@gmx.net
-    groups: admins
-    name: Martin Kuhl
-        Split (Part0/1)
-    preferred_username: martin
-
-Username:   preferred_username
-E-Mail:     email
-Firstname   Split 0 - name
-Last Name   Split 1 - name
-    Split Option
-
 
 - fix hello to prefered User Name
 
-rework ProcessUserAction.php
-
-Create User : extended fields
-Create admin : only for users with group (include admin lowerstring instring)
---> Admin users must be pre-created in Magento
-
-- update attributes options
-
-- Implement User Auto Redirect Settings for Admin Users
-
-- handling additional scopes (phone & address)
+- check php compatibility 8.1-8.4
 
 - Rename: --> Authelia OIDC (in Code)
 

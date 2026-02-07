@@ -117,6 +117,35 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
             $this->oauthUtility->setStoreConfig('adminRoleMapping', json_encode(array_values($roleMappings)));
             $this->oauthUtility->customlog("Saved admin role mappings: " . json_encode(array_values($roleMappings)));
         }
+
+        // Save customer data mapping fields (directly from dropdown selection)
+        $dobValue = $params['oauth_am_dob'] ?? '';
+        $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_DOB, $dobValue);
+        $this->oauthUtility->customlog("Saved DOB mapping: " . $dobValue);
+
+        $genderValue = $params['oauth_am_gender'] ?? '';
+        $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_GENDER, $genderValue);
+        $this->oauthUtility->customlog("Saved gender mapping: " . $genderValue);
+
+        $phoneValue = $params['oauth_am_phone'] ?? '';
+        $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_PHONE, $phoneValue);
+        $this->oauthUtility->customlog("Saved phone mapping: " . $phoneValue);
+
+        $streetValue = $params['oauth_am_street'] ?? '';
+        $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_STREET, $streetValue);
+        $this->oauthUtility->customlog("Saved street mapping: " . $streetValue);
+
+        $zipValue = $params['oauth_am_zip'] ?? '';
+        $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_ZIP, $zipValue);
+        $this->oauthUtility->customlog("Saved zip mapping: " . $zipValue);
+
+        $cityValue = $params['oauth_am_city'] ?? '';
+        $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_CITY, $cityValue);
+        $this->oauthUtility->customlog("Saved city mapping: " . $cityValue);
+
+        $countryValue = $params['oauth_am_country'] ?? '';
+        $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_COUNTRY, $countryValue);
+        $this->oauthUtility->customlog("Saved country mapping: " . $countryValue);
     }
 
     /**

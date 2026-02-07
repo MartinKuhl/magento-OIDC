@@ -1949,7 +1949,9 @@ a {
 }
 
 .mo_note {
-    margin: 8px;
+    margin: 8px 0;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 #register-login {
@@ -1980,5 +1982,4 @@ a {
     align-content: center;
     justify-content: center;
 }
-
 

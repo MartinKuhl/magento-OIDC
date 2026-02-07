@@ -18,6 +18,17 @@ $oauth_am_country = $this->getCountryMapping();
 $oauth_am_company = $this->getCompanyMapping();
 $oauth_am_group_name = $this->getGroupMapping();
 
+// Customer data mapping
+$oauth_am_dob = $this->getDobMapping();
+$oauth_am_gender = $this->getGenderMapping();
+$oauth_am_phone = $this->getPhoneMapping();
+$oauth_am_street = $this->getStreetMapping();
+$oauth_am_zip = $this->getZipMapping();
+$oauth_am_city = $this->getCityMapping();
+$oauth_am_state = $this->getStateMapping();
+$oauth_am_country = $this->getCountryMapping();
+$oidc_claims = $this->getOidcStandardClaims();
+
 $oauth_am_account_matcher = $this->getAccountMatcher();
 $emailSelected = $oauth_am_account_matcher == 'email' ? 'selected="selected"' : "";
 $usernameSelected = $oauth_am_account_matcher == 'username' ? 'selected="selected"' : "";
@@ -36,6 +47,10 @@ $oauth_am_admin_role_mappings = $this->getAdminRoleMappings();
             <div class="mosp_table_layout">
                 <h3>ATTRIBUTE MAPPING (OPTIONAL)</h3>
                 <hr>
+                <p style="font-style: italic; color: #666; margin-top: 10px;">
+                    Map OIDC claims to Magento user attributes for login and user creation. <br>
+                    Users in Magento will be searched (existing Magento users) or created (new users) based on the Email attribute.
+                </p>
             </div>
 
             <!-- Attribute Mapping Form -->
@@ -47,7 +62,7 @@ $oauth_am_admin_role_mappings = $this->getAdminRoleMappings();
                     <!-- What is Attribute Mapping Info -->
                     <tr>
                         <td colspan="2">
-                            <div class="mo_note">
+                            <div class="mo_note" style="background-color: #e9e9e9; border: 1px solid #ccc; padding: 10px; border-radius: 4px;">
                                 <span class="btn-link">What is Attribute Mapping?</span>
                                 <div hidden class="show_info">
                                     <ol>
@@ -59,29 +74,12 @@ $oauth_am_admin_role_mappings = $this->getAdminRoleMappings();
                                     </ol>
                                 </div>
                             </div>
+                            <p style="background-color: #fff3cd; border: 1px solid #ffc107; padding: 10px; border-radius: 4px; color: #856404; margin: 10px 0 0 0;">
+                                <strong>Note:</strong> Run a <strong>Test Configuration</strong> first to populate the available OIDC claims in the dropdowns below.
+                            </p>
                         </td>
                     </tr>
 
-                    <!-- Update Attribute Checkbox -->
-                    <tr>
-                        <td colspan="2">
-                            <input type="checkbox"
-                                   id="update_attribute"
-                                   name="oauth_am_update_attribue"
-                                   value="checked"
-                                   <?= $block->escapeHtmlAttr($disabled) ?>>
-                            &nbsp;&nbsp;Update Attribute.
-                            <span style="margin-left: 351px; font-style: italic;">(Email cannot be updated)</span>
-                        </td>
-                    </tr>
-
-                    <!-- Info Text -->
-                    <tr>
-                        <td colspan="2">
-                            <b>Users in Magento will be searched (existing Magento users) or created (new users) based
-                            on the Email attribute.</b>
-                        </td>
-                    </tr>
 
                     <!-- Login/Create Account By -->
                     <tr class="mo_premium_option">
@@ -104,11 +102,14 @@ $oauth_am_admin_role_mappings = $this->getAdminRoleMappings();
                             <label><strong>Username<span style="color:red;">*</span>:</strong></label>
                         </td>
                         <td>
-                            <input type="text"
-                                   name="oauth_am_username"
-                                   placeholder="Enter attribute name for User Name"
-                                   value="<?= $block->escapeHtmlAttr($oauth_am_username) ?>"
-                                   <?= $block->escapeHtmlAttr($disabled) ?> />
+                            <select name="oauth_am_username" id="oauth_am_username" <?= $block->escapeHtmlAttr($disabled) ?>>
+                                <option value="">-- Select OIDC Claim --</option>
+                                <?php foreach ($oidc_claims as $claim): ?>
+                                    <option value="<?= $block->escapeHtmlAttr($claim) ?>" <?= ($oauth_am_username === $claim) ? 'selected' : '' ?>>
+                                        <?= $block->escapeHtml($claim) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
                         </td>
                     </tr>
 
@@ -118,11 +119,14 @@ $oauth_am_admin_role_mappings = $this->getAdminRoleMappings();
                             <label><strong>Email<span style="color:red;">*</span>:</strong></label>
                         </td>
                         <td>
-                            <input type="text"
-                                   name="oauth_am_email"
-                                   placeholder="Enter attribute name for User Email"
-                                   value="<?= $block->escapeHtmlAttr($oauth_am_email) ?>"
-                                   <?= $block->escapeHtmlAttr($disabled) ?> />
+                            <select name="oauth_am_email" id="oauth_am_email" <?= $block->escapeHtmlAttr($disabled) ?>>
+                                <option value="">-- Select OIDC Claim --</option>
+                                <?php foreach ($oidc_claims as $claim): ?>
+                                    <option value="<?= $block->escapeHtmlAttr($claim) ?>" <?= ($oauth_am_email === $claim) ? 'selected' : '' ?>>
+                                        <?= $block->escapeHtml($claim) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
                         </td>
                     </tr>
 
@@ -132,11 +136,14 @@ $oauth_am_admin_role_mappings = $this->getAdminRoleMappings();
                             <label><strong>First Name:</strong></label>
                         </td>
                         <td>
-                            <input type="text"
-                                   name="oauth_am_first_name"
-                                   placeholder="Enter attribute name for First Name"
-                                   value="<?= $block->escapeHtmlAttr($oauth_am_first_name) ?>"
-                                   <?= $block->escapeHtmlAttr($disabled) ?> />
+                            <select name="oauth_am_first_name" id="oauth_am_first_name" <?= $block->escapeHtmlAttr($disabled) ?>>
+                                <option value="">-- Select OIDC Claim --</option>
+                                <?php foreach ($oidc_claims as $claim): ?>
+                                    <option value="<?= $block->escapeHtmlAttr($claim) ?>" <?= ($oauth_am_first_name === $claim) ? 'selected' : '' ?>>
+                                        <?= $block->escapeHtml($claim) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
                         </td>
                     </tr>
 
@@ -146,11 +153,14 @@ $oauth_am_admin_role_mappings = $this->getAdminRoleMappings();
                             <label><strong>Last Name:</strong></label>
                         </td>
                         <td>
-                            <input type="text"
-                                   name="oauth_am_last_name"
-                                   placeholder="Enter attribute name for Last Name"
-                                   value="<?= $block->escapeHtmlAttr($oauth_am_last_name) ?>"
-                                   <?= $block->escapeHtmlAttr($disabled) ?> />
+                            <select name="oauth_am_last_name" id="oauth_am_last_name" <?= $block->escapeHtmlAttr($disabled) ?>>
+                                <option value="">-- Select OIDC Claim --</option>
+                                <?php foreach ($oidc_claims as $claim): ?>
+                                    <option value="<?= $block->escapeHtmlAttr($claim) ?>" <?= ($oauth_am_last_name === $claim) ? 'selected' : '' ?>>
+                                        <?= $block->escapeHtml($claim) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
                         </td>
                     </tr>
 
@@ -262,10 +272,183 @@ $oauth_am_admin_role_mappings = $this->getAdminRoleMappings();
                         </td>
                     </tr>
 
+                    <!-- Customer Data Mapping Section -->
+                    <tr>
+                        <td colspan="2">
+                            <br>
+                            <h4 style="margin-top: 20px; border-top: 1px solid #ccc; padding-top: 15px;">
+                                CUSTOMER DATA MAPPING (OPTIONAL)
+                            </h4>
+                            <p style="font-style: italic; color: #666;">
+                                Map OIDC claims to customer profile data. If provided, this data will be used during customer creation.
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Date of Birth -->
+                    <tr>
+                        <td style="width: 200px;">
+                            <label><strong>Date of Birth:</strong></label>
+                        </td>
+                        <td>
+                            <select name="oauth_am_dob" id="oauth_am_dob" <?= $block->escapeHtmlAttr($disabled) ?>>
+                                <option value="">-- Select OIDC Claim --</option>
+                                <?php foreach ($oidc_claims as $claim): ?>
+                                    <option value="<?= $block->escapeHtmlAttr($claim) ?>" <?= ($oauth_am_dob === $claim) ? 'selected' : '' ?>>
+                                        <?= $block->escapeHtml($claim) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <br>
+                            <small style="color: #666;">Expected format: YYYY-MM-DD</small>
+                        </td>
+                    </tr>
+
+                    <!-- Gender -->
+                    <tr>
+                        <td>
+                            <label><strong>Gender:</strong></label>
+                        </td>
+                        <td>
+                            <select name="oauth_am_gender" id="oauth_am_gender" <?= $block->escapeHtmlAttr($disabled) ?>>
+                                <option value="">-- Select OIDC Claim --</option>
+                                <?php foreach ($oidc_claims as $claim): ?>
+                                    <option value="<?= $block->escapeHtmlAttr($claim) ?>" <?= ($oauth_am_gender === $claim) ? 'selected' : '' ?>>
+                                        <?= $block->escapeHtml($claim) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <br>
+                            <small style="color: #666;">Expected values: male, female (mapped to Magento gender)</small>
+                        </td>
+                    </tr>
+
+                    <!-- Phone Number -->
+                    <tr>
+                        <td>
+                            <label><strong>Phone Number<span style="color:blue;">*</span>:</strong></label>
+                        </td>
+                        <td>
+                            <select name="oauth_am_phone" id="oauth_am_phone" <?= $block->escapeHtmlAttr($disabled) ?>>
+                                <option value="">-- Select OIDC Claim --</option>
+                                <?php foreach ($oidc_claims as $claim): ?>
+                                    <option value="<?= $block->escapeHtmlAttr($claim) ?>" <?= ($oauth_am_phone === $claim) ? 'selected' : '' ?>>
+                                        <?= $block->escapeHtml($claim) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </td>
+                    </tr>
+
+                    <!-- Address Sub-Section -->
+                    <tr>
+                        <td colspan="2">
+                            <p style="margin-top: 15px;"><strong>Address Mapping:</strong></p>
+                        </td>
+                    </tr>
+
+                    <!-- Street -->
+                    <tr>
+                        <td>
+                            <label><strong>Street<span style="color:blue;">*</span>:</strong></label>
+                        </td>
+                        <td>
+                            <select name="oauth_am_street" id="oauth_am_street" <?= $block->escapeHtmlAttr($disabled) ?>>
+                                <option value="">-- Select OIDC Claim --</option>
+                                <?php foreach ($oidc_claims as $claim): ?>
+                                    <option value="<?= $block->escapeHtmlAttr($claim) ?>" <?= ($oauth_am_street === $claim) ? 'selected' : '' ?>>
+                                        <?= $block->escapeHtml($claim) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </td>
+                    </tr>
+
+                    <!-- Zip Code -->
+                    <tr>
+                        <td>
+                            <label><strong>Zip Code:</strong></label>
+                        </td>
+                        <td>
+                            <select name="oauth_am_zip" id="oauth_am_zip" <?= $block->escapeHtmlAttr($disabled) ?>>
+                                <option value="">-- Select OIDC Claim --</option>
+                                <?php foreach ($oidc_claims as $claim): ?>
+                                    <option value="<?= $block->escapeHtmlAttr($claim) ?>" <?= ($oauth_am_zip === $claim) ? 'selected' : '' ?>>
+                                        <?= $block->escapeHtml($claim) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </td>
+                    </tr>
+
+                    <!-- City -->
+                    <tr>
+                        <td>
+                            <label><strong>City<span style="color:blue;">*</span>:</strong></label>
+                        </td>
+                        <td>
+                            <select name="oauth_am_city" id="oauth_am_city" <?= $block->escapeHtmlAttr($disabled) ?>>
+                                <option value="">-- Select OIDC Claim --</option>
+                                <?php foreach ($oidc_claims as $claim): ?>
+                                    <option value="<?= $block->escapeHtmlAttr($claim) ?>" <?= ($oauth_am_city === $claim) ? 'selected' : '' ?>>
+                                        <?= $block->escapeHtml($claim) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </td>
+                    </tr>
+
+                    <!-- State/Region -->
+                    <tr>
+                        <td>
+                            <label><strong>State/Region:</strong></label>
+                        </td>
+                        <td>
+                            <select name="oauth_am_state" id="oauth_am_state" <?= $block->escapeHtmlAttr($disabled) ?>>
+                                <option value="">-- Select OIDC Claim --</option>
+                                <?php foreach ($oidc_claims as $claim): ?>
+                                    <option value="<?= $block->escapeHtmlAttr($claim) ?>" <?= ($oauth_am_state === $claim) ? 'selected' : '' ?>>
+                                        <?= $block->escapeHtml($claim) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <br>
+                            <small style="color: #666;">State, province, or region name</small>
+                        </td>
+                    </tr>
+
+                    <!-- Country -->
+                    <tr>
+                        <td>
+                            <label><strong>Country<span style="color:blue;">*</span>:</strong></label>
+                        </td>
+                        <td>
+                            <select name="oauth_am_country" id="oauth_am_country" <?= $block->escapeHtmlAttr($disabled) ?>>
+                                <option value="">-- Select OIDC Claim --</option>
+                                <?php foreach ($oidc_claims as $claim): ?>
+                                    <option value="<?= $block->escapeHtmlAttr($claim) ?>" <?= ($oauth_am_country === $claim) ? 'selected' : '' ?>>
+                                        <?= $block->escapeHtml($claim) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <br>
+                            <small style="color: #666;">Country name or ISO 3166-1 alpha-2 code (e.g., US, DE, GB, Germany)</small>
+                        </td>
+                    </tr>
+
+                    <!-- Required Fields Explanation -->
+                    <tr>
+                        <td colspan="2">
+                            <p style="margin-top: 15px; font-size: 12px; color: #666;">
+                                <span style="color:blue;">*</span> Required fields for customer address creation in Magento.
+                                Note: Zip Code and State/Region requirements may vary depending on country settings.
+                            </p>
+                        </td>
+                    </tr>
+
                     <!-- Save Button -->
                     <tr>
-                        <td>&nbsp;</td>
-                        <td>
+                        <td colspan="2">
                             <br>
                             <input class="btn-round"
                                    type="submit"

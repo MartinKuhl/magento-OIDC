@@ -18,6 +18,9 @@ use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Framework\App\Action\Action;
 use Magento\Framework\Stdlib\DateTime\dateTime;
+use Magento\Customer\Api\AddressRepositoryInterface;
+use Magento\Customer\Api\Data\AddressInterfaceFactory;
+use Magento\Directory\Model\CountryFactory;
 
 class ProcessUserAction extends Action
 {
@@ -44,6 +47,18 @@ class ProcessUserAction extends Action
     protected $dateTime;
     protected $oauthUtility;
 
+    // Customer data mapping attributes
+    private $dobAttribute;
+    private $genderAttribute;
+    private $phoneAttribute;
+    private $streetAttribute;
+    private $zipAttribute;
+    private $cityAttribute;
+    private $countryAttribute;
+    protected $addressRepository;
+    protected $addressFactory;
+    protected $countryFactory;
+
 
     public function __construct(
         Context $context,
@@ -59,7 +74,10 @@ class ProcessUserAction extends Action
         UserFactory $userFactory,
         Random $randomUtility,
         dateTime $dateTime,
-        ScopeConfigInterface $scopeConfig
+        ScopeConfigInterface $scopeConfig,
+        AddressRepositoryInterface $addressRepository,
+        AddressInterfaceFactory $addressFactory,
+        CountryFactory $countryFactory
     ) {
         $this->emailAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_EMAIL);
         $this->emailAttribute = $oauthUtility->isBlank($this->emailAttribute) ? OAuthConstants::DEFAULT_MAP_EMAIL : $this->emailAttribute;
@@ -71,6 +89,23 @@ class ProcessUserAction extends Action
         $this->lastNameKey = $oauthUtility->isBlank($this->lastNameKey) ? OAuthConstants::DEFAULT_MAP_LN : $this->lastNameKey;
         $this->defaultRole = $oauthUtility->getStoreConfig(OAuthConstants::MAP_DEFAULT_ROLE);
         $this->checkIfMatchBy = $oauthUtility->getStoreConfig(OAuthConstants::MAP_MAP_BY);
+
+        // Initialize customer data mapping attributes
+        $this->dobAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_DOB);
+        $this->dobAttribute = $oauthUtility->isBlank($this->dobAttribute) ? OAuthConstants::DEFAULT_MAP_DOB : $this->dobAttribute;
+        $this->genderAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_GENDER);
+        $this->genderAttribute = $oauthUtility->isBlank($this->genderAttribute) ? OAuthConstants::DEFAULT_MAP_GENDER : $this->genderAttribute;
+        $this->phoneAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_PHONE);
+        $this->phoneAttribute = $oauthUtility->isBlank($this->phoneAttribute) ? OAuthConstants::DEFAULT_MAP_PHONE : $this->phoneAttribute;
+        $this->streetAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_STREET);
+        $this->streetAttribute = $oauthUtility->isBlank($this->streetAttribute) ? OAuthConstants::DEFAULT_MAP_STREET : $this->streetAttribute;
+        $this->zipAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_ZIP);
+        $this->zipAttribute = $oauthUtility->isBlank($this->zipAttribute) ? OAuthConstants::DEFAULT_MAP_ZIP : $this->zipAttribute;
+        $this->cityAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_CITY);
+        $this->cityAttribute = $oauthUtility->isBlank($this->cityAttribute) ? OAuthConstants::DEFAULT_MAP_CITY : $this->cityAttribute;
+        $this->countryAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_COUNTRY);
+        $this->countryAttribute = $oauthUtility->isBlank($this->countryAttribute) ? OAuthConstants::DEFAULT_MAP_COUNTRY : $this->countryAttribute;
+
         $this->userGroupModel = $userGroupModel;
         $this->adminRoleModel = $adminRoleModel;
         $this->adminUserModel = $adminUserModel;
@@ -85,6 +120,9 @@ class ProcessUserAction extends Action
         $this->scopeConfig = $scopeConfig;
         $this->dateTime = $dateTime;
         $this->oauthUtility = $oauthUtility;
+        $this->addressRepository = $addressRepository;
+        $this->addressFactory = $addressFactory;
+        $this->countryFactory = $countryFactory;
         parent::__construct($context, $oauthUtility);
     }
 
@@ -100,10 +138,6 @@ class ProcessUserAction extends Action
             $firstName = $this->flattenedattrs[$this->firstNameKey] ?? null;
             $lastName = $this->flattenedattrs[$this->lastNameKey] ?? null;
             $userName = $this->flattenedattrs[$this->usernameAttribute] ?? null;
-
-            $this->oauthUtility->customlog("ProcessUserAction: first name: " . $firstName);
-            $this->oauthUtility->customlog("ProcessUserAction: last name: " . $lastName);
-            $this->oauthUtility->customlog("ProcessUserAction: username: " . $userName);
 
             if ($this->oauthUtility->isBlank($this->defaultRole)) {
                 $this->defaultRole = OAuthConstants::DEFAULT_ROLE;
@@ -141,14 +175,8 @@ class ProcessUserAction extends Action
                 return $this->getResponse()->setRedirect($loginUrl)->sendResponse();
             }
 
-            $this->oauthUtility->customlog("Creating new customer");
             $user = $this->createNewUser($user_email, $firstName, $lastName, $userName, $user, $admin);
-            $this->oauthUtility->customlog("processUserAction: user created");
-        } else {
-            $this->oauthUtility->customlog("processUserAction: User Found");
         }
-
-        $this->oauthUtility->customlog("processUserAction: redirecting user");
 
         $store_url = $this->storeManager->getStore()->getBaseUrl(\Magento\Framework\UrlInterface::URL_TYPE_WEB);
         $store_url = rtrim($store_url, '/\\');
@@ -189,7 +217,6 @@ class ProcessUserAction extends Action
     //additionally handle admin user creation if required
     private function createNewUser($user_email, $firstName, $lastName, $userName, $user, &$admin)
     {
-        $this->oauthUtility->customlog("processUserAction: createNewUser");
 
         if (empty($firstName)) {
             $parts = explode("@", $user_email);
@@ -212,25 +239,203 @@ class ProcessUserAction extends Action
 
     private function createCustomer($userName, $email, $firstName, $lastName, $random_password)
     {
-        $this->oauthUtility->customlog("processUserAction: createCustomer");
         $websiteId = $this->storeManager->getWebsite()->getWebsiteId();
-        $store = $this->storeManager->getStore();
-        $storeId = $store->getStoreId();
 
-        $this->oauthUtility->customlog("processUserAction: websiteID: " . $websiteId . " email: " . $email . " firstName: " . $firstName . " lastName: " . $lastName);
-
-        return $this->customerFactory->create()
+        // Create customer with basic data
+        $customer = $this->customerFactory->create()
             ->setWebsiteId($websiteId)
             ->setEmail($email)
             ->setFirstname($firstName)
             ->setLastname($lastName)
-            ->setPassword($random_password)
-            ->save();
+            ->setPassword($random_password);
+
+        // Set Date of Birth if mapped and available
+        $dob = $this->extractAttributeValue($this->dobAttribute);
+        if (!empty($dob)) {
+            $formattedDob = $this->formatDateOfBirth($dob);
+            if ($formattedDob) {
+                $customer->setDob($formattedDob);
+            }
+        }
+
+        // Set Gender if mapped and available
+        $gender = $this->extractAttributeValue($this->genderAttribute);
+        if (!empty($gender)) {
+            $genderId = $this->mapGender($gender);
+            if ($genderId !== null) {
+                $customer->setGender($genderId);
+            }
+        }
+
+        $customer->save();
+
+        // Create customer address if address fields are configured and available
+        $this->createCustomerAddress($customer, $firstName, $lastName);
+
+        return $customer;
+    }
+
+    /**
+     * Extract attribute value from flattened attributes with support for nested paths (e.g., "address.locality")
+     */
+    private function extractAttributeValue($key)
+    {
+        if (empty($key) || empty($this->flattenedattrs)) {
+            return null;
+        }
+
+        // First check if it exists directly in flattened attributes
+        if (isset($this->flattenedattrs[$key])) {
+            return $this->flattenedattrs[$key];
+        }
+
+        // Support nested path notation (e.g., "address.locality")
+        if (strpos($key, '.') !== false) {
+            $parts = explode('.', $key);
+            $value = $this->flattenedattrs;
+            foreach ($parts as $part) {
+                if (is_array($value) && isset($value[$part])) {
+                    $value = $value[$part];
+                } else {
+                    return null;
+                }
+            }
+            return is_string($value) ? $value : null;
+        }
+
+        // Also check in raw attrs for nested structure
+        if (!empty($this->attrs) && strpos($key, '.') !== false) {
+            $parts = explode('.', $key);
+            $value = $this->attrs;
+            foreach ($parts as $part) {
+                if (is_array($value) && isset($value[$part])) {
+                    $value = $value[$part];
+                } elseif (is_object($value) && isset($value->$part)) {
+                    $value = $value->$part;
+                } else {
+                    return null;
+                }
+            }
+            return is_string($value) ? $value : null;
+        }
+
+        return null;
+    }
+
+    /**
+     * Format date of birth to Y-m-d format
+     */
+    private function formatDateOfBirth($dob)
+    {
+        try {
+            $date = date_create($dob);
+            if ($date) {
+                return $date->format('Y-m-d');
+            }
+        } catch (\Exception $e) {
+            $this->oauthUtility->customlog("DOB parsing exception: " . $e->getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * Map OIDC gender value to Magento gender ID
+     * Magento: 1 = Male, 2 = Female, 3 = Not Specified
+     */
+    private function mapGender($genderValue)
+    {
+        if (empty($genderValue)) {
+            return null;
+        }
+
+        $genderLower = strtolower(trim($genderValue));
+
+        if (in_array($genderLower, ['male', 'm', '1', 'mann', 'männlich'])) {
+            return 1;
+        }
+        if (in_array($genderLower, ['female', 'f', '2', 'frau', 'weiblich'])) {
+            return 2;
+        }
+
+        // Not Specified for any other value
+        return 3;
+    }
+
+    /**
+     * Create customer address with mapped OIDC attributes
+     */
+    private function createCustomerAddress($customer, $firstName, $lastName)
+    {
+        // Extract address fields
+        $street = $this->extractAttributeValue($this->streetAttribute);
+        $city = $this->extractAttributeValue($this->cityAttribute);
+        $zip = $this->extractAttributeValue($this->zipAttribute);
+        $country = $this->extractAttributeValue($this->countryAttribute);
+        $phone = $this->extractAttributeValue($this->phoneAttribute);
+
+        // Only create address if at least street and city are provided
+        if (empty($street) && empty($city) && empty($country)) {
+            return;
+        }
+
+        try {
+            $countryId = $this->resolveCountryId($country);
+
+            $address = $this->addressFactory->create();
+            $address->setCustomerId($customer->getId())
+                ->setFirstname($firstName)
+                ->setLastname($lastName)
+                ->setStreet([$street ?? ''])
+                ->setCity($city ?? '')
+                ->setPostcode($zip ?? '')
+                ->setCountryId($countryId ?? 'US')
+                ->setTelephone($phone ?? '')
+                ->setIsDefaultBilling(true)
+                ->setIsDefaultShipping(true);
+
+            $this->addressRepository->save($address);
+        } catch (\Exception $e) {
+            $this->oauthUtility->customlog("ERROR creating address: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Resolve country name or code to Magento country ID (ISO 3166-1 alpha-2)
+     */
+    private function resolveCountryId($country)
+    {
+        if (empty($country)) {
+            return null;
+        }
+
+        // If already a 2-letter code, return as-is (uppercase)
+        if (strlen($country) === 2) {
+            return strtoupper($country);
+        }
+
+        // Try to find country by name
+        try {
+            $countryCollection = $this->countryFactory->create()->getCollection();
+            foreach ($countryCollection as $countryItem) {
+                $countryName = $countryItem->getName();
+                if ($countryName !== null && strcasecmp($countryName, $country) === 0) {
+                    return $countryItem->getId();
+                }
+            }
+        } catch (\Exception $e) {
+            $this->oauthUtility->customlog("Error resolving country: " . $e->getMessage());
+        }
+
+        // Return the value as-is if it looks like a country code
+        if (strlen($country) <= 3) {
+            return strtoupper($country);
+        }
+
+        return null;
     }
 
     private function getCustomerFromAttributes($user_email)
     {
-        $this->oauthUtility->customlog("processUserAction: getCustomerFromAttributes");
         $this->customerModel->setWebsiteId($this->storeManager->getStore()->getWebsiteId());
         $customer = $this->customerModel->loadByEmail($user_email);
         return !is_null($customer->getId()) ? $customer : false;

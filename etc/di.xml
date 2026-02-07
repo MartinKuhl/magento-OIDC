@@ -17,6 +17,16 @@
         </arguments>
     </type>
 
+    <!-- ProcessUserAction Dependencies for Customer Data Mapping -->
+    <type name="MiniOrange\OAuth\Controller\Actions\ProcessUserAction">
+        <arguments>
+            <argument name="addressRepository" xsi:type="object">Magento\Customer\Api\AddressRepositoryInterface</argument>
+            <argument name="addressFactory" xsi:type="object">Magento\Customer\Api\Data\AddressInterfaceFactory</argument>
+            <argument name="countryFactory" xsi:type="object">Magento\Directory\Model\CountryFactory</argument>
+            <argument name="regionFactory" xsi:type="object">Magento\Directory\Model\RegionFactory</argument>
+        </arguments>
+    </type>
+
     <!-- OIDC Credential Adapter Configuration -->
     <type name="MiniOrange\OAuth\Model\Auth\OidcCredentialAdapter">
         <arguments>

@@ -82,6 +82,14 @@ class ShowTestResults extends Action
         $this->setAttrs($attrs);
         $this->setUserEmail($attrs['email'] ?? null);
 
+        // Store received OIDC claims for dropdown selection in Attribute Mapping
+        if (!empty($attrs)) {
+            $claimKeys = $this->extractClaimKeys($attrs);
+            $this->oauthUtility->setStoreConfig(OAuthConstants::RECEIVED_OIDC_CLAIMS, json_encode($claimKeys));
+            $this->oauthUtility->flushCache();
+            $this->oauthUtility->customlog("Stored received OIDC claims: " . json_encode($claimKeys));
+        }
+
         if (ob_get_contents()) {ob_end_clean();}
         $this->oauthUtility->customlog("ShowTestResultsAction: execute");
 
@@ -221,5 +229,33 @@ class ShowTestResults extends Action
     {
         $this->hasExceptionOccurred = $hasExceptionOccurred;
         return $this;
+    }
+
+    /**
+     * Extract all claim keys from OIDC response, including nested paths (e.g., address.locality)
+     *
+     * @param array $attrs The OIDC attributes array
+     * @param string $prefix The prefix for nested keys
+     * @return array Array of claim keys
+     */
+    private function extractClaimKeys($attrs, $prefix = '')
+    {
+        $keys = [];
+        if (!is_array($attrs)) {
+            return $keys;
+        }
+
+        foreach ($attrs as $key => $value) {
+            $fullKey = $prefix ? $prefix . '.' . $key : $key;
+            $keys[] = $fullKey;
+
+            // If value is an array/object (associative array), recurse to get nested keys
+            // Skip indexed arrays (like arrays of values)
+            if (is_array($value) && !empty($value) && !isset($value[0])) {
+                $nestedKeys = $this->extractClaimKeys($value, $fullKey);
+                $keys = array_merge($keys, $nestedKeys);
+            }
+        }
+        return $keys;
     }
 }

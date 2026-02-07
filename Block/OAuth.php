@@ -127,11 +127,98 @@ class OAuth extends \Magento\Framework\View\Element\Template
     }
 
     /**
+     * Get date of birth attribute mapping
+     */
+    public function getDobMapping()
+    {
+        $amDob = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_DOB);
+        return !$this->oauthUtility->isBlank($amDob) ? $amDob : '';
+    }
+
+    /**
+     * Get phone number attribute mapping
+     */
+    public function getPhoneMapping()
+    {
+        $amPhone = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_PHONE);
+        return !$this->oauthUtility->isBlank($amPhone) ? $amPhone : '';
+    }
+
+    /**
+     * Get street address attribute mapping
+     */
+    public function getStreetMapping()
+    {
+        $amStreet = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_STREET);
+        return !$this->oauthUtility->isBlank($amStreet) ? $amStreet : '';
+    }
+
+    /**
+     * Get zip code attribute mapping
+     */
+    public function getZipMapping()
+    {
+        $amZip = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_ZIP);
+        return !$this->oauthUtility->isBlank($amZip) ? $amZip : '';
+    }
+
+    /**
+     * Get city attribute mapping
+     */
+    public function getCityMapping()
+    {
+        $amCity = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_CITY);
+        return !$this->oauthUtility->isBlank($amCity) ? $amCity : '';
+    }
+
+    /**
+     * Get state/region attribute mapping
+     */
+    public function getStateMapping()
+    {
+        $amState = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_STATE);
+        return !$this->oauthUtility->isBlank($amState) ? $amState : '';
+    }
+
+    /**
      * Get country attribute mapping
      */
     public function getCountryMapping()
     {
-        return '';
+        $amCountry = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_COUNTRY);
+        return !$this->oauthUtility->isBlank($amCountry) ? $amCountry : '';
+    }
+
+    /**
+     * Get gender attribute mapping
+     */
+    public function getGenderMapping()
+    {
+        $amGender = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_GENDER);
+        return !$this->oauthUtility->isBlank($amGender) ? $amGender : '';
+    }
+
+    /**
+     * Get OIDC claims for dropdown selection
+     * Returns claims received from last test configuration, filtered to remove technical claims
+     */
+    public function getOidcStandardClaims()
+    {
+        // Technical claims to exclude from dropdown (tokens, timestamps, identifiers)
+        $excludedClaims = ['sub', 'iat', 'rat', 'at_hash', 'updated_at', 'exp', 'nbf', 'aud', 'iss', 'azp', 'nonce', 'auth_time', 'acr', 'amr', 'sid'];
+
+        $storedClaims = $this->oauthUtility->getStoreConfig(OAuthConstants::RECEIVED_OIDC_CLAIMS);
+        if (!$this->oauthUtility->isBlank($storedClaims)) {
+            $claims = json_decode($storedClaims, true);
+            if (is_array($claims) && !empty($claims)) {
+                // Filter out technical claims
+                return array_values(array_filter($claims, function($claim) use ($excludedClaims) {
+                    return !in_array($claim, $excludedClaims);
+                }));
+            }
+        }
+        // Return empty array if no test was run yet
+        return [];
     }
 
     /**
