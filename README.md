@@ -32,10 +32,8 @@ Navigate to: **Stores → Configuration → MiniOrange → OAuth/OIDC**
 ## ToDo
 
 
-- fix hello to prefered User Name
-
 - check php compatibility 8.1-8.4
 
-- Rename: --> Authelia OIDC (in Code)
-
 - Storage of settings in 2 different tables why -> merging?
+
+- Rename: --> Authelia OIDC (in Code)
