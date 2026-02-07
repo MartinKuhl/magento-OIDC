@@ -17,6 +17,7 @@ class ShowTestResults extends Action
 {
     private $attrs;
     private $userEmail;
+    private $greetingName;
     protected $status;
     private $hasExceptionOccurred;
     private $oauthException;
@@ -35,7 +36,7 @@ class ShowTestResults extends Action
                             <p style="font-weight:bold;color:#856404;margin:0 0 10px 0;">Error Message:</p>
                             <p style="color:#856404;margin:0;">{{error_message}}</p>
                           </div>';
-    private $commonBody  = '<span style="font-size:14pt;"><b>Hello</b>, {{email}}</span><br/>
+    private $commonBody  = '<span style="font-size:14pt;"><b>Hello {{greeting_name}},</b></span><br/>
                                 <p style="font-weight:bold;font-size:14pt;margin-left:1%;">ATTRIBUTES RECEIVED:</p>
                                 <table style="border-collapse:collapse;border-spacing:0; display:table;width:100%;
                                     font-size:14pt;background-color:#EDEDED;">
@@ -81,6 +82,7 @@ class ShowTestResults extends Action
         $attrs = $_SESSION['mooauth_test_results'][$key] ?? null;
         $this->setAttrs($attrs);
         $this->setUserEmail($attrs['email'] ?? null);
+        $this->setGreetingName($attrs);
 
         // Store received OIDC claims for dropdown selection in Attribute Mapping
         if (!empty($attrs)) {
@@ -176,7 +178,7 @@ class ShowTestResults extends Action
 
     private function processTemplateContent()
     {
-        $this->commonBody = str_replace("{{email}}", $this->userEmail ?? '', $this->commonBody);
+        $this->commonBody = str_replace("{{greeting_name}}", $this->greetingName ?? '', $this->commonBody);
         $tableContent = !array_filter($this->attrs ?? []) ? "No Attributes Received." : $this->getTableContent();
         //$this->oauthUtility->customlog("ShowTestResultsAction: attribute" . json_encode($this->attrs));
         $this->commonBody = str_replace("{{tablecontent}}", $tableContent ?? '', $this->commonBody);
@@ -229,6 +231,64 @@ class ShowTestResults extends Action
     {
         $this->hasExceptionOccurred = $hasExceptionOccurred;
         return $this;
+    }
+
+    /**
+     * Set greeting name with fallback logic: firstName -> username -> email
+     * Uses configured attribute mappings with fallback to common OIDC claim names
+     */
+    private function setGreetingName($attrs)
+    {
+        if (empty($attrs) || !is_array($attrs)) {
+            $this->greetingName = '';
+            return;
+        }
+
+        // Try to get firstName (configured -> default -> common alternatives)
+        $firstName = $this->getAttributeValue($attrs, OAuthConstants::MAP_FIRSTNAME,
+            [OAuthConstants::DEFAULT_MAP_FN, 'given_name', 'first_name' ]);
+
+        // Try to get username (configured -> default -> common alternatives)
+        $username = $this->getAttributeValue($attrs, OAuthConstants::MAP_USERNAME,
+            [OAuthConstants::DEFAULT_MAP_USERN, 'preferred_username', 'name', 'username']);
+
+        // Try to get email (configured -> default -> common alternatives)
+        $email = $this->getAttributeValue($attrs, OAuthConstants::MAP_EMAIL,
+            [OAuthConstants::DEFAULT_MAP_EMAIL, 'mail', 'emailAddress', 'email']);
+
+        // Fallback logic: firstName -> username -> email
+        if (!$this->oauthUtility->isBlank($firstName)) {
+            $this->greetingName = $firstName;
+        } elseif (!$this->oauthUtility->isBlank($username)) {
+            $this->greetingName = $username;
+        } else {
+            $this->greetingName = $email ?? '';
+        }
+    }
+
+    /**
+     * Get attribute value using configured mapping with fallback to common claim names
+     */
+    private function getAttributeValue($attrs, $configKey, $fallbackKeys)
+    {
+        // First try configured attribute name
+        $configuredAttr = $this->oauthUtility->getStoreConfig($configKey);
+        if (!$this->oauthUtility->isBlank($configuredAttr)) {
+            $value = $attrs[$configuredAttr] ?? null;
+            if (!$this->oauthUtility->isBlank($value)) {
+                return is_array($value) ? $value[0] : $value;
+            }
+        }
+
+        // Fallback: try common claim names
+        foreach ($fallbackKeys as $key) {
+            $value = $attrs[$key] ?? null;
+            if (!$this->oauthUtility->isBlank($value)) {
+                return is_array($value) ? $value[0] : $value;
+            }
+        }
+
+        return null;
     }
 
     /**
