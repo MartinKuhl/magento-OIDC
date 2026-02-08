@@ -38,4 +38,6 @@ Navigate to: **Stores → Configuration → MiniOrange → OAuth/OIDC**
 
 - Storage of settings in 2 different tables why -> merging?
 
+- whats needs to be adjusted to be future-proof and support multiple OIDC providers?
+
 - Rename: --> Authelia OIDC (in Code)
