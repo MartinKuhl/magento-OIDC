@@ -34,6 +34,8 @@ Navigate to: **Stores → Configuration → MiniOrange → OAuth/OIDC**
 
 - check php compatibility 8.1-8.4
 
+- add option to disable non-OIDC login
+
 - Storage of settings in 2 different tables why -> merging?
 
 - Rename: --> Authelia OIDC (in Code)
