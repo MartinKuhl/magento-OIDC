@@ -143,7 +143,7 @@ class ProcessUserAction extends Action
                 $this->defaultRole = OAuthConstants::DEFAULT_ROLE;
             }
 
-            $this->processUserAction($this->userEmail, $firstName, $lastName, $userName, $this->defaultRole);
+            return $this->processUserAction($this->userEmail, $firstName, $lastName, $userName, $this->defaultRole);
 
         } catch (MissingAttributesException $e) {
             $this->oauthUtility->customlog("ERROR: Missing required attributes from OAuth provider");
@@ -198,11 +198,11 @@ class ProcessUserAction extends Action
 
         if ($this->oauthUtility->getSessionData('guest_checkout')) {
             $this->oauthUtility->setSessionData('guest_checkout', NULL);
-            $this->customerLoginAction->setUser($user)->setRelayState($this->oauthUtility->getBaseUrl() . 'checkout')->execute();
+            return $this->customerLoginAction->setUser($user)->setRelayState($this->oauthUtility->getBaseUrl() . 'checkout')->execute();
         } else if (!empty($relayState)) {
-            $this->customerLoginAction->setUser($user)->setRelayState($relayState)->execute();
+            return $this->customerLoginAction->setUser($user)->setRelayState($relayState)->execute();
         } else {
-            $this->customerLoginAction->setUser($user)->setRelayState('/')->execute();
+            return $this->customerLoginAction->setUser($user)->setRelayState('/')->execute();
         }
     }
 
