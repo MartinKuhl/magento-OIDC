@@ -5,13 +5,17 @@ use MiniOrange\OAuth\Helper\Exception\IncorrectUserInfoDataException;
 use MiniOrange\OAuth\Helper\Exception\UserEmailNotFoundException;
 use MiniOrange\OAuth\Helper\OAuthConstants;
 
+use Magento\Framework\App\RequestInterface;
+use Magento\Framework\App\Request\InvalidRequestException;
+use Magento\Framework\App\Action\CsrfAwareActionInterface;
+
 /**
  * Handles processing of SAML Responses from the IDP. Process the SAML Response
  * from the IDP and detect if it's a valid response from the IDP. Validate the
  * certificates and the SAML attributes and Update existing user attributes
  * and groups if necessary. Log the user in.
  */
-class ProcessResponseAction extends BaseAction
+class ProcessResponseAction extends BaseAction implements CsrfAwareActionInterface
 {
     private $userInfoResponse;
     private $testAction;
@@ -30,6 +34,23 @@ class ProcessResponseAction extends BaseAction
         //You can use dependency injection to get any class this observer may need.
         $this->attrMappingAction = $attrMappingAction;
         parent::__construct($context, $oauthUtility);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function createCsrfValidationException(
+        RequestInterface $request
+    ): ?InvalidRequestException {
+        return null;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function validateForCsrf(RequestInterface $request): ?bool
+    {
+        return true;
     }
 
     /**

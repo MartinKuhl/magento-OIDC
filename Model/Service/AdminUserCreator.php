@@ -34,21 +34,29 @@ class AdminUserCreator
     private $randomUtility;
 
     /**
+     * @var \Magento\User\Model\ResourceModel\User
+     */
+    private $userResource;
+
+    /**
      * @param UserFactory $userFactory
      * @param RoleCollection $roleCollection
      * @param OAuthUtility $oauthUtility
      * @param Random $randomUtility
+     * @param \Magento\User\Model\ResourceModel\User $userResource
      */
     public function __construct(
         UserFactory $userFactory,
         RoleCollection $roleCollection,
         OAuthUtility $oauthUtility,
-        Random $randomUtility
+        Random $randomUtility,
+        \Magento\User\Model\ResourceModel\User $userResource
     ) {
         $this->userFactory = $userFactory;
         $this->roleCollection = $roleCollection;
         $this->oauthUtility = $oauthUtility;
         $this->randomUtility = $randomUtility;
+        $this->userResource = $userResource;
     }
 
     /**
@@ -105,12 +113,12 @@ class AdminUserCreator
                 ->setPassword($randomPassword)
                 ->setIsActive(1);
 
-            $user->save();
+            $this->userResource->save($user);
             $this->oauthUtility->customlog("AdminUserCreator: User saved with ID: " . $user->getId());
 
             // Assign role
             $user->setRoleId($roleId);
-            $user->save();
+            $this->userResource->save($user);
             $this->oauthUtility->customlog("AdminUserCreator: Role " . $roleId . " assigned to user ID: " . $user->getId());
 
             return $user;

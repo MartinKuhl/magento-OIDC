@@ -11,22 +11,46 @@ use MiniOrange\OAuth\Helper\Curl;
 use MiniOrange\OAuth\Helper\OAuthUtility;
 use MiniOrange\OAuth\Helper\SessionHelper;
 
-class ReadAuthorizationResponse extends BaseAction
+use Magento\Framework\App\RequestInterface;
+use Magento\Framework\App\Request\InvalidRequestException;
+use Magento\Framework\App\Action\CsrfAwareActionInterface;
+
+class ReadAuthorizationResponse extends BaseAction implements CsrfAwareActionInterface
 {
     private $REQUEST;
     private $POST;
     private $processResponseAction;
     protected $_url;
+    private $customerSession;
 
     public function __construct(
         Context $context,
         OAuthUtility $oauthUtility,
         ProcessResponseAction $processResponseAction,
-        \Magento\Framework\UrlInterface $url
+        \Magento\Framework\UrlInterface $url,
+        \Magento\Customer\Model\Session $customerSession
     ) {
         $this->processResponseAction = $processResponseAction;
         $this->_url = $url;
+        $this->customerSession = $customerSession;
         parent::__construct($context, $oauthUtility);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function createCsrfValidationException(
+        RequestInterface $request
+    ): ?InvalidRequestException {
+        return null;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function validateForCsrf(RequestInterface $request): ?bool
+    {
+        return true;
     }
 
     public function execute()
@@ -171,7 +195,9 @@ class ReadAuthorizationResponse extends BaseAction
             preg_match('/key\/([a-f0-9]{32,})/', $relayState, $matches);
             $testKey = $matches[1] ?? '';
             if ($testKey) {
-                $_SESSION['mooauth_test_results'][$testKey] = $userInfoResponseData;
+                $testResults = $this->customerSession->getData('mooauth_test_results') ?: [];
+                $testResults[$testKey] = $userInfoResponseData;
+                $this->customerSession->setData('mooauth_test_results', $testResults);
             }
             return $this->_redirect($relayState);
         }

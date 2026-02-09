@@ -663,11 +663,6 @@ class OAuth extends \Magento\Framework\View\Element\Template
     }
     public function getTimeStamp()
     {
-        if ($this->oauthUtility->getStoreConfig(OAuthConstants::TIME_STAMP) == null) {
-            $this->oauthUtility->setStoreConfig(OAuthConstants::TIME_STAMP, time());
-            // $this->oauthUtility->flushCache(); // REMOVED for performance
-            return time();
-        }
         return $this->oauthUtility->getStoreConfig(OAuthConstants::TIME_STAMP);
     }
 

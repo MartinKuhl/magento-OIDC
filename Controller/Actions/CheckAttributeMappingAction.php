@@ -477,17 +477,44 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
     protected function saveDebugData($attrs)
     {
         try {
+            // Filter sensitive data
+            $sensitiveKeys = ['access_token', 'refresh_token', 'id_token', 'client_secret', 'password', 'token'];
+            $filteredAttrs = $attrs;
+            $filteredUserInfo = $this->userInfoResponse;
+
+            if (is_array($filteredAttrs)) {
+                foreach ($sensitiveKeys as $key) {
+                    if (isset($filteredAttrs[$key])) {
+                        $filteredAttrs[$key] = '********';
+                    }
+                }
+            }
+
+            if (is_array($filteredUserInfo)) {
+                foreach ($sensitiveKeys as $key) {
+                    if (isset($filteredUserInfo[$key])) {
+                        $filteredUserInfo[$key] = '********';
+                    }
+                }
+            } elseif (is_object($filteredUserInfo)) {
+                foreach ($sensitiveKeys as $key) {
+                    if (isset($filteredUserInfo->$key)) {
+                        $filteredUserInfo->$key = '********';
+                    }
+                }
+            }
+
             $debugData = [
                 'timestamp' => date('Y-m-d H:i:s'),
-                'raw_attributes' => $this->userInfoResponse,
-                'flattened_attributes' => $attrs,
-                'email_found' => isset($attrs[$this->emailAttribute]) ? $attrs[$this->emailAttribute] : null,
-                'username_found' => isset($attrs[$this->usernameAttribute]) ? $attrs[$this->usernameAttribute] : null
+                'raw_attributes' => $filteredUserInfo,
+                'flattened_attributes' => $filteredAttrs,
+                'email_found' => isset($filteredAttrs[$this->emailAttribute]) ? $filteredAttrs[$this->emailAttribute] : null,
+                'username_found' => isset($filteredAttrs[$this->usernameAttribute]) ? $filteredAttrs[$this->usernameAttribute] : null
             ];
 
             $this->customerSession->setData('mo_oauth_debug_response', json_encode($debugData));
 
-            $this->oauthUtility->customlog("Debug data saved to session");
+            $this->oauthUtility->customlog("Debug data (filtered) saved to session");
         } catch (\Exception $e) {
             $this->oauthUtility->customlog("Could not save debug data: " . $e->getMessage());
         }

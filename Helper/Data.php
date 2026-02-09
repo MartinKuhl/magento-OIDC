@@ -22,6 +22,9 @@ class Data extends AbstractHelper
     protected $helperBackend;
     protected $frontendUrl;
     protected $_miniorangeOauthClientAppsFactory;
+    protected $appResource;
+    protected $userResource;
+    protected $customerResource;
 
     public function __construct(
         \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
@@ -32,7 +35,10 @@ class Data extends AbstractHelper
         \Magento\Framework\View\Asset\Repository $assetRepo,
         \Magento\Backend\Helper\Data $helperBackend,
         \Magento\Framework\Url $frontendUrl,
-        \MiniOrange\OAuth\Model\MiniorangeOauthClientAppsFactory $miniorangeOauthClientAppsFactory
+        \MiniOrange\OAuth\Model\MiniorangeOauthClientAppsFactory $miniorangeOauthClientAppsFactory,
+        \MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps $appResource,
+        \Magento\User\Model\ResourceModel\User $userResource,
+        \Magento\Customer\Model\ResourceModel\Customer $customerResource
     ) {
         $this->scopeConfig = $scopeConfig;
         $this->adminFactory = $adminFactory;
@@ -43,6 +49,9 @@ class Data extends AbstractHelper
         $this->helperBackend = $helperBackend;
         $this->frontendUrl = $frontendUrl;
         $this->_miniorangeOauthClientAppsFactory = $miniorangeOauthClientAppsFactory;
+        $this->appResource = $appResource;
+        $this->userResource = $userResource;
+        $this->customerResource = $customerResource;
     }
 
 
@@ -91,7 +100,7 @@ class Data extends AbstractHelper
             "values_in_header" => $send_header,
             "values_in_body" => $send_body
         ]);
-        $model->save();
+        $this->appResource->save($model);
     }
 
     /**
@@ -156,7 +165,7 @@ class Data extends AbstractHelper
                     foreach ($collection as $item) {
                         $model = $this->_miniorangeOauthClientAppsFactory->create()->load($item->getId());
                         $model->setData($config, $finalValue);
-                        $model->save();
+                        $this->appResource->save($model);
                     }
                 }
             } catch (\Exception $e) {
@@ -209,7 +218,8 @@ class Data extends AbstractHelper
     {
         $data = [$url => $value];
         $model = $this->adminFactory->create()->load($id)->addData($data);
-        $model->setId($id)->save();
+        $model->setId($id);
+        $this->userResource->save($model);
     }
 
 
@@ -239,7 +249,8 @@ class Data extends AbstractHelper
     {
         $data = [$url => $value];
         $model = $this->customerFactory->create()->load($id)->addData($data);
-        $model->setId($id)->save();
+        $model->setId($id);
+        $this->customerResource->save($model);
     }
 
 

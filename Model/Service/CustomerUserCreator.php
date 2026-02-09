@@ -72,6 +72,11 @@ class CustomerUserCreator
     private $cityAttribute;
     private $countryAttribute;
 
+    /**
+     * @var \Magento\Customer\Api\CustomerRepositoryInterface
+     */
+    private $customerRepository;
+
     public function __construct(
         CustomerFactory $customerFactory,
         AddressInterfaceFactory $addressFactory,
@@ -81,7 +86,8 @@ class CustomerUserCreator
         OAuthUtility $oauthUtility,
         CountryFactory $countryFactory,
         DateTime $dateTime,
-        DirectoryData $directoryData
+        DirectoryData $directoryData,
+        \Magento\Customer\Api\CustomerRepositoryInterface $customerRepository
     ) {
         $this->customerFactory = $customerFactory;
         $this->addressFactory = $addressFactory;
@@ -92,6 +98,7 @@ class CustomerUserCreator
         $this->countryFactory = $countryFactory;
         $this->dateTime = $dateTime;
         $this->directoryData = $directoryData;
+        $this->customerRepository = $customerRepository;
 
         $this->initializeAttributeMapping();
     }
@@ -181,7 +188,7 @@ class CustomerUserCreator
                 }
             }
 
-            $customer->save();
+            $this->customerRepository->save($customer);
             $this->oauthUtility->customlog("CustomerUserCreator: Customer created with ID: " . $customer->getId());
 
             // Create customer address

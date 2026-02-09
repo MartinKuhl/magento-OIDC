@@ -157,8 +157,11 @@ class OAuthUtility extends Data
     /**
      * This function checks if cURL has been installed
      * or enabled on the site.
+     * 
+     * Magento 2 uses \Magento\Framework\HTTP\Adapter\Curl for HTTP requests,
+     * but verifying curl_init availability is a standard check for the underlying library.
      *
-     * @return True or False
+     * @return int
      */
     public function isCurlInstalled()
     {
