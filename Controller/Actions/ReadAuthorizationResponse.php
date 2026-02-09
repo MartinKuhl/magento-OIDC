@@ -13,9 +13,8 @@ use MiniOrange\OAuth\Helper\SessionHelper;
 
 use Magento\Framework\App\RequestInterface;
 use Magento\Framework\App\Request\InvalidRequestException;
-use Magento\Framework\App\Action\CsrfAwareActionInterface;
 
-class ReadAuthorizationResponse extends BaseAction implements CsrfAwareActionInterface
+class ReadAuthorizationResponse extends BaseAction
 {
     private $REQUEST;
     private $POST;
@@ -36,22 +35,6 @@ class ReadAuthorizationResponse extends BaseAction implements CsrfAwareActionInt
         parent::__construct($context, $oauthUtility);
     }
 
-    /**
-     * @inheritDoc
-     */
-    public function createCsrfValidationException(
-        RequestInterface $request
-    ): ?InvalidRequestException {
-        return null;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function validateForCsrf(RequestInterface $request): ?bool
-    {
-        return true;
-    }
 
     public function execute()
     {
