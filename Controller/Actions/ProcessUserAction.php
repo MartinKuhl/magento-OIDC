@@ -24,6 +24,13 @@ class ProcessUserAction extends Action
     private $usernameAttribute;
     private $firstNameKey;
     private $lastNameKey;
+    private $dobAttribute;
+    private $genderAttribute;
+    private $phoneAttribute;
+    private $streetAttribute;
+    private $zipAttribute;
+    private $cityAttribute;
+    private $countryAttribute;
     private $customerModel;
     private $customerLoginAction;
     private $responseFactory;

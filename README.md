@@ -33,10 +33,6 @@ Navigate to: **Stores → Configuration → MiniOrange → OAuth/OIDC**
 
 - add option to disable non-OIDC login
 
-- check php compatibility 8.1-8.4
-
-- check Magento compatibility 2.4.7 - 2.4.8-p3
-
 - check unused classes
 
 - check source code and analyize it regarding best practise code cenventions
