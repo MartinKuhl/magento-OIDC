@@ -60,9 +60,9 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
 
         try {
             $params = $this->getRequest()->getParams(); //get params
-            
+
             if ($this->isFormOptionBeingSaved($params)) { // check if form options are being saved
-                $this->checkIfRequiredFieldsEmpty(['oauth_am_username'=>$params,'oauth_am_email'=>$params]);
+                $this->checkIfRequiredFieldsEmpty(['oauth_am_username' => $params, 'oauth_am_email' => $params]);
                 $this->processValuesAndSaveData($params);
                 $this->oauthUtility->flushCache();
                 $this->messageManager->addSuccessMessage(OAuthMessages::SETTINGS_SAVED);
@@ -70,7 +70,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
             }
         } catch (\Exception $e) {
             $this->messageManager->addErrorMessage($e->getMessage());
-            $this->oauthUtility->customlog($e->getMessage()) ;
+            $this->oauthUtility->customlog($e->getMessage());
         }
         $resultPage = $this->resultPageFactory->create();
         $resultPage->getConfig()->getTitle()->prepend(__(OAuthConstants::MODULE_TITLE));
@@ -84,12 +84,12 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
      */
     private function processValuesAndSaveData($params)
     {
-          //ToDo_MK extend for other attributes like first name, last name if needed
-          $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_USERNAME, $params['oauth_am_username']);
-          $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_EMAIL, $params['oauth_am_email']);
+        //ToDo_MK extend for other attributes like first name, last name if needed
+        $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_USERNAME, $params['oauth_am_username']);
+        $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_EMAIL, $params['oauth_am_email']);
 
-          $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_FIRSTNAME, $params['oauth_am_first_name']);
-          $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_LASTNAME, $params['oauth_am_last_name']);
+        $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_FIRSTNAME, $params['oauth_am_first_name']);
+        $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_LASTNAME, $params['oauth_am_last_name']);
 
         if (isset($params['dont_create_user_if_role_not_mapped'])) {
             $this->oauthUtility->setStoreConfig(OAuthConstants::CREATEIFNOTMAP, $params['dont_create_user_if_role_not_mapped']);
@@ -111,10 +111,10 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
 
         // Save admin role mappings as JSON (filter out empty mappings)
         if (isset($params['oauth_role_mapping'])) {
-            $roleMappings = array_filter($params['oauth_role_mapping'], function($mapping) {
+            $roleMappings = array_filter($params['oauth_role_mapping'], function ($mapping) {
                 return !empty($mapping['group']) && !empty($mapping['role']);
             });
-            $this->oauthUtility->setStoreConfig('adminRoleMapping', json_encode(array_values($roleMappings)));
+            $this->oauthUtility->setStoreConfig('adminRoleMapping', json_encode(array_values($roleMappings)), true);
             $this->oauthUtility->customlog("Saved admin role mappings: " . json_encode(array_values($roleMappings)));
         }
 
@@ -157,6 +157,6 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
      */
     protected function _isAllowed()
     {
-        return $this->_authorization->isAllowed(OAuthConstants::MODULE_DIR.OAuthConstants::MODULE_ATTR);
+        return $this->_authorization->isAllowed(OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_ATTR);
     }
 }

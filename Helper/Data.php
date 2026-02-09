@@ -139,12 +139,14 @@ class Data extends AbstractHelper
     /**
      * Function to store data stored in the store config table.
      *
-     * @param $config
-     * @param $value
+     * @param string $config
+     * @param mixed $value
+     * @param bool $skipSanitize
      */
-    public function setStoreConfig($config, $value)
+    public function setStoreConfig($config, $value, $skipSanitize = false)
     {
-        $this->configWriter->save('miniorange/oauth/' . $config, $this->sanitize($value));
+        $finalValue = $skipSanitize ? $value : $this->sanitize($value);
+        $this->configWriter->save('miniorange/oauth/' . $config, $finalValue);
 
         // Wenn es sich um Admin- oder Kunden-Link-Einstellungen handelt, aktualisieren Sie auch die OAuth-Client-App-Tabelle
         if ($config === OAuthConstants::SHOW_ADMIN_LINK || $config === OAuthConstants::SHOW_CUSTOMER_LINK) {
@@ -153,7 +155,7 @@ class Data extends AbstractHelper
                 if ($collection && count($collection) > 0) {
                     foreach ($collection as $item) {
                         $model = $this->_miniorangeOauthClientAppsFactory->create()->load($item->getId());
-                        $model->setData($config, $value);
+                        $model->setData($config, $finalValue);
                         $model->save();
                     }
                 }

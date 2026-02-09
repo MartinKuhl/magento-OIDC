@@ -26,9 +26,9 @@ class ShowTestResults extends Action
     protected $scopeConfig;
 
     private $template = '<div style="font-family:Calibri;padding:0 3%;">{{header}}{{commonbody}}{{footer}}</div>';
-    private $successHeader  = '<div style="color: #3c763d;background-color: #dff0d8; padding:2%;margin-bottom:20px;text-align:center; border:1px solid #AEDB9A; font-size:18pt;">TEST SUCCESSFUL</div>
+    private $successHeader = '<div style="color: #3c763d;background-color: #dff0d8; padding:2%;margin-bottom:20px;text-align:center; border:1px solid #AEDB9A; font-size:18pt;">TEST SUCCESSFUL</div>
                               <div style="display:block;text-align:center;margin-bottom:4%;"><img style="width:15%;" src="{{right}}"></div>';
-    private $errorHeader    = '<div style="color: #a94442;background-color: #f2dede;padding: 15px;margin-bottom: 20px;text-align:center; border:1px solid #E6B3B2;font-size:18pt;">TEST FAILED</div>
+    private $errorHeader = '<div style="color: #a94442;background-color: #f2dede;padding: 15px;margin-bottom: 20px;text-align:center; border:1px solid #E6B3B2;font-size:18pt;">TEST FAILED</div>
                               <div style="display:block;text-align:center;margin-bottom:4%;"><img style="width:15%;"src="{{wrong}}"></div>';
     private $unsuccessfulHeader = '<div style="color: #a94442;background-color: #f2dede;padding: 15px;margin-bottom: 20px;text-align:center; border:1px solid #E6B3B2;font-size:18pt;">TEST UNSUCCESSFUL</div>
                               <div style="display:block;text-align:center;margin-bottom:4%;"><img style="width:15%;"src="{{wrong}}"></div>';
@@ -36,7 +36,7 @@ class ShowTestResults extends Action
                             <p style="font-weight:bold;color:#856404;margin:0 0 10px 0;">Error Message:</p>
                             <p style="color:#856404;margin:0;">{{error_message}}</p>
                           </div>';
-    private $commonBody  = '<span style="font-size:14pt;"><b>Hello {{greeting_name}},</b></span><br/>
+    private $commonBody = '<span style="font-size:14pt;"><b>Hello {{greeting_name}},</b></span><br/>
                                 <p style="font-weight:bold;font-size:14pt;margin-left:1%;">ATTRIBUTES RECEIVED:</p>
                                 <table style="border-collapse:collapse;border-spacing:0; display:table;width:100%;
                                     font-size:14pt;background-color:#EDEDED;">
@@ -87,12 +87,14 @@ class ShowTestResults extends Action
         // Store received OIDC claims for dropdown selection in Attribute Mapping
         if (!empty($attrs)) {
             $claimKeys = $this->extractClaimKeys($attrs);
-            $this->oauthUtility->setStoreConfig(OAuthConstants::RECEIVED_OIDC_CLAIMS, json_encode($claimKeys));
+            $this->oauthUtility->setStoreConfig(OAuthConstants::RECEIVED_OIDC_CLAIMS, json_encode($claimKeys), true);
             $this->oauthUtility->flushCache();
             $this->oauthUtility->customlog("Stored received OIDC claims: " . json_encode($claimKeys));
         }
 
-        if (ob_get_contents()) {ob_end_clean();}
+        if (ob_get_contents()) {
+            ob_end_clean();
+        }
         $this->oauthUtility->customlog("ShowTestResultsAction: execute");
 
         $this->processTemplateHeader();
@@ -102,17 +104,21 @@ class ShowTestResults extends Action
         $this->processTemplateFooter();
 
         $userEmail = $this->oauthUtility->getStoreConfig(OAuthConstants::ADMINEMAIL);
-        if (empty($userEmail)) $userEmail = "No Email Found";
-        if (empty($this->status)) $this->status = "TEST FAILED";
+        if (empty($userEmail))
+            $userEmail = "No Email Found";
+        if (empty($this->status))
+            $this->status = "TEST FAILED";
 
         $data = $this->template;
-        if (empty($data)) $data = "No attribute found";
+        if (empty($data))
+            $data = "No attribute found";
 
         // Tracking für MiniOrange
         $timeStamp = $this->oauthUtility->getStoreConfig(OAuthConstants::TIME_STAMP);
         if ($timeStamp == null) {
             $timeStamp = time();
             $this->oauthUtility->setStoreConfig(OAuthConstants::TIME_STAMP, $timeStamp);
+
             $this->oauthUtility->flushCache();
         }
         $adminEmail = $userEmail;
@@ -124,7 +130,7 @@ class ShowTestResults extends Action
         $freeInstalledDate = $this->oauthUtility->getCurrentDate();
         $identityProvider = $this->oauthUtility->getStoreConfig(OAuthConstants::APP_NAME);
 
-        if($this->status == "TEST FAILED") {
+        if ($this->status == "TEST FAILED") {
             $testFailed = json_encode($this->attrs);
             $testSuccessful = '';
         } else {
@@ -144,7 +150,9 @@ class ShowTestResults extends Action
      */
     private function handleOidcError($encodedError)
     {
-        if (ob_get_contents()) {ob_end_clean();}
+        if (ob_get_contents()) {
+            ob_end_clean();
+        }
         $this->oauthUtility->customlog("ShowTestResultsAction: handleOidcError");
 
         $errorMessage = base64_decode($encodedError);
@@ -190,7 +198,8 @@ class ShowTestResults extends Action
         $tableContent = '';
         if (is_array($this->attrs)) {
             foreach ($this->attrs as $key => $value) {
-                if (!is_array($value)) $value = [$value];
+                if (!is_array($value))
+                    $value = [$value];
                 if (!in_array(null, $value)) {
                     $tableContent .= str_replace("{{key}}", $key ?? '', str_replace(
                         "{{value}}",
@@ -245,16 +254,25 @@ class ShowTestResults extends Action
         }
 
         // Try to get firstName (configured -> default -> common alternatives)
-        $firstName = $this->getAttributeValue($attrs, OAuthConstants::MAP_FIRSTNAME,
-            [OAuthConstants::DEFAULT_MAP_FN, 'given_name', 'first_name' ]);
+        $firstName = $this->getAttributeValue(
+            $attrs,
+            OAuthConstants::MAP_FIRSTNAME,
+            [OAuthConstants::DEFAULT_MAP_FN, 'given_name', 'first_name']
+        );
 
         // Try to get username (configured -> default -> common alternatives)
-        $username = $this->getAttributeValue($attrs, OAuthConstants::MAP_USERNAME,
-            [OAuthConstants::DEFAULT_MAP_USERN, 'preferred_username', 'name', 'username']);
+        $username = $this->getAttributeValue(
+            $attrs,
+            OAuthConstants::MAP_USERNAME,
+            [OAuthConstants::DEFAULT_MAP_USERN, 'preferred_username', 'name', 'username']
+        );
 
         // Try to get email (configured -> default -> common alternatives)
-        $email = $this->getAttributeValue($attrs, OAuthConstants::MAP_EMAIL,
-            [OAuthConstants::DEFAULT_MAP_EMAIL, 'mail', 'emailAddress', 'email']);
+        $email = $this->getAttributeValue(
+            $attrs,
+            OAuthConstants::MAP_EMAIL,
+            [OAuthConstants::DEFAULT_MAP_EMAIL, 'mail', 'emailAddress', 'email']
+        );
 
         // Fallback logic: firstName -> username -> email
         if (!$this->oauthUtility->isBlank($firstName)) {
