@@ -81,36 +81,67 @@ class ProcessResponseAction extends BaseAction
         return $result;
     }
 
-    private function findUserEmail($arr)
+    const MAX_RECURSION_DEPTH = 5;
+
+    /**
+     * Recursively search for an email address in the user info array
+     *
+     * @param array|object $arr
+     * @param int $depth
+     * @return string
+     */
+    private function findUserEmail($arr, $depth = 0)
     {
-        $this->oauthUtility->customlog("processResponseAction: findUserEmail");
-        if ($arr) {
-            foreach ($arr as $value) {
-                if (is_array($value)) {
-                    $value = $this->findUserEmail($value);
-                }
-                if (filter_var($value, FILTER_VALIDATE_EMAIL)) {
-                    $this->oauthUtility->customlog("processResponseAction: findUserEmail :" . $value);
-                    return $value;
-                }
-            }
+        if ($depth > self::MAX_RECURSION_DEPTH) {
             return "";
         }
+
+        if (is_object($arr)) {
+            $arr = (array) $arr;
+        }
+
+        if (!is_array($arr)) {
+            return "";
+        }
+
+        foreach ($arr as $value) {
+            if (is_scalar($value) && filter_var($value, FILTER_VALIDATE_EMAIL)) {
+                $this->oauthUtility->customlog("ProcessResponseAction: findUserEmail found: " . $value);
+                return $value;
+            }
+
+            if (is_array($value) || is_object($value)) {
+                $email = $this->findUserEmail($value, $depth + 1);
+                if (!empty($email)) {
+                    return $email;
+                }
+            }
+        }
+        return "";
     }
 
-    private function getflattenedArray($keyprefix, $arr, &$flattenedattributesarray)
+    /**
+     * Flatten a multidimensional array with dot notation keys
+     *
+     * @param string $keyprefix
+     * @param array|object $arr
+     * @param array $flattenedattributesarray
+     * @param int $depth
+     * @return array
+     */
+    private function getflattenedArray($keyprefix, $arr, &$flattenedattributesarray, $depth = 0)
     {
+        if ($depth > self::MAX_RECURSION_DEPTH) {
+            return $flattenedattributesarray;
+        }
+
         foreach ($arr as $key => $resource) {
             if (is_array($resource) || is_object($resource)) {
-                if (!empty($keyprefix)) {
-                    $keyprefix .= ".";
-                }
-                $this->getflattenedArray($keyprefix . $key, $resource, $flattenedattributesarray);
+                $newPrefix = empty($keyprefix) ? $key : $keyprefix . "." . $key;
+                $this->getflattenedArray($newPrefix, $resource, $flattenedattributesarray, $depth + 1);
             } else {
-                if (!empty($keyprefix)) {
-                    $key = $keyprefix . "." . $key;
-                }
-                $flattenedattributesarray[$key] = $resource;
+                $newKey = empty($keyprefix) ? $key : $keyprefix . "." . $key;
+                $flattenedattributesarray[$newKey] = $resource;
             }
         }
         return $flattenedattributesarray;

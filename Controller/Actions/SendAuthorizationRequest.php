@@ -36,7 +36,7 @@ class sendAuthorizationRequest extends BaseAction
             $chk_enable_log = 0;
             $this->oauthUtility->setStoreConfig(OAuthConstants::LOG_FILE_TIME, NULL);
             $this->oauthUtility->deleteCustomLogFile();
-            $this->oauthUtility->flushCache();
+            //$this->oauthUtility->flushCache(); // REMOVED for performance
         }
         $chk_enable_log ? $this->oauthUtility->customlog("SendAuthorizationRequest: execute") : NULL;
 
@@ -58,13 +58,14 @@ class sendAuthorizationRequest extends BaseAction
         $this->oauthUtility->customlog("SendAuthorizationRequest: Using app_name: " . $app_name);
 
         // Kombiniere den relayState mit der Session-ID, App-Namen und Login-Typ in einem kodierten Format
-        // Format: originalRelayState|sessionId|appName|loginType
-        $relayState = $relayState . '|' . $currentSessionId . '|' . $app_name . '|' . OAuthConstants::LOGIN_TYPE_CUSTOMER;
+        // Format: encodedRelayState|sessionId|encodedAppName|loginType
+        // URL-Encode components to prevent collisions with the pipe delimiter
+        $relayState = urlencode($relayState) . '|' . $currentSessionId . '|' . urlencode($app_name) . '|' . OAuthConstants::LOGIN_TYPE_CUSTOMER;
         $this->oauthUtility->customlog("SendAuthorizationRequest: Combined relayState: " . $relayState);
 
         if (strpos($relayState, OAuthConstants::TEST_RELAYSTATE) !== false) {
             $this->oauthUtility->setStoreConfig(OAuthConstants::IS_TEST, true);
-            $this->oauthUtility->flushCache();
+            //$this->oauthUtility->flushCache(); // REMOVED for performance
         }
 
         $clientDetails = null;

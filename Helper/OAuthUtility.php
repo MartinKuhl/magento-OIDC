@@ -9,6 +9,7 @@ use Magento\Framework\App\Cache\TypeListInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\Config\Storage\WriterInterface;
 use Magento\Framework\Filesystem\Driver\File;
+use Magento\Framework\App\Filesystem\DirectoryList;
 use Magento\Framework\Url;
 use Magento\Framework\UrlInterface;
 use Magento\Framework\View\Asset\Repository;
@@ -38,6 +39,7 @@ class OAuthUtility extends Data
     protected $_logger;
     protected $productMetadata;
     protected $dateTime;
+    protected $directoryList;
 
 
     public function __construct(
@@ -60,7 +62,8 @@ class OAuthUtility extends Data
         File $fileSystem,
         \Magento\Framework\App\ProductMetadataInterface $productMetadata,
         \MiniOrange\OAuth\Model\MiniorangeOauthClientAppsFactory $miniorangeOauthClientAppsFactory,
-        dateTime $dateTime
+        dateTime $dateTime,
+        DirectoryList $directoryList
     ) {
         $this->adminSession = $adminSession;
         $this->customerSession = $customerSession;
@@ -73,6 +76,7 @@ class OAuthUtility extends Data
         $this->_logger = $logger2;
         $this->productMetadata = $productMetadata;
         $this->dateTime = $dateTime;
+        $this->directoryList = $directoryList;
         parent::__construct(
             $scopeConfig,
             $adminFactory,
@@ -112,20 +116,26 @@ class OAuthUtility extends Data
      */
     public function isCustomLogExist()
     {
-        if ($this->fileSystem->isExists("../var/log/mo_oauth.log")) {
-            return 1;
-        } elseif ($this->fileSystem->isExists("var/log/mo_oauth.log")) {
-            return 1;
+        try {
+            $logPath = $this->directoryList->getPath(DirectoryList::VAR_DIR) . '/log/mo_oauth.log';
+            if ($this->fileSystem->isExists($logPath)) {
+                return 1;
+            }
+        } catch (\Exception $e) {
+            // Ignore path errors
         }
         return 0;
     }
 
     public function deleteCustomLogFile()
     {
-        if ($this->fileSystem->isExists("../var/log/mo_oauth.log")) {
-            $this->fileSystem->deleteFile("../var/log/mo_oauth.log");
-        } elseif ($this->fileSystem->isExists("var/log/mo_oauth.log")) {
-            $this->fileSystem->deleteFile("var/log/mo_oauth.log");
+        try {
+            $logPath = $this->directoryList->getPath(DirectoryList::VAR_DIR) . '/log/mo_oauth.log';
+            if ($this->fileSystem->isExists($logPath)) {
+                $this->fileSystem->deleteFile($logPath);
+            }
+        } catch (\Exception $e) {
+            // Ignore path errors
         }
     }
     /**

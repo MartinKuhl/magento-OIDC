@@ -24,6 +24,7 @@ abstract class BaseAdminAction extends \Magento\Backend\App\Action
     protected $resultPageFactory;
     protected $messageManager;
     protected $logger;
+    protected $_authorization;
 
     public function __construct(
         \Magento\Backend\App\Action\Context $context,

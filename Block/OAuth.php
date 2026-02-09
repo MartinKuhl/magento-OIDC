@@ -19,6 +19,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     private $userGroupModel;
     protected $customerSession;
     protected $escaper;
+    protected $_formKey;
 
     public function __construct(
         \Magento\Framework\View\Element\Template\Context $context,
@@ -212,7 +213,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
             $claims = json_decode($storedClaims, true);
             if (is_array($claims) && !empty($claims)) {
                 // Filter out technical claims
-                return array_values(array_filter($claims, function($claim) use ($excludedClaims) {
+                return array_values(array_filter($claims, function ($claim) use ($excludedClaims) {
                     return !in_array($claim, $excludedClaims);
                 }));
             }
@@ -313,14 +314,14 @@ class OAuth extends \Magento\Framework\View\Element\Template
         return $this->oauthUtility->getAdminCssUrl('adminSettings.css');
     }
 
-      /**
-       * This function gets the current version of the plugin
-       * admin dashboard screen.
-       */
-      public function getCurrentVersion()
-      {
-          return OAuthConstants::VERSION;
-      }
+    /**
+     * This function gets the current version of the plugin
+     * admin dashboard screen.
+     */
+    public function getCurrentVersion()
+    {
+        return OAuthConstants::VERSION;
+    }
 
 
     /**
@@ -378,7 +379,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
      */
     public function getExtensionPageUrl($page)
     {
-        return $this->oauthUtility->getAdminUrl('mooauth/'.$page.'/index');
+        return $this->oauthUtility->getAdminUrl('mooauth/' . $page . '/index');
     }
 
 
@@ -389,9 +390,9 @@ class OAuth extends \Magento\Framework\View\Element\Template
     public function getCurrentActiveTab()
     {
         $page = $this->getUrl('*/*/*', ['_current' => true, '_use_rewrite' => false]);
-              $start = strpos($page, '/mooauth')+9;
+        $start = strpos($page, '/mooauth') + 9;
         $end = strpos($page, '/index/key');
-        $tab = substr($page, $start, $end-$start);
+        $tab = substr($page, $start, $end - $start);
         return $tab;
     }
 
@@ -409,7 +410,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     {
         return $this->oauthUtility->getStoreConfig(OAuthConstants::ENABLE_LOGIN_REDIRECT);
     }
-    
+
     /**
      * Is the option to show SSO link on the Admin login page enabled
      * by the admin.
@@ -434,7 +435,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
      */
     public function getSPInitiatedUrl($relayState = null, $app_name = null)
     {
-        return $this->oauthUtility->getSPInitiatedUrl($relayState,$app_name);
+        return $this->oauthUtility->getSPInitiatedUrl($relayState, $app_name);
     }
 
     /**
@@ -470,7 +471,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     public function getDisallowUnlistedUserRole()
     {
         $disallowUnlistedRole = $this->oauthUtility->getStoreConfig(OAuthConstants::UNLISTED_ROLE);
-        return !$this->oauthUtility->isBlank($disallowUnlistedRole) ?  $disallowUnlistedRole : '';
+        return !$this->oauthUtility->isBlank($disallowUnlistedRole) ? $disallowUnlistedRole : '';
     }
 
 
@@ -481,7 +482,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     public function getDisallowUserCreationIfRoleNotMapped()
     {
         $disallowUserCreationIfRoleNotMapped = $this->oauthUtility->getStoreConfig(OAuthConstants::CREATEIFNOTMAP);
-        return !$this->oauthUtility->isBlank($disallowUserCreationIfRoleNotMapped) ?  $disallowUserCreationIfRoleNotMapped : '';
+        return !$this->oauthUtility->isBlank($disallowUserCreationIfRoleNotMapped) ? $disallowUserCreationIfRoleNotMapped : '';
     }
 
 
@@ -493,14 +494,14 @@ class OAuth extends \Magento\Framework\View\Element\Template
     public function getUserNameMapping()
     {
         $amUserName = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_USERNAME);
-        return !$this->oauthUtility->isBlank($amUserName) ?  $amUserName : '';
+        return !$this->oauthUtility->isBlank($amUserName) ? $amUserName : '';
     }
 
 
     public function getGroupMapping()
     {
         $amGroupName = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_GROUP);
-        return !$this->oauthUtility->isBlank($amGroupName) ?  $amGroupName : '';
+        return !$this->oauthUtility->isBlank($amGroupName) ? $amGroupName : '';
     }
 
     /**
@@ -526,7 +527,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     public function getUserEmailMapping()
     {
         $amEmail = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_EMAIL);
-        return !$this->oauthUtility->isBlank($amEmail) ?  $amEmail : '';
+        return !$this->oauthUtility->isBlank($amEmail) ? $amEmail : '';
     }
 
     /**
@@ -537,7 +538,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     public function getFirstNameMapping()
     {
         $amFirstName = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_FIRSTNAME);
-        return !$this->oauthUtility->isBlank($amFirstName) ?  $amFirstName : '';
+        return !$this->oauthUtility->isBlank($amFirstName) ? $amFirstName : '';
     }
 
 
@@ -549,7 +550,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     public function getLastNameMapping()
     {
         $amLastName = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_LASTNAME);
-        return !$this->oauthUtility->isBlank($amLastName) ?  $amLastName : '';
+        return !$this->oauthUtility->isBlank($amLastName) ? $amLastName : '';
     }
 
 
@@ -562,7 +563,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
         $rolesCollection = $this->adminRoleModel->addFieldToFilter('role_type', 'G');
         // Convert the filtered collection to an options array
         $rolesOptionsArray = $rolesCollection->toOptionArray();
-        return $rolesOptionsArray;  
+        return $rolesOptionsArray;
     }
 
 
@@ -582,7 +583,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     public function getDefaultRole()
     {
         $defaultRole = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_DEFAULT_ROLE);
-        return !$this->oauthUtility->isBlank($defaultRole) ?  $defaultRole : OAuthConstants::DEFAULT_ROLE;
+        return !$this->oauthUtility->isBlank($defaultRole) ? $defaultRole : OAuthConstants::DEFAULT_ROLE;
     }
 
 
@@ -604,7 +605,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     {
         $buttonText = $this->oauthUtility->getStoreConfig(OAuthConstants::BUTTON_TEXT);
         $idpName = $this->oauthUtility->getStoreConfig(OAuthConstants::APP_NAME);
-        return !$this->oauthUtility->isBlank($buttonText) ?  $buttonText : 'Login with ' . $idpName;
+        return !$this->oauthUtility->isBlank($buttonText) ? $buttonText : 'Login with ' . $idpName;
     }
 
 
@@ -624,13 +625,13 @@ class OAuth extends \Magento\Framework\View\Element\Template
         return $this->oauthUtility->getIsTestConfigurationClicked();
     }
 
-/**
- * check if log printing is on or off
- */
-public function isDebugLogEnable()
-{
-    return $this->oauthUtility->getStoreConfig(OAuthConstants::ENABLE_DEBUG_LOG);
-}
+    /**
+     * check if log printing is on or off
+     */
+    public function isDebugLogEnable()
+    {
+        return $this->oauthUtility->getStoreConfig(OAuthConstants::ENABLE_DEBUG_LOG);
+    }
     /**
      * This function fetches the X509 cert saved by the admin for the IDP
      * in the plugin settings.
@@ -645,32 +646,26 @@ public function isDebugLogEnable()
         return $this->oauthUtility->getStoreConfig(OAuthConstants::JWKS_URL);
     }
 
-    public function getProductVersion(){
-        return  $this->oauthUtility->getProductVersion(); 
+    public function getProductVersion()
+    {
+        return $this->oauthUtility->getProductVersion();
     }
 
-    public function getEdition(){
+    public function getEdition()
+    {
         return $this->oauthUtility->getEdition();
     }
 
-    public function getCurrentDate(){
+    public function getCurrentDate()
+    {
         return $this->oauthUtility->getCurrentDate();
 
     }
-    public function dataAdded(){
-        $this->oauthUtility->setStoreConfig(OAuthConstants::DATA_ADDED,1);
-        $this->oauthUtility->flushCache() ;
-
-    }
-
-    public function checkDataAdded(){
-        return $this->oauthUtility->getStoreConfig(OAuthConstants::DATA_ADDED);
-
-    }
-    public function getTimeStamp(){
-        if($this->oauthUtility->getStoreConfig(OAuthConstants::TIME_STAMP) == null){
-            $this->oauthUtility->setStoreConfig(OAuthConstants::TIME_STAMP,time());
-            $this->oauthUtility->flushCache();
+    public function getTimeStamp()
+    {
+        if ($this->oauthUtility->getStoreConfig(OAuthConstants::TIME_STAMP) == null) {
+            $this->oauthUtility->setStoreConfig(OAuthConstants::TIME_STAMP, time());
+            // $this->oauthUtility->flushCache(); // REMOVED for performance
             return time();
         }
         return $this->oauthUtility->getStoreConfig(OAuthConstants::TIME_STAMP);

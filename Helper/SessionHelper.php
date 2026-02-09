@@ -56,47 +56,9 @@ class SessionHelper
      */
     public static function configureSSOSession()
     {
-        // Prüfen, ob die Session bereits aktiv ist
-        $isSessionActive = (session_status() == PHP_SESSION_ACTIVE);
-
-        if ($isSessionActive) {
-            // Session schließen, um Einstellungen ändern zu können
-            session_write_close();
-        }
-
-        // Versuche die Session-Einstellungen zu konfigurieren
-        try {
-            // SameSite auf None setzen für neue Sessions
-            if (PHP_VERSION_ID >= 70300) {
-                // In PHP 7.3+ können wir das direkt angeben
-                session_set_cookie_params([
-                    'samesite' => 'None',
-                    'secure' => true,
-                    'httponly' => true
-                ]);
-            } else {
-                // Für ältere PHP-Versionen
-                session_set_cookie_params(
-                    0, // Lebensdauer
-                    '/', // Pfad
-                    '', // Domain
-                    true, // Secure
-                    true // HTTPOnly
-                );
-            }
-
-            // Versuche die ini-Einstellung zu ändern, nur wenn Session noch nicht aktiv ist
-            if (!$isSessionActive && PHP_VERSION_ID >= 70300) {
-                @ini_set('session.cookie_samesite', 'None');
-            }
-        } catch (\Exception $e) {
-            self::logDebug("SessionHelper: Fehler beim Konfigurieren der Session: " . $e->getMessage());
-        }
-
-        // Session wieder starten, wenn sie vorher aktiv war
-        if ($isSessionActive) {
-            session_start();
-        }
+        // Manual session management removed to comply with Magento standards.
+        // We rely on CookieManager to set SameSite attributes via updateSessionCookies.
+        self::updateSessionCookies();
     }
 
     /**

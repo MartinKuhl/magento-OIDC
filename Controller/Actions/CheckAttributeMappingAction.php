@@ -7,6 +7,7 @@ use MiniOrange\OAuth\Helper\OAuthConstants;
 use MiniOrange\OAuth\Helper\OAuthMessages;
 use MiniOrange\OAuth\Helper\TestResults;
 use Magento\Framework\App\Action\HttpPostActionInterface;
+use MiniOrange\OAuth\Model\Service\AdminUserCreator;
 
 /**
  * Check and process OAuth/OIDC attribute mapping
@@ -42,8 +43,7 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
 
     protected $userFactory;
     protected $backendUrl;
-    protected $roleCollection;
-    protected $randomUtility;
+    protected $adminUserCreator;
 
     /**
      * Constructor with dependency injection
@@ -64,8 +64,7 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
         \MiniOrange\OAuth\Controller\Actions\ProcessUserAction $processUserAction,
         \Magento\User\Model\UserFactory $userFactory,
         \Magento\Backend\Model\UrlInterface $backendUrl,
-        \Magento\Authorization\Model\ResourceModel\Role\Collection $roleCollection,
-        \Magento\Framework\Math\Random $randomUtility
+        AdminUserCreator $adminUserCreator
     ) {
         // Initialize attribute mappings from configuration
         $this->emailAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_EMAIL);
@@ -94,8 +93,7 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
         $this->processUserAction = $processUserAction;
         $this->userFactory = $userFactory;
         $this->backendUrl = $backendUrl;
-        $this->roleCollection = $roleCollection;
-        $this->randomUtility = $randomUtility;
+        $this->adminUserCreator = $adminUserCreator;
 
         parent::__construct($context, $oauthUtility);
     }
@@ -135,7 +133,7 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
 
         if ($isAdminLoginIntent) {
             // User initiated login from admin page - verify they have admin account
-            $hasAdminAccount = $this->isAdminUser($userEmail);
+            $hasAdminAccount = $this->adminUserCreator->isAdminUser($userEmail);
             $this->oauthUtility->customlog("Admin login intent detected. Has admin account: " . ($hasAdminAccount ? 'YES' : 'NO'));
 
             if ($hasAdminAccount) {
@@ -165,10 +163,7 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
 
                     $this->oauthUtility->customlog("Mapped attributes - userName: $adminUserName, firstName: $adminFirstName, lastName: $adminLastName");
 
-                    // Apply name fallbacks using explode("@", $email) if empty
-                    list($adminFirstName, $adminLastName) = $this->applyNameFallbacks($adminFirstName, $adminLastName, $userEmail);
-
-                    // Get groups from OIDC response and map to admin role
+                    // Get groups from OIDC response
                     $groupAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_GROUP);
                     $userGroups = [];
                     if (!empty($groupAttribute)) {
@@ -179,12 +174,8 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
                     }
                     $this->oauthUtility->customlog("User groups from OIDC: " . json_encode($userGroups));
 
-                    // Get admin role from group mappings
-                    $adminRoleId = $this->getAdminRoleFromGroups($userGroups);
-                    $this->oauthUtility->customlog("Assigned admin role ID: " . $adminRoleId);
-
-                    // Create the admin user
-                    $adminUser = $this->createAdminUser($adminUserName, $userEmail, $adminFirstName, $adminLastName, $adminRoleId);
+                    // Create the admin user via Service
+                    $adminUser = $this->adminUserCreator->createAdminUser($userEmail, $adminUserName, $adminFirstName, $adminLastName, $userGroups);
 
                     if ($adminUser && $adminUser->getId()) {
                         $this->oauthUtility->customlog("Admin user created successfully. ID: " . $adminUser->getId());
@@ -234,30 +225,7 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
      * @param string $email User email or username
      * @return bool True if admin user exists and is active
      */
-    private function isAdminUser($email)
-    {
-        $this->oauthUtility->customlog("Checking if user is admin: " . $email);
-
-        // Try username lookup first
-        $user = $this->userFactory->create()->loadByUsername($email);
-        if ($user && $user->getId()) {
-            $this->oauthUtility->customlog("Admin user found by username - ID: " . $user->getId() . ", Active: " . ($user->getIsActive() ? 'YES' : 'NO'));
-            return true;
-        }
-
-        // Try email lookup
-        $userCollection = $this->userFactory->create()->getCollection()
-            ->addFieldToFilter('email', $email);
-
-        if ($userCollection->getSize() > 0) {
-            $user = $userCollection->getFirstItem();
-            $this->oauthUtility->customlog("Admin user found by email - ID: " . $user->getId() . ", Active: " . ($user->getIsActive() ? 'YES' : 'NO'));
-            return true;
-        }
-
-        $this->oauthUtility->customlog("User is not an admin");
-        return false;
-    }
+    // isAdminUser logic moved to AdminUserCreator service
 
     /**
      * Apply name fallbacks from email when firstName/lastName are empty
@@ -267,20 +235,7 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
      * @param string $email
      * @return array [firstName, lastName]
      */
-    private function applyNameFallbacks($firstName, $lastName, $email)
-    {
-        if (empty($firstName)) {
-            $parts = explode("@", $email);
-            $firstName = $parts[0] ?? '';
-            $this->oauthUtility->customlog("firstName fallback from email prefix: " . $firstName);
-        }
-        if (empty($lastName)) {
-            $parts = explode("@", $email);
-            $lastName = isset($parts[1]) ? $parts[1] : $firstName;
-            $this->oauthUtility->customlog("lastName fallback from email domain: " . $lastName);
-        }
-        return [$firstName, $lastName];
-    }
+    // applyNameFallbacks logic moved to AdminUserCreator service
 
     /**
      * Get admin role ID from OIDC groups using configured mappings
@@ -288,70 +243,7 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
      * @param array $userGroups Groups from OIDC response
      * @return int Admin role ID
      */
-    private function getAdminRoleFromGroups($userGroups)
-    {
-        // Get role mappings from configuration
-        $roleMappingsJson = $this->oauthUtility->getStoreConfig('adminRoleMapping');
-        $roleMappings = [];
-        if (!$this->oauthUtility->isBlank($roleMappingsJson)) {
-            $decoded = json_decode($roleMappingsJson, true);
-            $roleMappings = is_array($decoded) ? $decoded : [];
-        }
-
-        $this->oauthUtility->customlog("Role mappings configuration: " . json_encode($roleMappings));
-
-        // Try to find a matching role from the mappings
-        if (!empty($userGroups) && !empty($roleMappings)) {
-            foreach ($roleMappings as $mapping) {
-                $mappedGroup = $mapping['group'] ?? '';
-                $mappedRole = $mapping['role'] ?? '';
-
-                if (!empty($mappedGroup) && !empty($mappedRole)) {
-                    // Check if user has this group (case-insensitive comparison)
-                    foreach ($userGroups as $userGroup) {
-                        if (strcasecmp($userGroup, $mappedGroup) === 0) {
-                            $this->oauthUtility->customlog("Found matching role mapping: group '$userGroup' -> role ID '$mappedRole'");
-                            return (int)$mappedRole;
-                        }
-                    }
-                }
-            }
-        }
-
-        // No mapping found, use default role
-        $defaultRole = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_DEFAULT_ROLE);
-        if (!empty($defaultRole) && is_numeric($defaultRole)) {
-            $this->oauthUtility->customlog("Using configured default role ID: " . $defaultRole);
-            return (int)$defaultRole;
-        }
-
-        // Fallback: Find "Administrators" role
-        $this->oauthUtility->customlog("No default role configured, searching for Administrators role");
-        try {
-            $roles = $this->roleCollection
-                ->addFieldToFilter('role_type', 'G');
-
-            foreach ($roles as $role) {
-                if ($role->getRoleName() === 'Administrators') {
-                    $this->oauthUtility->customlog("Found Administrators role with ID: " . $role->getRoleId());
-                    return (int)$role->getRoleId();
-                }
-            }
-
-            // Return first available role if Administrators not found
-            $firstRole = $roles->getFirstItem();
-            if ($firstRole && $firstRole->getRoleId()) {
-                $this->oauthUtility->customlog("Using first available role ID: " . $firstRole->getRoleId());
-                return (int)$firstRole->getRoleId();
-            }
-        } catch (\Exception $e) {
-            $this->oauthUtility->customlog("Error getting roles: " . $e->getMessage());
-        }
-
-        // Ultimate fallback to role ID 1
-        $this->oauthUtility->customlog("Fallback to default role ID: 1");
-        return 1;
-    }
+    // getAdminRoleFromGroups logic moved to AdminUserCreator service
 
     /**
      * Create a new admin user with the given attributes
@@ -363,43 +255,7 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
      * @param int $roleId
      * @return \Magento\User\Model\User|null
      */
-    private function createAdminUser($userName, $email, $firstName, $lastName, $roleId)
-    {
-        $this->oauthUtility->customlog("Creating admin user: userName=$userName, email=$email, firstName=$firstName, lastName=$lastName, roleId=$roleId");
-
-        try {
-            // Generate secure random password (user will authenticate via OIDC, not password)
-            $randomPassword = $this->randomUtility->getRandomString(16)
-                . $this->randomUtility->getRandomString(2, '!@#$%^&*')
-                . $this->randomUtility->getRandomString(2, '0123456789');
-
-            $user = $this->userFactory->create();
-            $user->setUsername($userName)
-                ->setFirstname($firstName)
-                ->setLastname($lastName)
-                ->setEmail($email)
-                ->setPassword($randomPassword)
-                ->setIsActive(1);
-
-            $user->save();
-            $this->oauthUtility->customlog("Admin user saved with ID: " . $user->getId());
-
-            // Assign role
-            $user->setRoleId($roleId);
-            $user->save();
-            $this->oauthUtility->customlog("Role " . $roleId . " assigned to user ID: " . $user->getId());
-
-            return $user;
-
-        } catch (\Magento\Framework\Exception\AlreadyExistsException $e) {
-            $this->oauthUtility->customlog("ERROR: Admin user already exists - " . $e->getMessage());
-            return null;
-        } catch (\Exception $e) {
-            $this->oauthUtility->customlog("ERROR creating admin user: " . $e->getMessage());
-            $this->oauthUtility->customlog("Stack trace: " . $e->getTraceAsString());
-            return null;
-        }
-    }
+    // createAdminUser logic moved to AdminUserCreator service
 
     /**
      * Process OAuth/OIDC attribute mapping for customer users

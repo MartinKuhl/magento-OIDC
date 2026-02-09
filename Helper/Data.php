@@ -78,16 +78,16 @@ class Data extends AbstractHelper
     ) {
         $model = $this->_miniorangeOauthClientAppsFactory->create();
         $model->addData([
-            "app_name" => $mo_oauth_app_name,
+            "app_name" => $this->sanitize($mo_oauth_app_name),
             "callback_uri" => '',
-            "clientID" => $mo_oauth_client_id,
-            "client_secret" => $mo_oauth_client_secret,
-            "scope" => $mo_oauth_scope,
-            "authorize_endpoint" => $mo_oauth_authorize_url,
-            "access_token_endpoint" => $mo_oauth_accesstoken_url,
-            "user_info_endpoint" => $mo_oauth_getuserinfo_url,
-            "well_known_config_url" => $mo_oauth_well_known_config_url,
-            "grant_type" => $mo_oauth_grant_type,
+            "clientID" => $this->sanitize($mo_oauth_client_id),
+            "client_secret" => $this->sanitize($mo_oauth_client_secret),
+            "scope" => $this->sanitize($mo_oauth_scope),
+            "authorize_endpoint" => $this->sanitize($mo_oauth_authorize_url),
+            "access_token_endpoint" => $this->sanitize($mo_oauth_accesstoken_url),
+            "user_info_endpoint" => $this->sanitize($mo_oauth_getuserinfo_url),
+            "well_known_config_url" => $this->sanitize($mo_oauth_well_known_config_url),
+            "grant_type" => $this->sanitize($mo_oauth_grant_type),
             "values_in_header" => $send_header,
             "values_in_body" => $send_body
         ]);
@@ -144,7 +144,7 @@ class Data extends AbstractHelper
      */
     public function setStoreConfig($config, $value)
     {
-        $this->configWriter->save('miniorange/oauth/' . $config, $value);
+        $this->configWriter->save('miniorange/oauth/' . $config, $this->sanitize($value));
 
         // Wenn es sich um Admin- oder Kunden-Link-Einstellungen handelt, aktualisieren Sie auch die OAuth-Client-App-Tabelle
         if ($config === OAuthConstants::SHOW_ADMIN_LINK || $config === OAuthConstants::SHOW_CUSTOMER_LINK) {
@@ -351,13 +351,31 @@ class Data extends AbstractHelper
     }
 
 
-    /**
-     * Get admin Base url for the site.
-     */
     public function getAdminBaseUrl()
     {
         return $this->helperBackend->getHomePageUrl();
     }
+
+    /**
+     * Sanitize input data to prevent XSS and other injection attacks.
+     * 
+     * @param mixed $value
+     * @return mixed
+     */
+    public function sanitize($value)
+    {
+        if (is_array($value)) {
+            foreach ($value as $key => $val) {
+                $value[$key] = $this->sanitize($val);
+            }
+            return $value;
+        }
+        if (is_string($value)) {
+            return htmlspecialchars(strip_tags(trim($value)), ENT_QUOTES, 'UTF-8');
+        }
+        return $value;
+    }
+
 
     /**
      * Get the Admin url for the site based on the path passed,

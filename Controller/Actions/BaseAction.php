@@ -62,11 +62,8 @@ abstract class BaseAction extends \Magento\Framework\App\Action\Action
     {
         $this->oauthUtility->customlog("BaseAction: sendHTTPRedirectRequest - Ensuring PHP session is properly saved before redirect");
 
-        // Stellt sicher, dass alle Session-Daten richtig gespeichert werden, bevor wir umleiten
-        if (session_status() === PHP_SESSION_ACTIVE) {
-            $this->oauthUtility->customlog("BaseAction: Current session ID: " . session_id());
-            session_write_close();
-        }
+        // Session handling relies on Magento specific session managers.
+        // Manual session_write_close removed to prevent conflicts.
 
         $oauthRequest = $authorizeUrl . $oauthRequest;
         return $this->resultRedirectFactory->create()->setUrl($oauthRequest);

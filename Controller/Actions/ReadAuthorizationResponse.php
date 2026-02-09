@@ -54,7 +54,8 @@ class ReadAuthorizationResponse extends BaseAction
                 $relayState = '';
                 if (isset($params['state'])) {
                     $parts = explode('|', $params['state']);
-                    $relayState = $parts[0] ?? '';
+                    // Decode relayState as it was encoded to avoid delimiter collision
+                    $relayState = isset($parts[0]) ? urldecode($parts[0]) : '';
                 }
 
                 $isTest = (
@@ -82,10 +83,11 @@ class ReadAuthorizationResponse extends BaseAction
         $authorizationCode = $params['code'];
         $combinedRelayState = $params['state'];
         $parts = explode('|', $combinedRelayState);
-        $relayState = $parts[0];
+        // Decode relayState and app_name as they were encoded to avoid delimiter collision
+        $relayState = urldecode($parts[0]);
 
         $originalSessionId = isset($parts[1]) ? $parts[1] : '';
-        $app_name = isset($parts[2]) ? $parts[2] : '';
+        $app_name = isset($parts[2]) ? urldecode($parts[2]) : '';
         // Parse loginType from relayState (defaults to customer for backward compatibility)
         $loginType = isset($parts[3]) ? $parts[3] : OAuthConstants::LOGIN_TYPE_CUSTOMER;
 
