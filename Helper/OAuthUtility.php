@@ -62,6 +62,9 @@ class OAuthUtility extends Data
         File $fileSystem,
         \Magento\Framework\App\ProductMetadataInterface $productMetadata,
         \MiniOrange\OAuth\Model\MiniorangeOauthClientAppsFactory $miniorangeOauthClientAppsFactory,
+        \MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps $appResource,
+        \Magento\User\Model\ResourceModel\User $userResource,
+        \Magento\Customer\Model\ResourceModel\Customer $customerResource,
         dateTime $dateTime,
         DirectoryList $directoryList
     ) {
@@ -86,7 +89,10 @@ class OAuthUtility extends Data
             $assetRepo,
             $helperBackend,
             $frontendUrl,
-            $miniorangeOauthClientAppsFactory
+            $miniorangeOauthClientAppsFactory,
+            $appResource,
+            $userResource,
+            $customerResource
         );
     }
 
