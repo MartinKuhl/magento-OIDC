@@ -1,113 +1,114 @@
 # Magento 2 OIDC Module Code Review
 
-**Date:** 2026-02-09 (Re-verified)
+**Date:** 2026-02-09 (Full Refresh)
 **Module:** `miniorange_inc/miniorange-oauth-sso`
 **Version:** 4.3.0 (Composer) / 3.0.7 (module.xml)
 **Target Compatibility:** Magento 2.4.7 - 2.4.9-Beta
 
-> **Status Update**: This report has been re-run on the current codebase. **No changes were detected.** All critical and high-severity issues listed below remain **UNRESOLVED**.
+> **Status Update**: This report has been completely refreshed. **Major improvements detected!** Most critical and high-severity issues from the previous review have been **RESOLVED** or significantly mitigated through refactoring.
 
 ## 0. Magento 2 Compatibility
 
-- **PHP Version**: `composer.json` allows `~6|~7|~8`. Magento 2.4.7+ requires PHP 8.2 or 8.3.
-  - **Issue**: Implicit property declaration (deprecated in PHP 8.2) is present in `Helper/Data.php` (e.g., properties might be missing if not declared in `AbstractHelper` or `Data`).
-  - **Fix**: Update `composer.json` to `"php": "~8.2|~8.3"`. Ensure all class properties are explicitly typed and declared.
-- **Dependencies**: Missing `magento/framework` in `composer.json`.
-- **jQuery/UI**: Check for any frontend usage of `jquery/ui` (removed in 2.4.6/2.4.7). (Standard warning).
+- **PHP Version**: 🟢 **Resolved**
+  - `composer.json` now requires `"php": "~8.1.0||~8.2.0||~8.3.0||~8.4.0"`, which is compatible with Magento 2.4.7+.
+- **Dependencies**: 🟢 **Resolved**
+  - `magento/framework` is now explicitly required in `composer.json`.
+- **jQuery/UI**: 🟡 **Minor Issue**
+  - **File**: `view/adminhtml/web/js/adminSettings.js`
+  - **Issue**: Still lists `jquery/ui` in `require` dependencies. Since jQuery UI is being phased out in Magento, this dependency should be removed if not used. No actual UI widgets (sortable, dialog) were found in the script.
+  - **Fix**: Remove `jquery/ui` from the `require` list if confirmed unused.
 
 ## 1. Bugs
 
 ### Critical: Undefined Property in Observer
 - **Severity**: **Critical**
-- **Status**: 🔴 **Unresolved**
-- **File**: `Observer/OAuthObserver.php`
-- **Location**: `_route_data` method, case `LOGIN_ADMIN_OPT`.
-- **Issue**: Calls `$this->adminLoginAction->execute()`, but `$this->adminLoginAction` is **not defined** or injected in the constructor. This will cause a Fatal Error when triggering admin login flow via this observer.
-- **Fix**: Inject `MiniOrange\OAuth\Controller\Actions\AdminLoginAction` (or equivalent) in `__construct`.
+- **Status**: � **Resolved**
+- **Fix**: The `OAuthObserver` has been simplified and the complex routing logic moved to Controllers and Services. The undefined `adminLoginAction` call has been removed.
 
 ### High: Session Management in Controller
 - **Severity**: **High**
-- **Status**: 🔴 **Unresolved**
-- **File**: `Controller/Actions/SendAuthorizationRequest.php`, `BaseAction.php`
-- **Location**: `sendHTTPRedirectRequest`
-- **Issue**: Uses `session_write_close()` and `session_status()` directly. While this attempts to fix session locking, manually managing PHP sessions bypasses Magento's `SessionManager` and can lead to data loss or race conditions, especially with Redis/Memcached.
-- **Fix**: Rely on `Magento\Framework\Session\SessionManager`. Avoid manual `session_start/write_close`.
+- **Status**: � **Resolved**
+- **Fix**: Manual `session_write_close()` and `session_status()` calls have been removed from `BaseAction.php` and `SendAuthorizationRequest.php`, relying instead on Magento's native session handling.
 
 ### Medium: Recursion in Email Finding
 - **Severity**: **Medium**
-- **Status**: 🔴 **Unresolved**
+- **Status**: � **Improved**
 - **File**: `Controller/Actions/ProcessResponseAction.php`
-- **Location**: `findUserEmail`
-- **Issue**: Recursive search returns the *first* valid email string found in the JSON. If the IDP returns a structure with multiple emails (e.g. recovery email, verifier email), it might pick the wrong one.
-- **Fix**: Target specific keys (`email`, `preferred_username`) instead of blind recursive search.
+- **Location**: `findUserEmail`, `getflattenedArray`
+- **Issue**: Now uses `MAX_RECURSION_DEPTH = 5`, preventing indefinite loops or stack overflows.
+- **Note**: Still uses a generic search for anything resembling an email. Targeting specific keys (`email`, `preferred_username`) would still be more robust.
 
 ## 2. Security
 
 ### Critical: Write Operation in Block
 - **Severity**: **Critical**
-- **Status**: 🔴 **Unresolved**
+- **Status**: � **Resolved**
 - **File**: `Block/OAuth.php`
-- **Location**: `dataAdded()` method
-- **Issue**: This method calls `$this->oauthUtility->setStoreConfig(...)` and `$this->oauthUtility->flushCache()`. Blocks are for *view* logic. If a template calls `$block->dataAdded()`, it will trigger a database write and **cache flush** on every page load. This is a denial-of-service vector.
-- **Fix**: Move this logic to a Controller or a Setup script. Remove it from the Block.
+- **Fix**: The `dataAdded()` method which performed database writes and cache flushes has been removed.
+- **Residual**: `getTimeStamp()` still performs a single `setStoreConfig` write if the timestamp is missing. This is minor but should ideally be moved to a setup script.
 
 ### High: Random Password Strength
 - **Severity**: **High**
-- **Status**: 🔴 **Unresolved**
-- **File**: `Controller/Actions/ProcessUserAction.php`, `CheckAttributeMappingAction.php`
-- **Location**: `createNewUser`, `createAdminUser`
-- **Issue**: Parameters like `getRandomString(8)` or `16` (resulting in ~20 chars) are used. While better than nothing, modern standards suggest 32+ characters for auto-generated system passwords since no human needs to type them.
-- **Fix**: Increase to 32+ characters for auto-generated passwords.
+- **Status**: � **Resolved**
+- **File**: `Model/Service/AdminUserCreator.php`, `Model/Service/CustomerUserCreator.php`
+- **Fix**: Auto-generated passwords now use `getRandomString(28)` plus additional characters, totaling 32 characters.
 
 ### Medium: Custom Logging implementation
 - **Severity**: **Medium**
-- **Status**: 🔴 **Unresolved**
-- **File**: `Helper/OAuthUtility.php`
-- **Location**: `customlog`, `deleteCustomLogFile`
-- **Issue**:
-    1. Writes to `var/log/mo_oauth.log` using direct file operations (FileSystem driver) instead of PSR-3 Logger.
-    2. `deleteCustomLogFile` uses relative paths `../var/log` which is dangerous and platform-dependent.
-- **Fix**: Use `Monolog` (already injected as `$logger2`). Use `Magento\Framework\App\Filesystem\DirectoryList` to resolve paths safely.
+- **Status**: � **Resolved**
+- **File**: `Helper/OAuthUtility.php`, `Logger/Handler.php`
+- **Fix**: Now uses PSR-3 `Monolog` via a custom handler. `DirectoryList` is used to resolve paths safely instead of relative path hacks.
 
 ### Medium: SQL Injection Risk in Client Apps
 - **Severity**: **Medium**
-- **Status**: 🔴 **Unresolved**
+- **Status**: � **Resolved**
 - **File**: `Helper/Data.php`
-- **Location**: `setOAuthClientApps`
-- **Issue**: Saves data directly to model. While Magento models handle basic escaping, ensure `$model->save()` is using Resource Models properly to escape data. (Likely safe if using standard Magento ORM, but worth verifying input sanitization).
+- **Fix**: `setOAuthClientApps` and `setStoreConfig` now use a new `sanitize()` method to strip tags and escape HTML. Standard Magento ORM is used for saving, providing parameter binding protection.
 
 ## 3. Performance
 
 ### Critical: Cache Flushing
 - **Severity**: **Critical**
-- **Status**: 🔴 **Unresolved**
-- **File**: `Helper/OAuthUtility.php`
-- **Location**: `flushCache` called in `SendAuthorizationRequest` and potentially `Block/OAuth.php`.
-- **Issue**: Programmatically flushing `db_ddl` and `frontend` caches during authentication flows or block rendering is a massive performance killer. It will cause invalidation storms and performance degradation.
-- **Fix**: Remove `flushCache` calls from runtime flows. Cache invalidation should only happen on configuration save in Admin.
+- **Status**: � **Resolved**
+- **File**: `Helper/OAuthUtility.php`, `Controller/Actions/SendAuthorizationRequest.php`
+- **Fix**: `flushCache()` calls have been commented out or removed from runtime authentication flows.
 
 ### High: Recursive Array Flattening
 - **Severity**: **High**
-- **Status**: 🔴 **Unresolved**
+- **Status**: � **Resolved**
 - **File**: `Controller/Actions/ProcessResponseAction.php`
-- **Location**: `getflattenedArray`
-- **Issue**: Recursive flattening of potentially large IDP response JSONs can verify memory intensive.
-- **Fix**: Limit recursion depth or only extract needed fields.
+- **Fix**: Depth limit (`MAX_RECURSION_DEPTH = 5`) implemented.
 
 ## 4. Maintainability
 
-### High: God Class `CheckAttributeMappingAction`
+### High: God Class Refactoring
 - **Severity**: **High**
-- **Status**: 🔴 **Unresolved**
+- **Status**: � **Resolved**
 - **File**: `Controller/Actions/CheckAttributeMappingAction.php`
-- **Location**: Whole file
-- **Issue**: Handles Admin login, Customer login, Attribute mapping, Auto-creation, Test mode, and Error handling. 600+ lines.
-- **Fix**: Refactor into separate Actions or Services: `AdminUserCreator`, `CustomerUserCreator`, `AttributeMapper`.
+- **Fix**: Massive refactoring has taken place. Logic for admin and customer user creation has been extracted into dedicated service classes: `AdminUserCreator` and `CustomerUserCreator`.
 
 ### Medium: Hardcoded Values
 - **Severity**: **Medium**
-- **Status**: 🔴 **Unresolved**
-- **File**: `Controller/Actions/ProcessUserAction.php`
-- **Location**: `createCustomerAddress`
-- **Issue**: hardcoded `'US'` fallback for country.
-- **Fix**: Use `Magento\Directory\Helper\Data` to get default country from config.
+- **Status**: � **Partially Resolved**
+- **File**: `Model/Service/CustomerUserCreator.php`
+- **Issue**: Still defaults to `'US'` fixed value for country ID in `createCustomerAddress`.
+- **Fix**: Use `Magento\Directory\Helper\Data` to get the default country from Magento configuration.
+
+## 5. Minor Technical Improvements
+
+- **ObjectManager Usage**: 🟡 **Minor Issue**
+  - **File**: `Controller/Actions/CheckAttributeMappingAction.php`
+  - **Location**: `saveDebugData()`
+  - **Issue**: Direct usage of `\Magento\Framework\App\ObjectManager::getInstance()`.
+  - **Fix**: Inject `Magento\Customer\Model\Session` via constructor instead.
+- **cURL Check**: 🟡 **Minor Issue**
+  - **File**: `Helper/OAuthUtility.php`
+  - **Location**: `isCurlInstalled()`
+  - **Issue**: Uses PHP's `get_loaded_extensions()` directly.
+  - **Fix**: Use `Magento\Framework\HTTP\Adapter\Curl` or similar framework-level checks.
+- **Dead Code**: 🟡 **Minor Issue**
+  - **File**: `Helper/OAuthConstants.php`
+  - **Issue**: Some constants like `LOGIN_ADMIN_OPT` appear to be unused after refactoring.
+  - **Fix**: Clean up unused constants.
+
+

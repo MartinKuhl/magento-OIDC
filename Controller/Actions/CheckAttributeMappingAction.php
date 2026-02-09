@@ -44,6 +44,8 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
     protected $userFactory;
     protected $backendUrl;
     protected $adminUserCreator;
+    protected $customerSession;
+
 
     /**
      * Constructor with dependency injection
@@ -64,7 +66,8 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
         \MiniOrange\OAuth\Controller\Actions\ProcessUserAction $processUserAction,
         \Magento\User\Model\UserFactory $userFactory,
         \Magento\Backend\Model\UrlInterface $backendUrl,
-        AdminUserCreator $adminUserCreator
+        AdminUserCreator $adminUserCreator,
+        \Magento\Customer\Model\Session $customerSession
     ) {
         // Initialize attribute mappings from configuration
         $this->emailAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_EMAIL);
@@ -94,7 +97,7 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
         $this->userFactory = $userFactory;
         $this->backendUrl = $backendUrl;
         $this->adminUserCreator = $adminUserCreator;
-
+        $this->customerSession = $customerSession;
         parent::__construct($context, $oauthUtility);
     }
 
@@ -474,9 +477,6 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
     protected function saveDebugData($attrs)
     {
         try {
-            $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
-            $customerSession = $objectManager->get(\Magento\Customer\Model\Session::class);
-
             $debugData = [
                 'timestamp' => date('Y-m-d H:i:s'),
                 'raw_attributes' => $this->userInfoResponse,
@@ -485,7 +485,7 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
                 'username_found' => isset($attrs[$this->usernameAttribute]) ? $attrs[$this->usernameAttribute] : null
             ];
 
-            $customerSession->setData('mo_oauth_debug_response', json_encode($debugData));
+            $this->customerSession->setData('mo_oauth_debug_response', json_encode($debugData));
 
             $this->oauthUtility->customlog("Debug data saved to session");
         } catch (\Exception $e) {

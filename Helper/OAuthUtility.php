@@ -162,11 +162,7 @@ class OAuthUtility extends Data
      */
     public function isCurlInstalled()
     {
-        if (in_array('curl', get_loaded_extensions())) {
-            return 1;
-        } else {
-            return 0;
-        }
+        return function_exists('curl_init') ? 1 : 0;
     }
 
 

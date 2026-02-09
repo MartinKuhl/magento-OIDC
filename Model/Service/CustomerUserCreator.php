@@ -10,6 +10,7 @@ use Magento\Customer\Api\AddressRepositoryInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use Magento\Framework\Math\Random;
 use Magento\Directory\Model\CountryFactory;
+use Magento\Directory\Helper\Data as DirectoryData;
 use Magento\Framework\Stdlib\DateTime\DateTime;
 
 /**
@@ -74,7 +75,8 @@ class CustomerUserCreator
         Random $randomUtility,
         OAuthUtility $oauthUtility,
         CountryFactory $countryFactory,
-        DateTime $dateTime
+        DateTime $dateTime,
+        DirectoryData $directoryData
     ) {
         $this->customerFactory = $customerFactory;
         $this->addressFactory = $addressFactory;
@@ -84,6 +86,7 @@ class CustomerUserCreator
         $this->oauthUtility = $oauthUtility;
         $this->countryFactory = $countryFactory;
         $this->dateTime = $dateTime;
+        $this->directoryData = $directoryData;
 
         $this->initializeAttributeMapping();
     }
@@ -215,7 +218,7 @@ class CustomerUserCreator
                 ->setStreet([$street ?? ''])
                 ->setCity($city ?? '')
                 ->setPostcode($zip ?? '')
-                ->setCountryId($countryId ?? 'US') // Default to US if resolution fails, but we should improve this
+                ->setCountryId($countryId ?? $this->directoryData->getDefaultCountry())
                 ->setTelephone($phone ?? '')
                 ->setIsDefaultBilling(true)
                 ->setIsDefaultShipping(true);

@@ -23,7 +23,6 @@ class OAuthConstants
     const ISSUER_URL_PATH = '/';
 
     // request option parameter values
-    const LOGIN_ADMIN_OPT = 'oauthLoginAdminUser';
     const TEST_CONFIG_OPT = 'mooauth_test';
 
     //database keys
