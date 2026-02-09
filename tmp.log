@@ -1,0 +1,24 @@
+[2026-02-09T09:48:38.198826+00:00] main.ERROR: Impossible to process constructor argument Parameter #7 [ <required> MiniOrange\OAuth\Controller\Actions\AdminLoginAction $adminLoginAction ] of MiniOrange\OAuth\Observer\OAuthObserver class
+#0 /var/www/html/setup/src/Magento/Setup/Module/Di/Code/Reader/ClassReaderDecorator.php(35): Magento\Framework\Code\Reader\ClassReader->getConstructor('MiniOrange\\OAut...')
+#1 /var/www/html/setup/src/Magento/Setup/Module/Di/Code/Reader/Decorator/Area.php(53): Magento\Setup\Module\Di\Code\Reader\ClassReaderDecorator->getConstructor('MiniOrange\\OAut...')
+#2 /var/www/html/setup/src/Magento/Setup/Module/Di/App/Task/Operation/Area.php(116): Magento\Setup\Module\Di\Code\Reader\Decorator\Area->getList('/var/www/html/g...')
+#3 /var/www/html/setup/src/Magento/Setup/Module/Di/App/Task/Operation/Area.php(87): Magento\Setup\Module\Di\App\Task\Operation\Area->getDefinitionsCollection('/var/www/html/g...')
+#4 /var/www/html/setup/src/Magento/Setup/Module/Di/App/Task/Manager.php(56): Magento\Setup\Module\Di\App\Task\Operation\Area->doOperation()
+#5 /var/www/html/setup/src/Magento/Setup/Console/Command/DiCompileCommand.php(209): Magento\Setup\Module\Di\App\Task\Manager->process(Object(Closure), Object(Closure))
+#6 /var/www/html/vendor/symfony/console/Command/Command.php(326): Magento\Setup\Console\Command\DiCompileCommand->execute(Object(Symfony\Component\Console\Input\ArgvInput), Object(Symfony\Component\Console\Output\ConsoleOutput))
+#7 /var/www/html/vendor/symfony/console/Application.php(1083): Symfony\Component\Console\Command\Command->run(Object(Symfony\Component\Console\Input\ArgvInput), Object(Symfony\Component\Console\Output\ConsoleOutput))
+#8 /var/www/html/vendor/symfony/console/Application.php(324): Symfony\Component\Console\Application->doRunCommand(Object(Magento\Setup\Console\Command\DiCompileCommand), Object(Symfony\Component\Console\Input\ArgvInput), Object(Symfony\Component\Console\Output\ConsoleOutput))
+#9 /var/www/html/vendor/magento/framework/Console/Cli.php(118): Symfony\Component\Console\Application->doRun(Object(Symfony\Component\Console\Input\ArgvInput), Object(Symfony\Component\Console\Output\ConsoleOutput))
+#10 /var/www/html/vendor/symfony/console/Application.php(175): Magento\Framework\Console\Cli->doRun(Object(Symfony\Component\Console\Input\ArgvInput), Object(Symfony\Component\Console\Output\ConsoleOutput))
+#11 /var/www/html/bin/magento(23): Symfony\Component\Console\Application->run()
+#12 {main} [] []
+
+In ClassReader.php line 57:
+                                                                                                                                                                                                  
+  Impossible to process constructor argument Parameter #7 [ <required> MiniOrange\OAuth\Controller\Actions\AdminLoginAction $adminLoginAction ] of MiniOrange\OAuth\Observer\OAuthObserver class  
+                                                                                                                                                                                                  
+
+In GetParameterClassTrait.php line 41:
+                                                                               
+  Class "MiniOrange\OAuth\Controller\Actions\AdminLoginAction" does not exist  
+                                                                               
