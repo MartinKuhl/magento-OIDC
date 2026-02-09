@@ -10,7 +10,6 @@ use MiniOrange\OAuth\Helper\TestResults;
 use MiniOrange\OAuth\Helper\OAuthMessages;
 use Magento\Framework\Event\Observer;
 use MiniOrange\OAuth\Controller\Actions\ReadAuthorizationResponse;
-use MiniOrange\OAuth\Controller\Actions\AdminLoginAction;
 use MiniOrange\OAuth\Helper\OAuthConstants;
 use MiniOrange\OAuth\Helper\OAuthUtility;
 use Psr\Log\LoggerInterface;
@@ -31,7 +30,6 @@ class OAuthObserver implements ObserverInterface
     private $response;
     private $logger;
     private $readAuthorizationResponse;
-    private $adminLoginAction;
     private $oauthUtility;
     private TestResults $testResults;
     private $currentControllerName;
@@ -46,7 +44,6 @@ class OAuthObserver implements ObserverInterface
         Http $httpRequest,
         RequestInterface $request,
         TestResults $testResults,
-        AdminLoginAction $adminLoginAction,
         ResponseInterface $response
     ) {
         //You can use dependency injection to get any class this observer may need.
@@ -58,7 +55,6 @@ class OAuthObserver implements ObserverInterface
         $this->currentActionName = $httpRequest->getActionName();
         $this->request = $request;
         $this->testResults = $testResults;
-        $this->adminLoginAction = $adminLoginAction;
         $this->response = $response;
     }
 
@@ -138,9 +134,6 @@ class OAuthObserver implements ObserverInterface
                     // Wait, I am in the middle of editing.
                     // I will leave the logic to use $this->response (which I will add)
                     $this->response->setBody($output);
-                } else if ($params['option'] == OAuthConstants::LOGIN_ADMIN_OPT) {
-                    // Echtes Admin-Login → adminLoginAction
-                    $this->adminLoginAction->execute();
                 }
                 break;
         }
