@@ -58,6 +58,11 @@ class CustomerUserCreator
      */
     private $dateTime;
 
+    /**
+     * @var DirectoryData
+     */
+    private $directoryData;
+
     // Attribute mapping keys
     private $dobAttribute;
     private $genderAttribute;
