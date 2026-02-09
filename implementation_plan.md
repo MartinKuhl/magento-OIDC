@@ -6,33 +6,32 @@ Add an option to the "Sign In Settings" section to disable non-OIDC logins for a
 
 ### [Admin Login Restriction]
 
-#### [MODIFY] [OAuthConstants.php](file:///Users/martin/Documents/Docker/authelia/Authelia-OIDC/magento-OIDC/Helper/OAuthConstants.php)
+#### [MODIFY] [OAuthConstants.php](OIDC/Helper/OAuthConstants.php)
 - Add `DISABLE_NON_OIDC_ADMIN_LOGIN` constant.
 
-#### [MODIFY] [signinsettings.phtml](file:///Users/martin/Documents/Docker/authelia/Authelia-OIDC/magento-OIDC/view/adminhtml/templates/signinsettings.phtml)
+#### [MODIFY] [signinsettings.phtml](OIDC/view/adminhtml/templates/signinsettings.phtml)
 - Add a checkbox for "Disable non-OIDC Login for Admins" under "Show Link on Default Login Page".
 - Disable the checkbox if OIDC is not configured (`$isOAuthConfigured` is false).
 
-#### [MODIFY] [OAuth.php](file:///Users/martin/Documents/Docker/authelia/Authelia-OIDC/magento-OIDC/Block/OAuth.php)
+#### [MODIFY] [OAuth.php](OIDC/Block/OAuth.php)
 - Add method `isNonOidcAdminLoginDisabled()`.
 
-#### [MODIFY] [Index.php](file:///Users/martin/Documents/Docker/authelia/Authelia-OIDC/magento-OIDC/Controller/Adminhtml/Signinsettings/Index.php)
-- Update [processValuesAndSaveData](file:///Users/martin/Documents/Docker/authelia/Authelia-OIDC/magento-OIDC/Controller/Adminhtml/Signinsettings/Index.php#178-205) to save the `DISABLE_NON_OIDC_ADMIN_LOGIN` setting.
+#### [MODIFY] [Index.php](OIDC/Controller/Adminhtml/Signinsettings/Index.php)
+- Update [processValuesAndSaveData](OIDC/Controller/Adminhtml/Signinsettings/Index.php#178-205) to save the `DISABLE_NON_OIDC_ADMIN_LOGIN` setting.
 
-#### [MODIFY] [adminssobutton.phtml](file:///Users/martin/Documents/Docker/authelia/Authelia-OIDC/magento-OIDC/view/adminhtml/templates/adminssobutton.phtml)
+#### [MODIFY] [adminssobutton.phtml](OIDC/view/adminhtml/templates/adminssobutton.phtml)
 - Add a JavaScript snippet to hide the default login form elements (`#login-form .admin__field`) and the "OR" separator if `isNonOidcAdminLoginDisabled()` is true.
 
-#### [NEW] [AdminLoginRestrictionPlugin.php](file:///Users/martin/Documents/Docker/authelia/Authelia-OIDC/magento-OIDC/Plugin/AdminLoginRestrictionPlugin.php)
+#### [NEW] [AdminLoginRestrictionPlugin.php](OIDC/Plugin/AdminLoginRestrictionPlugin.php)
 - Implement a `beforeAuthenticate` plugin on `Magento\Backend\Model\Auth`.
 - If `isNonOidcAdminLoginDisabled()` is enabled and the login is NOT via OIDC, throw an exception to block authentication.
 
-#### [MODIFY] [di.xml](file:///Users/martin/Documents/Docker/authelia/Authelia-OIDC/magento-OIDC/etc/di.xml)
+#### [MODIFY] [di.xml](OIDC/etc/di.xml)
 - Register `AdminLoginRestrictionPlugin` for `Magento\Backend\Model\Auth`.
 
 ### [UI Fixes]
 
-#### [MODIFY] [oauthsettings.phtml](file:///Users/martin/Documents/Docker/authelia/Authelia-OIDC/magento-OIDC/view/adminhtml/templates/oauthsettings.phtml)
-- Fix the `margin-left` issue (remove `31mm` and adjust other inline margins for better alignment).
+#### [MODIFY] [oauthsettings.phtml](OIDC/view/adminhtml/templates/oauthsettings.phtml)
 - Ensure consistent spacing for all input fields.
 
 ## Verification Plan
