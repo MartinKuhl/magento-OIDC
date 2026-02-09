@@ -31,13 +31,20 @@ Navigate to: **Stores → Configuration → MiniOrange → OAuth/OIDC**
 
 ## ToDo
 
+- add option to disable non-OIDC login
 
 - check php compatibility 8.1-8.4
 
-- add option to disable non-OIDC login
+- check Magento compatibility 2.4.7 - 2.4.8-p3
+
+- check unused classes
+
+- check source code and analyize it regarding best practise code cenventions
+
+- code check: https://medium.com/data-science-collective/youre-using-ai-to-write-code-you-re-not-using-it-to-review-code-728e5ec2576e
+
 
 - Storage of settings in 2 different tables why -> merging?
-
 - whats needs to be adjusted to be future-proof and support multiple OIDC providers?
 
 - Rename: --> Authelia OIDC (in Code)

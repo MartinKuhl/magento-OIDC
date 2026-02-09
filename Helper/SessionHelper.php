@@ -4,15 +4,53 @@ namespace MiniOrange\OAuth\Helper;
 use Magento\Framework\App\ObjectManager;
 use Magento\Framework\Stdlib\CookieManagerInterface;
 use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
+use Magento\Framework\Stdlib\Cookie\PublicCookieMetadata;
 use Magento\Framework\Session\SessionManagerInterface;
-use Magento\Framework\App\State;
 
 /**
  * Session-Handler-Plugin für miniOrange OAuth SSO
  * Diese Klasse konfiguriert die PHP-Session für Cross-Origin-Nutzung
+ *
+ * Compatible with Magento 2.4.7 - 2.4.8-p3
  */
 class SessionHelper
 {
+    /**
+     * @var CookieManagerInterface
+     */
+    private static $cookieManager;
+
+    /**
+     * @var CookieMetadataFactory
+     */
+    private static $cookieMetadataFactory;
+
+    /**
+     * Get cookie manager instance
+     *
+     * @return CookieManagerInterface
+     */
+    private static function getCookieManager(): CookieManagerInterface
+    {
+        if (self::$cookieManager === null) {
+            self::$cookieManager = ObjectManager::getInstance()->get(CookieManagerInterface::class);
+        }
+        return self::$cookieManager;
+    }
+
+    /**
+     * Get cookie metadata factory instance
+     *
+     * @return CookieMetadataFactory
+     */
+    private static function getCookieMetadataFactory(): CookieMetadataFactory
+    {
+        if (self::$cookieMetadataFactory === null) {
+            self::$cookieMetadataFactory = ObjectManager::getInstance()->get(CookieMetadataFactory::class);
+        }
+        return self::$cookieMetadataFactory;
+    }
+
     /**
      * Konfiguriert die PHP-Session für SSO
      */
@@ -20,12 +58,12 @@ class SessionHelper
     {
         // Prüfen, ob die Session bereits aktiv ist
         $isSessionActive = (session_status() == PHP_SESSION_ACTIVE);
-        
+
         if ($isSessionActive) {
             // Session schließen, um Einstellungen ändern zu können
             session_write_close();
         }
-        
+
         // Versuche die Session-Einstellungen zu konfigurieren
         try {
             // SameSite auf None setzen für neue Sessions
@@ -46,7 +84,7 @@ class SessionHelper
                     true // HTTPOnly
                 );
             }
-            
+
             // Versuche die ini-Einstellung zu ändern, nur wenn Session noch nicht aktiv ist
             if (!$isSessionActive && PHP_VERSION_ID >= 70300) {
                 @ini_set('session.cookie_samesite', 'None');
@@ -54,100 +92,65 @@ class SessionHelper
         } catch (\Exception $e) {
             self::logDebug("SessionHelper: Fehler beim Konfigurieren der Session: " . $e->getMessage());
         }
-        
+
         // Session wieder starten, wenn sie vorher aktiv war
         if ($isSessionActive) {
             session_start();
         }
     }
-    
+
     /**
      * Bestehende Session-Cookies neu setzen mit SameSite=None
      * Behandelt sowohl Frontend als auch Admin Cookies
+     *
+     * Uses Magento's CookieManager for 2.4.7+ compatibility
      */
     public static function updateSessionCookies()
     {
         try {
+            $cookieManager = self::getCookieManager();
+            $metadataFactory = self::getCookieMetadataFactory();
+
             // Prüfen, ob die Session aktiv ist
             $isSessionActive = (session_status() == PHP_SESSION_ACTIVE);
             $sessionName = session_name();
-            $sessionId = $isSessionActive ? session_id() : '';
-            
-            // Wir benutzen direkt die PHP-Methoden anstatt Magento-API zu verwenden, um Fehler zu vermeiden
-            
+
             // Behandeln des Frontend-Cookies (/ Pfad)
             if (isset($_COOKIE[$sessionName])) {
                 $cookieValue = $_COOKIE[$sessionName];
-                
-                // Kompatibilitätsweise für verschiedene PHP-Versionen
-                if (PHP_VERSION_ID >= 70300) {
-                    // PHP 7.3+ unterstützt SameSite direkt
-                    setcookie(
-                        $sessionName, 
-                        $cookieValue, 
-                        [
-                            'expires' => 0, // Session-Cookie
-                            'path' => '/',
-                            'domain' => '',
-                            'secure' => true,
-                            'httponly' => true,
-                            'samesite' => 'None'
-                        ]
-                    );
-                } else {
-                    // Ältere PHP-Versionen
-                    setcookie(
-                        $sessionName, 
-                        $cookieValue, 
-                        0, // Session-Cookie 
-                        '/; SameSite=None', 
-                        '',
-                        true, // Secure
-                        true // HttpOnly
-                    );
-                }
+
+                /** @var PublicCookieMetadata $metadata */
+                $metadata = $metadataFactory->createPublicCookieMetadata()
+                    ->setPath('/')
+                    ->setSecure(true)
+                    ->setHttpOnly(true)
+                    ->setSameSite('None');
+
+                $cookieManager->setPublicCookie($sessionName, $cookieValue, $metadata);
             }
-            
+
             // Auch andere wichtige Cookies in $_COOKIE durchlaufen und aktualisieren
             foreach ($_COOKIE as $name => $value) {
                 // Admin-Cookies oder andere Session-bezogene Cookies aktualisieren
                 if ($name !== $sessionName && (strpos($name, 'admin') !== false || strpos($name, 'PHPSESSID') !== false)) {
                     // Path basierend auf Cookie-Namen bestimmen
                     $path = (strpos($name, 'admin') !== false) ? '/admin' : '/';
-                    
-                    if (PHP_VERSION_ID >= 70300) {
-                        // PHP 7.3+ unterstützt SameSite direkt
-                        setcookie(
-                            $name, 
-                            $value, 
-                            [
-                                'expires' => 0, // Session-Cookie
-                                'path' => $path,
-                                'domain' => '',
-                                'secure' => true,
-                                'httponly' => true,
-                                'samesite' => 'None'
-                            ]
-                        );
-                    } else {
-                        // Ältere PHP-Versionen
-                        setcookie(
-                            $name, 
-                            $value, 
-                            0, // Session-Cookie
-                            $path . '; SameSite=None',
-                            '',
-                            true, // Secure
-                            true // HttpOnly
-                        );
-                    }
+
+                    /** @var PublicCookieMetadata $metadata */
+                    $metadata = $metadataFactory->createPublicCookieMetadata()
+                        ->setPath($path)
+                        ->setSecure(true)
+                        ->setHttpOnly(true)
+                        ->setSameSite('None');
+
+                    $cookieManager->setPublicCookie($name, $value, $metadata);
                 }
             }
         } catch (\Exception $e) {
             self::logDebug("SessionHelper: Exception in updateSessionCookies: " . $e->getMessage());
         }
     }
-    
+
     /**
      * Protokollierung für Debugging
      */
@@ -161,14 +164,19 @@ class SessionHelper
             // Stille Fehlerbehandlung, wenn Logging fehlschlägt
         }
     }
-    
+
     /**
      * Setzt die Header für das PHP-Cookie, um SameSite=None zu erzwingen
      * Diese Methode wird vor jeder Response aufgerufen
+     *
+     * Uses Magento's CookieManager for 2.4.7+ compatibility
      */
     public static function forceSameSiteNone()
     {
         try {
+            $cookieManager = self::getCookieManager();
+            $metadataFactory = self::getCookieMetadataFactory();
+
             // Aktuelle Cookies erfassen
             $cookies = [];
             foreach (headers_list() as $header) {
@@ -177,55 +185,40 @@ class SessionHelper
                     $cookies[] = $header;
                 }
             }
-            
+
             // Alle Set-Cookie-Header entfernen
             header_remove('Set-Cookie');
-            
+
             // Cookies neu hinzufügen mit SameSite=None
             foreach ($cookies as $cookie) {
                 // Sicherstellen, dass der Cookie "Secure" hat, wenn wir SameSite=None setzen
                 if (strpos($cookie, '; secure') === false) {
                     $cookie = str_replace('Set-Cookie: ', 'Set-Cookie: ', $cookie) . '; secure';
                 }
-                
+
                 $cookie = preg_replace('/(; SameSite=)([^;]*)/', '$1None', $cookie, -1, $count);
                 if ($count === 0) {
                     // Wenn kein SameSite-Attribut gefunden wurde, füge es hinzu
                     $cookie = $cookie . '; SameSite=None';
                 }
-                
+
                 header($cookie, false);
             }
-            
-            // Auch für das PHP-Session-Cookie - wir verwenden eine vorsichtigere Methode
+
+            // Auch für das PHP-Session-Cookie - use Magento's CookieManager
             if (session_status() === PHP_SESSION_ACTIVE) {
                 $sessionName = session_name();
                 $sessionId = session_id();
-                
+
                 if (!empty($sessionId) && isset($_COOKIE[$sessionName])) {
-                    // Bestehenden Cookie mit den gleichen Einstellungen neu setzen, aber mit SameSite=None
-                    if (PHP_VERSION_ID >= 70300) {
-                        // Für PHP 7.3+
-                        setcookie($sessionName, $sessionId, [
-                            'expires' => 0, // Session-Cookie
-                            'path' => '/',
-                            'domain' => '',
-                            'secure' => true,
-                            'httponly' => true,
-                            'samesite' => 'None'
-                        ]);
-                    } else {
-                        // Für ältere PHP-Versionen
-                        setcookie(
-                            $sessionName,
-                            $sessionId,
-                            0, // Session-Cookie
-                            '/; SameSite=None', // Path mit SameSite
-                            '',
-                            true, // Secure
-                            true // HTTPOnly
-                        );
-                    }
+                    /** @var PublicCookieMetadata $metadata */
+                    $metadata = $metadataFactory->createPublicCookieMetadata()
+                        ->setPath('/')
+                        ->setSecure(true)
+                        ->setHttpOnly(true)
+                        ->setSameSite('None');
+
+                    $cookieManager->setPublicCookie($sessionName, $sessionId, $metadata);
                 }
             }
         } catch (\Exception $e) {

@@ -148,8 +148,7 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
 
                 $this->oauthUtility->customlog("Admin callback URL: " . $adminCallbackUrl);
 
-                $this->getResponse()->setRedirect($adminCallbackUrl);
-                return $this->getResponse();
+                return $this->resultRedirectFactory->create()->setUrl($adminCallbackUrl);
             } else {
                 // User tried to login as admin but has no admin account
                 // Check if auto-create admin is enabled
@@ -196,14 +195,13 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
                         ]);
                         $this->oauthUtility->customlog("Redirecting to admin callback: " . $adminCallbackUrl);
 
-                        $this->getResponse()->setRedirect($adminCallbackUrl);
-                        return $this->getResponse();
+                        return $this->resultRedirectFactory->create()->setUrl($adminCallbackUrl);
                     } else {
                         $this->oauthUtility->customlog("ERROR: Failed to create admin user for: " . $userEmail);
                         $errorMessage = 'Failed to create admin account. Please contact your administrator.';
                         $encodedError = base64_encode($errorMessage);
                         $adminLoginUrl = $this->backendUrl->getUrl('admin') . '?oidc_error=' . $encodedError;
-                        return $this->getResponse()->setRedirect($adminLoginUrl)->sendResponse();
+                        return $this->resultRedirectFactory->create()->setUrl($adminLoginUrl);
                     }
                 } else {
                     // Auto-create disabled - show error
@@ -211,7 +209,7 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
                     $errorMessage = OAuthMessages::parse('ADMIN_ACCOUNT_NOT_FOUND', ['email' => $userEmail]);
                     $encodedError = base64_encode($errorMessage);
                     $adminLoginUrl = $this->backendUrl->getUrl('admin') . '?oidc_error=' . $encodedError;
-                    return $this->getResponse()->setRedirect($adminLoginUrl)->sendResponse();
+                    return $this->resultRedirectFactory->create()->setUrl($adminLoginUrl);
                 }
             }
         }

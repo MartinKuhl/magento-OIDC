@@ -43,7 +43,7 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
         $this->oauthUtility->customlog("CustomerLoginAction: execute");
 
         $this->customerSession->setCustomerAsLoggedIn($this->user);
-        return $this->getResponse()->setRedirect($this->oauthUtility->getUrl($this->relayState))->sendResponse();
+        return $this->resultRedirectFactory->create()->setUrl($this->oauthUtility->getUrl($this->relayState));
     }
 
 

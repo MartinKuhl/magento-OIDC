@@ -77,7 +77,7 @@ class sendAuthorizationRequest extends BaseAction
                 $relayState = $this->oauthUtility->getBaseUrl() . 'customer/account/login';
             }
             $this->messageManager->addErrorMessage('App name not found. Please contact the administrator for assistance.');
-            return $this->getResponse()->setRedirect($relayState)->sendResponse();
+            return $this->resultRedirectFactory->create()->setUrl($relayState);
 
         }
         $this->oauthUtility->setSessionData(OAuthConstants::APP_NAME, $app_name);
@@ -97,7 +97,7 @@ class sendAuthorizationRequest extends BaseAction
             }
             $this->messageManager->addErrorMessage('Provided App name is not configured. Please contact the administrator for assistance.');
 
-            return $this->getResponse()->setRedirect($relayState)->sendResponse();
+            return $this->resultRedirectFactory->create()->setUrl($relayState);
         }
         if (!$clientDetails["authorize_endpoint"]) {
             return;
