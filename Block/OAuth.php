@@ -420,6 +420,16 @@ class OAuth extends \Magento\Framework\View\Element\Template
         return $this->oauthUtility->getStoreConfig(OAuthConstants::SHOW_ADMIN_LINK);
     }
 
+    /**
+     * Check if non-OIDC admin login is disabled
+     * 
+     * @return bool
+     */
+    public function isNonOidcAdminLoginDisabled()
+    {
+        return $this->oauthUtility->getStoreConfig(OAuthConstants::DISABLE_NON_OIDC_ADMIN_LOGIN);
+    }
+
 
     /**
      * Is the option to show SSO link on the Customer login page enabled

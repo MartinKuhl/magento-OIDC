@@ -14,3 +14,31 @@ echo
             </svg>
             <button type="button" class="action-login action-primary" style="margin-top:3%; padding: 3% 14%; width:100%; text-align:center;" onclick="window.location.href=\'' . $this->escapeUrl($this->getAdminSPInitiatedUrl(null, $this->getAppName())) . '\';">' . $this->escapeHtml($this->getSSOButtonText()) . '</button>
     </div>';
+
+if ($this->isNonOidcAdminLoginDisabled()): ?>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Hide the standard login form
+            var loginForm = document.querySelector('#login-form');
+            if (loginForm) {
+                loginForm.style.display = 'none';
+            }
+
+            // Hide the OR separator (SVG lines and text)
+            var actionsDiv = document.querySelector('.actions');
+            if (actionsDiv) {
+                var svgs = actionsDiv.querySelectorAll('svg');
+                svgs.forEach(function (svg) {
+                    svg.style.display = 'none';
+                });
+                // Hide the "OR" text between SVGs
+                var textNodes = actionsDiv.childNodes;
+                textNodes.forEach(function (node) {
+                    if (node.nodeType === 3 && node.textContent.trim() === 'OR') {
+                        node.textContent = '';
+                    }
+                });
+            }
+        });
+    </script>
+<?php endif;

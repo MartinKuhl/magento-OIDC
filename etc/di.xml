@@ -61,12 +61,23 @@
 
     <!-- Plugin to inject OIDC Credential Adapter when OIDC token detected -->
     <type name="Magento\Backend\Model\Auth">
+        <plugin name="admin_login_restriction"
+                type="MiniOrange\OAuth\Plugin\AdminLoginRestrictionPlugin"
+                sortOrder="5"/>
         <plugin name="oidc_credential_interceptor"
                 type="MiniOrange\OAuth\Plugin\Auth\OidcCredentialPlugin"
                 sortOrder="10"/>
         <plugin name="oidc_logout_cookie_cleanup"
                 type="MiniOrange\OAuth\Plugin\Auth\OidcLogoutPlugin"
                 sortOrder="20"/>
+    </type>
+
+    <!-- Admin Login Restriction Plugin Configuration -->
+    <type name="MiniOrange\OAuth\Plugin\AdminLoginRestrictionPlugin">
+        <arguments>
+            <argument name="cookieManager" xsi:type="object">Magento\Framework\Stdlib\CookieManagerInterface</argument>
+            <argument name="oauthUtility" xsi:type="object">MiniOrange\OAuth\Helper\OAuthUtility</argument>
+        </arguments>
     </type>
 
     <!-- OIDC Logout Plugin Configuration -->

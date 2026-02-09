@@ -9,6 +9,7 @@ $adminLink = $this->showAdminLink() ? 'checked' : '';
 $autoCreateAdmin = $this->autoCreateAdmin() ? 'checked' : '';
 $autoCreateCustomer = $this->autoCreateCustomer() ? 'checked' : '';
 $enableLoginRedirect = $this->isLoginRedirectEnabled() ? 'checked' : '';
+$disableNonOidcAdminLogin = $this->isNonOidcAdminLoginDisabled() ? 'checked' : '';
 $isOAuthConfigured = $this->isOAuthConfigured() && $this->isEnabled();
 $disabled = $isOAuthConfigured ? '' : 'disabled title="Disabled. Configure your Service Provider"';
 $logoutUrl = $this->getAdminLogoutUrl();
@@ -50,6 +51,14 @@ $enableDebugLog = $this->isDebugLogEnable() ? 'checked' : '';
                                        <?= $block->escapeHtmlAttr($adminLink) ?>
                                        value="true">
                                 Show the Login Link on the default admin login page.
+                                <br><br>
+                                <input type="checkbox"
+                                       name="mo_disable_non_oidc_admin_login"
+                                       id="mo_disable_non_oidc_admin_login"
+                                       <?= $block->escapeHtmlAttr($disableNonOidcAdminLogin) ?>
+                                       <?= $block->escapeHtmlAttr($disabled) ?>
+                                       value="true">
+                                Disable non-OIDC Login for Admins (OIDC login only)
                             </div>
                         </td>
                     </tr>

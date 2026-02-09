@@ -57,6 +57,7 @@ class OAuthConstants
     const AUTO_CREATE_ADMIN = 'autoCreateAdmin';
     const AUTO_CREATE_CUSTOMER = 'autoCreateCustomer';
     const ENABLE_LOGIN_REDIRECT = 'enableLoginRedirect';
+    const DISABLE_NON_OIDC_ADMIN_LOGIN = 'disableNonOidcAdminLogin';
 
     // Login type constants for differentiating admin vs customer OIDC login
     const LOGIN_TYPE_CUSTOMER = 'customer';
