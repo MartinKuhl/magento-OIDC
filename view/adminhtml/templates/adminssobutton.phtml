@@ -18,26 +18,63 @@ echo
 if ($this->isNonOidcAdminLoginDisabled()): ?>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            // Hide the standard login form
-            var loginForm = document.querySelector('#login-form');
-            if (loginForm) {
-                loginForm.style.display = 'none';
+            // Hide username field
+            var usernameField = document.querySelector('.field-username');
+            if (usernameField) {
+                usernameField.style.display = 'none';
             }
 
-            // Hide the OR separator (SVG lines and text)
-            var actionsDiv = document.querySelector('.actions');
-            if (actionsDiv) {
-                var svgs = actionsDiv.querySelectorAll('svg');
-                svgs.forEach(function (svg) {
-                    svg.style.display = 'none';
-                });
-                // Hide the "OR" text between SVGs
-                var textNodes = actionsDiv.childNodes;
-                textNodes.forEach(function (node) {
-                    if (node.nodeType === 3 && node.textContent.trim() === 'OR') {
-                        node.textContent = '';
-                    }
-                });
+            // Hide password field
+            var passwordField = document.querySelector('.field-password');
+            if (passwordField) {
+                passwordField.style.display = 'none';
+            }
+
+            // Hide the welcome message and the <br/> after it
+            var legend = document.querySelector('#login-form .admin__legend');
+            if (legend) {
+                legend.style.display = 'none';
+                if (legend.nextSibling && legend.nextSibling.nodeName === 'BR') {
+                    legend.nextSibling.style.display = 'none';
+                }
+            }
+
+            // Hide standard Magento actions div and OR separator from OIDC div
+            var actionsDivs = document.querySelectorAll('.form-actions .actions');
+            actionsDivs.forEach(function (div) {
+                var svgs = div.querySelectorAll('svg');
+                if (svgs.length > 0) {
+                    // This is our OIDC div - hide SVGs and OR text, ensure full width
+                    div.style.width = '100%';
+                    svgs.forEach(function (svg) {
+                        svg.style.display = 'none';
+                    });
+                    div.childNodes.forEach(function (node) {
+                        if (node.nodeType === 3 && node.textContent.trim() === 'OR') {
+                            node.textContent = '';
+                        }
+                    });
+                } else {
+                    // This is Magento's standard actions div - hide entirely
+                    div.style.display = 'none';
+                }
+            });
+
+            // Hide the "Forgot your password?" link
+            var forgotPasswordDiv = document.querySelector('#login-form .links');
+            if (forgotPasswordDiv) {
+                forgotPasswordDiv.style.display = 'none';
+            }
+
+            // Ensure full-width chain so the OIDC button fills the login card
+            var fieldset = document.querySelector('#login-form .admin__fieldset');
+            if (fieldset) {
+                fieldset.style.width = '100%';
+            }
+            var formActions = document.querySelector('.form-actions');
+            if (formActions) {
+                formActions.style.width = '100%';
+                formActions.style.marginTop = '20px';
             }
         });
     </script>

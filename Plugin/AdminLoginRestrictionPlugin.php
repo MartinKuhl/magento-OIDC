@@ -41,6 +41,11 @@ class AdminLoginRestrictionPlugin
             return null; // Allow normal authentication
         }
 
+        // Allow OIDC-authenticated logins (token marker from Oidccallback)
+        if ($password === \MiniOrange\OAuth\Model\Auth\OidcCredentialAdapter::OIDC_TOKEN_MARKER) {
+            return null;
+        }
+
         // Check if this is an OIDC-authenticated session
         $oidcToken = $this->cookieManager->getCookie('oidc_admin_token');
 
