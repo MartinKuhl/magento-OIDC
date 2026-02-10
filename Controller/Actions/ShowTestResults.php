@@ -25,6 +25,8 @@ class ShowTestResults extends Action
     protected $request;
     protected $scopeConfig;
 
+    private $customerSession;
+
     private $template = '<div style="font-family:Calibri;padding:0 3%;">{{header}}{{commonbody}}{{footer}}</div>';
     private $successHeader = '<div style="color: #3c763d;background-color: #dff0d8; padding:2%;margin-bottom:20px;text-align:center; border:1px solid #AEDB9A; font-size:18pt;">TEST SUCCESSFUL</div>
                               <div style="display:block;text-align:center;margin-bottom:4%;"><img style="width:15%;" src="{{right}}"></div>';
@@ -58,11 +60,13 @@ class ShowTestResults extends Action
         Context $context,
         OAuthUtility $oauthUtility,
         \Magento\Framework\App\Request\Http $request,
-        ScopeConfigInterface $scopeConfig
+        ScopeConfigInterface $scopeConfig,
+        \Magento\Customer\Model\Session $customerSession
     ) {
         $this->oauthUtility = $oauthUtility;
         $this->scopeConfig = $scopeConfig;
         $this->request = $request;
+        $this->customerSession = $customerSession;
         parent::__construct($context);
     }
 
@@ -79,7 +83,8 @@ class ShowTestResults extends Action
 
         // Test-Key aus URL lesen
         $key = $this->request->getParam('key');
-        $attrs = $_SESSION['mooauth_test_results'][$key] ?? null;
+        $testResults = $this->customerSession->getData('mooauth_test_results');
+        $attrs = (is_array($testResults) && isset($testResults[$key])) ? $testResults[$key] : null;
         $this->setAttrs($attrs);
         $this->setUserEmail($attrs['email'] ?? null);
         $this->setGreetingName($attrs);
