@@ -39,6 +39,7 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
     private $groupName;
 
     private $testResults;
+    private $testAction;
     private $processUserAction;
 
     protected $userFactory;
@@ -67,7 +68,8 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
         \Magento\User\Model\UserFactory $userFactory,
         \Magento\Backend\Model\UrlInterface $backendUrl,
         AdminUserCreator $adminUserCreator,
-        \Magento\Customer\Model\Session $customerSession
+        \Magento\Customer\Model\Session $customerSession,
+        \MiniOrange\OAuth\Controller\Actions\ShowTestResults $testAction
     ) {
         // Initialize attribute mappings from configuration
         $this->emailAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_EMAIL);
@@ -93,6 +95,7 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
         $this->checkIfMatchBy = $oauthUtility->getStoreConfig(OAuthConstants::MAP_MAP_BY);
 
         $this->testResults = $testResults;
+        $this->testAction = $testAction;
         $this->processUserAction = $processUserAction;
         $this->userFactory = $userFactory;
         $this->backendUrl = $backendUrl;
@@ -476,6 +479,10 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
      */
     protected function saveDebugData($attrs)
     {
+        if (!$this->oauthUtility->isLogEnable()) {
+            return;
+        }
+
         try {
             // Filter sensitive data
             $sensitiveKeys = ['access_token', 'refresh_token', 'id_token', 'client_secret', 'password', 'token'];

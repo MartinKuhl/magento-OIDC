@@ -2,7 +2,6 @@
 namespace MiniOrange\OAuth\Observer;
 
 use Magento\Framework\App\Request\Http;
-use Magento\Framework\App\RequestInterface;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Message\ManagerInterface;
 use Magento\Framework\App\ResponseInterface;
@@ -41,18 +40,16 @@ class OAuthObserver implements ObserverInterface
         LoggerInterface $logger,
         ReadAuthorizationResponse $readAuthorizationResponse,
         OAuthUtility $oauthUtility,
-        Http $httpRequest,
-        RequestInterface $request,
+        Http $request,
         TestResults $testResults,
         ResponseInterface $response
     ) {
-        //You can use dependency injection to get any class this observer may need.
         $this->messageManager = $messageManager;
         $this->logger = $logger;
         $this->readAuthorizationResponse = $readAuthorizationResponse;
         $this->oauthUtility = $oauthUtility;
-        $this->currentControllerName = $httpRequest->getControllerName();
-        $this->currentActionName = $httpRequest->getActionName();
+        $this->currentControllerName = $request->getControllerName();
+        $this->currentActionName = $request->getActionName();
         $this->request = $request;
         $this->testResults = $testResults;
         $this->response = $response;

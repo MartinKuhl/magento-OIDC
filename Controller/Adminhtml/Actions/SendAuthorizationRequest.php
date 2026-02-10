@@ -13,20 +13,21 @@ class SendAuthorizationRequest extends BaseAction
 {
     protected $oauthUtility;
     protected $urlBuilder;
+    private $sessionHelper;
 
     public function __construct(
         \Magento\Backend\App\Action\Context $context,
-        \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
-        // ggf. weitere DI-Objekte
+        \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
+        SessionHelper $sessionHelper
     ) {
         parent::__construct($context, $oauthUtility);
         $this->urlBuilder = $context->getUrl();
+        $this->sessionHelper = $sessionHelper;
     }
 
     public function execute()
     {
-        SessionHelper::configureSSOSession();
-        SessionHelper::updateSessionCookies();
+        $this->sessionHelper->configureSSOSession();
 
         $Log_file_time = $this->oauthUtility->getStoreConfig(OAuthConstants::LOG_FILE_TIME);
         $current_time = time();
@@ -74,7 +75,11 @@ class SendAuthorizationRequest extends BaseAction
             return $this->getResponse()->setRedirect($relayState)->sendResponse();
         }
         if (!$clientDetails["authorize_endpoint"]) {
-            return;
+            $this->messageManager->addErrorMessage(
+                __('Authorization endpoint is not configured. Please contact the administrator.')
+            );
+            $backendUrl = $this->urlBuilder->getUrl('adminhtml/auth/login');
+            return $this->resultRedirectFactory->create()->setUrl($backendUrl);
         }
 
         $clientID = $clientDetails["clientID"];

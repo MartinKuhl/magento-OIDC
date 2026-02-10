@@ -167,8 +167,7 @@ class CustomerUserCreator
             $customer->setWebsiteId($websiteId)
                 ->setEmail($email)
                 ->setFirstname($firstName)
-                ->setLastname($lastName)
-                ->setPassword($randomPassword);
+                ->setLastname($lastName);
 
             // Set Date of Birth
             $dob = $this->extractAttributeValue($this->dobAttribute, $flattenedAttrs, $rawAttrs);
@@ -188,7 +187,10 @@ class CustomerUserCreator
                 }
             }
 
-            $this->customerRepository->save($customer);
+            // Convert model to data interface for repository save, pass password as second arg
+            $customerDataModel = $customer->getDataModel();
+            $savedCustomer = $this->customerRepository->save($customerDataModel, $randomPassword);
+            $customer->updateData($savedCustomer);
             $this->oauthUtility->customlog("CustomerUserCreator: Customer created with ID: " . $customer->getId());
 
             // Create customer address

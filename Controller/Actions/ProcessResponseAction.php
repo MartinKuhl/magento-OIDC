@@ -58,7 +58,25 @@ class ProcessResponseAction extends BaseAction
         $flattenedUserInfoResponse = [];
         $flattenedUserInfoResponse = $this->getflattenedArray("", $userInfoResponse, $flattenedUserInfoResponse);
 
-        $userEmail = $this->findUserEmail($userInfoResponse);
+        // First try the configured email attribute
+        $emailAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_EMAIL);
+        if ($this->oauthUtility->isBlank($emailAttribute)) {
+            $emailAttribute = OAuthConstants::DEFAULT_MAP_EMAIL;
+        }
+
+        $userEmail = '';
+        if (isset($flattenedUserInfoResponse[$emailAttribute])
+            && filter_var($flattenedUserInfoResponse[$emailAttribute], FILTER_VALIDATE_EMAIL)
+        ) {
+            $userEmail = $flattenedUserInfoResponse[$emailAttribute];
+            $this->oauthUtility->customlog("ProcessResponseAction: Email found via configured attribute '$emailAttribute': " . $userEmail);
+        }
+
+        // Fallback to recursive search if configured attribute didn't yield an email
+        if (empty($userEmail)) {
+            $userEmail = $this->findUserEmail($userInfoResponse);
+        }
+
         if (empty($userEmail)) {
             return $this->getResponse()->setBody("Email address not received. Please check attribute mapping.");
         }

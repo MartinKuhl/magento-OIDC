@@ -75,7 +75,6 @@
     <!-- Admin Login Restriction Plugin Configuration -->
     <type name="MiniOrange\OAuth\Plugin\AdminLoginRestrictionPlugin">
         <arguments>
-            <argument name="cookieManager" xsi:type="object">Magento\Framework\Stdlib\CookieManagerInterface</argument>
             <argument name="oauthUtility" xsi:type="object">MiniOrange\OAuth\Helper\OAuthUtility</argument>
         </arguments>
     </type>

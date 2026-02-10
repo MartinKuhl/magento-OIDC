@@ -1,11 +1,9 @@
 <?php
 namespace MiniOrange\OAuth\Helper;
 
-use Magento\Framework\App\ObjectManager;
 use Magento\Framework\Stdlib\CookieManagerInterface;
 use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
 use Magento\Framework\Stdlib\Cookie\PublicCookieMetadata;
-use Magento\Framework\Session\SessionManagerInterface;
 
 /**
  * Session-Handler-Plugin für miniOrange OAuth SSO
@@ -18,47 +16,36 @@ class SessionHelper
     /**
      * @var CookieManagerInterface
      */
-    private static $cookieManager;
+    private $cookieManager;
 
     /**
      * @var CookieMetadataFactory
      */
-    private static $cookieMetadataFactory;
+    private $cookieMetadataFactory;
 
     /**
-     * Get cookie manager instance
-     *
-     * @return CookieManagerInterface
+     * @var OAuthUtility
      */
-    private static function getCookieManager(): CookieManagerInterface
-    {
-        if (self::$cookieManager === null) {
-            self::$cookieManager = ObjectManager::getInstance()->get(CookieManagerInterface::class);
-        }
-        return self::$cookieManager;
-    }
+    private $oauthUtility;
 
-    /**
-     * Get cookie metadata factory instance
-     *
-     * @return CookieMetadataFactory
-     */
-    private static function getCookieMetadataFactory(): CookieMetadataFactory
-    {
-        if (self::$cookieMetadataFactory === null) {
-            self::$cookieMetadataFactory = ObjectManager::getInstance()->get(CookieMetadataFactory::class);
-        }
-        return self::$cookieMetadataFactory;
+    public function __construct(
+        CookieManagerInterface $cookieManager,
+        CookieMetadataFactory $cookieMetadataFactory,
+        OAuthUtility $oauthUtility
+    ) {
+        $this->cookieManager = $cookieManager;
+        $this->cookieMetadataFactory = $cookieMetadataFactory;
+        $this->oauthUtility = $oauthUtility;
     }
 
     /**
      * Konfiguriert die PHP-Session für SSO
      */
-    public static function configureSSOSession()
+    public function configureSSOSession()
     {
         // Manual session management removed to comply with Magento standards.
         // We rely on CookieManager to set SameSite attributes via updateSessionCookies.
-        self::updateSessionCookies();
+        $this->updateSessionCookies();
     }
 
     /**
@@ -67,12 +54,9 @@ class SessionHelper
      *
      * Uses Magento's CookieManager for 2.4.7+ compatibility
      */
-    public static function updateSessionCookies()
+    public function updateSessionCookies()
     {
         try {
-            $cookieManager = self::getCookieManager();
-            $metadataFactory = self::getCookieMetadataFactory();
-
             // Prüfen, ob die Session aktiv ist
             $isSessionActive = (session_status() == PHP_SESSION_ACTIVE);
             $sessionName = session_name();
@@ -82,13 +66,13 @@ class SessionHelper
                 $cookieValue = $_COOKIE[$sessionName];
 
                 /** @var PublicCookieMetadata $metadata */
-                $metadata = $metadataFactory->createPublicCookieMetadata()
+                $metadata = $this->cookieMetadataFactory->createPublicCookieMetadata()
                     ->setPath('/')
                     ->setSecure(true)
                     ->setHttpOnly(true)
                     ->setSameSite('None');
 
-                $cookieManager->setPublicCookie($sessionName, $cookieValue, $metadata);
+                $this->cookieManager->setPublicCookie($sessionName, $cookieValue, $metadata);
             }
 
             // Auch andere wichtige Cookies in $_COOKIE durchlaufen und aktualisieren
@@ -99,31 +83,17 @@ class SessionHelper
                     $path = (strpos($name, 'admin') !== false) ? '/admin' : '/';
 
                     /** @var PublicCookieMetadata $metadata */
-                    $metadata = $metadataFactory->createPublicCookieMetadata()
+                    $metadata = $this->cookieMetadataFactory->createPublicCookieMetadata()
                         ->setPath($path)
                         ->setSecure(true)
                         ->setHttpOnly(true)
                         ->setSameSite('None');
 
-                    $cookieManager->setPublicCookie($name, $value, $metadata);
+                    $this->cookieManager->setPublicCookie($name, $value, $metadata);
                 }
             }
         } catch (\Exception $e) {
-            self::logDebug("SessionHelper: Exception in updateSessionCookies: " . $e->getMessage());
-        }
-    }
-
-    /**
-     * Protokollierung für Debugging
-     */
-    private static function logDebug($message)
-    {
-        try {
-            $objectManager = ObjectManager::getInstance();
-            $oauthUtility = $objectManager->get(\MiniOrange\OAuth\Helper\OAuthUtility::class);
-            $oauthUtility->customlog($message);
-        } catch (\Exception $e) {
-            // Stille Fehlerbehandlung, wenn Logging fehlschlägt
+            $this->oauthUtility->customlog("SessionHelper: Exception in updateSessionCookies: " . $e->getMessage());
         }
     }
 
@@ -133,12 +103,9 @@ class SessionHelper
      *
      * Uses Magento's CookieManager for 2.4.7+ compatibility
      */
-    public static function forceSameSiteNone()
+    public function forceSameSiteNone()
     {
         try {
-            $cookieManager = self::getCookieManager();
-            $metadataFactory = self::getCookieMetadataFactory();
-
             // Aktuelle Cookies erfassen
             $cookies = [];
             foreach (headers_list() as $header) {
@@ -174,17 +141,17 @@ class SessionHelper
 
                 if (!empty($sessionId) && isset($_COOKIE[$sessionName])) {
                     /** @var PublicCookieMetadata $metadata */
-                    $metadata = $metadataFactory->createPublicCookieMetadata()
+                    $metadata = $this->cookieMetadataFactory->createPublicCookieMetadata()
                         ->setPath('/')
                         ->setSecure(true)
                         ->setHttpOnly(true)
                         ->setSameSite('None');
 
-                    $cookieManager->setPublicCookie($sessionName, $sessionId, $metadata);
+                    $this->cookieManager->setPublicCookie($sessionName, $sessionId, $metadata);
                 }
             }
         } catch (\Exception $e) {
-            self::logDebug("SessionHelper: Fehler in forceSameSiteNone: " . $e->getMessage());
+            $this->oauthUtility->customlog("SessionHelper: Fehler in forceSameSiteNone: " . $e->getMessage());
         }
     }
 }

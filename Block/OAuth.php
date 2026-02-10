@@ -685,7 +685,11 @@ class OAuth extends \Magento\Framework\View\Element\Template
     {
         $encodedMessage = $this->getRequest()->getParam('oidc_error');
         if ($encodedMessage) {
-            return base64_decode($encodedMessage);
+            $decoded = base64_decode($encodedMessage, true);
+            if ($decoded === false) {
+                return null;
+            }
+            return $decoded;
         }
         return null;
     }

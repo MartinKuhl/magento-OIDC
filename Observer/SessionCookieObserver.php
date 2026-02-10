@@ -17,12 +17,20 @@ class SessionCookieObserver implements ObserverInterface
     protected $oauthUtility;
 
     /**
+     * @var SessionHelper
+     */
+    private $sessionHelper;
+
+    /**
      * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     * @param SessionHelper $sessionHelper
      */
     public function __construct(
-        \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+        \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
+        SessionHelper $sessionHelper
     ) {
         $this->oauthUtility = $oauthUtility;
+        $this->sessionHelper = $sessionHelper;
     }
 
     /**
@@ -34,8 +42,7 @@ class SessionCookieObserver implements ObserverInterface
     public function execute(\Magento\Framework\Event\Observer $observer)
     {
         try {
-            // Entfernt: Verbose Logging
-            SessionHelper::forceSameSiteNone();
+            $this->sessionHelper->forceSameSiteNone();
         } catch (\Exception $e) {
             // Nur kritische Fehler loggen
             $this->oauthUtility->customlog("SessionCookieObserver: Critical error - " . $e->getMessage());

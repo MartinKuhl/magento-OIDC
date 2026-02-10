@@ -59,6 +59,14 @@ class Curl
         $curl->write($method, $url, '1.1', $headers, $data);
         $content = $curl->read();
         $curl->close();
+
+        if (empty($content)) {
+            return json_encode([
+                'error' => 'empty_response',
+                'error_description' => 'No response received from the OAuth server.'
+            ]);
+        }
+
         return $content;
     }
 }

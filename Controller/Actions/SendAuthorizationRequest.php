@@ -11,8 +11,18 @@ use MiniOrange\OAuth\Helper\SessionHelper;
  * for authentication. AuthnRequest is generated and user is
  * redirected to the IDP for authentication.
  */
-class sendAuthorizationRequest extends BaseAction
+class SendAuthorizationRequest extends BaseAction
 {
+    private $sessionHelper;
+
+    public function __construct(
+        \Magento\Framework\App\Action\Context $context,
+        \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
+        SessionHelper $sessionHelper
+    ) {
+        $this->sessionHelper = $sessionHelper;
+        parent::__construct($context, $oauthUtility);
+    }
 
     /**
      * Execute function to execute the classes function.
@@ -21,8 +31,7 @@ class sendAuthorizationRequest extends BaseAction
     public function execute()
     {
         // Konfigurieren der Session für SSO mit SameSite=None
-        SessionHelper::configureSSOSession();
-        SessionHelper::updateSessionCookies();
+        $this->sessionHelper->configureSSOSession();
 
         $Log_file_time = $this->oauthUtility->getStoreConfig(OAuthConstants::LOG_FILE_TIME);
         $current_time = time();
@@ -101,7 +110,12 @@ class sendAuthorizationRequest extends BaseAction
             return $this->resultRedirectFactory->create()->setUrl($relayState);
         }
         if (!$clientDetails["authorize_endpoint"]) {
-            return;
+            $this->messageManager->addErrorMessage(
+                __('Authorization endpoint is not configured. Please contact the administrator.')
+            );
+            return $this->resultRedirectFactory->create()->setUrl(
+                $this->oauthUtility->getBaseUrl() . 'customer/account/login'
+            );
         }
 
 
@@ -116,7 +130,6 @@ class sendAuthorizationRequest extends BaseAction
         $authorizationRequest = (new AuthorizationRequest($clientID, $scope, $authorizeURL, $responseType, $redirectURL, $relayState, $params))->build();
         $chk_enable_log ? $this->oauthUtility->customlog("SendAuthorizationRequest:  Authorization Request: " . $authorizationRequest) : NULL;
         // send oauth request over
-        $relayState = isset($params['relayState']) ? $params['relayState'] : '';
         return $this->sendHTTPRedirectRequest($authorizationRequest, $authorizeURL, $relayState, $params);
     }
 }

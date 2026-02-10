@@ -202,9 +202,9 @@ class AdminUserCreator
         // We only search for it if we want to default to it, but the instruction was "Improve Admin Role fallback logic (remove default to ID 1)".
         // Meaning: If no mapping and no default role config, we should FAIL (return null), NOT give admin access.
 
-        // However, to maintain some backward compatibility or ensure utility, maybe we log warning?
-        // The Code Review said: "Issue: Fallback to role ID 1 (Administrators) if mapping fails is dangerous."
-
+        // No mapping found and no default role configured — deny admin creation for security.
+        $this->oauthUtility->customlog("AdminUserCreator: No role mapping found and no default role configured. Denying admin creation.");
+        return null;
     }
 
     /**

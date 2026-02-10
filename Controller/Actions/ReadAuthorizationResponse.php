@@ -21,25 +21,27 @@ class ReadAuthorizationResponse extends BaseAction
     private $processResponseAction;
     protected $_url;
     private $customerSession;
+    private $sessionHelper;
 
     public function __construct(
         Context $context,
         OAuthUtility $oauthUtility,
         ProcessResponseAction $processResponseAction,
         \Magento\Framework\UrlInterface $url,
-        \Magento\Customer\Model\Session $customerSession
+        \Magento\Customer\Model\Session $customerSession,
+        SessionHelper $sessionHelper
     ) {
         $this->processResponseAction = $processResponseAction;
         $this->_url = $url;
         $this->customerSession = $customerSession;
+        $this->sessionHelper = $sessionHelper;
         parent::__construct($context, $oauthUtility);
     }
 
 
     public function execute()
     {
-        SessionHelper::configureSSOSession();
-        SessionHelper::updateSessionCookies();
+        $this->sessionHelper->configureSSOSession();
 
         $params = $this->getRequest()->getParams();
 
@@ -179,7 +181,19 @@ class ReadAuthorizationResponse extends BaseAction
             $testKey = $matches[1] ?? '';
             if ($testKey) {
                 $testResults = $this->customerSession->getData('mooauth_test_results') ?: [];
-                $testResults[$testKey] = $userInfoResponseData;
+                // Filter out large token data to prevent session bloat
+                $filteredData = $userInfoResponseData;
+                if (is_array($filteredData)) {
+                    $excludeKeys = ['access_token', 'refresh_token', 'id_token', 'token'];
+                    foreach ($excludeKeys as $exKey) {
+                        unset($filteredData[$exKey]);
+                    }
+                }
+                $testResults[$testKey] = $filteredData;
+                // Only keep the latest 3 test results
+                if (count($testResults) > 3) {
+                    $testResults = array_slice($testResults, -3, 3, true);
+                }
                 $this->customerSession->setData('mooauth_test_results', $testResults);
             }
             return $this->_redirect($relayState);

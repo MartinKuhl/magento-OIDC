@@ -42,6 +42,14 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
         }
         $this->oauthUtility->customlog("CustomerLoginAction: execute");
 
+        if ($this->user === null) {
+            $this->oauthUtility->customlog("CustomerLoginAction: ERROR - user is null, cannot log in");
+            $this->messageManager->addErrorMessage(__('Authentication failed. Please try again.'));
+            return $this->resultRedirectFactory->create()->setUrl(
+                $this->oauthUtility->getBaseUrl() . 'customer/account/login'
+            );
+        }
+
         $this->customerSession->setCustomerAsLoggedIn($this->user);
         return $this->resultRedirectFactory->create()->setUrl($this->oauthUtility->getUrl($this->relayState));
     }

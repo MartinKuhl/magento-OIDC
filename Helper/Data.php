@@ -128,9 +128,7 @@ class Data extends AbstractHelper
      */
     public function getIDPApps()
     {
-        $model = $this->_miniorangeOauthClientAppsFactory->create();
-        $collection = $model->getCollection();
-        return $collection;
+        return $this->getOAuthClientApps();
     }
 
     /**

@@ -523,7 +523,15 @@ class OAuthUtility extends Data
 
     public function getCurrentDate()
     {
-        $dateTimeZone = new \DateTimeZone('Europe/Berlin');
+        try {
+            $timezone = $this->scopeConfig->getValue(
+                'general/locale/timezone',
+                \Magento\Store\Model\ScopeInterface::SCOPE_STORE
+            );
+            $dateTimeZone = new \DateTimeZone($timezone ?: 'UTC');
+        } catch (\Exception $e) {
+            $dateTimeZone = new \DateTimeZone('UTC');
+        }
         $dateTime = new \DateTime('now', $dateTimeZone);
         return $dateTime->format('n/j/Y, g:i:s a');
     }
