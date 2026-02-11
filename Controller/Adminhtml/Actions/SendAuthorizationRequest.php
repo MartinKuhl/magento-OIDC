@@ -100,12 +100,14 @@ class SendAuthorizationRequest extends BaseAction
             || (isset($params['option']) && $params['option'] === OAuthConstants::TEST_CONFIG_OPT)
         );
 
-        // Testfall: relayState auf Testergebnis überschreiben
+        // Test flow: rebuild combined state with test results URL as the relayState segment
         if ($isTest) {
             $testKey = bin2hex(random_bytes(16));
             $baseUrl = $this->oauthUtility->getBaseUrl();
-            $relayState = $baseUrl . 'mooauth/actions/showTestResults/key/' . $testKey . '/';
-            $this->oauthUtility->customlog("SendAuthorizationRequest: Test-Flow, setting relayState to: " . $relayState);
+            $testRelayState = $baseUrl . 'mooauth/actions/showTestResults/key/' . $testKey . '/';
+            $this->oauthUtility->customlog("SendAuthorizationRequest: Test-Flow, setting relayState to: " . $testRelayState);
+            // Rebuild combined state preserving sessionId, appName, loginType, stateToken
+            $relayState = urlencode($testRelayState) . '|' . $currentSessionId . '|' . urlencode($app_name) . '|' . OAuthConstants::LOGIN_TYPE_ADMIN . '|' . $stateToken;
         }
 
         $this->oauthUtility->customlog("Test relayState FINAL: " . $relayState);
