@@ -70,7 +70,7 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
             $safeRelayState = rtrim($this->oauthUtility->getBaseUrl(), '/') . $safeRelayState;
         }
         $this->oauthUtility->customlog("CustomerLoginAction: Redirecting to: " . $safeRelayState);
-        return $this->responseFactory->create()->setRedirect($safeRelayState)->sendResponse();
+        return $this->resultRedirectFactory->create()->setUrl($safeRelayState);
     }
 
 

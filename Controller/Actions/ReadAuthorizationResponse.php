@@ -52,7 +52,10 @@ class ReadAuthorizationResponse extends BaseAction
 
     public function execute()
     {
-        $this->sessionHelper->configureSSOSession();
+        // configureSSOSession() removed from callback handler.
+        // SameSite=None is only needed in SendAuthorizationRequest (outbound redirect to IdP).
+        // Calling it here sets a stale Secure cookie that conflicts with session_regenerate_id()
+        // inside setCustomerAsLoggedIn(), causing the browser to keep the old destroyed session ID.
 
         $params = $this->getRequest()->getParams();
 

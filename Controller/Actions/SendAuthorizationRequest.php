@@ -34,8 +34,10 @@ class SendAuthorizationRequest extends BaseAction
      */
     public function execute()
     {
-        // Konfigurieren der Session für SSO mit SameSite=None
-        $this->sessionHelper->configureSSOSession();
+        // configureSSOSession() removed: it creates a host-only PHPSESSID cookie (no domain)
+        // that conflicts with PHP's session cookie (domain=...). The duplicate cookie prevents
+        // session_regenerate_id() from updating the browser's session ID after login.
+        // SameSite=None is unnecessary — OAuth uses top-level navigation (SameSite=Lax suffices).
 
         $Log_file_time = $this->oauthUtility->getStoreConfig(OAuthConstants::LOG_FILE_TIME);
         $current_time = time();
