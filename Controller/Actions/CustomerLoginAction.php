@@ -6,6 +6,7 @@ use Magento\Customer\Model\Session;
 use Magento\Framework\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
 use Magento\Framework\App\ResponseFactory;
+use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
 use MiniOrange\OAuth\Helper\OAuthUtility;
 
 /**
@@ -18,17 +19,19 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
     private $customerSession;
     private $responseFactory;
     private $relayState;
+    private $securityHelper;
 
 
     public function __construct(
         Context $context,
         OAuthUtility $oauthUtility,
         Session $customerSession,
-        ResponseFactory $responseFactory
+        ResponseFactory $responseFactory,
+        OAuthSecurityHelper $securityHelper
     ) {
-        //You can use dependency injection to get any class this observer may need.
         $this->customerSession = $customerSession;
         $this->responseFactory = $responseFactory;
+        $this->securityHelper = $securityHelper;
         parent::__construct($context, $oauthUtility);
     }
 
@@ -51,7 +54,11 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
         }
 
         $this->customerSession->setCustomerAsLoggedIn($this->user);
-        return $this->resultRedirectFactory->create()->setUrl($this->oauthUtility->getUrl($this->relayState));
+        $safeRelayState = $this->securityHelper->validateRedirectUrl(
+            $this->relayState,
+            $this->oauthUtility->getBaseUrl() . 'customer/account'
+        );
+        return $this->resultRedirectFactory->create()->setUrl($this->oauthUtility->getUrl($safeRelayState));
     }
 
 

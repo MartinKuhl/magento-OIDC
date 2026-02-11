@@ -191,7 +191,7 @@ class ShowTestResults extends Action
 
     private function processTemplateContent()
     {
-        $this->commonBody = str_replace("{{greeting_name}}", $this->greetingName ?? '', $this->commonBody);
+        $this->commonBody = str_replace("{{greeting_name}}", htmlspecialchars($this->greetingName ?? '', ENT_QUOTES, 'UTF-8'), $this->commonBody);
         $tableContent = !array_filter($this->attrs ?? []) ? "No Attributes Received." : $this->getTableContent();
         //$this->oauthUtility->customlog("ShowTestResultsAction: attribute" . json_encode($this->attrs));
         $this->commonBody = str_replace("{{tablecontent}}", $tableContent ?? '', $this->commonBody);
@@ -206,9 +206,14 @@ class ShowTestResults extends Action
                 if (!is_array($value))
                     $value = [$value];
                 if (!in_array(null, $value)) {
-                    $tableContent .= str_replace("{{key}}", $key ?? '', str_replace(
+                    $escapedKey = htmlspecialchars((string)($key ?? ''), ENT_QUOTES, 'UTF-8');
+                    $escapedValues = array_map(
+                        fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'),
+                        $value
+                    );
+                    $tableContent .= str_replace("{{key}}", $escapedKey, str_replace(
                         "{{value}}",
-                        implode("<br/>", $value),
+                        implode("<br/>", $escapedValues),
                         $this->tableContent
                     ));
                 }

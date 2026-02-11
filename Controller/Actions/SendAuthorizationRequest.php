@@ -4,6 +4,7 @@ namespace MiniOrange\OAuth\Controller\Actions;
 
 use MiniOrange\OAuth\Helper\OAuth\AuthorizationRequest;
 use MiniOrange\OAuth\Helper\OAuthConstants;
+use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
 use MiniOrange\OAuth\Helper\SessionHelper;
 
 /**
@@ -14,13 +15,16 @@ use MiniOrange\OAuth\Helper\SessionHelper;
 class SendAuthorizationRequest extends BaseAction
 {
     private $sessionHelper;
+    private $securityHelper;
 
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
         \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
-        SessionHelper $sessionHelper
+        SessionHelper $sessionHelper,
+        OAuthSecurityHelper $securityHelper
     ) {
         $this->sessionHelper = $sessionHelper;
+        $this->securityHelper = $securityHelper;
         parent::__construct($context, $oauthUtility);
     }
 
@@ -53,10 +57,11 @@ class SendAuthorizationRequest extends BaseAction
         $chk_enable_log ? $this->oauthUtility->customlog("SendAuthorizationRequest: Request prarms: " . implode(" ", $params)) : NULL;
         $isFromPopup = isset($params['from_popup']) && $params['from_popup'] == '1';
 
-        // Set relayState based on popup context
-        $relayState = $isFromPopup
-            ? $this->oauthUtility->getBaseUrl() . "checkout"  // Checkout page for popup
-            : (isset($params['relayState']) ? $params['relayState'] : '/');  // Original relayState or default
+        // Set relayState based on popup context, with redirect validation
+        $rawRelayState = $isFromPopup
+            ? $this->oauthUtility->getBaseUrl() . "checkout"
+            : (isset($params['relayState']) ? $params['relayState'] : '/');
+        $relayState = $this->securityHelper->validateRedirectUrl($rawRelayState, '/');
 
         // Speichere die aktuelle PHP-Session-ID
         $currentSessionId = session_id();
@@ -66,10 +71,10 @@ class SendAuthorizationRequest extends BaseAction
         $app_name = isset($params['app_name']) ? $params['app_name'] : $this->oauthUtility->getStoreConfig(OAuthConstants::APP_NAME);
         $this->oauthUtility->customlog("SendAuthorizationRequest: Using app_name: " . $app_name);
 
-        // Kombiniere den relayState mit der Session-ID, App-Namen und Login-Typ in einem kodierten Format
-        // Format: encodedRelayState|sessionId|encodedAppName|loginType
-        // URL-Encode components to prevent collisions with the pipe delimiter
-        $relayState = urlencode($relayState) . '|' . $currentSessionId . '|' . urlencode($app_name) . '|' . OAuthConstants::LOGIN_TYPE_CUSTOMER;
+        // Combine relayState with session ID, app name, login type, and CSRF state token
+        // Format: encodedRelayState|sessionId|encodedAppName|loginType|stateToken
+        $stateToken = $this->securityHelper->createStateToken($currentSessionId);
+        $relayState = urlencode($relayState) . '|' . $currentSessionId . '|' . urlencode($app_name) . '|' . OAuthConstants::LOGIN_TYPE_CUSTOMER . '|' . $stateToken;
         $this->oauthUtility->customlog("SendAuthorizationRequest: Combined relayState: " . $relayState);
 
         if (strpos($relayState, OAuthConstants::TEST_RELAYSTATE) !== false) {
@@ -80,34 +85,17 @@ class SendAuthorizationRequest extends BaseAction
         $clientDetails = null;
         // App-Name wurde bereits oben bestimmt
         if (!$app_name) {
-
-            if (isset($params['relayState'])) {
-                $relayState = $params['relayState'];
-            } else {
-                $relayState = $this->oauthUtility->getBaseUrl() . 'customer/account/login';
-            }
+            $errorRedirect = $this->oauthUtility->getBaseUrl() . 'customer/account/login';
             $this->messageManager->addErrorMessage('App name not found. Please contact the administrator for assistance.');
-            return $this->resultRedirectFactory->create()->setUrl($relayState);
-
+            return $this->resultRedirectFactory->create()->setUrl($errorRedirect);
         }
         $this->oauthUtility->setSessionData(OAuthConstants::APP_NAME, $app_name);
 
-        $collection = $this->oauthUtility->getOAuthClientApps();
-        //$this->oauthUtility->log_debug("SendAuthorizationRequest: collection :", count($collection));
-        foreach ($collection as $item) {
-            if ($item->getData()["app_name"] === $app_name) {
-                $clientDetails = $item->getData();
-            }
-        }
+        $clientDetails = $this->oauthUtility->getClientDetailsByAppName($app_name);
         if (empty($clientDetails)) {
-            if (isset($params['relayState'])) {
-                $relayState = $params['relayState'];
-            } else {
-                $relayState = $this->oauthUtility->getBaseUrl() . 'customer/account/login';
-            }
+            $errorRedirect = $this->oauthUtility->getBaseUrl() . 'customer/account/login';
             $this->messageManager->addErrorMessage('Provided App name is not configured. Please contact the administrator for assistance.');
-
-            return $this->resultRedirectFactory->create()->setUrl($relayState);
+            return $this->resultRedirectFactory->create()->setUrl($errorRedirect);
         }
         if (!$clientDetails["authorize_endpoint"]) {
             $this->messageManager->addErrorMessage(

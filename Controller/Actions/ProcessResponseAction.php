@@ -2,22 +2,19 @@
 namespace MiniOrange\OAuth\Controller\Actions;
 
 use MiniOrange\OAuth\Helper\Exception\IncorrectUserInfoDataException;
-use MiniOrange\OAuth\Helper\Exception\UserEmailNotFoundException;
 use MiniOrange\OAuth\Helper\OAuthConstants;
 
 use Magento\Framework\App\RequestInterface;
 use Magento\Framework\App\Request\InvalidRequestException;
 
 /**
- * Handles processing of SAML Responses from the IDP. Process the SAML Response
- * from the IDP and detect if it's a valid response from the IDP. Validate the
- * certificates and the SAML attributes and Update existing user attributes
- * and groups if necessary. Log the user in.
+ * Handles processing of OAuth/OIDC responses from the IDP. Process the response,
+ * validate the user info data, flatten attributes, extract email, and route
+ * to the attribute mapping action for login.
  */
 class ProcessResponseAction extends BaseAction
 {
     private $userInfoResponse;
-    private $testAction;
     private $processUserAction;
 
     /**
@@ -178,7 +175,13 @@ class ProcessResponseAction extends BaseAction
         $this->oauthUtility->customlog("processResponseAction: validateUserInfoData");
 
         $userInfo = $this->userInfoResponse;
-        if (isset($userInfo->error)) {
+        if (is_object($userInfo) && isset($userInfo->error)) {
+            throw new IncorrectUserInfoDataException();
+        }
+        if (is_array($userInfo) && isset($userInfo['error'])) {
+            throw new IncorrectUserInfoDataException();
+        }
+        if (empty($userInfo)) {
             throw new IncorrectUserInfoDataException();
         }
     }

@@ -175,20 +175,6 @@ class OAuthUtility extends Data
     }
 
 
-    /**
-     * This function checks if the phone number is in the correct format or not.
-     *
-     * @param $phone refers to the phone number entered
-     * @return bool
-     */
-    public function validatePhoneNumber($phone)
-    {
-        if (!preg_match(MoIDPConstants::PATTERN_PHONE, $phone, $matches)) {
-            return false;
-        } else {
-            return true;
-        }
-    }
 
 
     /**
@@ -447,17 +433,7 @@ class OAuthUtility extends Data
      */
     public function isLogEnable()
     {
-        // Verwende die existierende Konfiguration über die Konstante
-        $configValue = $this->getStoreConfig(OAuthConstants::ENABLE_DEBUG_LOG);
-
-        // Wenn die neue Config existiert, bevorzuge diese
-        $newConfigValue = $this->getStoreConfig('miniorange/oauth/debug_log');
-        if ($newConfigValue !== null) {
-            return (bool) $newConfigValue;
-        }
-
-        // Fallback auf alte Konfiguration
-        return (bool) $configValue;
+        return (bool) $this->getStoreConfig(OAuthConstants::ENABLE_DEBUG_LOG);
     }
 
     /**
@@ -467,7 +443,7 @@ class OAuthUtility extends Data
     {
 
         if (is_object($msg)) {
-            $this->customlog(print_r($obj, true));
+            $this->customlog(print_r($msg, true));
         } else {
             $this->customlog($msg);
 
@@ -487,14 +463,7 @@ class OAuthUtility extends Data
     public function getClientDetails()
     {
         $appName = $this->getStoreConfig(OAuthConstants::APP_NAME);
-        $clientDetails = null;
-        $collection = $this->getOAuthClientApps();
-        $this->log_debug("SendAuthorizationRequest: collection :", count($collection));
-        foreach ($collection as $item) {
-            if ($item->getData()["app_name"] === $appName) {
-                $clientDetails = $item->getData();
-            }
-        }
+        $clientDetails = $this->getClientDetailsByAppName($appName);
         $clientID = $clientDetails["clientID"];
         $clientSecret = $clientDetails["client_secret"];
         $accesstoken_url = $clientDetails["access_token_endpoint"];

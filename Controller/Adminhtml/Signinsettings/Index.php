@@ -6,7 +6,7 @@ use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpGetActionInterface;
 use MiniOrange\OAuth\Helper\OAuthConstants;
 use MiniOrange\OAuth\Helper\OAuthMessages;
-use MiniOrange\OAuth\Helper\OAuth\SAML2Utilities;
+
 use MiniOrange\OAuth\Controller\Actions\BaseAdminAction;
 use Magento\Framework\App\Action\HttpPostActionInterface;
 use Magento\Framework\App\Filesystem\DirectoryList;
@@ -105,13 +105,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
                                 $appName = $this->oauthUtility->getStoreConfig(OAuthConstants::APP_NAME);
 
                                 $clientDetails = null;
-                                $collection = $this->oauthUtility->getOAuthClientApps();
-                                $this->oauthUtility->log_debug("SendAuthorizationRequest: collection :", count($collection));
-                                foreach ($collection as $item) {
-                                    if ($item->getData()["app_name"] === $appName) {
-                                        $clientDetails = $item->getData();
-                                    }
-                                }
+                                $clientDetails = $this->oauthUtility->getClientDetailsByAppName($appName);
                                 if ($clientDetails) {
                                     $scope = $clientDetails["scope"];
                                     $header = $clientDetails["values_in_header"];
@@ -176,7 +170,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         $mo_oauth_show_admin_link = isset($params['mo_oauth_show_admin_link']) ? 1 : 0;
         $mo_sso_auto_create_admin = isset($params['mo_sso_auto_create_admin']) ? 1 : 0;
         $mo_sso_auto_create_customer = isset($params['mo_sso_auto_create_customer']) ? 1 : 0;
-        $mo_saml_enable_login_redirect = isset($params['mo_saml_enable_login_redirect']) ? 1 : 0;
+        $mo_oauth_enable_login_redirect = isset($params['mo_oauth_enable_login_redirect']) ? 1 : 0;
         $mo_oauth_logout_redirect_url = isset($params['mo_oauth_logout_redirect_url']) ? $params['mo_oauth_logout_redirect_url'] : '';
         $mo_disable_non_oidc_admin_login = isset($params['mo_disable_non_oidc_admin_login']) ? 1 : 0;
 
@@ -184,7 +178,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         $this->oauthUtility->customlog("SignInSettings: Saving admin link setting: " . $mo_oauth_show_admin_link);
         $this->oauthUtility->customlog("SignInSettings: Saving auto create admin setting: " . $mo_sso_auto_create_admin);
         $this->oauthUtility->customlog("SignInSettings: Saving auto create customer setting: " . $mo_sso_auto_create_customer);
-        $this->oauthUtility->customlog("SignInSettings: Saving login redirect setting: " . $mo_saml_enable_login_redirect);
+        $this->oauthUtility->customlog("SignInSettings: Saving login redirect setting: " . $mo_oauth_enable_login_redirect);
         $this->oauthUtility->customlog("SignInSettings: Saving logout redirect url: " . $mo_oauth_logout_redirect_url);
         $this->oauthUtility->customlog("SignInSettings: Saving disable non-OIDC admin login: " . $mo_disable_non_oidc_admin_login);
 
@@ -193,7 +187,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         $this->oauthUtility->setStoreConfig(OAuthConstants::SHOW_ADMIN_LINK, $mo_oauth_show_admin_link);
         $this->oauthUtility->setStoreConfig(OAuthConstants::AUTO_CREATE_ADMIN, $mo_sso_auto_create_admin);
         $this->oauthUtility->setStoreConfig(OAuthConstants::AUTO_CREATE_CUSTOMER, $mo_sso_auto_create_customer);
-        $this->oauthUtility->setStoreConfig(OAuthConstants::ENABLE_LOGIN_REDIRECT, $mo_saml_enable_login_redirect);
+        $this->oauthUtility->setStoreConfig(OAuthConstants::ENABLE_LOGIN_REDIRECT, $mo_oauth_enable_login_redirect);
         $this->oauthUtility->setStoreConfig(OAuthConstants::OAUTH_LOGOUT_URL, $mo_oauth_logout_redirect_url);
         $this->oauthUtility->setStoreConfig(OAuthConstants::DISABLE_NON_OIDC_ADMIN_LOGIN, $mo_disable_non_oidc_admin_login);
     }

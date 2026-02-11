@@ -7,7 +7,7 @@ use Magento\Framework\App\Action\HttpGetActionInterface;
 use Magento\Framework\App\Action\HttpPostActionInterface;
 use MiniOrange\OAuth\Helper\OAuthConstants;
 use MiniOrange\OAuth\Helper\OAuthMessages;
-use MiniOrange\OAuth\Helper\OAuth\SAML2Utilities;
+
 use MiniOrange\OAuth\Controller\Actions\BaseAdminAction;
 
 
@@ -174,13 +174,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         $send_body = isset($params['send_body']) ? 1 : 0;
 
 
-        $collection = $this->oauthUtility->getOAuthClientApps();
-        $clientDetails = null;
-        foreach ($collection as $item) {
-            if ($item->getData()["app_name"] === $mo_oauth_app_name) {
-                $clientDetails = $item->getData();
-            }
-        }
+        $clientDetails = $this->oauthUtility->getClientDetailsByAppName($mo_oauth_app_name);
 
         //removing all previous records so at a time only 1 app_name is shown(free)
         $this->oauthUtility->deleteAllRecords();

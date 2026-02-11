@@ -1,6 +1,5 @@
 <?xml version="1.0"?>
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
-    <event name="controller_front_send_response_before">
-        <observer name="miniorange_oauth_session_cookie_observer" instance="MiniOrange\OAuth\Observer\SessionCookieObserver" />
-    </event>
+    <!-- SessionCookieObserver removed from global scope (H2 fix) -->
+    <!-- SameSite=None is now applied only during SSO flows via targeted calls in SendAuthorizationRequest and ReadAuthorizationResponse -->
 </config>

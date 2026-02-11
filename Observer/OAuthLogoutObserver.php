@@ -4,17 +4,15 @@ namespace MiniOrange\OAuth\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use MiniOrange\OAuth\Helper\OAuthMessages;
 use Magento\Framework\Event\Observer;
-use MiniOrange\OAuth\Controller\Actions\ReadAuthorizationResponse;
+
 use MiniOrange\OAuth\Helper\OAuthConstants;
 use Magento\Framework\App\ResponseInterface;
 use Magento\Framework\App\Response\RedirectInterface;
 
 /**
- * This is our main Observer class. Observer class are used as a callback
- * function for all of our events and hooks. This particular observer
- * class is being used to check if a SAML request or response was made
- * to the website. If so then read and process it. Every Observer class
- * needs to implement ObserverInterface.
+ * Observer for customer logout events. Handles redirecting to the
+ * configured OAuth/OIDC logout URL when the customer logs out.
+ * Every Observer class needs to implement ObserverInterface.
  */
 class OAuthLogoutObserver implements ObserverInterface
 {
@@ -69,7 +67,12 @@ class OAuthLogoutObserver implements ObserverInterface
     {
         $logoutUrl = $this->oauthUtility->getStoreConfig(OAuthConstants::OAUTH_LOGOUT_URL);
         if (!empty($logoutUrl)) {
-            $temp = '<script>window.location = "' . $logoutUrl . '";</script>';
+            // Validate URL scheme to prevent javascript: or data: XSS
+            $parsed = parse_url($logoutUrl);
+            if ($parsed === false || !in_array($parsed['scheme'] ?? '', ['https', 'http'], true)) {
+                return;
+            }
+            $temp = '<script>window.location = ' . json_encode($logoutUrl, JSON_UNESCAPED_SLASHES) . ';</script>';
             return $this->_response->setBody($temp);
         }
     }

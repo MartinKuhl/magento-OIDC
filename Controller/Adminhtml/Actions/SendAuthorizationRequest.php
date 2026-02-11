@@ -4,6 +4,7 @@ namespace MiniOrange\OAuth\Controller\Adminhtml\Actions;
 
 use MiniOrange\OAuth\Helper\OAuth\AuthorizationRequest;
 use MiniOrange\OAuth\Helper\OAuthConstants;
+use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
 use MiniOrange\OAuth\Helper\SessionHelper;
 use Magento\Backend\App\Action;
 use MiniOrange\OAuth\Helper\OAuthUtility;
@@ -14,15 +15,18 @@ class SendAuthorizationRequest extends BaseAction
     protected $oauthUtility;
     protected $urlBuilder;
     private $sessionHelper;
+    private $securityHelper;
 
     public function __construct(
         \Magento\Backend\App\Action\Context $context,
         \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
-        SessionHelper $sessionHelper
+        SessionHelper $sessionHelper,
+        OAuthSecurityHelper $securityHelper
     ) {
         parent::__construct($context, $oauthUtility);
         $this->urlBuilder = $context->getUrl();
         $this->sessionHelper = $sessionHelper;
+        $this->securityHelper = $securityHelper;
     }
 
     public function execute()
@@ -56,23 +60,17 @@ class SendAuthorizationRequest extends BaseAction
         $clientDetails = null;
 
         if (!$app_name) {
-            $relayState = isset($params['relayState']) ? $params['relayState'] : $this->oauthUtility->getBaseUrl() . 'customer/account/login';
+            $backendLoginUrl = $this->urlBuilder->getUrl('adminhtml/auth/login');
             $this->messageManager->addErrorMessage('App name not found. Please contact the administrator for assistance.');
-            return $this->getResponse()->setRedirect($relayState)->sendResponse();
+            return $this->resultRedirectFactory->create()->setUrl($backendLoginUrl);
         }
         $this->oauthUtility->setSessionData(OAuthConstants::APP_NAME, $app_name);
 
-        $collection = $this->oauthUtility->getOAuthClientApps();
-        $this->oauthUtility->log_debug("SendAuthorizationRequest: collection :", count($collection));
-        foreach ($collection as $item) {
-            if ($item->getData()["app_name"] === $app_name) {
-                $clientDetails = $item->getData();
-            }
-        }
+        $clientDetails = $this->oauthUtility->getClientDetailsByAppName($app_name);
         if (empty($clientDetails)) {
-            $relayState = isset($params['relayState']) ? $params['relayState'] : $this->oauthUtility->getBaseUrl() . 'customer/account/login';
+            $backendLoginUrl = $this->urlBuilder->getUrl('adminhtml/auth/login');
             $this->messageManager->addErrorMessage('Provided App name is not configured. Please contact the administrator for assistance.');
-            return $this->getResponse()->setRedirect($relayState)->sendResponse();
+            return $this->resultRedirectFactory->create()->setUrl($backendLoginUrl);
         }
         if (!$clientDetails["authorize_endpoint"]) {
             $this->messageManager->addErrorMessage(
@@ -88,12 +86,14 @@ class SendAuthorizationRequest extends BaseAction
         $responseType = OAuthConstants::CODE;
         $redirectURL = $this->oauthUtility->getCallBackUrl();
 
-        // relayState Standardwert mit Login-Typ für Admin
-        $relayState = $isFromPopup
+        // Build relayState with login type for admin, with redirect validation
+        $rawRelayState = $isFromPopup
             ? $this->oauthUtility->getBaseUrl() . "checkout"
             : (isset($params['relayState']) ? $params['relayState'] : '/');
-        // Format: originalRelayState|sessionId|appName|loginType
-        $relayState = $relayState . '|' . $currentSessionId . '|' . $app_name . '|' . OAuthConstants::LOGIN_TYPE_ADMIN;
+        $relayState = $this->securityHelper->validateRedirectUrl($rawRelayState, '/');
+        // Format: encodedRelayState|sessionId|encodedAppName|loginType|stateToken
+        $stateToken = $this->securityHelper->createStateToken($currentSessionId);
+        $relayState = urlencode($relayState) . '|' . $currentSessionId . '|' . urlencode($app_name) . '|' . OAuthConstants::LOGIN_TYPE_ADMIN . '|' . $stateToken;
 
         $isTest = (
             ($this->oauthUtility->getStoreConfig(OAuthConstants::IS_TEST) == true)

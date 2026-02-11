@@ -28,16 +28,30 @@ abstract class BaseAction extends \Magento\Framework\App\Action\Action
 
 
     /**
-     * This function checks if the required fields passed to
-     * this function are empty or not. If empty throw an exception.
+     * Check if any of the required fields are empty. Throws RequiredFieldsException if so.
      *
-     * @param $array
+     * Supports two calling conventions:
+     *   1. checkIfRequiredFieldsEmpty(['key1' => $params, ...]) — legacy associative style
+     *   2. checkIfRequiredFieldsEmpty(['key1', 'key2'], $params) — key list + params array
+     *
+     * @param array $array Required keys (or legacy associative array)
+     * @param array|null $params Source data array (for the two-parameter form)
      * @throws RequiredFieldsException
      */
-    protected function checkIfRequiredFieldsEmpty($array)
+    protected function checkIfRequiredFieldsEmpty($array, $params = null)
     {
-        foreach ($array as $key => $value) {
+        if ($params !== null) {
+            // Two-parameter form: $array is a list of required keys, $params is the data
+            foreach ($array as $key) {
+                if (!isset($params[$key]) || $this->oauthUtility->isBlank($params[$key])) {
+                    throw new RequiredFieldsException();
+                }
+            }
+            return;
+        }
 
+        // Legacy single-parameter form
+        foreach ($array as $key => $value) {
             if (
                 (is_array($value) && (!isset($value[$key]) || $this->oauthUtility->isBlank($value[$key])))
                 || $this->oauthUtility->isBlank($value)

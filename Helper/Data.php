@@ -124,6 +124,19 @@ class Data extends AbstractHelper
     }
 
     /**
+     * Get client details by app name using collection filtering.
+     *
+     * @param string $appName
+     * @return array|null Client details array or null if not found
+     */
+    public function getClientDetailsByAppName($appName)
+    {
+        $collection = $this->getOAuthClientApps();
+        $collection->addFieldToFilter('app_name', $appName);
+        return $collection->getSize() > 0 ? $collection->getFirstItem()->getData() : null;
+    }
+
+    /**
      * Get the app ID from the OAuthClientApp Table
      */
     public function getIDPApps()

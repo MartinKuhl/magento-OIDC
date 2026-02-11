@@ -10,6 +10,7 @@ use Magento\Framework\UrlInterface;
 use Magento\Framework\Stdlib\CookieManagerInterface;
 use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
 use Magento\Backend\Model\UrlInterface as BackendUrlInterface;
+use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
 
 /**
  * OIDC Callback Controller for Admin Login
@@ -38,6 +39,7 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
     protected $cookieManager;
     protected $cookieMetadataFactory;
     protected $backendUrl;
+    private $securityHelper;
 
     public function __construct(
         \Magento\User\Model\UserFactory $userFactory,
@@ -49,7 +51,8 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
         UrlInterface $url,
         CookieManagerInterface $cookieManager,
         CookieMetadataFactory $cookieMetadataFactory,
-        BackendUrlInterface $backendUrl
+        BackendUrlInterface $backendUrl,
+        OAuthSecurityHelper $securityHelper
     ) {
         $this->userFactory = $userFactory;
         $this->auth = $auth;
@@ -61,6 +64,7 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
         $this->cookieManager = $cookieManager;
         $this->cookieMetadataFactory = $cookieMetadataFactory;
         $this->backendUrl = $backendUrl;
+        $this->securityHelper = $securityHelper;
     }
 
     /**
@@ -70,17 +74,26 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
      */
     public function execute()
     {
-        $email = $this->request->getParam('email');
+        $nonce = $this->request->getParam('nonce');
 
         $this->oauthUtility->customlog("OIDC Admin Callback: Starting authentication");
-        $this->oauthUtility->customlog("Email parameter: " . ($email ?? 'NULL'));
 
-        if (empty($email)) {
-            $this->oauthUtility->customlog("ERROR: Email parameter is empty");
+        if (empty($nonce)) {
+            $this->oauthUtility->customlog("ERROR: Nonce parameter is empty");
             return $this->redirectToLoginWithError(
-                __('Authentifizierung fehlgeschlagen: Keine E-Mail-Adresse vom OIDC-Provider erhalten.')
+                __('Authentication failed: Invalid or missing authentication token.')
             );
         }
+
+        $email = $this->securityHelper->redeemAdminLoginNonce($nonce);
+        if ($email === null) {
+            $this->oauthUtility->customlog("ERROR: Nonce is invalid or expired");
+            return $this->redirectToLoginWithError(
+                __('Authentication failed: Authentication token is invalid or has expired. Please try again.')
+            );
+        }
+
+        $this->oauthUtility->customlog("Email resolved from nonce: " . $email);
 
         try {
             $this->oauthUtility->customlog("Searching for admin user with email: " . $email);
@@ -94,7 +107,7 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
 
                 return $this->redirectToLoginWithError(
                     __(
-                        'Admin-Zugang verweigert: Für die E-Mail-Adresse "%1" ist kein Administrator-Konto in Magento hinterlegt. Bitte wenden Sie sich an Ihren Systemadministrator.',
+                        'Admin access denied: No administrator account found for email "%1". Please contact your system administrator.',
                         $email
                     )
                 );
@@ -109,7 +122,7 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
 
                 return $this->redirectToLoginWithError(
                     __(
-                        'Admin-Zugang verweigert: Das Administrator-Konto für "%1" ist deaktiviert. Bitte kontaktieren Sie Ihren Systemadministrator zur Aktivierung.',
+                        'Admin access denied: The administrator account for "%1" is disabled. Please contact your system administrator.',
                         $email
                     )
                 );
@@ -142,7 +155,7 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
                     $this->oauthUtility->customlog("OIDC cookie set for path: " . $adminPath);
 
                     $this->messageManager->addSuccessMessage(
-                        __('Willkommen zurück, %1!', $loggedInUser->getFirstname() ?: $loggedInUser->getUsername())
+                        __('Welcome back, %1!', $loggedInUser->getFirstname() ?: $loggedInUser->getUsername())
                     );
                 } else {
                     $this->oauthUtility->customlog("WARNING: Login processed but isLoggedIn() returned false");
@@ -164,7 +177,7 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
 
             return $this->redirectToLoginWithError(
                 __(
-                    'Die Anmeldung über Authelia ist fehlgeschlagen. Bitte versuchen Sie es erneut oder wenden Sie sich an Ihren Administrator.'
+                    'OIDC authentication failed. Please try again or contact your administrator.'
                 )
             );
         }

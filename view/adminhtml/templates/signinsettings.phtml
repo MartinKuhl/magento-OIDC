@@ -91,8 +91,8 @@ $enableDebugLog = $this->isDebugLogEnable() ? 'checked' : '';
                             <label><strong>User Auto Redirect Settings:</strong></label>
                             <div style="margin-left:17px; margin-top:2%; width:100%;">
                                 <input type="checkbox"
-                                       name="mo_saml_enable_login_redirect"
-                                       id="mo_saml_enable_login_redirect"
+                                       name="mo_oauth_enable_login_redirect"
+                                       id="mo_oauth_enable_login_redirect"
                                        <?= $block->escapeHtmlAttr($enableLoginRedirect) ?>
                                        value="true"
                                        disabled="true"
@@ -187,7 +187,7 @@ $enableDebugLog = $this->isDebugLogEnable() ? 'checked' : '';
 
 <script>
 function togglePostLogoutUrl() {
-    var checkbox = document.getElementById('mo_saml_enable_login_redirect');
+    var checkbox = document.getElementById('mo_oauth_enable_login_redirect');
     var urlInput = document.getElementById('mo_oauth_logout_redirect_url');
     var container = document.getElementById('post_logout_url_container');
 

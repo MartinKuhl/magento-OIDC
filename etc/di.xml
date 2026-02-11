@@ -56,6 +56,15 @@
             <argument name="cookieManager" xsi:type="object">Magento\Framework\Stdlib\CookieManagerInterface</argument>
             <argument name="cookieMetadataFactory" xsi:type="object">Magento\Framework\Stdlib\Cookie\CookieMetadataFactory</argument>
             <argument name="backendUrl" xsi:type="object">Magento\Backend\Model\UrlInterface</argument>
+            <argument name="securityHelper" xsi:type="object">MiniOrange\OAuth\Helper\OAuthSecurityHelper</argument>
+        </arguments>
+    </type>
+
+    <!-- OAuthSecurityHelper Configuration -->
+    <type name="MiniOrange\OAuth\Helper\OAuthSecurityHelper">
+        <arguments>
+            <argument name="cache" xsi:type="object">Magento\Framework\App\CacheInterface</argument>
+            <argument name="oauthUtility" xsi:type="object">MiniOrange\OAuth\Helper\OAuthUtility</argument>
         </arguments>
     </type>
 

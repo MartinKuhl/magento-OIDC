@@ -13,12 +13,14 @@ use MiniOrange\OAuth\Helper\OAuthMessages;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\Action\Action;
 
+// TODO(A3): All attribute mappings (email, firstName, lastName, etc.) are eagerly read from
+// store config in the constructor. Consider lazy-loading via a config value object to improve
+// testability and reduce unnecessary config reads when the action isn't executed.
 class ProcessUserAction extends Action
 {
     private $attrs;
     private $flattenedattrs;
     private $userEmail;
-    private $checkIfMatchBy;
     private $defaultRole;
     private $emailAttribute;
     private $usernameAttribute;
@@ -59,7 +61,6 @@ class ProcessUserAction extends Action
         $this->lastNameKey = $oauthUtility->getStoreConfig(OAuthConstants::MAP_LASTNAME);
         $this->lastNameKey = $oauthUtility->isBlank($this->lastNameKey) ? OAuthConstants::DEFAULT_MAP_LN : $this->lastNameKey;
         $this->defaultRole = $oauthUtility->getStoreConfig(OAuthConstants::MAP_DEFAULT_ROLE);
-        $this->checkIfMatchBy = $oauthUtility->getStoreConfig(OAuthConstants::MAP_MAP_BY);
 
         // Initialize customer data mapping attributes
         $this->dobAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_DOB);
@@ -79,7 +80,6 @@ class ProcessUserAction extends Action
 
         $this->customerModel = $customerModel;
         $this->storeManager = $storeManager;
-        $this->checkIfMatchBy = $oauthUtility->getStoreConfig(OAuthConstants::MAP_MAP_BY);
         $this->responseFactory = $responseFactory;
         $this->customerLoginAction = $customerLoginAction;
         $this->scopeConfig = $scopeConfig;
@@ -166,14 +166,6 @@ class ProcessUserAction extends Action
         } else {
             return $this->customerLoginAction->setUser($user)->setRelayState('/')->execute();
         }
-    }
-
-    private function generateEmail($userName)
-    {
-        $this->oauthUtility->customlog("processUserAction: generateEmail");
-        $siteurl = $this->oauthUtility->getBaseUrl();
-        $siteurl = substr($siteurl, strpos($siteurl, '//'), strlen($siteurl) - 1);
-        return $userName . '@' . $siteurl;
     }
 
     //additionally handle admin user creation if required

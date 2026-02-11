@@ -5,6 +5,7 @@ namespace MiniOrange\OAuth\Controller\Actions;
 use MiniOrange\OAuth\Helper\Exception\MissingAttributesException;
 use MiniOrange\OAuth\Helper\OAuthConstants;
 use MiniOrange\OAuth\Helper\OAuthMessages;
+use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
 use MiniOrange\OAuth\Helper\TestResults;
 use Magento\Framework\App\Action\HttpPostActionInterface;
 use MiniOrange\OAuth\Model\Service\AdminUserCreator;
@@ -46,6 +47,7 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
     protected $backendUrl;
     protected $adminUserCreator;
     protected $customerSession;
+    private $securityHelper;
 
 
     /**
@@ -69,7 +71,8 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
         \Magento\Backend\Model\UrlInterface $backendUrl,
         AdminUserCreator $adminUserCreator,
         \Magento\Customer\Model\Session $customerSession,
-        \MiniOrange\OAuth\Controller\Actions\ShowTestResults $testAction
+        \MiniOrange\OAuth\Controller\Actions\ShowTestResults $testAction,
+        OAuthSecurityHelper $securityHelper
     ) {
         // Initialize attribute mappings from configuration
         $this->emailAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_EMAIL);
@@ -101,6 +104,7 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
         $this->backendUrl = $backendUrl;
         $this->adminUserCreator = $adminUserCreator;
         $this->customerSession = $customerSession;
+        $this->securityHelper = $securityHelper;
         parent::__construct($context, $oauthUtility);
     }
 
@@ -146,8 +150,9 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
                 // Redirect admin users to dedicated admin login endpoint
                 $this->oauthUtility->customlog("Routing admin user to admin callback endpoint");
 
+                $nonce = $this->securityHelper->createAdminLoginNonce($userEmail);
                 $adminCallbackUrl = $this->backendUrl->getUrl('mooauth/actions/oidccallback', [
-                    'email' => $userEmail
+                    'nonce' => $nonce
                 ]);
 
                 $this->oauthUtility->customlog("Admin callback URL: " . $adminCallbackUrl);
@@ -187,8 +192,9 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
                         $this->oauthUtility->customlog("Admin user created successfully. ID: " . $adminUser->getId());
 
                         // Redirect to admin callback for login
+                        $nonce = $this->securityHelper->createAdminLoginNonce($userEmail);
                         $adminCallbackUrl = $this->backendUrl->getUrl('mooauth/actions/oidccallback', [
-                            'email' => $userEmail
+                            'nonce' => $nonce
                         ]);
                         $this->oauthUtility->customlog("Redirecting to admin callback: " . $adminCallbackUrl);
 
@@ -223,45 +229,6 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
         }
     }
 
-    /**
-     * Check if the email belongs to an admin user
-     * 
-     * Checks both username and email fields in the admin_user table.
-     * 
-     * @param string $email User email or username
-     * @return bool True if admin user exists and is active
-     */
-    // isAdminUser logic moved to AdminUserCreator service
-
-    /**
-     * Apply name fallbacks from email when firstName/lastName are empty
-     *
-     * @param string|null $firstName
-     * @param string|null $lastName
-     * @param string $email
-     * @return array [firstName, lastName]
-     */
-    // applyNameFallbacks logic moved to AdminUserCreator service
-
-    /**
-     * Get admin role ID from OIDC groups using configured mappings
-     *
-     * @param array $userGroups Groups from OIDC response
-     * @return int Admin role ID
-     */
-    // getAdminRoleFromGroups logic moved to AdminUserCreator service
-
-    /**
-     * Create a new admin user with the given attributes
-     *
-     * @param string $userName
-     * @param string $email
-     * @param string $firstName
-     * @param string $lastName
-     * @param int $roleId
-     * @return \Magento\User\Model\User|null
-     */
-    // createAdminUser logic moved to AdminUserCreator service
 
     /**
      * Process OAuth/OIDC attribute mapping for customer users
@@ -405,7 +372,7 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
     private function processGroupName(&$attrs)
     {
         if (!isset($attrs[$this->groupName])) {
-            $this->groupName = [];
+            $attrs[$this->groupName] = [];
             $this->oauthUtility->customlog("Group name not provided, using empty array");
         }
     }

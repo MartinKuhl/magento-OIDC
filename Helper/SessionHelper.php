@@ -1,6 +1,7 @@
 <?php
 namespace MiniOrange\OAuth\Helper;
 
+use Magento\Backend\Model\UrlInterface as BackendUrlInterface;
 use Magento\Framework\Stdlib\CookieManagerInterface;
 use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
 use Magento\Framework\Stdlib\Cookie\PublicCookieMetadata;
@@ -28,14 +29,21 @@ class SessionHelper
      */
     private $oauthUtility;
 
+    /**
+     * @var BackendUrlInterface
+     */
+    private $backendUrl;
+
     public function __construct(
         CookieManagerInterface $cookieManager,
         CookieMetadataFactory $cookieMetadataFactory,
-        OAuthUtility $oauthUtility
+        OAuthUtility $oauthUtility,
+        BackendUrlInterface $backendUrl
     ) {
         $this->cookieManager = $cookieManager;
         $this->cookieMetadataFactory = $cookieMetadataFactory;
         $this->oauthUtility = $oauthUtility;
+        $this->backendUrl = $backendUrl;
     }
 
     /**
@@ -75,12 +83,11 @@ class SessionHelper
                 $this->cookieManager->setPublicCookie($sessionName, $cookieValue, $metadata);
             }
 
-            // Auch andere wichtige Cookies in $_COOKIE durchlaufen und aktualisieren
+            // Also update admin session cookies with SameSite=None
+            $adminFrontName = $this->backendUrl->getAreaFrontName();
             foreach ($_COOKIE as $name => $value) {
-                // Admin-Cookies oder andere Session-bezogene Cookies aktualisieren
-                if ($name !== $sessionName && (strpos($name, 'admin') !== false || strpos($name, 'PHPSESSID') !== false)) {
-                    // Path basierend auf Cookie-Namen bestimmen
-                    $path = (strpos($name, 'admin') !== false) ? '/admin' : '/';
+                if ($name !== $sessionName && (strpos($name, $adminFrontName) !== false || strpos($name, 'PHPSESSID') !== false)) {
+                    $path = (strpos($name, $adminFrontName) !== false) ? '/' . $adminFrontName : '/';
 
                     /** @var PublicCookieMetadata $metadata */
                     $metadata = $this->cookieMetadataFactory->createPublicCookieMetadata()
@@ -98,60 +105,33 @@ class SessionHelper
     }
 
     /**
-     * Setzt die Header für das PHP-Cookie, um SameSite=None zu erzwingen
-     * Diese Methode wird vor jeder Response aufgerufen
-     *
-     * Uses Magento's CookieManager for 2.4.7+ compatibility
+     * Set SameSite=None on the PHP session cookie only.
+     * Only updates the session cookie — does not modify other cookies.
      */
     public function forceSameSiteNone()
     {
         try {
-            // Aktuelle Cookies erfassen
-            $cookies = [];
-            foreach (headers_list() as $header) {
-                if (strpos($header, 'Set-Cookie:') === 0) {
-                    // Cookie-Header extrahieren
-                    $cookies[] = $header;
-                }
+            if (session_status() !== PHP_SESSION_ACTIVE) {
+                return;
             }
 
-            // Alle Set-Cookie-Header entfernen
-            header_remove('Set-Cookie');
+            $sessionName = session_name();
+            $sessionId = session_id();
 
-            // Cookies neu hinzufügen mit SameSite=None
-            foreach ($cookies as $cookie) {
-                // Sicherstellen, dass der Cookie "Secure" hat, wenn wir SameSite=None setzen
-                if (strpos($cookie, '; secure') === false) {
-                    $cookie = str_replace('Set-Cookie: ', 'Set-Cookie: ', $cookie) . '; secure';
-                }
-
-                $cookie = preg_replace('/(; SameSite=)([^;]*)/', '$1None', $cookie, -1, $count);
-                if ($count === 0) {
-                    // Wenn kein SameSite-Attribut gefunden wurde, füge es hinzu
-                    $cookie = $cookie . '; SameSite=None';
-                }
-
-                header($cookie, false);
+            if (empty($sessionId) || !isset($_COOKIE[$sessionName])) {
+                return;
             }
 
-            // Auch für das PHP-Session-Cookie - use Magento's CookieManager
-            if (session_status() === PHP_SESSION_ACTIVE) {
-                $sessionName = session_name();
-                $sessionId = session_id();
+            /** @var PublicCookieMetadata $metadata */
+            $metadata = $this->cookieMetadataFactory->createPublicCookieMetadata()
+                ->setPath('/')
+                ->setSecure(true)
+                ->setHttpOnly(true)
+                ->setSameSite('None');
 
-                if (!empty($sessionId) && isset($_COOKIE[$sessionName])) {
-                    /** @var PublicCookieMetadata $metadata */
-                    $metadata = $this->cookieMetadataFactory->createPublicCookieMetadata()
-                        ->setPath('/')
-                        ->setSecure(true)
-                        ->setHttpOnly(true)
-                        ->setSameSite('None');
-
-                    $this->cookieManager->setPublicCookie($sessionName, $sessionId, $metadata);
-                }
-            }
+            $this->cookieManager->setPublicCookie($sessionName, $sessionId, $metadata);
         } catch (\Exception $e) {
-            $this->oauthUtility->customlog("SessionHelper: Fehler in forceSameSiteNone: " . $e->getMessage());
+            $this->oauthUtility->customlog("SessionHelper: Error in forceSameSiteNone: " . $e->getMessage());
         }
     }
 }

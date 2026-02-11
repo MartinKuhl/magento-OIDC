@@ -8,12 +8,17 @@ use MiniOrange\OAuth\Helper\OAuthConstants;
 use MiniOrange\OAuth\Helper\OAuth\AccessTokenRequest;
 use MiniOrange\OAuth\Helper\OAuth\AccessTokenRequestBody;
 use MiniOrange\OAuth\Helper\Curl;
+use MiniOrange\OAuth\Helper\JwtVerifier;
+use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
 use MiniOrange\OAuth\Helper\OAuthUtility;
 use MiniOrange\OAuth\Helper\SessionHelper;
 
 use Magento\Framework\App\RequestInterface;
 use Magento\Framework\App\Request\InvalidRequestException;
 
+// TODO(A2): This controller chains into ProcessResponseAction and CheckAttributeMappingAction
+// via setter injection and direct ->execute() calls. Consider refactoring to use Magento's
+// service layer (Service Contracts / Repositories) instead of controller-to-controller chaining.
 class ReadAuthorizationResponse extends BaseAction
 {
     private $REQUEST;
@@ -22,6 +27,8 @@ class ReadAuthorizationResponse extends BaseAction
     protected $_url;
     private $customerSession;
     private $sessionHelper;
+    private $securityHelper;
+    private $jwtVerifier;
 
     public function __construct(
         Context $context,
@@ -29,12 +36,16 @@ class ReadAuthorizationResponse extends BaseAction
         ProcessResponseAction $processResponseAction,
         \Magento\Framework\UrlInterface $url,
         \Magento\Customer\Model\Session $customerSession,
-        SessionHelper $sessionHelper
+        SessionHelper $sessionHelper,
+        OAuthSecurityHelper $securityHelper,
+        JwtVerifier $jwtVerifier
     ) {
         $this->processResponseAction = $processResponseAction;
         $this->_url = $url;
         $this->customerSession = $customerSession;
         $this->sessionHelper = $sessionHelper;
+        $this->securityHelper = $securityHelper;
+        $this->jwtVerifier = $jwtVerifier;
         parent::__construct($context, $oauthUtility);
     }
 
@@ -100,29 +111,38 @@ class ReadAuthorizationResponse extends BaseAction
         // Parse loginType from relayState (defaults to customer for backward compatibility)
         $loginType = isset($parts[3]) ? $parts[3] : OAuthConstants::LOGIN_TYPE_CUSTOMER;
 
-        // ... Session zurückwechseln, app_name auslesen wie gehabt ...
-
-        // OAuth-Client-Details laden (wie gehabt, gekürzt)
-        $collection = $this->oauthUtility->getOAuthClientApps();
-        $clientDetails = null;
-        foreach ($collection as $item) {
-            $itemData = $item->getData();
-            if ($itemData["app_name"] === $app_name) {
-                $clientDetails = $itemData;
+        // Validate CSRF state token (5th segment)
+        $stateToken = isset($parts[4]) ? $parts[4] : '';
+        if (empty($stateToken) || !$this->securityHelper->validateStateToken($originalSessionId, $stateToken)) {
+            $this->oauthUtility->customlog("ERROR: State token validation failed (CSRF protection)");
+            $encodedError = base64_encode('Security validation failed. Please try logging in again.');
+            if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
+                $loginUrl = $this->_url->getUrl('admin', ['_query' => ['oidc_error' => $encodedError]]);
+            } else {
+                $loginUrl = $this->_url->getUrl('customer/account/login', ['_query' => ['oidc_error' => $encodedError]]);
             }
+            return $this->_redirect($loginUrl);
         }
+
+        // Look up OAuth client details by app name
+        $clientDetails = $this->oauthUtility->getClientDetailsByAppName($app_name);
         if (!$clientDetails) {
+            // Fallback: use the first configured app
             $collection = $this->oauthUtility->getOAuthClientApps();
             if ($collection && count($collection) > 0) {
-                foreach ($collection as $item) {
-                    $clientDetails = $item->getData();
-                    $app_name = $clientDetails["app_name"];
-                    $this->oauthUtility->setSessionData(OAuthConstants::APP_NAME, $app_name);
-                    break;
-                }
+                $clientDetails = $collection->getFirstItem()->getData();
+                $app_name = $clientDetails["app_name"];
+                $this->oauthUtility->setSessionData(OAuthConstants::APP_NAME, $app_name);
             }
             if (!$clientDetails) {
-                return $this->getResponse()->setBody("Ungültige OAuth-App-Konfiguration. Bitte kontaktieren Sie den Administrator.");
+                $this->oauthUtility->customlog("ERROR: Invalid OAuth app configuration");
+                $encodedError = base64_encode('Invalid OAuth app configuration. Please contact the administrator.');
+                if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
+                    $loginUrl = $this->_url->getUrl('admin', ['_query' => ['oidc_error' => $encodedError]]);
+                } else {
+                    $loginUrl = $this->_url->getUrl('customer/account/login', ['_query' => ['oidc_error' => $encodedError]]);
+                }
+                return $this->_redirect($loginUrl);
             }
         }
 
@@ -156,16 +176,45 @@ class ReadAuthorizationResponse extends BaseAction
         } elseif (isset($accessTokenResponseData['id_token'])) {
             $idToken = $accessTokenResponseData['id_token'];
             if (!empty($idToken)) {
-                $idTokenArray = explode(".", $idToken);
-                $userInfoResponseData = $idTokenArray[1];
-                $userInfoResponseData = (array) json_decode((string) base64_decode($userInfoResponseData));
+                $jwksEndpoint = $clientDetails['jwks_endpoint'] ?? '';
+                if (!empty($jwksEndpoint)) {
+                    $userInfoResponseData = $this->jwtVerifier->verifyAndDecode($idToken, $jwksEndpoint, null, $clientID);
+                    if ($userInfoResponseData === null) {
+                        $this->oauthUtility->customlog("ERROR: JWT signature verification failed");
+                        $encodedError = base64_encode('ID token verification failed. Please contact the administrator.');
+                        if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
+                            $loginUrl = $this->_url->getUrl('admin', ['_query' => ['oidc_error' => $encodedError]]);
+                        } else {
+                            $loginUrl = $this->_url->getUrl('customer/account/login', ['_query' => ['oidc_error' => $encodedError]]);
+                        }
+                        return $this->_redirect($loginUrl);
+                    }
+                } else {
+                    // Fallback: no JWKS configured — decode without verification (backward compatible)
+                    $this->oauthUtility->customlog("WARNING: No JWKS endpoint configured, decoding id_token without signature verification");
+                    $userInfoResponseData = $this->jwtVerifier->decodeWithoutVerification($idToken);
+                }
             }
         } else {
-            return $this->getResponse()->setBody("Invalid response. Please try again.");
+            $this->oauthUtility->customlog("ERROR: Invalid token response - no access_token or id_token");
+            $encodedError = base64_encode('Invalid response from OAuth provider. Please try again.');
+            if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
+                $loginUrl = $this->_url->getUrl('admin', ['_query' => ['oidc_error' => $encodedError]]);
+            } else {
+                $loginUrl = $this->_url->getUrl('customer/account/login', ['_query' => ['oidc_error' => $encodedError]]);
+            }
+            return $this->_redirect($loginUrl);
         }
 
         if (empty($userInfoResponseData)) {
-            return $this->getResponse()->setBody("Invalid response. Please try again.");
+            $this->oauthUtility->customlog("ERROR: Empty user info response data");
+            $encodedError = base64_encode('Invalid response from OAuth provider. Please try again.');
+            if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
+                $loginUrl = $this->_url->getUrl('admin', ['_query' => ['oidc_error' => $encodedError]]);
+            } else {
+                $loginUrl = $this->_url->getUrl('customer/account/login', ['_query' => ['oidc_error' => $encodedError]]);
+            }
+            return $this->_redirect($loginUrl);
         }
 
         // ==== TEST-REDIRECT-LOGIK ====
@@ -196,7 +245,8 @@ class ReadAuthorizationResponse extends BaseAction
                 }
                 $this->customerSession->setData('mooauth_test_results', $testResults);
             }
-            return $this->_redirect($relayState);
+            $safeRelayState = $this->securityHelper->validateRedirectUrl($relayState, '/');
+            return $this->_redirect($safeRelayState);
         }
         // ==== ENDE TEST-REDIRECT-LOGIK ====
 
