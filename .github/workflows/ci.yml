@@ -38,7 +38,7 @@ jobs:
 
       - name: Run PHPCS (Magento2 Standard)
         run: |
-          phpcs --standard=Magento2 OIDC/ || exit 1
+          phpcs --standard=Magento2 Oidc/ || exit 1
 
       # ---------------------
       # ESLINT
