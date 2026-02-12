@@ -66,7 +66,7 @@ jobs:
   # -----------------------------------------------------
   # STATIC ANALYSIS JOB (PHPStan + Psalm)
   # -----------------------------------------------------
-    static-analysis:
+  static-analysis:
     name: Static Analysis (PHPStan + Psalm)
     runs-on: ubuntu-latest
 
