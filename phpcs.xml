@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<ruleset name="MagentoOIDC">
+    <description>Magento2 Standard without CSS/GraphQL sniffs</description>
+
+    <!-- Base: Magento2 Standard -->
+    <rule ref="Magento2">
+        <!-- Exclude all Less/CSS sniffs -->
+        <exclude name="Magento2.Less"/>
+        <!-- Exclude all GraphQL sniffs -->
+        <exclude name="Magento2.GraphQL"/>
+        <!-- Exclude deprecated CSS sniff -->
+        <exclude name="Squiz.CSS.NamedColours"/>
+    </rule>
+
+    <!-- Only scan PHP and PHTML files -->
+    <arg name="extensions" value="php,phtml"/>
+
+    <!-- Ignore directories -->
+    <exclude-pattern>vendor/*</exclude-pattern>
+    <exclude-pattern>node_modules/*</exclude-pattern>
+    <exclude-pattern>.github/*</exclude-pattern>
+</ruleset>
