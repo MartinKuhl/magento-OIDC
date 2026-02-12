@@ -48,19 +48,19 @@ jobs:
       - name: Allow phpcodesniffer-composer-installer plugin
         run: composer global config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
 
-      - name: Install Magento Coding Standard
+      - name: Install Magento Coding Standard + PHPCompatibility Fork
         run: |
           composer global require magento/magento-coding-standard --no-interaction --no-progress
-          phpcs --config-set installed_paths "$COMPOSER_HOME/vendor/magento/magento-coding-standard"
+          phpcs --config-set installed_paths "$COMPOSER_HOME/vendor/magento/magento-coding-standard,$COMPOSER_HOME/vendor/magento/php-compatibility-fork"
 
       - name: Debug PHPCS Standards
         run: phpcs -i
 
       - name: Magento2Compatibility (non-blocking)
-        run: phpcs --standard=Magento2Compatibility . --ignore=vendor/*,node_modules/*,.github/* || true
+        run: phpcs --standard=Magento2Compatibility --extensions=php,phtml . --ignore=vendor/*,node_modules/*,.github/* || true
 
       - name: Magento2 Standard (blocking)
-        run: phpcs --standard=Magento2 . --ignore=vendor/*,node_modules/*,.github/*
+        run: phpcs --standard=Magento2 --extensions=php,phtml . --ignore=vendor/*,node_modules/*,.github/*
 
 
   # -----------------------------------------------------
@@ -137,13 +137,13 @@ jobs:
       - name: Allow phpcodesniffer-composer-installer plugin
         run: composer global config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
 
-      - name: Install Magento Coding Standard
+      - name: Install Magento Coding Standard + PHPCompatibility Fork
         run: |
           composer global require magento/magento-coding-standard --no-interaction --no-progress
-          phpcs --config-set installed_paths "$COMPOSER_HOME/vendor/magento/magento-coding-standard"
+          phpcs --config-set installed_paths "$COMPOSER_HOME/vendor/magento/magento-coding-standard,$COMPOSER_HOME/vendor/magento/php-compatibility-fork"
 
       - name: Auto-fix PHP (phpcbf)
-        run: phpcbf --standard=Magento2 . --ignore=vendor/*,node_modules/*,.github/* || true
+        run: phpcbf --standard=Magento2 --extensions=php,phtml . --ignore=vendor/*,node_modules/*,.github/* || true
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
