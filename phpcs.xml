@@ -4,11 +4,8 @@
 
     <!-- Base: Magento2 Standard -->
     <rule ref="Magento2">
-        <!-- Exclude all Less/CSS sniffs -->
         <exclude name="Magento2.Less"/>
-        <!-- Exclude all GraphQL sniffs -->
         <exclude name="Magento2.GraphQL"/>
-        <!-- Exclude deprecated CSS sniff -->
         <exclude name="Squiz.CSS.NamedColours"/>
     </rule>
 

@@ -14,7 +14,7 @@ permissions:
 jobs:
 
   # -----------------------------------------------------
-  # PHP QUALITY JOB
+  # PHP QUALITY JOB (PHPCS)
   # -----------------------------------------------------
   php:
     name: PHP QA (PHP ${{ matrix.php-version }})
@@ -64,7 +64,7 @@ jobs:
 
 
   # -----------------------------------------------------
-  # STATIC ANALYSIS JOB
+  # STATIC ANALYSIS JOB (PHPStan + Psalm)
   # -----------------------------------------------------
   static-analysis:
     name: Static Analysis (PHPStan + Psalm)
@@ -82,30 +82,67 @@ jobs:
       - name: Determine Composer Home
         run: echo "COMPOSER_HOME=$(composer global config home --absolute)" >> $GITHUB_ENV
 
-      - name: Cache Composer Global (Static Tools)
+      - name: Cache vendor dependencies
         uses: actions/cache@v4
         with:
-          path: ${{ env.COMPOSER_HOME }}
-          key: static-tools-${{ runner.os }}-${{ hashFiles('.github/workflows/*.yml') }}
+          path: vendor
+          key: static-vendor-${{ runner.os }}-${{ hashFiles('.github/workflows/*.yml') }}
           restore-keys: |
-            static-tools-${{ runner.os }}-
+            static-vendor-${{ runner.os }}-
 
-      - name: Install PHPStan + Psalm globally
+      - name: Create temporary composer.json for Magento stubs
         run: |
-          composer global require --no-interaction phpstan/phpstan
-          composer global require --no-interaction vimeo/psalm
+          if [ -f composer.json ]; then
+            cp composer.json composer.json.bak
+          fi
+          cat > composer.json <<'EOF'
+          {
+            "require-dev": {
+              "phpstan/phpstan": "*",
+              "bitexpert/phpstan-magento": "*",
+              "magento/framework": "*",
+              "magento/module-backend": "*",
+              "magento/module-catalog": "*",
+              "magento/module-customer": "*",
+              "magento/module-store": "*",
+              "magento/module-config": "*",
+              "magento/module-ui": "*",
+              "magento/module-authorization": "*",
+              "vimeo/psalm": "*"
+            },
+            "repositories": [
+              {
+                "type": "composer",
+                "url": "https://mirror.mage-os.org/"
+              }
+            ],
+            "minimum-stability": "dev",
+            "prefer-stable": true
+          }
+          EOF
+
+      - name: Install PHPStan + Magento Stubs + Psalm
+        run: composer install --no-interaction --no-progress
+
+      - name: Restore original composer.json
+        run: |
+          if [ -f composer.json.bak ]; then
+            mv composer.json.bak composer.json
+          else
+            rm -f composer.json
+          fi
 
       - name: Run PHPStan
-        run: $COMPOSER_HOME/vendor/bin/phpstan analyse . --memory-limit=1G || exit 1
+        run: vendor/bin/phpstan analyse --memory-limit=1G || exit 1
 
       - name: Init Psalm config if missing
         run: |
           if [ ! -f psalm.xml ] && [ ! -f psalm.xml.dist ]; then
-            $COMPOSER_HOME/vendor/bin/psalm --init --source=./ || true
+            vendor/bin/psalm --init --source=./ || true
           fi
 
       - name: Run Psalm
-        run: $COMPOSER_HOME/vendor/bin/psalm --no-cache || exit 1
+        run: vendor/bin/psalm --no-cache || exit 1
 
 
   # -----------------------------------------------------
