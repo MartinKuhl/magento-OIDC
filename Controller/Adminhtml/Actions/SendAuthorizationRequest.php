@@ -16,17 +16,20 @@ class SendAuthorizationRequest extends BaseAction
     protected $urlBuilder;
     private $sessionHelper;
     private $securityHelper;
+    private $sessionManager;
 
     public function __construct(
         \Magento\Backend\App\Action\Context $context,
         \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
         SessionHelper $sessionHelper,
-        OAuthSecurityHelper $securityHelper
+        OAuthSecurityHelper $securityHelper,
+        \Magento\Framework\Session\SessionManagerInterface $sessionManager
     ) {
         parent::__construct($context, $oauthUtility);
         $this->urlBuilder = $context->getUrl();
         $this->sessionHelper = $sessionHelper;
         $this->securityHelper = $securityHelper;
+        $this->sessionManager = $sessionManager;
     }
 
     public function execute()
@@ -56,7 +59,7 @@ class SendAuthorizationRequest extends BaseAction
         $app_name = isset($params['app_name']) ? $params['app_name'] : $this->oauthUtility->getStoreConfig(OAuthConstants::APP_NAME);
         $this->oauthUtility->customlog("SendAuthorizationRequest: Using app_name: " . $app_name);
 
-        $currentSessionId = session_id();
+        $currentSessionId = $this->sessionManager->getSessionId();
         $clientDetails = null;
 
         if (!$app_name) {
@@ -91,9 +94,11 @@ class SendAuthorizationRequest extends BaseAction
             ? $this->oauthUtility->getBaseUrl() . "checkout"
             : (isset($params['relayState']) ? $params['relayState'] : '/');
         $relayState = $this->securityHelper->validateRedirectUrl($rawRelayState, '/');
-        // Format: encodedRelayState|sessionId|encodedAppName|loginType|stateToken
         $stateToken = $this->securityHelper->createStateToken($currentSessionId);
-        $relayState = urlencode($relayState) . '|' . $currentSessionId . '|' . urlencode($app_name) . '|' . OAuthConstants::LOGIN_TYPE_ADMIN . '|' . $stateToken;
+        $relayState = $this->securityHelper->encodeRelayState(
+            $relayState, $currentSessionId, $app_name,
+            OAuthConstants::LOGIN_TYPE_ADMIN, $stateToken
+        );
 
         $isTest = (
             ($this->oauthUtility->getStoreConfig(OAuthConstants::IS_TEST) == true)
@@ -107,7 +112,10 @@ class SendAuthorizationRequest extends BaseAction
             $testRelayState = $baseUrl . 'mooauth/actions/showTestResults/key/' . $testKey . '/';
             $this->oauthUtility->customlog("SendAuthorizationRequest: Test-Flow, setting relayState to: " . $testRelayState);
             // Rebuild combined state preserving sessionId, appName, loginType, stateToken
-            $relayState = urlencode($testRelayState) . '|' . $currentSessionId . '|' . urlencode($app_name) . '|' . OAuthConstants::LOGIN_TYPE_ADMIN . '|' . $stateToken;
+            $relayState = $this->securityHelper->encodeRelayState(
+                $testRelayState, $currentSessionId, $app_name,
+                OAuthConstants::LOGIN_TYPE_ADMIN, $stateToken
+            );
         }
 
         $this->oauthUtility->customlog("Test relayState FINAL: " . $relayState);

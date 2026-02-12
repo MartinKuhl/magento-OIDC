@@ -2,50 +2,45 @@
 
 namespace MiniOrange\OAuth\Controller\Actions;
 
-use Exception;
 use Magento\Framework\App\Action\Context;
 use MiniOrange\OAuth\Helper\OAuthConstants;
 use MiniOrange\OAuth\Helper\OAuth\AccessTokenRequest;
 use MiniOrange\OAuth\Helper\OAuth\AccessTokenRequestBody;
 use MiniOrange\OAuth\Helper\Curl;
+use MiniOrange\OAuth\Helper\Exception\IncorrectUserInfoDataException;
 use MiniOrange\OAuth\Helper\JwtVerifier;
 use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
 use MiniOrange\OAuth\Helper\OAuthUtility;
-use MiniOrange\OAuth\Helper\SessionHelper;
+use MiniOrange\OAuth\Model\Service\OidcAuthenticationService;
 
-use Magento\Framework\App\RequestInterface;
-use Magento\Framework\App\Request\InvalidRequestException;
-
-// TODO(A2): This controller chains into ProcessResponseAction and CheckAttributeMappingAction
-// via setter injection and direct ->execute() calls. Consider refactoring to use Magento's
-// service layer (Service Contracts / Repositories) instead of controller-to-controller chaining.
 class ReadAuthorizationResponse extends BaseAction
 {
-    private $REQUEST;
-    private $POST;
-    private $processResponseAction;
     protected $_url;
     private $customerSession;
-    private $sessionHelper;
     private $securityHelper;
     private $jwtVerifier;
+    private $curl;
+    private $oidcAuthService;
+    private $attrMappingAction;
 
     public function __construct(
         Context $context,
         OAuthUtility $oauthUtility,
-        ProcessResponseAction $processResponseAction,
         \Magento\Framework\UrlInterface $url,
         \Magento\Customer\Model\Session $customerSession,
-        SessionHelper $sessionHelper,
         OAuthSecurityHelper $securityHelper,
-        JwtVerifier $jwtVerifier
+        JwtVerifier $jwtVerifier,
+        Curl $curl,
+        OidcAuthenticationService $oidcAuthService,
+        CheckAttributeMappingAction $attrMappingAction
     ) {
-        $this->processResponseAction = $processResponseAction;
         $this->_url = $url;
         $this->customerSession = $customerSession;
-        $this->sessionHelper = $sessionHelper;
         $this->securityHelper = $securityHelper;
         $this->jwtVerifier = $jwtVerifier;
+        $this->curl = $curl;
+        $this->oidcAuthService = $oidcAuthService;
+        $this->attrMappingAction = $attrMappingAction;
         parent::__construct($context, $oauthUtility);
     }
 
@@ -59,27 +54,28 @@ class ReadAuthorizationResponse extends BaseAction
 
         $params = $this->getRequest()->getParams();
 
-        // ... Vorbereitende Logik & Logging wie gehabt ...
+        // Preparatory logic and logging
 
         if (!isset($params['code'])) {
             // Parse loginType from state even on error (state is still passed by OAuth provider)
             $loginType = OAuthConstants::LOGIN_TYPE_CUSTOMER; // default to customer
+            $relayState = '';
             if (isset($params['state'])) {
-                $parts = explode('|', $params['state']);
-                $loginType = isset($parts[3]) ? $parts[3] : OAuthConstants::LOGIN_TYPE_CUSTOMER;
+                $stateData = $this->securityHelper->decodeRelayState($params['state']);
+                if ($stateData !== null) {
+                    $loginType = $stateData['loginType'];
+                    $relayState = $stateData['relayState'];
+                } else {
+                    // Legacy pipe-delimited format (backward compatibility)
+                    $parts = explode('|', $params['state']);
+                    $loginType = isset($parts[3]) ? $parts[3] : OAuthConstants::LOGIN_TYPE_CUSTOMER;
+                    $relayState = isset($parts[0]) ? urldecode($parts[0]) : '';
+                }
             }
 
             if (isset($params['error'])) {
                 $errorMsg = $params['error_description'] ?? $params['error'];
                 $encodedError = base64_encode($errorMsg);
-
-                // Check if this is a test flow by examining the relayState
-                $relayState = '';
-                if (isset($params['state'])) {
-                    $parts = explode('|', $params['state']);
-                    // Decode relayState as it was encoded to avoid delimiter collision
-                    $relayState = isset($parts[0]) ? urldecode($parts[0]) : '';
-                }
 
                 $isTest = (
                     ($this->oauthUtility->getStoreConfig(OAuthConstants::IS_TEST) == true)
@@ -105,17 +101,26 @@ class ReadAuthorizationResponse extends BaseAction
 
         $authorizationCode = $params['code'];
         $combinedRelayState = $params['state'];
-        $parts = explode('|', $combinedRelayState);
-        // Decode relayState and app_name as they were encoded to avoid delimiter collision
-        $relayState = urldecode($parts[0]);
 
-        $originalSessionId = isset($parts[1]) ? $parts[1] : '';
-        $app_name = isset($parts[2]) ? urldecode($parts[2]) : '';
-        // Parse loginType from relayState (defaults to customer for backward compatibility)
-        $loginType = isset($parts[3]) ? $parts[3] : OAuthConstants::LOGIN_TYPE_CUSTOMER;
+        // Try JSON+Base64 decoding first; fall back to legacy pipe format for backward compatibility
+        $stateData = $this->securityHelper->decodeRelayState($combinedRelayState);
+        if ($stateData !== null) {
+            $relayState = $stateData['relayState'];
+            $originalSessionId = $stateData['sessionId'];
+            $app_name = $stateData['appName'];
+            $loginType = $stateData['loginType'];
+            $stateToken = $stateData['stateToken'];
+        } else {
+            // Legacy pipe-delimited format (backward compatibility during rollout)
+            $parts = explode('|', $combinedRelayState);
+            $relayState = urldecode($parts[0]);
+            $originalSessionId = isset($parts[1]) ? $parts[1] : '';
+            $app_name = isset($parts[2]) ? urldecode($parts[2]) : '';
+            $loginType = isset($parts[3]) ? $parts[3] : OAuthConstants::LOGIN_TYPE_CUSTOMER;
+            $stateToken = isset($parts[4]) ? $parts[4] : '';
+        }
 
-        // Validate CSRF state token (5th segment)
-        $stateToken = isset($parts[4]) ? $parts[4] : '';
+        // Validate CSRF state token
         if (empty($stateToken) || !$this->securityHelper->validateStateToken($originalSessionId, $stateToken)) {
             $this->oauthUtility->customlog("ERROR: State token validation failed (CSRF protection)");
             $encodedError = base64_encode('Security validation failed. Please try logging in again.');
@@ -149,7 +154,7 @@ class ReadAuthorizationResponse extends BaseAction
             }
         }
 
-        // Token-Request bauen
+        // Build token request
         $clientID = $clientDetails["clientID"];
         $clientSecret = $clientDetails["client_secret"];
         $accessTokenURL = $clientDetails["access_token_endpoint"];
@@ -164,24 +169,33 @@ class ReadAuthorizationResponse extends BaseAction
             $accessTokenRequest = (new AccessTokenRequest($clientID, $clientSecret, $grantType, $redirectURL, $authorizationCode))->build();
         }
 
-        $accessTokenResponse = Curl::mo_send_access_token_request($accessTokenRequest, $accessTokenURL, $clientID, $clientSecret, $header, $body);
+        $accessTokenResponse = $this->curl->sendAccessTokenRequest($accessTokenRequest, $accessTokenURL, $clientID, $clientSecret, $header, $body);
 
         $accessTokenResponseData = json_decode($accessTokenResponse, true);
 
-        // Userinfo holen
+        // Fetch user info
         $userInfoURL = $clientDetails['user_info_endpoint'];
         if (!($userInfoURL == NULL || $userInfoURL == '') && isset($accessTokenResponseData['access_token'])) {
             $accessToken = $accessTokenResponseData['access_token'];
             $headerAuth = "Bearer " . $accessToken;
             $authHeader = ["Authorization: $headerAuth"];
-            $userInfoResponse = Curl::mo_send_user_info_request($userInfoURL, $authHeader);
+            $userInfoResponse = $this->curl->sendUserInfoRequest($userInfoURL, $authHeader);
             $userInfoResponseData = json_decode($userInfoResponse, true);
         } elseif (isset($accessTokenResponseData['id_token'])) {
             $idToken = $accessTokenResponseData['id_token'];
             if (!empty($idToken)) {
                 $jwksEndpoint = $clientDetails['jwks_endpoint'] ?? '';
                 if (!empty($jwksEndpoint)) {
-                    $userInfoResponseData = $this->jwtVerifier->verifyAndDecode($idToken, $jwksEndpoint, null, $clientID);
+                    // Resolve expected issuer from stored discovery document data
+                    $expectedIssuer = $clientDetails['issuer'] ?? null;
+                    if (empty($expectedIssuer)) {
+                        // Fallback: derive issuer from well-known URL
+                        $wellKnownUrl = $clientDetails['well_known_config_url'] ?? '';
+                        if (!empty($wellKnownUrl)) {
+                            $expectedIssuer = preg_replace('#/\.well-known/openid-configuration$#i', '', $wellKnownUrl);
+                        }
+                    }
+                    $userInfoResponseData = $this->jwtVerifier->verifyAndDecode($idToken, $jwksEndpoint, $expectedIssuer, $clientID);
                     if ($userInfoResponseData === null) {
                         $this->oauthUtility->customlog("ERROR: JWT signature verification failed");
                         $encodedError = base64_encode('ID token verification failed. Please contact the administrator.');
@@ -193,9 +207,15 @@ class ReadAuthorizationResponse extends BaseAction
                         return $this->_redirect($loginUrl);
                     }
                 } else {
-                    // Fallback: no JWKS configured — decode without verification (backward compatible)
-                    $this->oauthUtility->customlog("WARNING: No JWKS endpoint configured, decoding id_token without signature verification");
-                    $userInfoResponseData = $this->jwtVerifier->decodeWithoutVerification($idToken);
+                    // SECURITY: Refuse unverified JWTs — JWKS endpoint is required
+                    $this->oauthUtility->customlog("ERROR: Cannot verify id_token - no JWKS endpoint configured.");
+                    $encodedError = base64_encode('OIDC configuration error: JWKS endpoint is required for id_token verification. Please configure it in the OAuth settings.');
+                    if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
+                        $loginUrl = $this->_url->getUrl('admin', ['_query' => ['oidc_error' => $encodedError]]);
+                    } else {
+                        $loginUrl = $this->_url->getUrl('customer/account/login', ['_query' => ['oidc_error' => $encodedError]]);
+                    }
+                    return $this->_redirect($loginUrl);
                 }
             }
         } else {
@@ -220,7 +240,7 @@ class ReadAuthorizationResponse extends BaseAction
             return $this->_redirect($loginUrl);
         }
 
-        // ==== TEST-REDIRECT-LOGIK ====
+        // ==== TEST REDIRECT LOGIC ====
         $isTest = (
             ($this->oauthUtility->getStoreConfig(OAuthConstants::IS_TEST) == true)
             || (isset($params['option']) && $params['option'] === OAuthConstants::TEST_CONFIG_OPT)
@@ -228,7 +248,7 @@ class ReadAuthorizationResponse extends BaseAction
         );
 
         if ($isTest) {
-            // Test-Key aus relayState extrahieren (z.B. /key/abc123...)
+            // Extract test key from relayState (e.g. /key/abc123...)
             preg_match('/key\/([a-f0-9]{32,})/', $relayState, $matches);
             $testKey = $matches[1] ?? '';
             if ($testKey) {
@@ -251,9 +271,9 @@ class ReadAuthorizationResponse extends BaseAction
             $safeRelayState = $this->securityHelper->validateRedirectUrl($relayState, '/');
             return $this->_redirect($safeRelayState);
         }
-        // ==== ENDE TEST-REDIRECT-LOGIK ====
+        // ==== END TEST REDIRECT LOGIC ====
 
-        // Normale Response-Action
+        // Process authentication via service layer (replaces controller chaining)
         if (is_array($userInfoResponseData)) {
             $userInfoResponseData['relayState'] = $relayState;
             $userInfoResponseData['loginType'] = $loginType;
@@ -261,7 +281,35 @@ class ReadAuthorizationResponse extends BaseAction
             $userInfoResponseData->relayState = $relayState;
             $userInfoResponseData->loginType = $loginType;
         }
-        $result = $this->processResponseAction->setUserInfoResponse($userInfoResponseData)->execute();
+
+        try {
+            $this->oidcAuthService->validateUserInfo($userInfoResponseData);
+        } catch (IncorrectUserInfoDataException $e) {
+            $this->oauthUtility->customlog("ERROR: Invalid user info data from OAuth provider - " . $e->getMessage());
+            $this->messageManager->addErrorMessage(__('Authentication failed: Invalid user information received from identity provider.'));
+            $errorPath = ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) ? 'admin' : 'customer/account/login';
+            return $this->resultRedirectFactory->create()->setPath($errorPath);
+        }
+
+        $flattenedResponse = [];
+        $this->oidcAuthService->flattenAttributes('', $userInfoResponseData, $flattenedResponse);
+
+        $userEmail = $this->oidcAuthService->extractEmail($flattenedResponse, $userInfoResponseData);
+        if (empty($userEmail)) {
+            $this->messageManager->addErrorMessage(__('Email address not received. Please check attribute mapping.'));
+            return $this->resultRedirectFactory->create()->setPath('customer/account/login');
+        }
+
+        $detectedLoginType = $this->oidcAuthService->extractLoginType($userInfoResponseData);
+        $this->oauthUtility->customlog("ReadAuthorizationResponse: loginType = " . $detectedLoginType);
+
+        $result = $this->attrMappingAction
+            ->setUserInfoResponse($userInfoResponseData)
+            ->setFlattenedUserInfoResponse($flattenedResponse)
+            ->setUserEmail($userEmail)
+            ->setLoginType($detectedLoginType)
+            ->execute();
+
         return $result;
     }
 }

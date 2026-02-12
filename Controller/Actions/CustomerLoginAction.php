@@ -93,7 +93,7 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
      */
     public function setRelayState($relayState)
     {
-        $this->oauthUtility->log_debug("CustomerLoginAction: setRelayState");
+        $this->oauthUtility->customlog("CustomerLoginAction: setRelayState");
         $this->relayState = $relayState;
         return $this;
     }

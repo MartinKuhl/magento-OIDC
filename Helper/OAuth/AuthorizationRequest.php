@@ -52,16 +52,19 @@ class AuthorizationRequest
         }
 
         $requestStr .=
-            'client_id=' . $this->clientID .
+            'client_id=' . urlencode($this->clientID) .
             '&scope=' . urlencode($this->scope) .
             '&state=' . urlencode($this->state) .
             '&redirect_uri=' . urlencode($this->redirectURL) .
-            '&response_type=' . $this->responseType;
+            '&response_type=' . urlencode($this->responseType);
 
-            foreach($this->params as $key=>$value){
-                if($key != "relayState")
-                    $requestStr = $requestStr. "&$key=".$value;
-                }
+        // Only forward recognized OAuth parameters to the IdP, URL-encoded
+        $allowedExtraParams = ['nonce', 'prompt', 'login_hint', 'acr_values'];
+        foreach ($this->params as $key => $value) {
+            if (in_array($key, $allowedExtraParams, true)) {
+                $requestStr .= '&' . urlencode($key) . '=' . urlencode($value);
+            }
+        }
 
         return $requestStr;
     }

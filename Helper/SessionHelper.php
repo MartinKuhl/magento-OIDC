@@ -7,13 +7,19 @@ use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
 use Magento\Framework\Stdlib\Cookie\PublicCookieMetadata;
 
 /**
- * Session-Handler-Plugin für miniOrange OAuth SSO
- * Diese Klasse konfiguriert die PHP-Session für Cross-Origin-Nutzung
+ * Session handler plugin for miniOrange OAuth SSO
+ * This class configures the PHP session for cross-origin usage
  *
  * Compatible with Magento 2.4.7 - 2.4.8-p3
  */
 class SessionHelper
 {
+    /**
+     * Known admin-related cookie names to update with SameSite=None.
+     * Used instead of iterating $_COOKIE directly.
+     */
+    private const ADMIN_COOKIE_NAMES = ['PHPSESSID', 'admin'];
+
     /**
      * @var CookieManagerInterface
      */
@@ -47,7 +53,7 @@ class SessionHelper
     }
 
     /**
-     * Konfiguriert die PHP-Session für SSO
+     * Configures the PHP session for SSO
      */
     public function configureSSOSession()
     {
@@ -57,22 +63,21 @@ class SessionHelper
     }
 
     /**
-     * Bestehende Session-Cookies neu setzen mit SameSite=None
-     * Behandelt sowohl Frontend als auch Admin Cookies
+     * Re-set existing session cookies with SameSite=None
+     * Handles both frontend and admin cookies
      *
      * Uses Magento's CookieManager for 2.4.7+ compatibility
      */
     public function updateSessionCookies()
     {
         try {
-            // Prüfen, ob die Session aktiv ist
+            // Check if the session is active
             $isSessionActive = (session_status() == PHP_SESSION_ACTIVE);
             $sessionName = session_name();
 
-            // Behandeln des Frontend-Cookies (/ Pfad)
-            if (isset($_COOKIE[$sessionName])) {
-                $cookieValue = $_COOKIE[$sessionName];
-
+            // Handle the frontend session cookie (/ path)
+            $cookieValue = $this->cookieManager->getCookie($sessionName);
+            if ($cookieValue !== null) {
                 /** @var PublicCookieMetadata $metadata */
                 $metadata = $this->cookieMetadataFactory->createPublicCookieMetadata()
                     ->setPath('/')
@@ -85,19 +90,31 @@ class SessionHelper
 
             // Also update admin session cookies with SameSite=None
             $adminFrontName = $this->backendUrl->getAreaFrontName();
-            foreach ($_COOKIE as $name => $value) {
-                if ($name !== $sessionName && (strpos($name, $adminFrontName) !== false || strpos($name, 'PHPSESSID') !== false)) {
-                    $path = (strpos($name, $adminFrontName) !== false) ? '/' . $adminFrontName : '/';
+            $adminCookieCandidates = self::ADMIN_COOKIE_NAMES;
+            // Include the admin-prefixed session cookie name as a candidate
+            $adminCookieCandidates[] = $adminFrontName;
 
-                    /** @var PublicCookieMetadata $metadata */
-                    $metadata = $this->cookieMetadataFactory->createPublicCookieMetadata()
-                        ->setPath($path)
-                        ->setSecure(true)
-                        ->setHttpOnly(true)
-                        ->setSameSite('None');
-
-                    $this->cookieManager->setPublicCookie($name, $value, $metadata);
+            foreach ($adminCookieCandidates as $candidateName) {
+                if ($candidateName === $sessionName) {
+                    // Already handled above
+                    continue;
                 }
+
+                $candidateValue = $this->cookieManager->getCookie($candidateName);
+                if ($candidateValue === null) {
+                    continue;
+                }
+
+                $path = (strpos($candidateName, $adminFrontName) !== false) ? '/' . $adminFrontName : '/';
+
+                /** @var PublicCookieMetadata $metadata */
+                $metadata = $this->cookieMetadataFactory->createPublicCookieMetadata()
+                    ->setPath($path)
+                    ->setSecure(true)
+                    ->setHttpOnly(true)
+                    ->setSameSite('None');
+
+                $this->cookieManager->setPublicCookie($candidateName, $candidateValue, $metadata);
             }
         } catch (\Exception $e) {
             $this->oauthUtility->customlog("SessionHelper: Exception in updateSessionCookies: " . $e->getMessage());
@@ -106,7 +123,7 @@ class SessionHelper
 
     /**
      * Set SameSite=None on the PHP session cookie only.
-     * Only updates the session cookie — does not modify other cookies.
+     * Only updates the session cookie - does not modify other cookies.
      */
     public function forceSameSiteNone()
     {
@@ -118,7 +135,7 @@ class SessionHelper
             $sessionName = session_name();
             $sessionId = session_id();
 
-            if (empty($sessionId) || !isset($_COOKIE[$sessionName])) {
+            if (empty($sessionId) || $this->cookieManager->getCookie($sessionName) === null) {
                 return;
             }
 

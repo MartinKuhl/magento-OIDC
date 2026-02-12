@@ -25,6 +25,7 @@ class Data extends AbstractHelper
     protected $appResource;
     protected $userResource;
     protected $customerResource;
+    private $encryptor;
 
     public function __construct(
         \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
@@ -38,7 +39,8 @@ class Data extends AbstractHelper
         \MiniOrange\OAuth\Model\MiniorangeOauthClientAppsFactory $miniorangeOauthClientAppsFactory,
         \MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps $appResource,
         \Magento\User\Model\ResourceModel\User $userResource,
-        \Magento\Customer\Model\ResourceModel\Customer $customerResource
+        \Magento\Customer\Model\ResourceModel\Customer $customerResource,
+        \Magento\Framework\Encryption\EncryptorInterface $encryptor
     ) {
         $this->scopeConfig = $scopeConfig;
         $this->adminFactory = $adminFactory;
@@ -52,6 +54,7 @@ class Data extends AbstractHelper
         $this->appResource = $appResource;
         $this->userResource = $userResource;
         $this->customerResource = $customerResource;
+        $this->encryptor = $encryptor;
     }
 
 
@@ -84,18 +87,20 @@ class Data extends AbstractHelper
         $mo_oauth_grant_type,
         $send_header,
         $send_body,
+        $mo_oauth_issuer = ''
     ) {
         $model = $this->_miniorangeOauthClientAppsFactory->create();
         $model->addData([
             "app_name" => $this->sanitize($mo_oauth_app_name),
             "callback_uri" => '',
             "clientID" => $this->sanitize($mo_oauth_client_id),
-            "client_secret" => $this->sanitize($mo_oauth_client_secret),
+            "client_secret" => $this->encryptor->encrypt($this->sanitize($mo_oauth_client_secret)),
             "scope" => $this->sanitize($mo_oauth_scope),
             "authorize_endpoint" => $this->sanitize($mo_oauth_authorize_url),
             "access_token_endpoint" => $this->sanitize($mo_oauth_accesstoken_url),
             "user_info_endpoint" => $this->sanitize($mo_oauth_getuserinfo_url),
             "well_known_config_url" => $this->sanitize($mo_oauth_well_known_config_url),
+            "issuer" => $this->sanitize($mo_oauth_issuer),
             "grant_type" => $this->sanitize($mo_oauth_grant_type),
             "values_in_header" => $send_header,
             "values_in_body" => $send_body
@@ -133,15 +138,16 @@ class Data extends AbstractHelper
     {
         $collection = $this->getOAuthClientApps();
         $collection->addFieldToFilter('app_name', $appName);
-        return $collection->getSize() > 0 ? $collection->getFirstItem()->getData() : null;
-    }
-
-    /**
-     * Get the app ID from the OAuthClientApp Table
-     */
-    public function getIDPApps()
-    {
-        return $this->getOAuthClientApps();
+        $data = $collection->getSize() > 0 ? $collection->getFirstItem()->getData() : null;
+        if ($data !== null && isset($data['client_secret']) && !empty($data['client_secret'])) {
+            // Magento encrypted values use format "version:key_num:base64data" (e.g. "0:2:abc...")
+            // Only attempt decryption if the value matches this pattern
+            if (preg_match('/^\d+:\d+:/', $data['client_secret'])) {
+                $data['client_secret'] = $this->encryptor->decrypt($data['client_secret']);
+            }
+            // Otherwise keep as-is (plaintext — will be encrypted on next admin save)
+        }
+        return $data;
     }
 
     /**
@@ -168,7 +174,7 @@ class Data extends AbstractHelper
         $finalValue = $skipSanitize ? $value : $this->sanitize($value);
         $this->configWriter->save('miniorange/oauth/' . $config, $finalValue);
 
-        // Wenn es sich um Admin- oder Kunden-Link-Einstellungen handelt, aktualisieren Sie auch die OAuth-Client-App-Tabelle
+        // If this is an admin or customer link setting, also update the OAuth client app table
         if ($config === OAuthConstants::SHOW_ADMIN_LINK || $config === OAuthConstants::SHOW_CUSTOMER_LINK) {
             try {
                 $collection = $this->getOAuthClientApps();
@@ -180,7 +186,7 @@ class Data extends AbstractHelper
                     }
                 }
             } catch (\Exception $e) {
-                // Fehler beim Aktualisieren der Client-App-Tabelle protokollieren
+                // Log error when updating the client app table
             }
         }
     }
@@ -437,7 +443,7 @@ class Data extends AbstractHelper
     {
         $relayState = is_null($relayState) ? $this->getCurrentUrl() : $relayState;
 
-        // Wenn app_name nicht gesetzt ist, versuchen Sie es aus der Konfiguration zu holen
+        // If app_name is not set, try to retrieve it from the configuration
         if (empty($app_name)) {
             $app_name = $this->getStoreConfig(OAuthConstants::APP_NAME);
         }

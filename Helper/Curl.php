@@ -87,6 +87,7 @@ class Curl
         $curl->setConfig($options);
         $curl->write($method, $url, '1.1', $headers, $data);
         $content = $curl->read();
+        $httpCode = $curl->getInfo(CURLINFO_HTTP_CODE);
         $curl->close();
 
         if (empty($content)) {
@@ -96,24 +97,11 @@ class Curl
             ]);
         }
 
+        if ($httpCode >= 400) {
+            $this->oauthUtility->customlog("Curl: HTTP error " . $httpCode . " from: " . $url);
+            // Return actual response body — OAuth providers return error details as JSON in 4xx responses
+        }
+
         return $content;
-    }
-
-    /**
-     * @deprecated Use sendAccessTokenRequest() instance method instead
-     */
-    public static function mo_send_access_token_request($postData, $url, $clientID, $clientSecret, $header, $body)
-    {
-        $instance = \Magento\Framework\App\ObjectManager::getInstance()->get(self::class);
-        return $instance->sendAccessTokenRequest($postData, $url, $clientID, $clientSecret, $header, $body);
-    }
-
-    /**
-     * @deprecated Use sendUserInfoRequest() instance method instead
-     */
-    public static function mo_send_user_info_request($url, $headers)
-    {
-        $instance = \Magento\Framework\App\ObjectManager::getInstance()->get(self::class);
-        return $instance->sendUserInfoRequest($url, $headers);
     }
 }

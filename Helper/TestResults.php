@@ -9,7 +9,7 @@ class TestResults
         if ($hasException && $exception) {
             $html .= "<div class='error'>" . $exception->getMessage() . "</div>";
         } else {
-            $html .= "<div class='success'>Test erfolgreich!</div>";
+            $html .= "<div class='success'>Test successful!</div>";
             $html .= "<div><strong>Mail:</strong> " . htmlspecialchars($data['mail'] ?? '') . "</div>";
             $html .= "<div><strong>Userinfo:</strong> <pre>" . htmlspecialchars(print_r($data['userinfo'] ?? [], true)) . "</pre></div>";
             // Debugging: Gibt alle empfangenen Parameter aus

@@ -4,13 +4,11 @@ namespace MiniOrange\OAuth\Controller\Actions;
 use MiniOrange\OAuth\Helper\Exception\IncorrectUserInfoDataException;
 use MiniOrange\OAuth\Helper\OAuthConstants;
 
-use Magento\Framework\App\RequestInterface;
-use Magento\Framework\App\Request\InvalidRequestException;
-
 /**
- * Handles processing of OAuth/OIDC responses from the IDP. Process the response,
- * validate the user info data, flatten attributes, extract email, and route
- * to the attribute mapping action for login.
+ * @deprecated Use OidcAuthenticationService + CheckAttributeMappingAction directly.
+ * This controller existed as a chaining intermediary between ReadAuthorizationResponse
+ * and CheckAttributeMappingAction. Its logic has been extracted into
+ * \MiniOrange\OAuth\Model\Service\OidcAuthenticationService.
  */
 class ProcessResponseAction extends BaseAction
 {
@@ -75,7 +73,8 @@ class ProcessResponseAction extends BaseAction
         }
 
         if (empty($userEmail)) {
-            return $this->getResponse()->setBody("Email address not received. Please check attribute mapping.");
+            $this->messageManager->addErrorMessage(__('Email address not received. Please check attribute mapping.'));
+            return $this->resultRedirectFactory->create()->setPath('customer/account/login');
         }
 
         // Extract loginType from userInfoResponse (defaults to customer for backward compatibility)
@@ -93,7 +92,7 @@ class ProcessResponseAction extends BaseAction
             ->setLoginType($loginType)
             ->execute();
 
-        // Debug: Prüfe was zurückkommt
+        // Debug: Check what is returned
         $this->oauthUtility->customlog("ProcessResponseAction: attrMappingAction returned: " .
             ($result ? get_class($result) : 'NULL'));
 

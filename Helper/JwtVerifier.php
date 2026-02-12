@@ -2,6 +2,8 @@
 
 namespace MiniOrange\OAuth\Helper;
 
+use Magento\Framework\App\CacheInterface;
+
 /**
  * Pure PHP JWT verification using openssl_verify().
  *
@@ -11,11 +13,17 @@ namespace MiniOrange\OAuth\Helper;
 class JwtVerifier
 {
     private OAuthUtility $oauthUtility;
+    private CacheInterface $cache;
+    private \Magento\Framework\HTTP\Adapter\CurlFactory $curlFactory;
 
     public function __construct(
-        OAuthUtility $oauthUtility
+        OAuthUtility $oauthUtility,
+        CacheInterface $cache,
+        \Magento\Framework\HTTP\Adapter\CurlFactory $curlFactory
     ) {
         $this->oauthUtility = $oauthUtility;
+        $this->cache = $cache;
+        $this->curlFactory = $curlFactory;
     }
 
     /**
@@ -139,7 +147,16 @@ class JwtVerifier
      */
     private function fetchJwks(string $jwksUrl): ?array
     {
-        $curl = new \Magento\Framework\HTTP\Adapter\Curl();
+        $cacheKey = 'mooauth_jwks_' . md5($jwksUrl);
+        $cached = $this->cache->load($cacheKey);
+        if ($cached) {
+            $cachedData = json_decode($cached, true);
+            if (isset($cachedData['keys']) && is_array($cachedData['keys'])) {
+                return $cachedData['keys'];
+            }
+        }
+
+        $curl = $this->curlFactory->create();
         $curl->setConfig([
             'header' => false,
             'CURLOPT_TIMEOUT' => 30,
@@ -160,6 +177,8 @@ class JwtVerifier
             $this->oauthUtility->customlog("JwtVerifier: Invalid JWKS format from: " . $jwksUrl);
             return null;
         }
+
+        $this->cache->save($response, $cacheKey, [], 86400);
 
         return $data['keys'];
     }

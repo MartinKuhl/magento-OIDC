@@ -3,7 +3,6 @@ namespace MiniOrange\OAuth\Controller\Actions;
 
 use MiniOrange\OAuth\Model\Service\CustomerUserCreator;
 use Magento\Customer\Model\Customer;
-use Magento\Framework\App\Action\Context;
 use Magento\Framework\App\ResponseFactory;
 use Magento\Store\Model\StoreManagerInterface;
 use MiniOrange\OAuth\Helper\Exception\MissingAttributesException;
@@ -11,12 +10,10 @@ use MiniOrange\OAuth\Helper\OAuthConstants;
 use MiniOrange\OAuth\Helper\OAuthUtility;
 use MiniOrange\OAuth\Helper\OAuthMessages;
 use Magento\Framework\App\Config\ScopeConfigInterface;
-use Magento\Framework\App\Action\Action;
+use Magento\Framework\Controller\Result\RedirectFactory;
+use Magento\Framework\Message\ManagerInterface;
 
-// TODO(A3): All attribute mappings (email, firstName, lastName, etc.) are eagerly read from
-// store config in the constructor. Consider lazy-loading via a config value object to improve
-// testability and reduce unnecessary config reads when the action isn't executed.
-class ProcessUserAction extends Action
+class ProcessUserAction
 {
     private $attrs;
     private $flattenedattrs;
@@ -37,20 +34,23 @@ class ProcessUserAction extends Action
     private $customerLoginAction;
     private $responseFactory;
     private $storeManager;
-    protected $scopeConfig;
-    protected $oauthUtility;
+    private $scopeConfig;
+    private $oauthUtility;
     private $customerUserCreator;
+    private $resultRedirectFactory;
+    private $messageManager;
 
 
     public function __construct(
-        Context $context,
         OAuthUtility $oauthUtility,
         Customer $customerModel,
         StoreManagerInterface $storeManager,
         ResponseFactory $responseFactory,
         CustomerLoginAction $customerLoginAction,
         ScopeConfigInterface $scopeConfig,
-        CustomerUserCreator $customerUserCreator
+        CustomerUserCreator $customerUserCreator,
+        RedirectFactory $resultRedirectFactory,
+        ManagerInterface $messageManager
     ) {
         $this->emailAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_EMAIL);
         $this->emailAttribute = $oauthUtility->isBlank($this->emailAttribute) ? OAuthConstants::DEFAULT_MAP_EMAIL : $this->emailAttribute;
@@ -85,7 +85,8 @@ class ProcessUserAction extends Action
         $this->scopeConfig = $scopeConfig;
         $this->oauthUtility = $oauthUtility;
         $this->customerUserCreator = $customerUserCreator;
-        parent::__construct($context);
+        $this->resultRedirectFactory = $resultRedirectFactory;
+        $this->messageManager = $messageManager;
     }
 
     public function execute()
@@ -134,7 +135,7 @@ class ProcessUserAction extends Action
                 $encodedError = base64_encode(OAuthMessages::AUTO_CREATE_USER_DISABLED);
                 $loginUrl = $this->oauthUtility->getCustomerLoginUrl();
                 $loginUrl .= (strpos($loginUrl, '?') !== false ? '&' : '?') . 'oidc_error=' . $encodedError;
-                return $this->getResponse()->setRedirect($loginUrl)->sendResponse();
+                return $this->resultRedirectFactory->create()->setUrl($loginUrl);
             }
 
             $user = $this->createNewUser($user_email, $firstName, $lastName, $userName, $user, $admin);
@@ -179,7 +180,7 @@ class ProcessUserAction extends Action
 
         if (empty($lastName)) {
             $parts = explode("@", $user_email);
-            $lastName = $parts[1];
+            $lastName = isset($parts[1]) ? $parts[1] : $parts[0];
         }
 
         $userName = !$this->oauthUtility->isBlank($userName) ? $userName : $user_email;

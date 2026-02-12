@@ -112,6 +112,53 @@ class OAuthSecurityHelper
     }
 
     /**
+     * Encode relay state data as a URL-safe JSON+Base64 string for the OAuth state parameter.
+     *
+     * @param string $relayState The original relay state URL
+     * @param string $sessionId The current PHP session ID
+     * @param string $appName The OAuth app name
+     * @param string $loginType Login type (admin or customer)
+     * @param string $stateToken CSRF state token
+     * @return string URL-safe base64-encoded JSON string
+     */
+    public function encodeRelayState(string $relayState, string $sessionId, string $appName, string $loginType, string $stateToken): string
+    {
+        $data = [
+            'r' => $relayState,
+            's' => $sessionId,
+            'a' => $appName,
+            'l' => $loginType,
+            't' => $stateToken,
+        ];
+        return rtrim(strtr(base64_encode(json_encode($data)), '+/', '-_'), '=');
+    }
+
+    /**
+     * Decode a URL-safe JSON+Base64 relay state string.
+     *
+     * @param string $encoded The encoded state string
+     * @return array|null Associative array with keys: relayState, sessionId, appName, loginType, stateToken; or null on failure
+     */
+    public function decodeRelayState(string $encoded): ?array
+    {
+        $decoded = base64_decode(strtr($encoded, '-_', '+/'));
+        if ($decoded === false) {
+            return null;
+        }
+        $data = json_decode($decoded, true);
+        if (!is_array($data) || !isset($data['r'], $data['s'], $data['a'], $data['l'], $data['t'])) {
+            return null;
+        }
+        return [
+            'relayState' => $data['r'],
+            'sessionId' => $data['s'],
+            'appName' => $data['a'],
+            'loginType' => $data['l'],
+            'stateToken' => $data['t'],
+        ];
+    }
+
+    /**
      * Validate a redirect URL to prevent open redirects.
      * Only allows relative paths or URLs on the same host as the Magento base URL.
      *

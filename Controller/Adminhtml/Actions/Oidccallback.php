@@ -40,6 +40,7 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
     protected $cookieMetadataFactory;
     protected $backendUrl;
     private $securityHelper;
+    private $scopeConfig;
 
     public function __construct(
         \Magento\User\Model\UserFactory $userFactory,
@@ -52,7 +53,8 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
         CookieManagerInterface $cookieManager,
         CookieMetadataFactory $cookieMetadataFactory,
         BackendUrlInterface $backendUrl,
-        OAuthSecurityHelper $securityHelper
+        OAuthSecurityHelper $securityHelper,
+        \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
     ) {
         $this->userFactory = $userFactory;
         $this->auth = $auth;
@@ -65,6 +67,7 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
         $this->cookieMetadataFactory = $cookieMetadataFactory;
         $this->backendUrl = $backendUrl;
         $this->securityHelper = $securityHelper;
+        $this->scopeConfig = $scopeConfig;
     }
 
     /**
@@ -74,12 +77,20 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
      */
     public function execute()
     {
-        $nonce = $this->request->getParam('nonce');
+        $nonce = $this->cookieManager->getCookie('oidc_admin_nonce');
+        // Delete the cookie immediately (one-time use)
+        if ($nonce !== null) {
+            $this->cookieManager->deleteCookie(
+                'oidc_admin_nonce',
+                $this->cookieMetadataFactory->createCookieMetadata()
+                    ->setPath('/' . $this->backendUrl->getAreaFrontName())
+            );
+        }
 
         $this->oauthUtility->customlog("OIDC Admin Callback: Starting authentication");
 
         if (empty($nonce)) {
-            $this->oauthUtility->customlog("ERROR: Nonce parameter is empty");
+            $this->oauthUtility->customlog("ERROR: Nonce cookie is empty or missing");
             return $this->redirectToLoginWithError(
                 __('Authentication failed: Invalid or missing authentication token.')
             );
@@ -106,10 +117,7 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
                 $this->oauthUtility->customlog("ERROR: Admin user not found for email: " . $email);
 
                 return $this->redirectToLoginWithError(
-                    __(
-                        'Admin access denied: No administrator account found for email "%1". Please contact your system administrator.',
-                        $email
-                    )
+                    __('OIDC authentication failed. Please try again or contact your administrator.')
                 );
             }
 
@@ -121,10 +129,7 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
                 $this->oauthUtility->customlog("ERROR: Admin user is inactive (ID: " . $user->getId() . ")");
 
                 return $this->redirectToLoginWithError(
-                    __(
-                        'Admin access denied: The administrator account for "%1" is disabled. Please contact your system administrator.',
-                        $email
-                    )
+                    __('OIDC authentication failed. Please try again or contact your administrator.')
                 );
             }
 
@@ -145,8 +150,9 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
 
                     // Set OIDC authentication cookie (persists across session boundary)
                     $adminPath = '/' . $this->backendUrl->getAreaFrontName();
+                    $adminSessionLifetime = (int) $this->scopeConfig->getValue('admin/security/session_lifetime') ?: 3600;
                     $metadata = $this->cookieMetadataFactory->createPublicCookieMetadata()
-                        ->setDuration(86400) // 24 hours
+                        ->setDuration($adminSessionLifetime)
                         ->setPath($adminPath)
                         ->setHttpOnly(true)
                         ->setSecure(true);
@@ -194,7 +200,7 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
     {
         $resultRedirect = $this->resultFactory->create(ResultFactory::TYPE_REDIRECT);
 
-        // Erstelle Admin-Login-URL mit Fehlerparameter
+        // Create admin login URL with error parameter
         $loginUrl = $this->url->getUrl('admin', [
             '_query' => [
                 'oidc_error' => base64_encode((string) $message)

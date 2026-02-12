@@ -112,17 +112,17 @@ class OAuthObserver implements ObserverInterface
         switch ($op) {
             case $this->requestParams[0]: // 'option'
                 if ($params['option'] == OAuthConstants::TEST_CONFIG_OPT) {
-                    // Test-Flow: Ausgabe über Helper
+                    // Test flow: output via helper
                     $output = $this->testResults->output(
-                        null,  // kein Exception
-                        false, // kein Fehlerfall
+                        null,  // no exception
+                        false, // no error case
                         [
                             'mail' => $params['mail'] ?? '',
                             'userinfo' => $params['userinfo'] ?? [],
-                            'debug' => $params // <-- gesamtes Array für Debug
+                            'debug' => $params // <-- full array for debugging
                         ]
                     );
-                    // Ausgabe via Response Objekt
+                    // Output via Response object
                     // $this->getResponse()->setBody($output); 
                     // Need to inject ResponseInterface to do this properly.
                     // For now, removing echo.

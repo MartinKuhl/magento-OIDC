@@ -7,8 +7,9 @@ use MiniOrange\OAuth\Helper\OAuthConstants;
 use MiniOrange\OAuth\Helper\OAuthMessages;
 use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
 use MiniOrange\OAuth\Helper\TestResults;
-use Magento\Framework\App\Action\HttpPostActionInterface;
 use MiniOrange\OAuth\Model\Service\AdminUserCreator;
+use Magento\Framework\Stdlib\CookieManagerInterface;
+use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
 
 /**
  * Check and process OAuth/OIDC attribute mapping
@@ -22,7 +23,7 @@ use MiniOrange\OAuth\Model\Service\AdminUserCreator;
  * 
  * @package MiniOrange\OAuth\Controller\Actions
  */
-class CheckAttributeMappingAction extends BaseAction implements HttpPostActionInterface
+class CheckAttributeMappingAction extends BaseAction
 {
     const TEST_VALIDATE_RELAYSTATE = OAuthConstants::TEST_RELAYSTATE;
 
@@ -47,6 +48,8 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
     protected $backendUrl;
     protected $adminUserCreator;
     protected $customerSession;
+    protected $cookieManager;
+    protected $cookieMetadataFactory;
     private $securityHelper;
 
 
@@ -72,7 +75,9 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
         AdminUserCreator $adminUserCreator,
         \Magento\Customer\Model\Session $customerSession,
         \MiniOrange\OAuth\Controller\Actions\ShowTestResults $testAction,
-        OAuthSecurityHelper $securityHelper
+        OAuthSecurityHelper $securityHelper,
+        CookieManagerInterface $cookieManager,
+        CookieMetadataFactory $cookieMetadataFactory
     ) {
         // Initialize attribute mappings from configuration
         $this->emailAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_EMAIL);
@@ -97,6 +102,9 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
 
         $this->checkIfMatchBy = $oauthUtility->getStoreConfig(OAuthConstants::MAP_MAP_BY);
 
+        $this->groupName = $oauthUtility->getStoreConfig(OAuthConstants::MAP_GROUP);
+        $this->groupName = $oauthUtility->isBlank($this->groupName) ? 'groups' : $this->groupName;
+
         $this->testResults = $testResults;
         $this->testAction = $testAction;
         $this->processUserAction = $processUserAction;
@@ -105,6 +113,8 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
         $this->adminUserCreator = $adminUserCreator;
         $this->customerSession = $customerSession;
         $this->securityHelper = $securityHelper;
+        $this->cookieManager = $cookieManager;
+        $this->cookieMetadataFactory = $cookieMetadataFactory;
         parent::__construct($context, $oauthUtility);
     }
 
@@ -124,7 +134,7 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
 
         $isTest = $this->oauthUtility->getStoreConfig(OAuthConstants::IS_TEST);
 
-        // Test-Konfiguration: Nicht ins Backend umleiten!
+        // Test configuration: Do not redirect to backend!
         if ($isTest === true) {
             $this->oauthUtility->setStoreConfig(OAuthConstants::IS_TEST, false);
             $this->oauthUtility->flushCache();
@@ -134,7 +144,7 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
                 ->execute();
         }
 
-        // Nur wenn KEIN Test, Admin-Logik und Redirect ausführen:
+        // Only execute admin logic and redirect when NOT in test mode:
         $this->oauthUtility->customlog("=== CheckAttributeMappingAction: Processing authentication for: " . $userEmail);
 
         // Use explicit loginType for routing decision instead of just checking admin_user table
@@ -151,9 +161,17 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
                 $this->oauthUtility->customlog("Routing admin user to admin callback endpoint");
 
                 $nonce = $this->securityHelper->createAdminLoginNonce($userEmail);
-                $adminCallbackUrl = $this->backendUrl->getUrl('mooauth/actions/oidccallback', [
-                    'nonce' => $nonce
-                ]);
+                $this->cookieManager->setPublicCookie(
+                    'oidc_admin_nonce',
+                    $nonce,
+                    $this->cookieMetadataFactory->createPublicCookieMetadata()
+                        ->setDuration(120)
+                        ->setPath('/' . $this->backendUrl->getAreaFrontName())
+                        ->setHttpOnly(true)
+                        ->setSecure(true)
+                        ->setSameSite('Lax')
+                );
+                $adminCallbackUrl = $this->backendUrl->getUrl('mooauth/actions/oidccallback');
 
                 $this->oauthUtility->customlog("Admin callback URL: " . $adminCallbackUrl);
 
@@ -193,9 +211,17 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
 
                         // Redirect to admin callback for login
                         $nonce = $this->securityHelper->createAdminLoginNonce($userEmail);
-                        $adminCallbackUrl = $this->backendUrl->getUrl('mooauth/actions/oidccallback', [
-                            'nonce' => $nonce
-                        ]);
+                        $this->cookieManager->setPublicCookie(
+                            'oidc_admin_nonce',
+                            $nonce,
+                            $this->cookieMetadataFactory->createPublicCookieMetadata()
+                                ->setDuration(120)
+                                ->setPath('/' . $this->backendUrl->getAreaFrontName())
+                                ->setHttpOnly(true)
+                                ->setSecure(true)
+                                ->setSameSite('Lax')
+                        );
+                        $adminCallbackUrl = $this->backendUrl->getUrl('mooauth/actions/oidccallback');
                         $this->oauthUtility->customlog("Redirecting to admin callback: " . $adminCallbackUrl);
 
                         return $this->resultRedirectFactory->create()->setUrl($adminCallbackUrl);
@@ -259,6 +285,8 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
         // Process required attributes
         $this->processUserName($flattenedAttrs);
         $this->processEmail($flattenedAttrs);
+        $this->processFirstName($flattenedAttrs);
+        $this->processLastName($flattenedAttrs);
         $this->processGroupName($flattenedAttrs);
 
         $this->oauthUtility->customlog("Attribute mapping completed, proceeding to user processing");
@@ -284,15 +312,15 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
             $this->oauthUtility->setStoreConfig(OAuthConstants::IS_TEST, false);
             $this->oauthUtility->flushCache();
 
-            // Hilfe: Die Daten werden an den Helper übergeben!
+            // Note: The data is passed to the helper
             $output = $this->testResults->output(null, false, [
                 'mail' => $email,
                 'userinfo' => $flattenedattrs
             ]);
 
-            // Im Controller:
+            // In Controller:
             return $this->getResponse()->setBody($output);
-            // Im Observer ggf. direkt:
+            // In Observer (if needed, directly):
             // echo $output;
         } else {
             // Production mode - process user login/registration
@@ -486,7 +514,12 @@ class CheckAttributeMappingAction extends BaseAction implements HttpPostActionIn
                 'username_found' => isset($filteredAttrs[$this->usernameAttribute]) ? $filteredAttrs[$this->usernameAttribute] : null
             ];
 
-            $this->customerSession->setData('mo_oauth_debug_response', json_encode($debugData));
+            $json = json_encode($debugData);
+            if (strlen($json) <= 8192) {
+                $this->customerSession->setData('mo_oauth_debug_response', $json);
+            } else {
+                $this->oauthUtility->customlog("Debug data too large for session (" . strlen($json) . " bytes), skipping");
+            }
 
             $this->oauthUtility->customlog("Debug data (filtered) saved to session");
         } catch (\Exception $e) {

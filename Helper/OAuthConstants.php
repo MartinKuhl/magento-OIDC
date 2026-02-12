@@ -64,7 +64,7 @@ class OAuthConstants
     const LOGIN_TYPE_ADMIN = 'admin';
 
     // attribute mapping constants
-    // ggf. extend
+    // extend as needed
     const MAP_EMAIL = 'amEmail';
     const DEFAULT_MAP_EMAIL = 'email';
     const MAP_USERNAME = 'amUsername';

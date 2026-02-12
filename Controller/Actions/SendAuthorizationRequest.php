@@ -16,15 +16,18 @@ class SendAuthorizationRequest extends BaseAction
 {
     private $sessionHelper;
     private $securityHelper;
+    private $sessionManager;
 
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
         \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
         SessionHelper $sessionHelper,
-        OAuthSecurityHelper $securityHelper
+        OAuthSecurityHelper $securityHelper,
+        \Magento\Framework\Session\SessionManagerInterface $sessionManager
     ) {
         $this->sessionHelper = $sessionHelper;
         $this->securityHelper = $securityHelper;
+        $this->sessionManager = $sessionManager;
         parent::__construct($context, $oauthUtility);
     }
 
@@ -65,18 +68,20 @@ class SendAuthorizationRequest extends BaseAction
             : (isset($params['relayState']) ? $params['relayState'] : '/');
         $relayState = $this->securityHelper->validateRedirectUrl($rawRelayState, '/');
 
-        // Speichere die aktuelle PHP-Session-ID
-        $currentSessionId = session_id();
+        // Store the current PHP session ID
+        $currentSessionId = $this->sessionManager->getSessionId();
         $this->oauthUtility->customlog("SendAuthorizationRequest: Current session ID: " . $currentSessionId);
 
-        // App-Name für die Authentifizierung ermitteln
+        // Determine app name for authentication
         $app_name = isset($params['app_name']) ? $params['app_name'] : $this->oauthUtility->getStoreConfig(OAuthConstants::APP_NAME);
         $this->oauthUtility->customlog("SendAuthorizationRequest: Using app_name: " . $app_name);
 
         // Combine relayState with session ID, app name, login type, and CSRF state token
-        // Format: encodedRelayState|sessionId|encodedAppName|loginType|stateToken
         $stateToken = $this->securityHelper->createStateToken($currentSessionId);
-        $relayState = urlencode($relayState) . '|' . $currentSessionId . '|' . urlencode($app_name) . '|' . OAuthConstants::LOGIN_TYPE_CUSTOMER . '|' . $stateToken;
+        $relayState = $this->securityHelper->encodeRelayState(
+            $relayState, $currentSessionId, $app_name,
+            OAuthConstants::LOGIN_TYPE_CUSTOMER, $stateToken
+        );
         $this->oauthUtility->customlog("SendAuthorizationRequest: Combined relayState: " . $relayState);
 
         if (strpos($relayState, OAuthConstants::TEST_RELAYSTATE) !== false) {
@@ -85,7 +90,7 @@ class SendAuthorizationRequest extends BaseAction
         }
 
         $clientDetails = null;
-        // App-Name wurde bereits oben bestimmt
+        // App name was already determined above
         if (!$app_name) {
             $errorRedirect = $this->oauthUtility->getBaseUrl() . 'customer/account/login';
             $this->messageManager->addErrorMessage('App name not found. Please contact the administrator for assistance.');

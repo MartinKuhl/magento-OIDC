@@ -9,9 +9,7 @@ use MiniOrange\OAuth\Helper\OAuthConstants;
 use MiniOrange\OAuth\Helper\OAuthMessages;
 
 use MiniOrange\OAuth\Controller\Actions\BaseAdminAction;
-
-
-
+use MiniOrange\OAuth\Helper\Curl;
 
 /**
  * This class handles the action for endpoint: mooauth/oauthsettings/Index
@@ -19,23 +17,25 @@ use MiniOrange\OAuth\Controller\Actions\BaseAdminAction;
  * inturn extends the \Magento\Framework\App\Action\Action class necessary
  * for each Controller class
  */
-
 class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetActionInterface
 {
+    private Curl $curl;
+
+    public function __construct(
+        \Magento\Backend\App\Action\Context $context,
+        \Magento\Framework\View\Result\PageFactory $resultPageFactory,
+        \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
+        \Magento\Framework\Message\ManagerInterface $messageManager,
+        \Psr\Log\LoggerInterface $logger,
+        Curl $curl
+    ) {
+        $this->curl = $curl;
+        parent::__construct($context, $resultPageFactory, $oauthUtility, $messageManager, $logger);
+    }
+
     /**
-     * The first function to be called when a Controller class is invoked.
-     * Usually, has all our controller logic. Returns a view/page/template
-     * to be shown to the users.
-     *
-     * This function gets and prepares all our OAuth config data from the
-     * database. It's called when you visis the mooauth/oauthsettings/Index
-     * URL. It prepares all the values required on the SP setting
-     * page in the backend and returns the block to be displayed.
-     *
      * @return \Magento\Framework\View\Result\Page
      */
-
-
     public function execute()
     {
         try {
@@ -57,8 +57,8 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
                         //get URL content
                         $url = filter_var($url, FILTER_SANITIZE_URL);
 
-                        // Use Curl helper instead of file_get_contents to prevent certain SSRF scenarios and follow Magento standards
-                        $file = \MiniOrange\OAuth\Helper\Curl::mo_send_user_info_request($url, []);
+                        // Use injected Curl helper to fetch discovery document
+                        $file = $this->curl->sendUserInfoRequest($url, []);
 
                         $obj = json_decode($file);
                         $this->checkIfRequiredFieldsEmpty([
@@ -76,15 +76,14 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
 
                             $mo_oauth_accesstoken_url = $obj->token_endpoint;  //token_endpoint
 
-                            $mo_oauth_getuserinfo_url = isset($obj->userinfo_endpoint) ? $obj->userinfo_endpoint : ''; //userinfo_endpoint
+                            $mo_oauth_getuserinfo_url = isset($obj->userinfo_endpoint) ? $obj->userinfo_endpoint : '';
+                            $mo_oauth_issuer = isset($obj->issuer) ? $obj->issuer : '';
 
-                            /**
-                             * Trim and Store Endpoint parameter in miniorange_oauth_client_apps table.
-                             * */
-
+                            // Store endpoint parameters for saving to database
                             $params['mo_oauth_authorize_url'] = trim($mo_oauth_authorize_url);
                             $params['mo_oauth_accesstoken_url'] = trim($mo_oauth_accesstoken_url);
                             $params['mo_oauth_getuserinfo_url'] = trim($mo_oauth_getuserinfo_url);
+                            $params['mo_oauth_issuer'] = trim($mo_oauth_issuer);
 
                             $this->checkIfRequiredFieldsEmpty([
                                 'mo_oauth_app_name' => $params,
@@ -169,17 +168,17 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         $mo_oauth_accesstoken_url = trim($params['mo_oauth_accesstoken_url']);
         $mo_oauth_getuserinfo_url = trim($params['mo_oauth_getuserinfo_url']);
         $mo_oauth_well_known_config_url = isset($params['endpoint_url']) ? trim($params['endpoint_url']) : '';
+        $mo_oauth_issuer = isset($params['mo_oauth_issuer']) ? trim($params['mo_oauth_issuer']) : '';
         $mo_oauth_grant_type = OAuthConstants::GRANT_TYPE;
         $send_header = isset($params['send_header']) ? 1 : 0;
         $send_body = isset($params['send_body']) ? 1 : 0;
 
-
         $clientDetails = $this->oauthUtility->getClientDetailsByAppName($mo_oauth_app_name);
 
-        //removing all previous records so at a time only 1 app_name is shown(free)
+        // Remove all previous records so at a time only 1 app_name is shown (free version)
         $this->oauthUtility->deleteAllRecords();
 
-        //for storing it in custom table
+        // Store in custom table
         $this->oauthUtility->setOAuthClientApps(
             $mo_oauth_app_name,
             $mo_oauth_client_id,
@@ -192,6 +191,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
             $mo_oauth_grant_type,
             $send_header,
             $send_body,
+            $mo_oauth_issuer
         );
 
         $this->oauthUtility->setStoreConfig(OAuthConstants::APP_NAME, $mo_oauth_app_name);

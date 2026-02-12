@@ -17,13 +17,19 @@
         </arguments>
     </type>
 
-    <!-- ProcessUserAction Dependencies for Customer Data Mapping -->
+    <!-- ProcessUserAction Dependencies -->
     <type name="MiniOrange\OAuth\Controller\Actions\ProcessUserAction">
         <arguments>
-            <argument name="addressRepository" xsi:type="object">Magento\Customer\Api\AddressRepositoryInterface</argument>
-            <argument name="addressFactory" xsi:type="object">Magento\Customer\Api\Data\AddressInterfaceFactory</argument>
-            <argument name="countryFactory" xsi:type="object">Magento\Directory\Model\CountryFactory</argument>
-            <argument name="regionFactory" xsi:type="object">Magento\Directory\Model\RegionFactory</argument>
+            <argument name="resultRedirectFactory" xsi:type="object">Magento\Framework\Controller\Result\RedirectFactory</argument>
+            <argument name="messageManager" xsi:type="object">Magento\Framework\Message\ManagerInterface</argument>
+        </arguments>
+    </type>
+
+    <!-- ReadAuthorizationResponse Dependencies -->
+    <type name="MiniOrange\OAuth\Controller\Actions\ReadAuthorizationResponse">
+        <arguments>
+            <argument name="oidcAuthService" xsi:type="object">MiniOrange\OAuth\Model\Service\OidcAuthenticationService</argument>
+            <argument name="attrMappingAction" xsi:type="object">MiniOrange\OAuth\Controller\Actions\CheckAttributeMappingAction</argument>
         </arguments>
     </type>
 
@@ -57,6 +63,7 @@
             <argument name="cookieMetadataFactory" xsi:type="object">Magento\Framework\Stdlib\Cookie\CookieMetadataFactory</argument>
             <argument name="backendUrl" xsi:type="object">Magento\Backend\Model\UrlInterface</argument>
             <argument name="securityHelper" xsi:type="object">MiniOrange\OAuth\Helper\OAuthSecurityHelper</argument>
+            <argument name="scopeConfig" xsi:type="object">Magento\Framework\App\Config\ScopeConfigInterface</argument>
         </arguments>
     </type>
 
@@ -154,6 +161,14 @@
         <plugin name="oidc_identity_field_account"
                 type="MiniOrange\OAuth\Plugin\User\Block\OidcIdentityFieldPlugin"
                 sortOrder="20"/>
+    </type>
+
+    <!-- JwtVerifier Cache and Curl Configuration -->
+    <type name="MiniOrange\OAuth\Helper\JwtVerifier">
+        <arguments>
+            <argument name="cache" xsi:type="object">Magento\Framework\App\CacheInterface</argument>
+            <argument name="curlFactory" xsi:type="object">Magento\Framework\HTTP\Adapter\CurlFactory</argument>
+        </arguments>
     </type>
 
     <!-- MiniOrange Custom Logger Configuration -->

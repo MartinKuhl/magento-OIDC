@@ -99,36 +99,38 @@ class AdminUserCreator
      */
     private function saveAdminUser($userName, $email, $firstName, $lastName, $roleId)
     {
+        // Generate secure random password (32 chars)
+        $randomPassword = $this->randomUtility->getRandomString(28)
+            . $this->randomUtility->getRandomString(2, '!@#$%^&*')
+            . $this->randomUtility->getRandomString(2, '0123456789');
+
+        $user = $this->userFactory->create();
+        $user->setUsername($userName)
+            ->setFirstname($firstName)
+            ->setLastname($lastName)
+            ->setEmail($email)
+            ->setPassword($randomPassword)
+            ->setIsActive(1);
+
+        $connection = $this->userResource->getConnection();
+        $connection->beginTransaction();
         try {
-            // Generate secure random password (32 chars)
-            $randomPassword = $this->randomUtility->getRandomString(28)
-                . $this->randomUtility->getRandomString(2, '!@#$%^&*')
-                . $this->randomUtility->getRandomString(2, '0123456789');
-
-            $user = $this->userFactory->create();
-            $user->setUsername($userName)
-                ->setFirstname($firstName)
-                ->setLastname($lastName)
-                ->setEmail($email)
-                ->setPassword($randomPassword)
-                ->setIsActive(1);
-
             $this->userResource->save($user);
             $this->oauthUtility->customlog("AdminUserCreator: User saved with ID: " . $user->getId());
 
-            // Assign role
             $user->setRoleId($roleId);
             $this->userResource->save($user);
             $this->oauthUtility->customlog("AdminUserCreator: Role " . $roleId . " assigned to user ID: " . $user->getId());
 
+            $connection->commit();
             return $user;
-
         } catch (\Magento\Framework\Exception\AlreadyExistsException $e) {
+            $connection->rollBack();
             $this->oauthUtility->customlog("AdminUserCreator: User already exists - " . $e->getMessage());
             return null;
         } catch (\Exception $e) {
+            $connection->rollBack();
             $this->oauthUtility->customlog("AdminUserCreator: Error creating user: " . $e->getMessage());
-            $this->oauthUtility->customlog("Stack trace: " . $e->getTraceAsString());
             return null;
         }
     }

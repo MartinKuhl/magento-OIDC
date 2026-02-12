@@ -51,18 +51,19 @@ For each issue:
 
 Be harsh. I'd rather fix issues now than in production.
 
+Write an dupdate the exisiting review into @github/OIDC/Code-Review.md 
+
 ################
 
-Update @github/OIDC/TECHNICAL_DOCUMENTATION.md  for this code:
+Update @github/OIDC/TECHNICAL_DOCUMENTATION.md for this code:
 
 Include:
 1. Overview: What this module does and why it exists
 2. Structure: How is the plugin structured 
 3. Quick Start: How to use it in 3 steps or less
-4. API Reference: Every public function with params, returns, and examples
-5. Common Patterns: The 3 most common use cases with code
-6. Gotchas: Edge cases, limitations, and things that will bite you
-7. Related: What other modules this works with 
+4. Functionalities and Use Case what is the plugin for
+5. Gotchas: Edge cases, limitations, and things that will bite you
+6. What can be future improvements to opitmize the plugin
 
 Write for a developer who's new to this codebase but not new to coding.
 

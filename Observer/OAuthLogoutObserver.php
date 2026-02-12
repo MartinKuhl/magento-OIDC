@@ -2,12 +2,10 @@
 namespace MiniOrange\OAuth\Observer;
 
 use Magento\Framework\Event\ObserverInterface;
-use MiniOrange\OAuth\Helper\OAuthMessages;
 use Magento\Framework\Event\Observer;
 
 use MiniOrange\OAuth\Helper\OAuthConstants;
 use Magento\Framework\App\ResponseInterface;
-use Magento\Framework\App\Response\RedirectInterface;
 
 /**
  * Observer for customer logout events. Handles redirecting to the
@@ -16,42 +14,14 @@ use Magento\Framework\App\Response\RedirectInterface;
  */
 class OAuthLogoutObserver implements ObserverInterface
 {
-    private $requestParams = [
-        'option'
-    ];
-    private $messageManager;
-    private $logger;
-    private $readAuthorizationResponse;
     private $oauthUtility;
-    private $testAction;
-    private $currentControllerName;
-    private $currentActionName;
-    private $requestInterface;
-    private $request;
-    protected $_redirect;
     protected $_response;
 
     public function __construct(
-        \Magento\Framework\Message\ManagerInterface $messageManager,
-        \Psr\Log\LoggerInterface $logger,
-        \MiniOrange\OAuth\Controller\Actions\ReadAuthorizationResponse $readAuthorizationResponse,
         \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
-        \Magento\Framework\App\Request\Http $httpRequest,
-        \Magento\Framework\App\RequestInterface $request,
-        \MiniOrange\OAuth\Controller\Actions\ShowTestResults $testAction,
-        RedirectInterface $redirect,
         ResponseInterface $response
     ) {
-        //You can use dependency injection to get any class this observer may need.
-        $this->messageManager = $messageManager;
-        $this->logger = $logger;
-        $this->readAuthorizationResponse = $readAuthorizationResponse;
         $this->oauthUtility = $oauthUtility;
-        $this->currentControllerName = $httpRequest->getControllerName();
-        $this->currentActionName = $httpRequest->getActionName();
-        $this->request = $request;
-        $this->testAction = $testAction;
-        $this->_redirect = $redirect;
         $this->_response = $response;
     }
 
@@ -72,24 +42,8 @@ class OAuthLogoutObserver implements ObserverInterface
             if ($parsed === false || !in_array($parsed['scheme'] ?? '', ['https', 'http'], true)) {
                 return;
             }
-            $temp = '<script>window.location = ' . json_encode($logoutUrl, JSON_UNESCAPED_SLASHES) . ';</script>';
-            return $this->_response->setBody($temp);
-        }
-    }
-
-    private function _route_data($op, $observer, $params, $postData)
-    {
-        switch ($op) {
-            case $this->requestParams[0]:
-                // Spezieller Test-Konfigurations-Button
-                if (isset($params['option']) && $params['option'] === OAuthConstants::TEST_CONFIG_OPT) {
-                    // Direkt den Test-Result-Controller (wie im alten Code) aufrufen und Response zurückgeben!
-                    $this->testAction->execute();
-                } else {
-                    // Sonst wie bisher - OIDC Callback
-                    $this->oauthUtility->customlog('Admin login request detected but handled via OIDC callback');
-                }
-                break;
+            $this->_response->setRedirect($logoutUrl);
+            return $this->_response;
         }
     }
 
