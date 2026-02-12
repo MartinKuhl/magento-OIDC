@@ -1,0 +1,70 @@
+name: Magento OIDC CI
+
+on:
+  push:
+    branches: [ "main", "dev" ]
+  pull_request:
+    branches: [ "main", "dev" ]
+
+jobs:
+  ci:
+    name: CI (PHP ${{ matrix.php-version }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: [8.1, 8.2, 8.3, 8.4, 8.5]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ---------------------
+      # COMPOSER + PHP CS
+      # ---------------------
+      - name: Setup PHP ${{ matrix.php-version }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          coverage: none
+          tools: composer, phpcs
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ runner.os }}-${{ matrix.php-version }}-${{ hashFiles('composer.lock') }}
+
+      - name: Install Composer dependencies
+        run: |
+          composer install --no-interaction --prefer-dist
+
+      - name: Install Magento Coding Standard
+        run: |
+          composer require --dev magento/magento-coding-standard
+          phpcs --config-set installed_paths vendor/magento/magento-coding-standard
+
+      - name: Run PHPCS (Magento2 Standard)
+        run: |
+          phpcs --standard=Magento2 OIDC/ || exit 1
+
+      # ---------------------
+      # ESLINT
+      # ---------------------
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Cache Node modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install Node dependencies
+        run: npm install
+
+      - name: Run ESLint
+        run: npm run lint
