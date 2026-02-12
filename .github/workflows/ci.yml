@@ -10,11 +10,10 @@ permissions:
   contents: write
   pull-requests: write
 
-
 jobs:
 
   # -----------------------------------------------------
-  # PHP QUALITY JOB
+  # PHP QUALITY JOB (PHPCS + Compatibility)
   # -----------------------------------------------------
   php:
     name: PHP QA (PHP ${{ matrix.php-version }})
@@ -28,36 +27,35 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: shivammathur/setup-php@v2
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php-version }}
-          coverage: none
-          tools: composer, phpcs, phpstan, psalm
+          tools: composer, phpcs
 
-      # Cache global composer folder (Magento Coding Standard)
+      - name: Determine Composer Home
+        id: composer_home
+        run: echo "HOME_DIR=$(composer global config home --absolute)" >> $GITHUB_ENV
+
       - name: Cache Composer Global
         uses: actions/cache@v4
         with:
-          path: ~/.config/composer
-          key: phpcs-magento-${{ runner.os }}-${{ hashFiles('**/composer.lock') }}
-          restore-keys: |
-            phpcs-magento-${{ runner.os }}-
+          path: ${{ env.HOME_DIR }}
+          key: phpcs-magento-${{ runner.os }}
 
       - name: Install Magento Coding Standard
         run: |
-          composer global config allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
           composer global require magento/magento-coding-standard
-          phpcs --config-set installed_paths ~/.config/composer/vendor/magento/magento-coding-standard
+          phpcs --config-set installed_paths "$HOME_DIR/vendor/magento/magento-coding-standard"
 
       - name: Debug installed PHPCS standards
         run: phpcs -i
 
-      - name: Magento2 Compatibility Check (non-blocking)
+      - name: Magento2Compatibility (non-blocking)
         run: phpcs --standard=Magento2Compatibility . --ignore=vendor/*,node_modules/*,.github/* || true
 
       - name: Magento2 Coding Standard (blocking)
         run: phpcs --standard=Magento2 . --ignore=vendor/*,node_modules/*,.github/*
-
 
   # -----------------------------------------------------
   # STATIC ANALYSIS JOB (PHPStan + Psalm)
@@ -72,20 +70,25 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with:
           php-version: 8.2
-          tools: composer, phpstan, psalm
+          tools: composer
 
-      - name: Install PHP Dependencies
-        run: composer install --no-interaction || true
+      - name: Determine Composer Home
+        id: composer_home
+        run: echo "HOME_DIR=$(composer global config home --absolute)" >> $GITHUB_ENV
+
+      - name: Install PHPStan & Psalm globally
+        run: |
+          composer global require phpstan/phpstan
+          composer global require vimeo/psalm
 
       - name: Run PHPStan
-        run: vendor/bin/phpstan analyse --memory-limit=1G || exit 1
+        run: $HOME_DIR/vendor/bin/phpstan analyse --memory-limit=1G || exit 1
 
       - name: Run Psalm
-        run: vendor/bin/psalm --no-cache || exit 1
-
+        run: $HOME_DIR/vendor/bin/psalm --init || true && $HOME_DIR/vendor/bin/psalm --no-cache || exit 1
 
   # -----------------------------------------------------
-  # JS QUALITY JOB
+  # JS QUALITY JOB (ESLint)
   # -----------------------------------------------------
   js:
     name: JS QA (ESLint)
@@ -103,72 +106,44 @@ jobs:
         with:
           path: node_modules
           key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            npm-${{ runner.os }}-
 
       - run: npm install
 
-      - run: npm run lint
-
+      - run: npm run lint || npx eslint . --max-warnings=0
 
   # -----------------------------------------------------
-  # AUTO-FIX JOB (phpcbf + eslint --fix) → Pull Request
+  # AUTO-FIX JOB (phpcbf + eslint --fix → PR)
   # -----------------------------------------------------
   autofix:
     name: Auto Fix (phpcbf + eslint --fix → PR)
     runs-on: ubuntu-latest
 
     permissions:
-      contents: write
       pull-requests: write
+      contents: write
 
     steps:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      # Setup PHP for phpcbf
       - uses: shivammathur/setup-php@v2
         with:
           php-version: 8.2
           tools: composer, phpcbf, phpcs
 
+      - name: Determine Composer Home
+        id: composer_home
+        run: echo "HOME_DIR=$(composer global config home --absolute)" >> $GITHUB_ENV
+
       - name: Install Magento Coding Standard
         run: |
-          composer global config allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
           composer global require magento/magento-coding-standard
-          phpcs --config-set installed_paths ~/.config/composer/vendor/magento/magento-coding-standard
+          phpcs --config-set installed_paths "$HOME_DIR/vendor/magento/magento-coding-standard"
 
       - name: Run phpcbf autofix
         run: phpcbf --standard=Magento2 . || true
 
-      # Setup Node for ESLint fixes
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
-
-      - run: npm install
-
-      - name: Run ESLint autofix
-        run: npm run lint:fix || true
-
-      # Create PR if changes exist
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          branch: autofix/php-js-${{ github.run_id }}
-          commit-message: "Auto-fix: phpcbf + eslint --fix"
-          title: "Auto-Fix: Code cleanup (phpcbf + eslint)"
-          body: |
-            Dieser PR wurde automatisch generiert.
-
-            Enthält:
-            - PHP-Fixes via **phpcbf**
-            - JS-Fixes via **eslint --fix**
-
-            Bitte prüfen und mergen.
-          labels: |
-            autofix
-            automated
-          delete-branch: true
+         
