@@ -10,6 +10,7 @@ permissions:
   contents: write
   pull-requests: write
 
+
 jobs:
 
   # -----------------------------------------------------
@@ -57,6 +58,7 @@ jobs:
       - name: Magento2 Coding Standard (blocking)
         run: phpcs --standard=Magento2 . --ignore=vendor/*,node_modules/*,.github/*
 
+
   # -----------------------------------------------------
   # STATIC ANALYSIS JOB (PHPStan + Psalm)
   # -----------------------------------------------------
@@ -81,11 +83,14 @@ jobs:
           composer global require phpstan/phpstan
           composer global require vimeo/psalm
 
+
       - name: Run PHPStan
         run: $HOME_DIR/vendor/bin/phpstan analyse --memory-limit=1G || exit 1
 
       - name: Run Psalm
         run: $HOME_DIR/vendor/bin/psalm --init || true && $HOME_DIR/vendor/bin/psalm --no-cache || exit 1
+
+
 
   # -----------------------------------------------------
   # JS QUALITY JOB (ESLint)
@@ -110,6 +115,8 @@ jobs:
       - run: npm install
 
       - run: npm run lint || npx eslint . --max-warnings=0
+
+
 
   # -----------------------------------------------------
   # AUTO-FIX JOB (phpcbf + eslint --fix → PR)
@@ -146,4 +153,29 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-         
+          node-version: 20
+
+      - run: npm install
+
+      - name: Run ESLint autofix
+        run: npx eslint . --fix || true
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: autofix/php-js-${{ github.run_id }}
+          commit-message: "Auto-fix: phpcbf + eslint --fix"
+          title: "Auto-Fix: Code cleanup (phpcbf + eslint)"
+          body: |
+            Dieser PR wurde automatisch generiert.
+
+            Enthält:
+            - PHP-Fixes via **phpcbf**
+            - JS-Fixes via **eslint --fix**
+
+            Bitte prüfen und mergen.
+          labels: |
+            autofix
+            automated
+          delete-branch: true
