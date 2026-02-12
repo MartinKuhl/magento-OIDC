@@ -21,7 +21,7 @@ jobs:
         uses: actions/checkout@v4
 
       # ---------------------
-      # COMPOSER + PHP CS
+      # PHP + PHPCS
       # ---------------------
       - name: Setup PHP ${{ matrix.php-version }}
         uses: shivammathur/setup-php@v2
@@ -30,20 +30,11 @@ jobs:
           coverage: none
           tools: composer, phpcs
 
-      - name: Cache Composer dependencies
-        uses: actions/cache@v4
-        with:
-          path: vendor
-          key: composer-${{ runner.os }}-${{ matrix.php-version }}-${{ hashFiles('composer.lock') }}
-
-      - name: Install Composer dependencies
+      - name: Install Magento Coding Standard globally
         run: |
-          composer install --no-interaction --prefer-dist
-
-      - name: Install Magento Coding Standard
-        run: |
-          composer require --dev magento/magento-coding-standard
-          phpcs --config-set installed_paths vendor/magento/magento-coding-standard
+          composer global config allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
+          composer global require magento/magento-coding-standard
+          phpcs --config-set installed_paths ~/.composer/vendor/magento/magento-coding-standard
 
       - name: Run PHPCS (Magento2 Standard)
         run: |
