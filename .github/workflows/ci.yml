@@ -66,7 +66,7 @@ jobs:
   # -----------------------------------------------------
   # STATIC ANALYSIS JOB (PHPStan + Psalm)
   # -----------------------------------------------------
-  static-analysis:
+    static-analysis:
     name: Static Analysis (PHPStan + Psalm)
     runs-on: ubuntu-latest
 
@@ -120,6 +120,11 @@ jobs:
             "prefer-stable": true
           }
           EOF
+
+      - name: Allow Magento Composer plugins
+        run: |
+          composer config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
+          composer config --no-plugins allow-plugins.magento/composer-dependency-version-audit-plugin true
 
       - name: Install PHPStan + Magento Stubs + Psalm
         run: composer install --no-interaction --no-progress
