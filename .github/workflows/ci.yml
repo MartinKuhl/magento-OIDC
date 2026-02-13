@@ -56,14 +56,20 @@ jobs:
       - name: Debug PHPCS Standards
         run: phpcs -i
 
-      - name: Magento2Compatibility (non-blocking)
-        run: phpcs --standard=Magento2Compatibility --extensions=php,phtml . --ignore=vendor/*,node_modules/*,.github/* || true
+      - name: PHP Compatibility Check (non-blocking)
+        run: |
+          phpcs --standard=PHPCompatibility \
+                --runtime-set testVersion 8.1- \
+                --extensions=php,phtml \
+                --ignore=vendor/*,node_modules/*,.github/* \
+                . || true
 
       - name: Auto-fix with PHPCBF
         id: phpcbf
         run: |
           # PHPCBF Exit-Codes: 0 = nichts zu tun, 1 = Fixes angewendet, 2 = Fixes + verbleibende Fehler, 3 = Fehler
-          phpcbf . || PHPCBF_EXIT=$?
+          # --warning-severity=0: nur Errors fixen, Warnings (inkl. LiteralNamespaces) überspringen
+          phpcbf --warning-severity=0 . || PHPCBF_EXIT=$?
           PHPCBF_EXIT=${PHPCBF_EXIT:-0}
 
           if [ "$PHPCBF_EXIT" -eq 1 ] || [ "$PHPCBF_EXIT" -eq 2 ]; then
