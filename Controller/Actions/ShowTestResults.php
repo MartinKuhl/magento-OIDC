@@ -9,6 +9,8 @@ use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Framework\App\Action\Action;
 use Magento\Framework\App\Action\Context;
+use Magento\Framework\Controller\Result\Raw as RawResult;
+use Magento\Framework\Controller\ResultFactory;
 
 /**
  * Zeigt die empfangenen OIDC-Attribute im Testfall im Frontend an.
@@ -147,9 +149,10 @@ class ShowTestResults extends Action
         $this->oauthUtility->setStoreConfig(OAuthConstants::SEND_EMAIL_CORE_CONFIG_DATA, 1);
         $this->oauthUtility->flushCache();
 
-        $this->getResponse()->setBody($this->template);
-
-        return $this->getResponse();
+        /** @var RawResult $result */
+        $result = $this->resultFactory->create(ResultFactory::TYPE_RAW);
+        $result->setContents($data);
+        return $result;
     }
 
     /**
@@ -178,8 +181,10 @@ class ShowTestResults extends Action
         // Add footer
         $this->template = str_replace("{{footer}}", $this->footer ?? '', $this->template);
 
-        $this->getResponse()->setBody($this->template);
-        return $this->getResponse();
+        /** @var RawResult $result */
+        $result = $this->resultFactory->create(ResultFactory::TYPE_RAW);
+        $result->setContents($this->template);
+        return $result;
     }
 
     private function processTemplateHeader()
