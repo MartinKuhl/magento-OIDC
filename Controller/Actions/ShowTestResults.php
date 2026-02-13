@@ -148,6 +148,8 @@ class ShowTestResults extends Action
         $this->oauthUtility->flushCache();
 
         $this->getResponse()->setBody($this->template);
+
+        return $this->getResponse();
     }
 
     /**
@@ -206,7 +208,7 @@ class ShowTestResults extends Action
                 if (!is_array($value))
                     $value = [$value];
                 if (!in_array(null, $value)) {
-                    $escapedKey = htmlspecialchars((string)($key ?? ''), ENT_QUOTES, 'UTF-8');
+                    $escapedKey = htmlspecialchars((string)$key, ENT_QUOTES, 'UTF-8');
                     $escapedValues = array_map(
                         fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'),
                         $value

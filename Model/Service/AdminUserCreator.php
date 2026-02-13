@@ -5,6 +5,7 @@ namespace MiniOrange\OAuth\Model\Service;
 use MiniOrange\OAuth\Helper\OAuthConstants;
 use MiniOrange\OAuth\Helper\OAuthUtility;
 use Magento\User\Model\UserFactory;
+use Magento\User\Model\ResourceModel\User\CollectionFactory as UserCollectionFactory;
 use Magento\Authorization\Model\ResourceModel\Role\Collection as RoleCollection;
 use Magento\Framework\Math\Random;
 
@@ -39,24 +40,32 @@ class AdminUserCreator
     private $userResource;
 
     /**
+     * @var UserCollectionFactory
+     */
+    private $userCollectionFactory;
+
+    /**
      * @param UserFactory $userFactory
      * @param RoleCollection $roleCollection
      * @param OAuthUtility $oauthUtility
      * @param Random $randomUtility
      * @param \Magento\User\Model\ResourceModel\User $userResource
+     * @param UserCollectionFactory $userCollectionFactory
      */
     public function __construct(
         UserFactory $userFactory,
         RoleCollection $roleCollection,
         OAuthUtility $oauthUtility,
         Random $randomUtility,
-        \Magento\User\Model\ResourceModel\User $userResource
+        \Magento\User\Model\ResourceModel\User $userResource,
+        UserCollectionFactory $userCollectionFactory
     ) {
         $this->userFactory = $userFactory;
         $this->roleCollection = $roleCollection;
         $this->oauthUtility = $oauthUtility;
         $this->randomUtility = $randomUtility;
         $this->userResource = $userResource;
+        $this->userCollectionFactory = $userCollectionFactory;
     }
 
     /**
@@ -174,8 +183,8 @@ class AdminUserCreator
             $roleMappings = is_array($decoded) ? $decoded : [];
         }
 
-        // Try to find a matching role from the mappings
-        if (!empty($userGroups) && !empty($roleMappings)) {
+        // FIX: empty.variable – $roleMappings direkt mit count() prüfen statt empty()
+        if (!empty($userGroups) && count($roleMappings) > 0) {
             foreach ($roleMappings as $mapping) {
                 $mappedGroup = $mapping['group'] ?? '';
                 $mappedRole = $mapping['role'] ?? '';
@@ -199,12 +208,6 @@ class AdminUserCreator
             return (int) $defaultRole;
         }
 
-        // Fallback: Find "Administrators" role
-        // NOTE: We do NOT fallback to "Administrators" or ID 1 blindly anymore for security.
-        // We only search for it if we want to default to it, but the instruction was "Improve Admin Role fallback logic (remove default to ID 1)".
-        // Meaning: If no mapping and no default role config, we should FAIL (return null), NOT give admin access.
-
-        // No mapping found and no default role configured — deny admin creation for security.
         $this->oauthUtility->customlog("AdminUserCreator: No role mapping found and no default role configured. Denying admin creation.");
         return null;
     }
@@ -226,8 +229,8 @@ class AdminUserCreator
             return true;
         }
 
-        // Try email lookup
-        $userCollection = $this->userFactory->create()->getCollection()
+        // FIX: Collection via Factory statt über Model::getCollection()
+        $userCollection = $this->userCollectionFactory->create()
             ->addFieldToFilter('email', $email);
 
         if ($userCollection->getSize() > 0) {

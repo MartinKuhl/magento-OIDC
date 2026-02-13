@@ -67,6 +67,8 @@ class OAuthObserver implements ObserverInterface
         $keys = array_keys($this->request->getParams());
         $operation = array_intersect($keys, $this->requestParams);
 
+        $isTest = false;
+        
         try {
             $params = $this->request->getParams(); // get params
             $postData = $this->request->getPost(); // get only post params

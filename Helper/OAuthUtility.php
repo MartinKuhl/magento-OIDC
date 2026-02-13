@@ -17,7 +17,7 @@ use Magento\User\Model\UserFactory;
 
 use MiniOrange\OAuth\Helper\OAuthConstants;
 use MiniOrange\OAuth\Helper\Data;
-use Magento\Framework\Stdlib\DateTime\dateTime;
+use Magento\Framework\Stdlib\DateTime\DateTime;
 
 
 /**
@@ -65,7 +65,7 @@ class OAuthUtility extends Data
         \MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps $appResource,
         \Magento\User\Model\ResourceModel\User $userResource,
         \Magento\Customer\Model\ResourceModel\Customer $customerResource,
-        dateTime $dateTime,
+        DateTime $dateTime,
         DirectoryList $directoryList,
         \Magento\Framework\Encryption\EncryptorInterface $encryptor
     ) {

@@ -9,7 +9,7 @@ use Magento\Customer\Api\Data\AddressInterfaceFactory;
 use Magento\Customer\Api\AddressRepositoryInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use Magento\Framework\Math\Random;
-use Magento\Directory\Model\CountryFactory;
+use Magento\Directory\Model\ResourceModel\Country\CollectionFactory as CountryCollectionFactory;
 use Magento\Directory\Helper\Data as DirectoryData;
 use Magento\Framework\Stdlib\DateTime\DateTime;
 
@@ -49,9 +49,9 @@ class CustomerUserCreator
     private $oauthUtility;
 
     /**
-     * @var CountryFactory
+     * @var CountryCollectionFactory
      */
-    private $countryFactory;
+    private $countryCollectionFactory;
 
     /**
      * @var DateTime
@@ -84,7 +84,7 @@ class CustomerUserCreator
         StoreManagerInterface $storeManager,
         Random $randomUtility,
         OAuthUtility $oauthUtility,
-        CountryFactory $countryFactory,
+        CountryCollectionFactory $countryCollectionFactory,
         DateTime $dateTime,
         DirectoryData $directoryData,
         \Magento\Customer\Api\CustomerRepositoryInterface $customerRepository
@@ -95,7 +95,7 @@ class CustomerUserCreator
         $this->storeManager = $storeManager;
         $this->randomUtility = $randomUtility;
         $this->oauthUtility = $oauthUtility;
-        $this->countryFactory = $countryFactory;
+        $this->countryCollectionFactory = $countryCollectionFactory;
         $this->dateTime = $dateTime;
         $this->directoryData = $directoryData;
         $this->customerRepository = $customerRepository;
@@ -347,9 +347,8 @@ class CustomerUserCreator
             return strtoupper($country);
         }
 
-        // Try to find country by name
         try {
-            $countryCollection = $this->countryFactory->create()->getCollection();
+            $countryCollection = $this->countryCollectionFactory->create();
             foreach ($countryCollection as $countryItem) {
                 $countryName = $countryItem->getName();
                 if ($countryName !== null && strcasecmp($countryName, $country) === 0) {

@@ -3,6 +3,7 @@ namespace MiniOrange\OAuth\Block\Adminhtml;
 
 use Magento\Backend\Block\Template;
 use Magento\Backend\Block\Template\Context;
+use Magento\Framework\App\Filesystem\DirectoryList;
 use MiniOrange\OAuth\Helper\OAuthUtility;
 use MiniOrange\OAuth\Helper\OAuthConstants;
 
@@ -17,27 +18,34 @@ class Debug extends Template
     protected $oauthUtility;
 
     /**
+     * @var DirectoryList
+     */
+    protected $directoryList;
+
+    /**
      * @param Context $context
      * @param OAuthUtility $oauthUtility
+     * @param DirectoryList $directoryList
      * @param array $data
      */
     public function __construct(
         Context $context,
         OAuthUtility $oauthUtility,
+        DirectoryList $directoryList,
         array $data = []
     ) {
         $this->oauthUtility = $oauthUtility;
+        $this->directoryList = $directoryList;
         parent::__construct($context, $data);
     }
 
     /**
      * Get OIDC Configuration
-     * 
+     *
      * @return array
      */
     public function getOidcConfiguration()
     {
-        // ToDo_MK: Fetch actual configuration values
         return [
             'Client ID' => $this->oauthUtility->getStoreConfig(OAuthConstants::CLIENT_ID),
             'Client Secret' => $this->maskSecret($this->oauthUtility->getStoreConfig(OAuthConstants::CLIENT_SECRET)),
@@ -55,16 +63,15 @@ class Debug extends Template
 
     /**
      * Get Last OAuth Response from Session
-     * 
+     *
      * @return array|null
      */
     public function getLastOAuthResponse()
     {
-        // Try to get from customer session or admin session
         try {
             $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
             $customerSession = $objectManager->get(\Magento\Customer\Model\Session::class);
-            
+
             $response = $customerSession->getData('mo_oauth_debug_response');
             if ($response) {
                 return json_decode($response, true);
@@ -78,17 +85,18 @@ class Debug extends Template
 
     /**
      * Get Recent Log Entries
-     * 
+     *
+     *
      * @return array
      */
     public function getRecentLogEntries()
     {
-        $logFile = BP . '/var/log/mo_oauth.log';
+        $logFile = $this->directoryList->getPath(DirectoryList::VAR_DIR) . '/log/mo_oauth.log';
         $entries = [];
 
         if (file_exists($logFile)) {
             $lines = file($logFile);
-            $recentLines = array_slice($lines, -50); // Last 50 lines
+            $recentLines = array_slice($lines, -50);
 
             foreach ($recentLines as $line) {
                 $entries[] = trim($line);
@@ -100,26 +108,23 @@ class Debug extends Template
 
     /**
      * Test Authelia Connection
-     * 
+     *
      * @return array
      */
     public function testAutheliaConnection()
     {
         $results = [];
-        
-        // Test Authorization Endpoint
+
         $authEndpoint = $this->oauthUtility->getStoreConfig(OAuthConstants::AUTHORIZE_URL);
         if ($authEndpoint) {
             $results['Authorization Endpoint'] = $this->testUrl($authEndpoint);
         }
 
-        // Test Token Endpoint
         $tokenEndpoint = $this->oauthUtility->getStoreConfig(OAuthConstants::ACCESSTOKEN_URL);
         if ($tokenEndpoint) {
             $results['Token Endpoint'] = $this->testUrl($tokenEndpoint);
         }
 
-        // Test UserInfo Endpoint
         $userInfoEndpoint = $this->oauthUtility->getStoreConfig(OAuthConstants::GETUSERINFO_URL);
         if ($userInfoEndpoint) {
             $results['UserInfo Endpoint'] = $this->testUrl($userInfoEndpoint);
@@ -130,7 +135,7 @@ class Debug extends Template
 
     /**
      * Test URL connectivity
-     * 
+     *
      * @param string $url
      * @return array
      */
@@ -141,11 +146,11 @@ class Debug extends Template
         curl_setopt($ch, CURLOPT_NOBODY, true);
         curl_setopt($ch, CURLOPT_TIMEOUT, 5);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        
+
         $startTime = microtime(true);
         curl_exec($ch);
         $endTime = microtime(true);
-        
+
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $error = curl_error($ch);
         curl_close($ch);
@@ -162,7 +167,7 @@ class Debug extends Template
 
     /**
      * Mask sensitive data
-     * 
+     *
      * @param string $secret
      * @return string
      */
@@ -171,18 +176,18 @@ class Debug extends Template
         if (empty($secret)) {
             return 'Not configured';
         }
-        
+
         $length = strlen($secret);
         if ($length <= 4) {
             return str_repeat('*', $length);
         }
-        
+
         return substr($secret, 0, 4) . str_repeat('*', $length - 4);
     }
 
     /**
      * Format JSON for display
-     * 
+     *
      * @param mixed $data
      * @return string
      */
@@ -196,7 +201,7 @@ class Debug extends Template
 
     /**
      * Get System Information
-     * 
+     *
      * @return array
      */
     public function getSystemInfo()

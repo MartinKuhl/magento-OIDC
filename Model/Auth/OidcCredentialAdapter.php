@@ -16,6 +16,8 @@ use Magento\Backend\Model\Auth\Credential\StorageInterface;
 use Magento\Framework\Event\ManagerInterface;
 use Magento\Framework\Exception\AuthenticationException;
 use Magento\User\Model\UserFactory;
+use Magento\User\Model\ResourceModel\User as UserResourceModel;
+use Magento\User\Model\ResourceModel\User\CollectionFactory as UserCollectionFactory;
 use MiniOrange\OAuth\Helper\OAuthUtility;
 
 class OidcCredentialAdapter implements StorageInterface
@@ -51,20 +53,57 @@ class OidcCredentialAdapter implements StorageInterface
     protected $hasAvailableResources = false;
 
     /**
-     * Constructor
-     *
+     * @var UserResourceModel
+     */
+    protected $userResource;
+
+    /**
+     * @var UserCollectionFactory
+     */
+    protected $userCollectionFactory;
+
+    /**
      * @param UserFactory $userFactory
      * @param ManagerInterface $eventManager
      * @param OAuthUtility $oauthUtility
+     * @param UserResourceModel $userResource
+     * @param UserCollectionFactory $userCollectionFactory
      */
     public function __construct(
         UserFactory $userFactory,
         ManagerInterface $eventManager,
-        OAuthUtility $oauthUtility
+        OAuthUtility $oauthUtility,
+        UserResourceModel $userResource,
+        UserCollectionFactory $userCollectionFactory
     ) {
         $this->userFactory = $userFactory;
         $this->eventManager = $eventManager;
         $this->oauthUtility = $oauthUtility;
+        $this->userResource = $userResource;
+        $this->userCollectionFactory = $userCollectionFactory;
+    }
+
+    /**
+     * Restore DI dependencies after session deserialization.
+     *
+     * __sleep() only persists 'user' and 'hasAvailableResources'.
+     * After __wakeup(), all injected dependencies are null.
+     * This method lazily restores them via ObjectManager when needed.
+     *
+     * @return void
+     */
+    protected function restoreDependencies()
+    {
+        if ($this->userFactory !== null) {
+            return;
+        }
+
+        $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+        $this->userFactory = $objectManager->get(UserFactory::class);
+        $this->eventManager = $objectManager->get(ManagerInterface::class);
+        $this->oauthUtility = $objectManager->get(OAuthUtility::class);
+        $this->userResource = $objectManager->get(UserResourceModel::class);
+        $this->userCollectionFactory = $objectManager->get(UserCollectionFactory::class);
     }
 
     /**
@@ -96,23 +135,21 @@ class OidcCredentialAdapter implements StorageInterface
      */
     public function authenticate($username, $password)
     {
+        $this->restoreDependencies();
         $this->log("OidcCredentialAdapter: Starting authentication for: " . $username);
 
-        // Verify this is an OIDC authentication request
         if ($password !== self::OIDC_TOKEN_MARKER) {
             $this->log("ERROR: Invalid OIDC token marker");
             throw new AuthenticationException(__('Invalid authentication method'));
         }
 
-        // Fire pre-authentication event WITH OIDC marker to bypass CAPTCHA
         $this->eventManager->dispatch('admin_user_authenticate_before', [
             'username' => $username,
             'user' => null,
-            'oidc_auth' => true  // Signals CAPTCHA bypass plugin
+            'oidc_auth' => true
         ]);
 
-        // Load user by email
-        $userCollection = $this->userFactory->create()->getCollection()
+        $userCollection = $this->userCollectionFactory->create()
             ->addFieldToFilter('email', $username);
 
         if ($userCollection->getSize() === 0) {
@@ -144,17 +181,15 @@ class OidcCredentialAdapter implements StorageInterface
             );
         }
 
-        $this->log("Authentication successful for user ID: " . $user->getId());
-
-        // Fire post-authentication event WITH OIDC marker for consistency
         $this->eventManager->dispatch('admin_user_authenticate_after', [
             'username' => $username,
-            'password' => $password,
-            'user' => $user,
+            'password' => '',
+            'user' => $this->user,
             'result' => true,
-            'oidc_auth' => true  // Maintains consistency with before event
+            'oidc_auth' => true
         ]);
 
+        $this->log("Authentication successful for: " . $username);
         return true;
     }
 
@@ -164,22 +199,18 @@ class OidcCredentialAdapter implements StorageInterface
      * Performs the login after successful authentication.
      * Records login in database and reloads user data.
      *
-     * @param string $username User email from OIDC provider
-     * @param string $password OIDC token marker
+     * @param string $username
+     * @param string $password
      * @return $this
      * @throws AuthenticationException
      */
     public function login($username, $password)
     {
-        $this->log("OidcCredentialAdapter: login() called for: " . $username);
+        $this->restoreDependencies();
 
         if ($this->authenticate($username, $password)) {
-            // Record login in database (updates logdate, lognum)
-            $this->user->getResource()->recordLogin($this->user);
-
+            $this->userResource->recordLogin($this->user);
             $this->log("Login recorded for user ID: " . $this->user->getId());
-
-            // Reload user data to get fresh state
             $this->reload();
         }
 
@@ -187,18 +218,21 @@ class OidcCredentialAdapter implements StorageInterface
     }
 
     /**
-     * Reload user data
+     * Reload user data from database.
      *
-     * Reloads the currently authenticated user from the database.
+     * Called after login AND after session deserialization (via Authentication plugin).
+     * Dependencies may be null after deserialization, so we restore them first.
      *
      * @return $this
      */
     public function reload()
     {
+        $this->restoreDependencies();
+
         if ($this->user && $this->user->getId()) {
             $userId = $this->user->getId();
-            $this->user->setId(null);
-            $this->user->load($userId);
+            $this->user = $this->userFactory->create();
+            $this->userResource->load($this->user, $userId);
 
             $this->log("User data reloaded for ID: " . $userId);
         }
@@ -265,59 +299,34 @@ class OidcCredentialAdapter implements StorageInterface
     }
 
     /**
-     * Control serialization to prevent closure serialization errors
+     * Control serialization to prevent closure serialization errors.
      *
-     * When session_regenerate_id() is called, PHP serializes session data which may
-     * include references to the Auth object and its credential storage. Our adapter
-     * has DI-injected dependencies (EventManager, UserFactory, OAuthUtility) that
-     * contain closures and can't be serialized.
-     *
-     * By implementing __sleep(), we tell PHP to only serialize essential properties
-     * (user data) and skip dependencies with closures.
+     * DI-injected dependencies contain closures and cannot be serialized.
+     * Only essential state (user + hasAvailableResources) is persisted.
+     * Dependencies are restored lazily via restoreDependencies().
      *
      * @return array Properties to serialize
      */
     public function __sleep()
     {
-        // Only serialize the user object and flags, not the dependencies
         return ['user', 'hasAvailableResources'];
     }
 
     /**
-     * Handle deserialization
-     *
-     * Note: If the adapter is deserialized from session, it won't have its
-     * dependencies (userFactory, eventManager, oauthUtility). However, this
-     * is acceptable because:
-     * 1. After successful login, the standard credential storage takes over
-     * 2. The adapter is only used during the login flow, not after
-     * 3. All methods are null-safe and will work without dependencies (just without logging)
-     * 4. The User object IS preserved and can be reloaded if needed
-     *
-     * Magento's Authentication plugin may call reload() after deserialization,
-     * which works correctly even with null dependencies.
+     * Handle deserialization – dependencies remain null until restoreDependencies() is called.
      */
     public function __wakeup()
     {
-        // Dependencies will be null after deserialization
-        // All logging calls are guarded via the log() helper method
+        // Dependencies will be restored lazily by restoreDependencies()
     }
 
     /**
      * Magic method to proxy unknown method calls to the User object
      *
-     * After session deserialization, Magento's locale system and other components
-     * may call User model methods (like getInterfaceLocale()) on this adapter.
-     * This magic method forwards those calls to the actual User object, making
-     * the adapter act as a transparent proxy.
-     *
-     * This includes support for magic getters/setters like getReloadAclFlag() which
-     * are handled by AbstractModel's magic methods rather than being actual methods.
-     *
-     * @param string $method Method name
-     * @param array $args Method arguments
+     * @param string $method
+     * @param array $args
      * @return mixed
-     * @throws \BadMethodCallException if method doesn't exist on User object
+     * @throws \BadMethodCallException
      */
     public function __call($method, $args)
     {
