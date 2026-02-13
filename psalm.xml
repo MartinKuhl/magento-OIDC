@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<psalm
+    errorLevel="4"
+    resolveFromConfigFile="true"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="https://getpsalm.org/schema/config"
+    xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
+    findUnusedBaselineEntry="false"
+>
+    <projectFiles>
+        <directory name="Block" />
+        <directory name="Controller" />
+        <directory name="Helper" />
+        <directory name="Logger" />
+        <directory name="Model" />
+        <directory name="Observer" />
+        <directory name="Plugin" />
+        <directory name="Setup" />
+        <ignoreFiles>
+            <directory name="vendor" />
+            <directory name=".github" />
+        </ignoreFiles>
+    </projectFiles>
+
+    <issueHandlers>
+        <!-- Magento uses ObjectManager pattern which Psalm can't resolve -->
+        <UndefinedClass>
+            <errorLevel type="suppress">
+                <referencedClass name="Magento\*" />
+            </errorLevel>
+        </UndefinedClass>
+    </issueHandlers>
+</psalm>

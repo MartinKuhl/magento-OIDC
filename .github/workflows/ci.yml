@@ -140,12 +140,6 @@ jobs:
       - name: Run PHPStan
         run: vendor/bin/phpstan analyse --memory-limit=1G || exit 1
 
-      - name: Init Psalm config if missing
-        run: |
-          if [ ! -f psalm.xml ] && [ ! -f psalm.xml.dist ]; then
-            vendor/bin/psalm --init --source=./ || true
-          fi
-
       - name: Run Psalm
         run: vendor/bin/psalm --no-cache || exit 1
 
