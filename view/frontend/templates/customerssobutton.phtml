@@ -1,5 +1,4 @@
-<?php
-echo '
+<?= '
     <div class="sso-divider">
         <svg class="sso-line" height="5" width="215">
             <line x1="0" y1="0" x2="210" y2="0"></line>
@@ -27,20 +26,19 @@ echo '
             </svg>
             <div style="flex: 1;">
                 <strong style="color: #e22626; font-size: 13px; display: block; margin-bottom: 6px;">
-                    <?= $block->escapeHtml(__('OIDC-Authentifizierung fehlgeschlagen')) ?>
+                    <?= $escaper->escapeHtml(__('OIDC-Authentifizierung fehlgeschlagen')) ?>
                 </strong>
                 <p style="margin: 0; color: #333; font-size: 12px; line-height: 1.4;">
-                    <?= $block->escapeHtml($block->getOidcErrorMessage()) ?>
+                    <?= $escaper->escapeHtml($block->getOidcErrorMessage()) ?>
                 </p>
             </div>
         </div>
     </div>
 <?php endif; ?>
-<?php
-echo '
+<?= '
     <div class="sso-button-container">
-       <a href="'. $block->escapeUrl($block->getSPInitiatedUrl(null, $block->getAppName())) .'" class="sso-button">
-    <span>' .$block->escapeHtml($block->getSSOButtonText()) .'</span>
+       <a href="'. $escaper->escapeUrl($block->getSPInitiatedUrl(null, $block->getAppName())) .'" class="sso-button">
+    <span>' .$escaper->escapeHtml($block->getSSOButtonText()) .'</span>
         </a>
     </div>';
 ?>

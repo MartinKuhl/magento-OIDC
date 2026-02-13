@@ -21,12 +21,12 @@
 </script>
 
 <?php
-$customerSession = $this->getCustomerSession();
+$customerSession = $block->getCustomerSession();
 if ($customerSession->isLoggedIn()) {
     $fullname = $customerSession->getCustomer()->getName();
     $fname = $customerSession->getCustomer()->getFirstname();
     if (!empty($fullname)) {
-?>
+        ?>
 <script>
     // Execute on window load
     window.addEventListener('load', function() {
@@ -38,7 +38,7 @@ if ($customerSession->isLoggedIn()) {
             while (delay < 5000) {
                 (function(d) {
                     setTimeout(function() {
-                        mo_invalidate(jQuery, "<?php echo $block->escapeJs($fullname); ?>", "<?php echo $block->escapeJs($fname); ?>");
+                        mo_invalidate(jQuery, "<?= $escaper->escapeJs($fullname); ?>", "<?= $escaper->escapeJs($fname); ?>");
                     }, d);
                 })(delay);
                 delay += 100;
@@ -46,7 +46,7 @@ if ($customerSession->isLoggedIn()) {
         }
     });
 </script>
-<?php
+        <?php
     }
 }
 ?>
