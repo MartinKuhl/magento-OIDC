@@ -29,7 +29,7 @@ class Curl
      * @param int $body Whether to send credentials in body (1) or not (0)
      * @return string JSON response
      */
-    public function sendAccessTokenRequest($postData, $url, $clientID, $clientSecret, $header, $body)
+    public function sendAccessTokenRequest($postData, $url, $clientID, $clientSecret, $header, $body): string
     {
         if ($header == 0 && $body == 1) {
             $authHeader = [
@@ -53,7 +53,7 @@ class Curl
      * @param array $headers HTTP headers (including Authorization)
      * @return string JSON response
      */
-    public function sendUserInfoRequest($url, $headers)
+    public function sendUserInfoRequest($url, $headers): string
     {
         return $this->callAPI($url, [], $headers);
     }
@@ -66,7 +66,7 @@ class Curl
      * @param array $headers HTTP headers
      * @return string Response body
      */
-    private function callAPI($url, $jsonData = [], $headers = ["Content-Type: application/json"])
+    private function callAPI($url, $jsonData = [], $headers = ["Content-Type: application/json"]): string
     {
         $curl = new \Magento\Framework\HTTP\Adapter\Curl();
         $curl->setConfig(['header' => false]);
@@ -90,7 +90,8 @@ class Curl
         $httpCode = $curl->getInfo(CURLINFO_HTTP_CODE);
         $curl->close();
 
-        if (empty($content)) {
+        // Sicherstellen, dass $content immer ein String ist (read() kann false zurückgeben)
+        if ($content === false || empty($content)) {
             return json_encode([
                 'error' => 'empty_response',
                 'error_description' => 'No response received from the OAuth server.'
