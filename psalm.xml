@@ -44,25 +44,19 @@
             </errorLevel>
         </UndefinedClass>
 
-        <!-- Magento DI: Konstruktoren werden via di.xml aufgerufen -->
+        <!-- Magento DI: Konstruktoren werden via di.xml aufgerufen 
         <PossiblyUnusedMethod>
             <errorLevel type="suppress">
                 <referencedMethod name="MiniOrange\OAuth\*::__construct" />
             </errorLevel>
-        </PossiblyUnusedMethod>
+        </PossiblyUnusedMethod>-->
 
-        <!-- Magento Plugin-Parameter ($subject) sind Pflicht aber oft ungenutzt -->
+        <!-- Magento Plugin-Parameter ($subject) sind Pflicht aber oft ungenutzt 
         <PossiblyUnusedParam>
             <errorLevel type="suppress">
                 <directory name="Plugin" />
             </errorLevel>
-        </PossiblyUnusedParam>
+        </PossiblyUnusedParam>-->
 
-        <!-- Magento Interface-Methoden haben nicht immer alle Methoden -->
-        <UndefinedInterfaceMethod>
-            <errorLevel type="suppress">
-                <referencedMethod name="Magento\*::*" />
-            </errorLevel>
-        </UndefinedInterfaceMethod>
     </issueHandlers>
 </psalm>
