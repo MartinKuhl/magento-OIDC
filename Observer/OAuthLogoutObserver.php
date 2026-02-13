@@ -3,9 +3,10 @@ namespace MiniOrange\OAuth\Observer;
 
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Event\Observer;
+use Magento\Framework\HTTP\PhpEnvironment\Response as HttpResponse;
+use Magento\Framework\App\ResponseInterface;
 
 use MiniOrange\OAuth\Helper\OAuthConstants;
-use Magento\Framework\App\ResponseInterface;
 
 /**
  * Observer for customer logout events. Handles redirecting to the
@@ -25,25 +26,22 @@ class OAuthLogoutObserver implements ObserverInterface
         $this->_response = $response;
     }
 
-    /**
-     * This function is called as soon as the observer class is initialized.
-     * Checks if the request parameter has any of the configured request
-     * parameters and handles any exception that the system might throw.
+   /**
+     * Handle logout event and redirect to OAuth provider logout URL if configured.
      *
-     * @param $observer
-     * @return
+     * @param Observer $observer
+     * @return void
      */
-    public function execute(Observer $observer)
+    public function execute(Observer $observer): void
     {
         $logoutUrl = $this->oauthUtility->getStoreConfig(OAuthConstants::OAUTH_LOGOUT_URL);
-        if (!empty($logoutUrl)) {
-            // Validate URL scheme to prevent javascript: or data: XSS
-            $parsed = parse_url($logoutUrl);
-            if ($parsed === false || !in_array($parsed['scheme'] ?? '', ['https', 'http'], true)) {
-                return;
-            }
+
+        if (empty($logoutUrl) || !filter_var($logoutUrl, FILTER_VALIDATE_URL)) {
+            return;
+        }
+
+        if ($this->_response instanceof HttpResponse) {
             $this->_response->setRedirect($logoutUrl);
-            return $this->_response;
         }
     }
 

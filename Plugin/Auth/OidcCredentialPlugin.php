@@ -126,23 +126,20 @@ class OidcCredentialPlugin
      * After plugin for Auth::login()
      *
      * Cleans up OIDC authentication flag after login completes (success or failure).
+     * Auth::login() returns void, so $result is always null.
      *
      * @param Auth $subject
-     * @param void $result
+     * @param null $result Result of Auth::login() (always null, method returns void)
      * @return void
      */
     public function afterLogin(
         Auth $subject,
         $result
-    ) {
+    ): void {
         if ($this->isOidcAuth) {
-            $this->oauthUtility->customlog("OidcCredentialPlugin: Cleaning up OIDC authentication flag");
-
-            // Clean up
+            $this->oauthUtility->customlog("OidcCredentialPlugin: Cleaning up OIDC flag after login");
             $this->isOidcAuth = false;
-            $this->oidcCredentials = [];
         }
-
-        return $result;
+        // KEIN return – die originale Methode Auth::login() gibt void zurück
     }
 }
