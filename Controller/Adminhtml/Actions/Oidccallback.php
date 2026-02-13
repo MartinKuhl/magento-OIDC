@@ -146,7 +146,13 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
                 // Verify login success and set OIDC cookie
                 if ($this->auth->isLoggedIn()) {
                     $loggedInUser = $this->auth->getUser();
-                    $this->oauthUtility->customlog("Authenticated user ID: " . $loggedInUser->getId());
+
+                     if (!$loggedInUser instanceof \Magento\User\Model\User) {
+                        $this->oauthUtility->customlog("OIDC login: unexpected user type returned from Auth::getUser()");
+                        return $this->redirectToLoginWithError(
+                            __('OIDC authentication failed. Please try again or contact your administrator.')
+                        );
+                    }
 
                     // Set OIDC authentication cookie (persists across session boundary)
                     $adminPath = '/' . $this->backendUrl->getAreaFrontName();

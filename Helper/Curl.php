@@ -81,7 +81,7 @@ class Curl
 
         $data = in_array("Content-Type: application/x-www-form-urlencoded", $headers)
             ? (!empty($jsonData) ? http_build_query($jsonData) : "")
-            : (!empty($jsonData) ? json_encode($jsonData) : "");
+            : (!empty($jsonData) ? (string) json_encode($jsonData) : "");
 
         $method = !empty($data) ? 'POST' : 'GET';
         $curl->setConfig($options);
@@ -90,17 +90,13 @@ class Curl
         $httpCode = $curl->getInfo(CURLINFO_HTTP_CODE);
         $curl->close();
 
-        // Sicherstellen, dass $content immer ein String ist (read() kann false zurückgeben)
-        if ($content === false || empty($content)) {
-            return json_encode([
-                'error' => 'empty_response',
-                'error_description' => 'No response received from the OAuth server.'
-            ]);
+        // read() gibt string|false zurück – false abfangen
+        if ($content === false || $content === '') {
+            return '{"error":"empty_response","error_description":"No response received from the OAuth server."}';
         }
 
         if ($httpCode >= 400) {
             $this->oauthUtility->customlog("Curl: HTTP error " . $httpCode . " from: " . $url);
-            // Return actual response body — OAuth providers return error details as JSON in 4xx responses
         }
 
         return $content;
