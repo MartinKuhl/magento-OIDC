@@ -15,7 +15,6 @@
         <directory name="Model" />
         <directory name="Observer" />
         <directory name="Plugin" />
-        <directory name="Setup" />
         <ignoreFiles>
             <directory name="vendor" />
             <directory name=".github" />
