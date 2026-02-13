@@ -160,7 +160,7 @@ class CustomerUserCreator
                 . $this->randomUtility->getRandomString(2, '!@#$%^&*')
                 . $this->randomUtility->getRandomString(2, '0123456789');
 
-            $websiteId = $this->storeManager->getWebsite()->getWebsiteId();
+            $websiteId = $this->storeManager->getWebsite()->getId();
 
             // Create customer with basic data
             $customer = $this->customerFactory->create();

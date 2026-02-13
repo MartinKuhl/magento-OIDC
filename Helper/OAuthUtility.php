@@ -146,21 +146,17 @@ class OAuthUtility extends Data
             // Ignore path errors
         }
     }
-    /**
-     * This function checks if a value is set or
-     * empty. Returns true if value is empty
-     *
-     * @return True or False
-     * @param $value //references the variable passed.
-     */
-    public function isBlank($value)
-    {
-        if (!isset($value) || empty($value)) {
-            return true;
-        }
-        return false;
-    }
 
+    /**
+     * Check if a value is empty or not set.
+     *
+     * @param mixed $value
+     * @return bool
+     */
+    public function isBlank(mixed $value): bool
+    {
+        return empty($value);
+    }
 
     /**
      * This function checks if cURL has been installed
