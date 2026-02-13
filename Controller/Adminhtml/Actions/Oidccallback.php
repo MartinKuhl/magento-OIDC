@@ -173,6 +173,7 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
             }
 
             // Redirect to admin dashboard
+            /** @var \Magento\Framework\Controller\Result\Redirect $resultRedirect */
             $resultRedirect = $this->resultFactory->create(ResultFactory::TYPE_REDIRECT);
             $resultRedirect->setPath('admin/dashboard');
             return $resultRedirect;
@@ -198,6 +199,7 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
      */
     private function redirectToLoginWithError($message)
     {
+        /** @var \Magento\Framework\Controller\Result\Redirect $resultRedirect */
         $resultRedirect = $this->resultFactory->create(ResultFactory::TYPE_REDIRECT);
 
         // Create admin login URL with error parameter
