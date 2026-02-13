@@ -155,8 +155,6 @@ class ProcessUserAction
         $relayState = '';
         if (is_array($this->attrs) && isset($this->attrs['relayState'])) {
             $relayState = $this->attrs['relayState'];
-        } elseif (isset($this->attrs->relayState)) {
-            $relayState = $this->attrs->relayState;
         }
 
         if ($this->oauthUtility->getSessionData('guest_checkout')) {

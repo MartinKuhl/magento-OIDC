@@ -191,12 +191,22 @@ class Debug extends Template
      * @param mixed $data
      * @return string
      */
-    public function formatJson($data)
+    public function formatJson($data): string
     {
-        if (is_array($data)) {
-            return json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+        if (is_string($data)) {
+            $decoded = json_decode($data);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $data = $decoded;
+            }
         }
-        return json_encode(json_decode($data), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+
+        $result = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+
+        if ($result === false) {
+            return '{"error": "JSON encoding failed: ' . json_last_error_msg() . '"}';
+        }
+
+        return $result;
     }
 
     /**

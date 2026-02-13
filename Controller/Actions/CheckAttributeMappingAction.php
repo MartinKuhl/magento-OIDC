@@ -10,6 +10,8 @@ use MiniOrange\OAuth\Helper\TestResults;
 use MiniOrange\OAuth\Model\Service\AdminUserCreator;
 use Magento\Framework\Stdlib\CookieManagerInterface;
 use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
+use Magento\Framework\Controller\Result\Raw as RawResult;
+use Magento\Framework\Controller\ResultFactory;
 
 /**
  * Check and process OAuth/OIDC attribute mapping
@@ -318,10 +320,11 @@ class CheckAttributeMappingAction extends BaseAction
                 'userinfo' => $flattenedattrs
             ]);
 
-            // In Controller:
-            return $this->getResponse()->setBody($output);
-            // In Observer (if needed, directly):
-            // echo $output;
+            /** @var RawResult $result */
+            $result = $this->resultFactory->create(ResultFactory::TYPE_RAW);
+            $result->setContents($output);
+            return $result;
+            
         } else {
             // Production mode - process user login/registration
             $this->oauthUtility->customlog("Production mode - processing user login/registration");

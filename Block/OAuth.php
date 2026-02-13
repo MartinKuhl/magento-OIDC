@@ -62,9 +62,9 @@ class OAuth extends \Magento\Framework\View\Element\Template
         return $this->escaper->escapeUrl($string);
     }
 
-    public function escapeJs($data)        // Escapes JavaScript content
+    public function escapeJs($string)
     {
-        return $this->escaper->escapeJs($data);
+        return $this->escaper->escapeJs($string);
     }
 
     public function getFormKey()
