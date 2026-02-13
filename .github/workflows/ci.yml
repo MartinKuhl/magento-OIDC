@@ -14,7 +14,7 @@ permissions:
 jobs:
 
   # -----------------------------------------------------
-  # PHP QUALITY JOB (PHPCS)
+  # PHP QUALITY JOB (PHPCS + Auto-Fix via PHPCBF)
   # -----------------------------------------------------
   php:
     name: PHP QA (PHP ${{ matrix.php-version }})
@@ -32,7 +32,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php-version }}
-          tools: composer, phpcs
+          tools: composer, phpcs, phpcbf
 
       - name: Determine Composer Home
         run: echo "COMPOSER_HOME=$(composer global config home --absolute)" >> $GITHUB_ENV
@@ -58,6 +58,42 @@ jobs:
 
       - name: Magento2Compatibility (non-blocking)
         run: phpcs --standard=Magento2Compatibility --extensions=php,phtml . --ignore=vendor/*,node_modules/*,.github/* || true
+
+      - name: Auto-fix with PHPCBF
+        id: phpcbf
+        run: |
+          # PHPCBF Exit-Codes: 0 = nichts zu tun, 1 = Fixes angewendet, 2 = Fixes + verbleibende Fehler, 3 = Fehler
+          phpcbf . || PHPCBF_EXIT=$?
+          PHPCBF_EXIT=${PHPCBF_EXIT:-0}
+
+          if [ "$PHPCBF_EXIT" -eq 1 ] || [ "$PHPCBF_EXIT" -eq 2 ]; then
+            echo "has_fixes=true" >> $GITHUB_OUTPUT
+            echo "::notice::PHPCBF hat automatische Korrekturen angewendet."
+          else
+            echo "has_fixes=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Pull Request with PHPCBF fixes
+        if: steps.phpcbf.outputs.has_fixes == 'true' && matrix.php-version == '8.2'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: autofix/phpcbf-${{ github.ref_name }}
+          commit-message: "style: auto-fix PHPCS violations via PHPCBF (Magento2 Standard)"
+          title: "Auto-Fix: PHPCS violations on `${{ github.ref_name }}`"
+          body: |
+            ## Automatische Code-Style-Korrekturen
+
+            Dieser PR wurde automatisch vom CI erstellt.
+
+            **Was wurde gemacht:**
+            - PHPCBF hat alle automatisch korrigierbaren PHPCS-Violations behoben
+            - Standard: **Magento2**
+
+            **Trigger:** Push auf `${{ github.ref_name }}` (Commit ${{ github.sha }})
+
+            > ⚠️ Bitte prüfe die Änderungen vor dem Merge.
+          delete-branch: true
 
       - name: Magento2 Standard (blocking)
         run: phpcs .
@@ -142,55 +178,3 @@ jobs:
 
       - name: Run Psalm
         run: vendor/bin/psalm --no-cache || exit 1
-
-
-  # -----------------------------------------------------
-  # AUTO-FIX JOB → Pull Request
-  # -----------------------------------------------------
-  autofix:
-    name: Auto Fix (phpcbf → PR)
-    runs-on: ubuntu-latest
-    #needs: [php, static-analysis]
-
-    permissions:
-      contents: write
-      pull-requests: write
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: 8.2
-          tools: composer, phpcbf, phpcs
-
-      - name: Determine Composer Home
-        run: echo "COMPOSER_HOME=$(composer global config home --absolute)" >> $GITHUB_ENV
-
-      - name: Allow phpcodesniffer-composer-installer plugin
-        run: composer global config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
-
-      - name: Install Magento Coding Standard + PHPCompatibility Fork
-        run: |
-          composer global require magento/magento-coding-standard --no-interaction --no-progress
-          phpcs --config-set installed_paths "$COMPOSER_HOME/vendor/magento/magento-coding-standard,$COMPOSER_HOME/vendor/magento/php-compatibility-fork"
-
-      - name: Auto-fix PHP (phpcbf)
-        run: phpcbf . || true
-
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          branch: autofix/phpcbf-${{ github.run_id }}
-          commit-message: "Auto-fix: phpcbf"
-          title: "Auto-Fix: PHP Code cleanup (phpcbf)"
-          body: |
-            Dieser PR wurde automatisch erstellt:
-            - PHP fixes via **phpcbf** (Magento2 Standard)
-
-            Dieser PR wurde nur erstellt, weil alle vorherigen QA-Jobs erfolgreich waren.
-          delete-branch: true
