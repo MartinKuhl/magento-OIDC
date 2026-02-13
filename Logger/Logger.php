@@ -8,7 +8,6 @@ namespace MiniOrange\OAuth\Logger;
  * Monolog v3 marks Logger as @final, but Magento's DI system depends
  * on this extension pattern. This is a known Magento ecosystem pattern.
  *
- * @phpstan-ignore class.extendsFinalByPhpDoc
  */
 class Logger extends \Magento\Framework\Logger\Monolog
 {
