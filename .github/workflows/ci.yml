@@ -150,7 +150,7 @@ jobs:
   autofix:
     name: Auto Fix (phpcbf → PR)
     runs-on: ubuntu-latest
-    needs: [php, static-analysis]
+    #needs: [php, static-analysis]
 
     permissions:
       contents: write
