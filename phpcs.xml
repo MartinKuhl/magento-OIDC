@@ -7,6 +7,14 @@
         <exclude name="Magento2.Less"/>
         <exclude name="Magento2.GraphQL"/>
         <exclude name="Squiz.CSS.NamedColours"/>
+        <!-- LiteralNamespaces hat einen Bug in findPrevious() der PHPCBF crasht -->
+        <exclude name="Magento2.PHP.LiteralNamespaces"/>
+    </rule>
+
+    <!-- LiteralNamespaces nur als Warning melden (PHPCS zeigt es, PHPCBF fasst es nicht an) -->
+    <rule ref="Magento2.PHP.LiteralNamespaces">
+        <type>warning</type>
+        <severity>5</severity>
     </rule>
 
     <!-- Only scan PHP and PHTML files -->

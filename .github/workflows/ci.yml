@@ -67,9 +67,9 @@ jobs:
       - name: Auto-fix with PHPCBF
         id: phpcbf
         run: |
-          # PHPCBF Exit-Codes: 0 = nichts zu tun, 1 = Fixes angewendet, 2 = Fixes + verbleibende Fehler, 3 = Fehler
-          # --warning-severity=0: nur Errors fixen, Warnings (inkl. LiteralNamespaces) überspringen
-          phpcbf --warning-severity=0 . || PHPCBF_EXIT=$?
+          # PHPCBF nutzt phpcs.xml automatisch (LiteralNamespaces ist dort excluded)
+          # Exit-Codes: 0 = nichts zu tun, 1 = Fixes angewendet, 2 = Fixes + Rest, 3 = Fehler
+          phpcbf . || PHPCBF_EXIT=$?
           PHPCBF_EXIT=${PHPCBF_EXIT:-0}
 
           if [ "$PHPCBF_EXIT" -eq 1 ] || [ "$PHPCBF_EXIT" -eq 2 ]; then
@@ -94,7 +94,7 @@ jobs:
 
             **Was wurde gemacht:**
             - PHPCBF hat alle automatisch korrigierbaren PHPCS-Violations behoben
-            - Standard: **Magento2**
+            - Standard: **Magento2** (via `phpcs.xml`)
 
             **Trigger:** Push auf `${{ github.ref_name }}` (Commit ${{ github.sha }})
 
