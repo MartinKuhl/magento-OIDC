@@ -73,3 +73,11 @@ Write for a developer who's new to this codebase but not new to coding.
 - whats needs to be adjusted to be future-proof and support multiple OIDC providers?
 
 - Rename: --> Authelia OIDC (in Code)
+
+Nächster Schritt (nach Stabilisierung):
+PHPStan: Level 4
+Psalm:   Level 4
+
+Langfristig (Ziel für sauberen Code):
+PHPStan: Level 6
+Psalm:   Level 3

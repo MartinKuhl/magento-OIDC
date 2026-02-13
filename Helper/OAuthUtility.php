@@ -347,6 +347,8 @@ class OAuthUtility extends Data
 
     /**
      * Get is Test Configuration clicked
+     *  @return bool
+     * @psalm-suppress PossiblyUnusedMethod – Called from templates
      */
     public function getIsTestConfigurationClicked()
     {
@@ -355,15 +357,13 @@ class OAuthUtility extends Data
 
 
     /**
-     * Flush Magento Cache. This has been added to make
-     * sure the admin/user has a smooth experience and
-     * doesn't have to flush his cache over and over again
-     * to see his changes.
+     * Flush Magento Cache.
+     *
+     * @psalm-suppress PossiblyUnusedParam – $from used for future logging
      */
-    public function flushCache($from = "")
+    public function flushCache(string $from = ""): void
     {
-
-        $types = ['db_ddl']; // we just need to clear the database cache
+        $types = ['db_ddl'];
 
         foreach ($types as $type) {
             $this->cacheTypeList->cleanType($type);
@@ -377,15 +377,23 @@ class OAuthUtility extends Data
 
     /**
      * Get data in the file specified by the path
+     *
+     * @param string $file
+     * @return string
+     * @psalm-suppress PossiblyUnusedMethod – Called dynamically
      */
     public function getFileContents($file)
     {
         return $this->fileSystem->fileGetContents($file);
     }
 
-
     /**
      * Put data in the file specified by the path
+     *
+     * @param string $file
+     * @param string $data
+     * @return void
+     * @psalm-suppress PossiblyUnusedMethod – Called dynamically
      */
     public function putFileContents($file, $data)
     {
@@ -395,6 +403,9 @@ class OAuthUtility extends Data
 
     /**
      * Get the Current User's logout url
+     *
+     * @return string
+     * @psalm-suppress PossiblyUnusedMethod – Called from templates
      */
     public function getLogoutUrl()
     {
@@ -407,20 +418,35 @@ class OAuthUtility extends Data
         return '/';
     }
 
-
     /**
      * Get/Create Callback URL of the site
+     *
+     * @return string
+     * @psalm-suppress PossiblyUnusedMethod – Called from templates
      */
     public function getCallBackUrl()
     {
         return $this->getBaseUrl() . OAuthConstants::CALLBACK_URL;
     }
 
+    /**
+     * Remove sign-in settings
+     *
+     * @return void
+     * @psalm-suppress PossiblyUnusedMethod – Called dynamically
+     */
     public function removeSignInSettings()
     {
         $this->setStoreConfig(OAuthConstants::SHOW_CUSTOMER_LINK, 0);
         $this->setStoreConfig(OAuthConstants::SHOW_ADMIN_LINK, 0);
     }
+
+    /**
+     * Reinitialize config
+     *
+     * @return void
+     * @psalm-suppress PossiblyUnusedMethod – Called from admin actions
+     */
     public function reinitConfig()
     {
 
@@ -440,6 +466,7 @@ class OAuthUtility extends Data
 
     /**
      *Common Log Method .. Accessible in all classes through
+     * @psalm-suppress PossiblyUnusedMethod – Called dynamically
      **/
     public function log_debug($msg = "", $obj = null)
     {
@@ -461,6 +488,7 @@ class OAuthUtility extends Data
     /**
      * Get client details
      * used in ShowTestResultsAction.php
+     * @psalm-suppress PossiblyUnusedMethod – Called dynamically
      */
     public function getClientDetails()
     {

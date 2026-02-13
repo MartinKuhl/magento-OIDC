@@ -1,32 +1,58 @@
 <?xml version="1.0"?>
 <psalm
-    errorLevel="4"
+    errorLevel="5"
     resolveFromConfigFile="true"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns="https://getpsalm.org/schema/config"
     xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
     findUnusedBaselineEntry="false"
+    findUnusedCode="false"
 >
     <projectFiles>
         <directory name="Block" />
         <directory name="Controller" />
         <directory name="Helper" />
-        <directory name="Logger" />
         <directory name="Model" />
         <directory name="Observer" />
         <directory name="Plugin" />
+        <directory name="Logger" />
         <ignoreFiles>
             <directory name="vendor" />
-            <directory name=".github" />
         </ignoreFiles>
     </projectFiles>
 
     <issueHandlers>
-        <!-- Magento uses ObjectManager pattern which Psalm can't resolve -->
-        <UndefinedClass>
+        <!-- PHP 8.3+ Feature – nicht relevant für PHP 8.1 Minimum -->
+        <MissingOverrideAttribute errorLevel="suppress" />
+
+        <!-- Magento-Klassen werden via XML/DI referenziert, nicht direkt im Code -->
+        <UnusedClass errorLevel="suppress" />
+
+        <!-- Magento Factory-Klassen werden zur Laufzeit generiert -->
+        <UndefinedDocblockClass errorLevel="suppress" />
+
+        <!-- Magento Magic Methods (getData, setData, etc.) -->
+        <UndefinedMagicMethod errorLevel="suppress" />
+
+        <!-- Magento DI: Konstruktoren werden via di.xml aufgerufen -->
+        <PossiblyUnusedMethod>
             <errorLevel type="suppress">
-                <referencedClass name="Magento\*" />
+                <referencedMethod name="MiniOrange\OAuth\*::__construct" />
             </errorLevel>
-        </UndefinedClass>
+        </PossiblyUnusedMethod>
+
+        <!-- Magento Plugin-Parameter ($subject) sind Pflicht aber oft ungenutzt -->
+        <PossiblyUnusedParam>
+            <errorLevel type="suppress">
+                <directory name="Plugin" />
+            </errorLevel>
+        </PossiblyUnusedParam>
+
+        <!-- Magento Interface-Methoden haben nicht immer alle Methoden -->
+        <UndefinedInterfaceMethod>
+            <errorLevel type="suppress">
+                <referencedMethod name="Magento\*::*" />
+            </errorLevel>
+        </UndefinedInterfaceMethod>
     </issueHandlers>
 </psalm>

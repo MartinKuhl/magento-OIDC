@@ -10,6 +10,6 @@ namespace MiniOrange\OAuth\Logger;
  *
  * @phpstan-ignore class.extendsFinalByPhpDoc
  */
-class Logger extends \Monolog\Logger
+class Logger extends \Magento\Framework\Logger\Monolog
 {
 }
