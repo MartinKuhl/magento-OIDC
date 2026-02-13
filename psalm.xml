@@ -32,7 +32,17 @@
         <UndefinedDocblockClass errorLevel="suppress" />
 
         <!-- Magento Magic Methods (getData, setData, etc.) -->
-        <UndefinedMagicMethod errorLevel="suppress" />
+        <UndefinedClass>
+            <errorLevel type="suppress">
+                <referencedClass name="Magento\User\Model\UserFactory" />
+                <referencedClass name="Magento\Customer\Model\CustomerFactory" />
+                <referencedClass name="Magento\Customer\Api\Data\AddressInterfaceFactory" />
+                <referencedClass name="Magento\Directory\Model\ResourceModel\Country\CollectionFactory" />
+                <referencedClass name="Magento\User\Model\ResourceModel\User\CollectionFactory" />
+                <referencedClass name="Magento\Framework\HTTP\Adapter\CurlFactory" />
+                <referencedClass name="MiniOrange\OAuth\Model\MiniorangeOauthClientAppsFactory" />
+            </errorLevel>
+        </UndefinedClass>
 
         <!-- Magento DI: Konstruktoren werden via di.xml aufgerufen -->
         <PossiblyUnusedMethod>
