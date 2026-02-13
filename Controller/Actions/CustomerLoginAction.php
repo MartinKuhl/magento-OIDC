@@ -86,7 +86,7 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
         return $this;
     }
 
-    /** 
+    /**
      * Setter for the relayState parameter
      * @param $relayState
      * @return CustomerLoginAction

@@ -111,14 +111,17 @@ class ShowTestResults extends Action
         $this->processTemplateFooter();
 
         $userEmail = $this->oauthUtility->getStoreConfig(OAuthConstants::ADMINEMAIL);
-        if (empty($userEmail))
+        if (empty($userEmail)) {
             $userEmail = "No Email Found";
-        if (empty($this->status))
+        }
+        if (empty($this->status)) {
             $this->status = "TEST FAILED";
+        }
 
         $data = $this->template;
-        if (empty($data))
+        if (empty($data)) {
             $data = "No attribute found";
+        }
 
         // Tracking für MiniOrange
         $timeStamp = $this->oauthUtility->getStoreConfig(OAuthConstants::TIME_STAMP);
@@ -210,8 +213,9 @@ class ShowTestResults extends Action
         $tableContent = '';
         if (is_array($this->attrs)) {
             foreach ($this->attrs as $key => $value) {
-                if (!is_array($value))
+                if (!is_array($value)) {
                     $value = [$value];
+                }
                 if (!in_array(null, $value)) {
                     $escapedKey = htmlspecialchars((string)$key, ENT_QUOTES, 'UTF-8');
                     $escapedValues = array_map(

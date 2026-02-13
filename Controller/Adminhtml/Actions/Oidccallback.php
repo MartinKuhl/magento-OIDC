@@ -25,7 +25,6 @@ use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
  * Security: Only authenticates users that exist in the admin_user table
  * and are marked as active.
  *
- * @package MiniOrange\OAuth\Controller\Adminhtml\Actions
  */
 class Oidccallback implements ActionInterface, HttpGetActionInterface
 {
@@ -147,7 +146,7 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
                 if ($this->auth->isLoggedIn()) {
                     $loggedInUser = $this->auth->getUser();
 
-                     if (!$loggedInUser instanceof \Magento\User\Model\User) {
+                    if (!$loggedInUser instanceof \Magento\User\Model\User) {
                         $this->oauthUtility->customlog("OIDC login: unexpected user type returned from Auth::getUser()");
                         return $this->redirectToLoginWithError(
                             __('OIDC authentication failed. Please try again or contact your administrator.')

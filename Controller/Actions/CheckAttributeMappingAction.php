@@ -15,15 +15,15 @@ use Magento\Framework\Controller\ResultFactory;
 
 /**
  * Check and process OAuth/OIDC attribute mapping
- * 
+ *
  * This controller handles attribute mapping after successful authentication.
  * Admin users are redirected to a separate login endpoint that runs in the
  * adminhtml area context. Customer users proceed with the normal login flow.
- * 
+ *
  * All logging respects the plugin's logging configuration and writes to
  * var/log/mo_oauth.log when enabled.
- * 
- * @package MiniOrange\OAuth\Controller\Actions
+
+
  */
 class CheckAttributeMappingAction extends BaseAction
 {
@@ -122,10 +122,10 @@ class CheckAttributeMappingAction extends BaseAction
 
     /**
      * Execute attribute mapping and route users accordingly
-     * 
+     *
      * Admin users are redirected to a separate callback endpoint that handles
      * admin authentication. Regular users proceed with the normal customer login flow.
-     * 
+     *
      * @return \Magento\Framework\Controller\ResultInterface
      */
     public function execute()
@@ -260,10 +260,10 @@ class CheckAttributeMappingAction extends BaseAction
 
     /**
      * Process OAuth/OIDC attribute mapping for customer users
-     * 
+     *
      * Maps OAuth attributes to Magento customer fields based on
      * the configuration set in the admin panel.
-     * 
+     *
      * @param array $attrs Raw OAuth response attributes
      * @param array $flattenedAttrs Flattened attribute array
      * @param string $userEmail User email from OAuth response
@@ -298,7 +298,7 @@ class CheckAttributeMappingAction extends BaseAction
 
     /**
      * Process the result - either show test screen or login/create user
-     * 
+     *
      * @param array $attrs Raw attributes
      * @param array $flattenedattrs Flattened attributes
      * @param string $email User email
@@ -339,7 +339,7 @@ class CheckAttributeMappingAction extends BaseAction
     /**
      * Process first name attribute
      * Falls back to email prefix if not provided
-     * 
+     *
      * @param array $attrs Attribute array
      */
     private function processFirstName(&$attrs)
@@ -354,7 +354,7 @@ class CheckAttributeMappingAction extends BaseAction
     /**
      * Process last name attribute
      * Falls back to email domain if not provided
-     * 
+     *
      * @param array $attrs Attribute array
      */
     private function processLastName(&$attrs)
@@ -369,7 +369,7 @@ class CheckAttributeMappingAction extends BaseAction
     /**
      * Process username attribute
      * Falls back to email if not provided
-     * 
+     *
      * @param array $attrs Attribute array
      */
     private function processUserName(&$attrs)
@@ -383,7 +383,7 @@ class CheckAttributeMappingAction extends BaseAction
     /**
      * Process email attribute
      * Falls back to userEmail if not provided
-     * 
+     *
      * @param array $attrs Attribute array
      */
     private function processEmail(&$attrs)
@@ -397,7 +397,7 @@ class CheckAttributeMappingAction extends BaseAction
     /**
      * Process group/role name attribute
      * Defaults to empty array if not provided
-     * 
+     *
      * @param array $attrs Attribute array
      */
     private function processGroupName(&$attrs)
@@ -412,7 +412,7 @@ class CheckAttributeMappingAction extends BaseAction
 
     /**
      * Set user info response
-     * 
+     *
      * @param array $userInfoResponse
      * @return $this
      */
@@ -424,7 +424,7 @@ class CheckAttributeMappingAction extends BaseAction
 
     /**
      * Set flattened user info response
-     * 
+     *
      * @param array $flattenedUserInfoResponse
      * @return $this
      */
@@ -436,7 +436,7 @@ class CheckAttributeMappingAction extends BaseAction
 
     /**
      * Set user email
-     * 
+     *
      * @param string $userEmail
      * @return $this
      */
@@ -472,7 +472,7 @@ class CheckAttributeMappingAction extends BaseAction
 
     /**
      * Save OAuth response for debugging
-     * 
+     *
      * @param array $attrs
      */
     protected function saveDebugData($attrs)
@@ -529,5 +529,4 @@ class CheckAttributeMappingAction extends BaseAction
             $this->oauthUtility->customlog("Could not save debug data: " . $e->getMessage());
         }
     }
-
 }

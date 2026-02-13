@@ -388,7 +388,7 @@ class Data extends AbstractHelper
 
     /**
      * Sanitize input data to prevent XSS and other injection attacks.
-     * 
+     *
      * @param mixed $value
      * @return mixed
      */
@@ -439,7 +439,7 @@ class Data extends AbstractHelper
      * @param $relayState
      * @param $app_name
      */
-    public function getSPInitiatedUrl($relayState = null, $app_name = NULL)
+    public function getSPInitiatedUrl($relayState = null, $app_name = null)
     {
         $relayState = is_null($relayState) ? $this->getCurrentUrl() : $relayState;
 
@@ -461,7 +461,7 @@ class Data extends AbstractHelper
      * @param $relayState
      * @param $app_name
      */
-    public function getAdminSPInitiatedUrl($relayState = null, $app_name = NULL)
+    public function getAdminSPInitiatedUrl($relayState = null, $app_name = null)
     {
         $relayState = is_null($relayState) ? $this->getCurrentUrl() : $relayState;
 

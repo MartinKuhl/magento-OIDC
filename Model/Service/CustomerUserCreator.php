@@ -272,8 +272,9 @@ class CustomerUserCreator
                         return null;
                     }
                 }
-                if (is_string($value))
+                if (is_string($value)) {
                     return $value;
+                }
             }
 
             // Check in raw attrs

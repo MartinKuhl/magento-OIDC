@@ -14,8 +14,6 @@ use MiniOrange\OAuth\Controller\Actions\BaseAdminAction;
 use MiniOrange\OAuth\Helper\OAuthUtility;
 use Psr\Log\LoggerInterface;
 
-
-
 /**
  * This class handles the action for endpoint: mooauth/attrsettings/Index
  * Extends the \Magento\Backend\App\Action for Admin Actions which

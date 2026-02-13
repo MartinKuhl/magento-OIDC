@@ -23,7 +23,7 @@ class AuthorizationRequest
     private $params;
     private $state;
 
-    public function __construct($clientID, $scope, $authorizeURL, $responseType, $redirectURL, $relayState,$params)
+    public function __construct($clientID, $scope, $authorizeURL, $responseType, $redirectURL, $relayState, $params)
     {
         $this->clientID = $clientID;
         $this->scope = $scope;
@@ -32,7 +32,6 @@ class AuthorizationRequest
         $this->responseType = $responseType;
         $this->redirectURL = $redirectURL;
         $this->params = $params;
-
     }
 
     /**

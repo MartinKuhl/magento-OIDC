@@ -17,8 +17,6 @@ use Magento\Framework\Message\ManagerInterface;
 use MiniOrange\OAuth\Helper\OAuthUtility;
 use Psr\Log\LoggerInterface;
 
-
-
 /**
  * This class handles the action for endpoint: mooauth/signinsettings/Index
  * Extends the \Magento\Backend\App\Action for Admin Actions which
@@ -87,7 +85,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
                     if ($debug_log_on == '1') {
                         $this->oauthUtility->setStoreConfig(OAuthConstants::LOG_FILE_TIME, $log_file_time);
                     } elseif ($debug_log_on == '0' && $this->oauthUtility->isCustomLogExist()) {
-                        $this->oauthUtility->setStoreConfig(OAuthConstants::LOG_FILE_TIME, NULL);
+                        $this->oauthUtility->setStoreConfig(OAuthConstants::LOG_FILE_TIME, null);
                         $this->oauthUtility->deleteCustomLogFile();
                     }
                 } elseif ($params['option'] == 'clear_download_logs') {
@@ -121,7 +119,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
                                     $plugin_version = OAuthConstants::VERSION;
                                     $magento_version = $this->productMetadata->getVersion();
                                     $php_version = phpversion();
-                                    $values = array($appName, $scope, $authorize_url, $accesstoken_url, $getuserinfo_url, $header, $body, $endpoint_url, $show_customer_link, $attribute_email, $attribute_username, $customer_email, $plugin_version, $magento_version, $php_version);
+                                    $values = [$appName, $scope, $authorize_url, $accesstoken_url, $getuserinfo_url, $header, $body, $endpoint_url, $show_customer_link, $attribute_email, $attribute_username, $customer_email, $plugin_version, $magento_version, $php_version];
                                     //save configuration
                                     $this->customerConfigurationSettings($values);
                                 }
@@ -139,7 +137,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
                         }
                     } elseif (isset($params['clear_logs'])) {
                         if ($this->oauthUtility->isCustomLogExist()) {
-                            $this->oauthUtility->setStoreConfig(OAuthConstants::LOG_FILE_TIME, NULL);
+                            $this->oauthUtility->setStoreConfig(OAuthConstants::LOG_FILE_TIME, null);
                             $this->oauthUtility->deleteCustomLogFile();
                             $this->messageManager->addSuccessMessage('Logs Cleared Successfully');
                         } else {

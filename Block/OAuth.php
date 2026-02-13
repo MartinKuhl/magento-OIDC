@@ -422,7 +422,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * Check if non-OIDC admin login is disabled
-     * 
+     *
      * @return bool
      */
     public function isNonOidcAdminLoginDisabled()
@@ -669,7 +669,6 @@ class OAuth extends \Magento\Framework\View\Element\Template
     public function getCurrentDate()
     {
         return $this->oauthUtility->getCurrentDate();
-
     }
     public function getTimeStamp()
     {

@@ -4,41 +4,41 @@
 -->
 <?php
 // Initialize all values required to be shown on the page
-$roles = $this->getAllRoles();
-$groups = $this->getAllGroups();
+$roles = $block->getAllRoles();
+$groups = $block->getAllGroups();
 
-$isEnabled = $this->isEnabled();
+$isEnabled = $block->isEnabled();
 $disabled = !$isEnabled ? "disabled" : "";
-$oauth_am_username = $this->getUserNameMapping();
-$oauth_am_email = $this->getUserEmailMapping();
-$oauth_am_first_name = $this->getFirstNameMapping();
-$oauth_am_last_name = $this->getLastNameMapping();
-$oauth_am_table = $this->getTable();
-$oauth_am_country = $this->getCountryMapping();
-$oauth_am_company = $this->getCompanyMapping();
-$oauth_am_group_name = $this->getGroupMapping();
+$oauth_am_username = $block->getUserNameMapping();
+$oauth_am_email = $block->getUserEmailMapping();
+$oauth_am_first_name = $block->getFirstNameMapping();
+$oauth_am_last_name = $block->getLastNameMapping();
+$oauth_am_table = $block->getTable();
+$oauth_am_country = $block->getCountryMapping();
+$oauth_am_company = $block->getCompanyMapping();
+$oauth_am_group_name = $block->getGroupMapping();
 
 // Customer data mapping
-$oauth_am_dob = $this->getDobMapping();
-$oauth_am_gender = $this->getGenderMapping();
-$oauth_am_phone = $this->getPhoneMapping();
-$oauth_am_street = $this->getStreetMapping();
-$oauth_am_zip = $this->getZipMapping();
-$oauth_am_city = $this->getCityMapping();
-$oauth_am_state = $this->getStateMapping();
-$oauth_am_country = $this->getCountryMapping();
-$oidc_claims = $this->getOidcStandardClaims();
+$oauth_am_dob = $block->getDobMapping();
+$oauth_am_gender = $block->getGenderMapping();
+$oauth_am_phone = $block->getPhoneMapping();
+$oauth_am_street = $block->getStreetMapping();
+$oauth_am_zip = $block->getZipMapping();
+$oauth_am_city = $block->getCityMapping();
+$oauth_am_state = $block->getStateMapping();
+$oauth_am_country = $block->getCountryMapping();
+$oidc_claims = $block->getOidcStandardClaims();
 
-$oauth_am_account_matcher = $this->getAccountMatcher();
+$oauth_am_account_matcher = $block->getAccountMatcher();
 $emailSelected = $oauth_am_account_matcher == 'email' ? 'selected="selected"' : "";
 $usernameSelected = $oauth_am_account_matcher == 'username' ? 'selected="selected"' : "";
 
-$oauth_am_dont_allow_unlisted_user_role = $this->getDisallowUnlistedUserRole();
-$mo_oauth_dont_create_user_if_role_not_mapped = $this->getDisallowUserCreationIfRoleNotMapped();
-$default_role = $this->getDefaultRole();
+$oauth_am_dont_allow_unlisted_user_role = $block->getDisallowUnlistedUserRole();
+$mo_oauth_dont_create_user_if_role_not_mapped = $block->getDisallowUserCreationIfRoleNotMapped();
+$default_role = $block->getDefaultRole();
 
 // Admin Role Mapping settings
-$oauth_am_admin_role_mappings = $this->getAdminRoleMappings();
+$oauth_am_admin_role_mappings = $block->getAdminRoleMappings();
 ?>
 
 <div class="row">
@@ -55,7 +55,7 @@ $oauth_am_admin_role_mappings = $this->getAdminRoleMappings();
 
             <!-- Attribute Mapping Form -->
             <form name="f" method="post" action="">
-                <input name="form_key" type="hidden" value="<?= $block->escapeHtmlAttr($block->getFormKey()) ?>" />
+                <input name="form_key" type="hidden" value="<?= $escaper->escapeHtmlAttr($block->getFormKey()) ?>" />
                 <input type="hidden" name="option" value="saveAttrSettings">
 
                 <table>
@@ -89,7 +89,7 @@ $oauth_am_admin_role_mappings = $this->getAdminRoleMappings();
                         <td>
                             <select name="oauth_am_account_matcher"
                                     id="oauth_am_account_matcher"
-                                    <?= $block->escapeHtmlAttr($disabled) ?>>
+                                    <?= $escaper->escapeHtmlAttr($disabled) ?>>
                                 <option value="email" <?= $emailSelected ?>>Email</option>
                                 <option value="username" <?= $usernameSelected ?>>Username</option>
                             </select>
@@ -102,11 +102,11 @@ $oauth_am_admin_role_mappings = $this->getAdminRoleMappings();
                             <label><strong>Username<span style="color:red;">*</span>:</strong></label>
                         </td>
                         <td>
-                            <select name="oauth_am_username" id="oauth_am_username" <?= $block->escapeHtmlAttr($disabled) ?>>
+                            <select name="oauth_am_username" id="oauth_am_username" <?= $escaper->escapeHtmlAttr($disabled) ?>>
                                 <option value="">-- Select OIDC Claim --</option>
                                 <?php foreach ($oidc_claims as $claim): ?>
-                                    <option value="<?= $block->escapeHtmlAttr($claim) ?>" <?= ($oauth_am_username === $claim) ? 'selected' : '' ?>>
-                                        <?= $block->escapeHtml($claim) ?>
+                                    <option value="<?= $escaper->escapeHtmlAttr($claim) ?>" <?= ($oauth_am_username === $claim) ? 'selected' : '' ?>>
+                                        <?= $escaper->escapeHtml($claim) ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
@@ -119,11 +119,11 @@ $oauth_am_admin_role_mappings = $this->getAdminRoleMappings();
                             <label><strong>Email<span style="color:red;">*</span>:</strong></label>
                         </td>
                         <td>
-                            <select name="oauth_am_email" id="oauth_am_email" <?= $block->escapeHtmlAttr($disabled) ?>>
+                            <select name="oauth_am_email" id="oauth_am_email" <?= $escaper->escapeHtmlAttr($disabled) ?>>
                                 <option value="">-- Select OIDC Claim --</option>
                                 <?php foreach ($oidc_claims as $claim): ?>
-                                    <option value="<?= $block->escapeHtmlAttr($claim) ?>" <?= ($oauth_am_email === $claim) ? 'selected' : '' ?>>
-                                        <?= $block->escapeHtml($claim) ?>
+                                    <option value="<?= $escaper->escapeHtmlAttr($claim) ?>" <?= ($oauth_am_email === $claim) ? 'selected' : '' ?>>
+                                        <?= $escaper->escapeHtml($claim) ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
@@ -136,11 +136,11 @@ $oauth_am_admin_role_mappings = $this->getAdminRoleMappings();
                             <label><strong>First Name:</strong></label>
                         </td>
                         <td>
-                            <select name="oauth_am_first_name" id="oauth_am_first_name" <?= $block->escapeHtmlAttr($disabled) ?>>
+                            <select name="oauth_am_first_name" id="oauth_am_first_name" <?= $escaper->escapeHtmlAttr($disabled) ?>>
                                 <option value="">-- Select OIDC Claim --</option>
                                 <?php foreach ($oidc_claims as $claim): ?>
-                                    <option value="<?= $block->escapeHtmlAttr($claim) ?>" <?= ($oauth_am_first_name === $claim) ? 'selected' : '' ?>>
-                                        <?= $block->escapeHtml($claim) ?>
+                                    <option value="<?= $escaper->escapeHtmlAttr($claim) ?>" <?= ($oauth_am_first_name === $claim) ? 'selected' : '' ?>>
+                                        <?= $escaper->escapeHtml($claim) ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
@@ -153,11 +153,11 @@ $oauth_am_admin_role_mappings = $this->getAdminRoleMappings();
                             <label><strong>Last Name:</strong></label>
                         </td>
                         <td>
-                            <select name="oauth_am_last_name" id="oauth_am_last_name" <?= $block->escapeHtmlAttr($disabled) ?>>
+                            <select name="oauth_am_last_name" id="oauth_am_last_name" <?= $escaper->escapeHtmlAttr($disabled) ?>>
                                 <option value="">-- Select OIDC Claim --</option>
                                 <?php foreach ($oidc_claims as $claim): ?>
-                                    <option value="<?= $block->escapeHtmlAttr($claim) ?>" <?= ($oauth_am_last_name === $claim) ? 'selected' : '' ?>>
-                                        <?= $block->escapeHtml($claim) ?>
+                                    <option value="<?= $escaper->escapeHtmlAttr($claim) ?>" <?= ($oauth_am_last_name === $claim) ? 'selected' : '' ?>>
+                                        <?= $escaper->escapeHtml($claim) ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
@@ -186,8 +186,8 @@ $oauth_am_admin_role_mappings = $this->getAdminRoleMappings();
                             <input type="text"
                                    name="oauth_am_group"
                                    placeholder="e.g., groups, roles, memberOf"
-                                   value="<?= $block->escapeHtmlAttr($oauth_am_group_name) ?>"
-                                   <?= $block->escapeHtmlAttr($disabled) ?> />
+                                   value="<?= $escaper->escapeHtmlAttr($oauth_am_group_name) ?>"
+                                   <?= $escaper->escapeHtmlAttr($disabled) ?> />
                             <br>
                             <small style="color: #666;">The OIDC claim that contains group/role information</small>
                         </td>
@@ -201,12 +201,12 @@ $oauth_am_admin_role_mappings = $this->getAdminRoleMappings();
                         <td>
                             <select name="oauth_am_default_role"
                                     id="oauth_am_default_role"
-                                    <?= $block->escapeHtmlAttr($disabled) ?>>
+                                    <?= $escaper->escapeHtmlAttr($disabled) ?>>
                                 <option value="">-- Select Default Role --</option>
                                 <?php foreach ($roles as $role): ?>
-                                    <option value="<?= $block->escapeHtmlAttr($role['value']) ?>"
+                                    <option value="<?= $escaper->escapeHtmlAttr($role['value']) ?>"
                                         <?= ($default_role == $role['value']) ? 'selected="selected"' : '' ?>>
-                                        <?= $block->escapeHtml($role['label']) ?>
+                                        <?= $escaper->escapeHtml($role['label']) ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
@@ -228,17 +228,17 @@ $oauth_am_admin_role_mappings = $this->getAdminRoleMappings();
                                             <input type="text"
                                                    name="oauth_role_mapping[<?= $index ?>][group]"
                                                    placeholder="OIDC Group Name"
-                                                   value="<?= $block->escapeHtmlAttr($mapping['group'] ?? '') ?>"
+                                                   value="<?= $escaper->escapeHtmlAttr($mapping['group'] ?? '') ?>"
                                                    style="width: 200px;"
-                                                   <?= $block->escapeHtmlAttr($disabled) ?> />
+                                                   <?= $escaper->escapeHtmlAttr($disabled) ?> />
                                             <span style="margin: 0 10px;">&rarr;</span>
                                             <select name="oauth_role_mapping[<?= $index ?>][role]"
-                                                    <?= $block->escapeHtmlAttr($disabled) ?>>
+                                                    <?= $escaper->escapeHtmlAttr($disabled) ?>>
                                                 <option value="">-- Select Role --</option>
                                                 <?php foreach ($roles as $role): ?>
-                                                    <option value="<?= $block->escapeHtmlAttr($role['value']) ?>"
+                                                    <option value="<?= $escaper->escapeHtmlAttr($role['value']) ?>"
                                                         <?= (isset($mapping['role']) && $mapping['role'] == $role['value']) ? 'selected="selected"' : '' ?>>
-                                                        <?= $block->escapeHtml($role['label']) ?>
+                                                        <?= $escaper->escapeHtml($role['label']) ?>
                                                     </option>
                                                 <?php endforeach; ?>
                                             </select>
@@ -251,14 +251,14 @@ $oauth_am_admin_role_mappings = $this->getAdminRoleMappings();
                                                name="oauth_role_mapping[0][group]"
                                                placeholder="OIDC Group Name"
                                                style="width: 200px;"
-                                               <?= $block->escapeHtmlAttr($disabled) ?> />
+                                               <?= $escaper->escapeHtmlAttr($disabled) ?> />
                                         <span style="margin: 0 10px;">&rarr;</span>
                                         <select name="oauth_role_mapping[0][role]"
-                                                <?= $block->escapeHtmlAttr($disabled) ?>>
+                                                <?= $escaper->escapeHtmlAttr($disabled) ?>>
                                             <option value="">-- Select Role --</option>
                                             <?php foreach ($roles as $role): ?>
-                                                <option value="<?= $block->escapeHtmlAttr($role['value']) ?>">
-                                                    <?= $block->escapeHtml($role['label']) ?>
+                                                <option value="<?= $escaper->escapeHtmlAttr($role['value']) ?>">
+                                                    <?= $escaper->escapeHtml($role['label']) ?>
                                                 </option>
                                             <?php endforeach; ?>
                                         </select>
@@ -291,11 +291,11 @@ $oauth_am_admin_role_mappings = $this->getAdminRoleMappings();
                             <label><strong>Date of Birth:</strong></label>
                         </td>
                         <td>
-                            <select name="oauth_am_dob" id="oauth_am_dob" <?= $block->escapeHtmlAttr($disabled) ?>>
+                            <select name="oauth_am_dob" id="oauth_am_dob" <?= $escaper->escapeHtmlAttr($disabled) ?>>
                                 <option value="">-- Select OIDC Claim --</option>
                                 <?php foreach ($oidc_claims as $claim): ?>
-                                    <option value="<?= $block->escapeHtmlAttr($claim) ?>" <?= ($oauth_am_dob === $claim) ? 'selected' : '' ?>>
-                                        <?= $block->escapeHtml($claim) ?>
+                                    <option value="<?= $escaper->escapeHtmlAttr($claim) ?>" <?= ($oauth_am_dob === $claim) ? 'selected' : '' ?>>
+                                        <?= $escaper->escapeHtml($claim) ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
@@ -310,11 +310,11 @@ $oauth_am_admin_role_mappings = $this->getAdminRoleMappings();
                             <label><strong>Gender:</strong></label>
                         </td>
                         <td>
-                            <select name="oauth_am_gender" id="oauth_am_gender" <?= $block->escapeHtmlAttr($disabled) ?>>
+                            <select name="oauth_am_gender" id="oauth_am_gender" <?= $escaper->escapeHtmlAttr($disabled) ?>>
                                 <option value="">-- Select OIDC Claim --</option>
                                 <?php foreach ($oidc_claims as $claim): ?>
-                                    <option value="<?= $block->escapeHtmlAttr($claim) ?>" <?= ($oauth_am_gender === $claim) ? 'selected' : '' ?>>
-                                        <?= $block->escapeHtml($claim) ?>
+                                    <option value="<?= $escaper->escapeHtmlAttr($claim) ?>" <?= ($oauth_am_gender === $claim) ? 'selected' : '' ?>>
+                                        <?= $escaper->escapeHtml($claim) ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
@@ -329,11 +329,11 @@ $oauth_am_admin_role_mappings = $this->getAdminRoleMappings();
                             <label><strong>Phone Number<span style="color:blue;">*</span>:</strong></label>
                         </td>
                         <td>
-                            <select name="oauth_am_phone" id="oauth_am_phone" <?= $block->escapeHtmlAttr($disabled) ?>>
+                            <select name="oauth_am_phone" id="oauth_am_phone" <?= $escaper->escapeHtmlAttr($disabled) ?>>
                                 <option value="">-- Select OIDC Claim --</option>
                                 <?php foreach ($oidc_claims as $claim): ?>
-                                    <option value="<?= $block->escapeHtmlAttr($claim) ?>" <?= ($oauth_am_phone === $claim) ? 'selected' : '' ?>>
-                                        <?= $block->escapeHtml($claim) ?>
+                                    <option value="<?= $escaper->escapeHtmlAttr($claim) ?>" <?= ($oauth_am_phone === $claim) ? 'selected' : '' ?>>
+                                        <?= $escaper->escapeHtml($claim) ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
@@ -353,11 +353,11 @@ $oauth_am_admin_role_mappings = $this->getAdminRoleMappings();
                             <label><strong>Street<span style="color:blue;">*</span>:</strong></label>
                         </td>
                         <td>
-                            <select name="oauth_am_street" id="oauth_am_street" <?= $block->escapeHtmlAttr($disabled) ?>>
+                            <select name="oauth_am_street" id="oauth_am_street" <?= $escaper->escapeHtmlAttr($disabled) ?>>
                                 <option value="">-- Select OIDC Claim --</option>
                                 <?php foreach ($oidc_claims as $claim): ?>
-                                    <option value="<?= $block->escapeHtmlAttr($claim) ?>" <?= ($oauth_am_street === $claim) ? 'selected' : '' ?>>
-                                        <?= $block->escapeHtml($claim) ?>
+                                    <option value="<?= $escaper->escapeHtmlAttr($claim) ?>" <?= ($oauth_am_street === $claim) ? 'selected' : '' ?>>
+                                        <?= $escaper->escapeHtml($claim) ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
@@ -370,11 +370,11 @@ $oauth_am_admin_role_mappings = $this->getAdminRoleMappings();
                             <label><strong>Zip Code:</strong></label>
                         </td>
                         <td>
-                            <select name="oauth_am_zip" id="oauth_am_zip" <?= $block->escapeHtmlAttr($disabled) ?>>
+                            <select name="oauth_am_zip" id="oauth_am_zip" <?= $escaper->escapeHtmlAttr($disabled) ?>>
                                 <option value="">-- Select OIDC Claim --</option>
                                 <?php foreach ($oidc_claims as $claim): ?>
-                                    <option value="<?= $block->escapeHtmlAttr($claim) ?>" <?= ($oauth_am_zip === $claim) ? 'selected' : '' ?>>
-                                        <?= $block->escapeHtml($claim) ?>
+                                    <option value="<?= $escaper->escapeHtmlAttr($claim) ?>" <?= ($oauth_am_zip === $claim) ? 'selected' : '' ?>>
+                                        <?= $escaper->escapeHtml($claim) ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
@@ -387,11 +387,11 @@ $oauth_am_admin_role_mappings = $this->getAdminRoleMappings();
                             <label><strong>City<span style="color:blue;">*</span>:</strong></label>
                         </td>
                         <td>
-                            <select name="oauth_am_city" id="oauth_am_city" <?= $block->escapeHtmlAttr($disabled) ?>>
+                            <select name="oauth_am_city" id="oauth_am_city" <?= $escaper->escapeHtmlAttr($disabled) ?>>
                                 <option value="">-- Select OIDC Claim --</option>
                                 <?php foreach ($oidc_claims as $claim): ?>
-                                    <option value="<?= $block->escapeHtmlAttr($claim) ?>" <?= ($oauth_am_city === $claim) ? 'selected' : '' ?>>
-                                        <?= $block->escapeHtml($claim) ?>
+                                    <option value="<?= $escaper->escapeHtmlAttr($claim) ?>" <?= ($oauth_am_city === $claim) ? 'selected' : '' ?>>
+                                        <?= $escaper->escapeHtml($claim) ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
@@ -404,11 +404,11 @@ $oauth_am_admin_role_mappings = $this->getAdminRoleMappings();
                             <label><strong>State/Region:</strong></label>
                         </td>
                         <td>
-                            <select name="oauth_am_state" id="oauth_am_state" <?= $block->escapeHtmlAttr($disabled) ?>>
+                            <select name="oauth_am_state" id="oauth_am_state" <?= $escaper->escapeHtmlAttr($disabled) ?>>
                                 <option value="">-- Select OIDC Claim --</option>
                                 <?php foreach ($oidc_claims as $claim): ?>
-                                    <option value="<?= $block->escapeHtmlAttr($claim) ?>" <?= ($oauth_am_state === $claim) ? 'selected' : '' ?>>
-                                        <?= $block->escapeHtml($claim) ?>
+                                    <option value="<?= $escaper->escapeHtmlAttr($claim) ?>" <?= ($oauth_am_state === $claim) ? 'selected' : '' ?>>
+                                        <?= $escaper->escapeHtml($claim) ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
@@ -423,11 +423,11 @@ $oauth_am_admin_role_mappings = $this->getAdminRoleMappings();
                             <label><strong>Country<span style="color:blue;">*</span>:</strong></label>
                         </td>
                         <td>
-                            <select name="oauth_am_country" id="oauth_am_country" <?= $block->escapeHtmlAttr($disabled) ?>>
+                            <select name="oauth_am_country" id="oauth_am_country" <?= $escaper->escapeHtmlAttr($disabled) ?>>
                                 <option value="">-- Select OIDC Claim --</option>
                                 <?php foreach ($oidc_claims as $claim): ?>
-                                    <option value="<?= $block->escapeHtmlAttr($claim) ?>" <?= ($oauth_am_country === $claim) ? 'selected' : '' ?>>
-                                        <?= $block->escapeHtml($claim) ?>
+                                    <option value="<?= $escaper->escapeHtmlAttr($claim) ?>" <?= ($oauth_am_country === $claim) ? 'selected' : '' ?>>
+                                        <?= $escaper->escapeHtml($claim) ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
@@ -455,7 +455,7 @@ $oauth_am_admin_role_mappings = $this->getAdminRoleMappings();
                                    style="width: 100px;"
                                    name="submit"
                                    value="Save"
-                                   <?= $block->escapeHtmlAttr($disabled) ?> />
+                                   <?= $escaper->escapeHtmlAttr($disabled) ?> />
                         </td>
                     </tr>
                 </table>
@@ -471,9 +471,9 @@ function addRoleMapping() {
     var container = document.getElementById('admin-role-mappings');
     var rolesOptions = '<?php
         $options = '<option value="">-- Select Role --</option>';
-        foreach ($roles as $role) {
-            $options .= '<option value="' . $block->escapeHtmlAttr($role['value']) . '">' . $block->escapeHtml($role['label']) . '</option>';
-        }
+    foreach ($roles as $role) {
+        $options .= '<option value="' . $escaper->escapeHtmlAttr($role['value']) . '">' . $escaper->escapeHtml($role['label']) . '</option>';
+    }
         echo addslashes($options);
     ?>';
 

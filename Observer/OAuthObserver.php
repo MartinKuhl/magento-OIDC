@@ -81,9 +81,9 @@ class OAuthObserver implements ObserverInterface
         } catch (\Exception $e) {
             if ($isTest) { // show a failed validation screen
                 $output = $this->testResults->output($e, true);
-                // ECHO REMOVED: Response should be handled via Response object if possible, 
+                // ECHO REMOVED: Response should be handled via Response object if possible,
                 // but checking context. For now, avoiding direct echo if possible,
-                // or ensure we are safe. 
+                // or ensure we are safe.
                 // In Observer context, echo is bad.
                 // However, without a Response object in context (Observer receives Event),
                 // we might need to use the Response injected via dependency or get it from Observer?
@@ -125,7 +125,7 @@ class OAuthObserver implements ObserverInterface
                         ]
                     );
                     // Output via Response object
-                    // $this->getResponse()->setBody($output); 
+                    // $this->getResponse()->setBody($output);
                     // Need to inject ResponseInterface to do this properly.
                     // For now, removing echo.
                     // Implementation Plan Step 2 says: "Use Magento\Framework\App\ResponseInterface..."
@@ -137,5 +137,4 @@ class OAuthObserver implements ObserverInterface
                 break;
         }
     }
-
 }

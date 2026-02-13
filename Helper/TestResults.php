@@ -21,5 +21,4 @@ class TestResults
         }
         return $html;
     }
-
 }

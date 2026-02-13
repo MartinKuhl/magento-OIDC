@@ -158,9 +158,9 @@ class ProcessUserAction
         }
 
         if ($this->oauthUtility->getSessionData('guest_checkout')) {
-            $this->oauthUtility->setSessionData('guest_checkout', NULL);
+            $this->oauthUtility->setSessionData('guest_checkout', null);
             return $this->customerLoginAction->setUser($user)->setRelayState($this->oauthUtility->getBaseUrl() . 'checkout')->execute();
-        } else if (!empty($relayState)) {
+        } elseif (!empty($relayState)) {
             return $this->customerLoginAction->setUser($user)->setRelayState($relayState)->execute();
         } else {
             return $this->customerLoginAction->setUser($user)->setRelayState('/')->execute();
@@ -218,5 +218,4 @@ class ProcessUserAction
     }
 
     // Admin creation methods removed as they are now handled by CheckAttributeMappingAction and AdminUserCreator.
-
 }

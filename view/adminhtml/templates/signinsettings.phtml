@@ -4,16 +4,16 @@
 -->
 <?php
 // Initialize all values
-$customerLink = $this->showCustomerLink() ? 'checked' : '';
-$adminLink = $this->showAdminLink() ? 'checked' : '';
-$autoCreateAdmin = $this->autoCreateAdmin() ? 'checked' : '';
-$autoCreateCustomer = $this->autoCreateCustomer() ? 'checked' : '';
-$enableLoginRedirect = $this->isLoginRedirectEnabled() ? 'checked' : '';
-$disableNonOidcAdminLogin = $this->isNonOidcAdminLoginDisabled() ? 'checked' : '';
-$isOAuthConfigured = $this->isOAuthConfigured() && $this->isEnabled();
+$customerLink = $block->showCustomerLink() ? 'checked' : '';
+$adminLink = $block->showAdminLink() ? 'checked' : '';
+$autoCreateAdmin = $block->autoCreateAdmin() ? 'checked' : '';
+$autoCreateCustomer = $block->autoCreateCustomer() ? 'checked' : '';
+$enableLoginRedirect = $block->isLoginRedirectEnabled() ? 'checked' : '';
+$disableNonOidcAdminLogin = $block->isNonOidcAdminLoginDisabled() ? 'checked' : '';
+$isOAuthConfigured = $block->isOAuthConfigured() && $block->isEnabled();
 $disabled = $isOAuthConfigured ? '' : 'disabled title="Disabled. Configure your Service Provider"';
-$logoutUrl = $this->getAdminLogoutUrl();
-$enableDebugLog = $this->isDebugLogEnable() ? 'checked' : '';
+$logoutUrl = $block->getAdminLogoutUrl();
+$enableDebugLog = $block->isDebugLogEnable() ? 'checked' : '';
 ?>
 
 <div class="row">
@@ -29,7 +29,7 @@ $enableDebugLog = $this->isDebugLogEnable() ? 'checked' : '';
 
             <!-- Sign In Settings Form -->
             <form id="signInSettings" method="post" action="">
-                <input name="form_key" type="hidden" value="<?= $block->escapeHtmlAttr($block->getFormKey()) ?>" />
+                <input name="form_key" type="hidden" value="<?= $escaper->escapeHtmlAttr($block->getFormKey()) ?>" />
                 <input type="hidden" name="option" value="saveSignInSettings">
 
                 <table>
@@ -41,22 +41,22 @@ $enableDebugLog = $this->isDebugLogEnable() ? 'checked' : '';
                                 <input type="checkbox"
                                        name="mo_oauth_show_customer_link"
                                        id="mo_oauth_show_customer_link"
-                                       <?= $block->escapeHtmlAttr($customerLink) ?>
+                                       <?= $escaper->escapeHtmlAttr($customerLink) ?>
                                        value="true">
                                 Show the Login Link on the default customer login page.
                                 <br><br>
                                 <input type="checkbox"
                                        name="mo_oauth_show_admin_link"
                                        id="mo_oauth_show_admin_link"
-                                       <?= $block->escapeHtmlAttr($adminLink) ?>
+                                       <?= $escaper->escapeHtmlAttr($adminLink) ?>
                                        value="true">
                                 Show the Login Link on the default admin login page.
                                 <br><br>
                                 <input type="checkbox"
                                        name="mo_disable_non_oidc_admin_login"
                                        id="mo_disable_non_oidc_admin_login"
-                                       <?= $block->escapeHtmlAttr($disableNonOidcAdminLogin) ?>
-                                       <?= $block->escapeHtmlAttr($disabled) ?>
+                                       <?= $escaper->escapeHtmlAttr($disableNonOidcAdminLogin) ?>
+                                       <?= $escaper->escapeHtmlAttr($disabled) ?>
                                        value="true">
                                 Disable non-OIDC Login for Admins (OIDC login only)
                             </div>
@@ -71,14 +71,14 @@ $enableDebugLog = $this->isDebugLogEnable() ? 'checked' : '';
                                 <input type="checkbox"
                                        name="mo_sso_auto_create_admin"
                                        id="mo_sso_auto_create_admin"
-                                       <?= $block->escapeHtmlAttr($autoCreateAdmin) ?>
+                                       <?= $escaper->escapeHtmlAttr($autoCreateAdmin) ?>
                                        value="true">
                                 Auto Create Admin users while SSO, if they do not exist.
                                 <br><br>
                                 <input type="checkbox"
                                        name="mo_sso_auto_create_customer"
                                        id="mo_sso_auto_create_customer"
-                                       <?= $block->escapeHtmlAttr($autoCreateCustomer) ?>
+                                       <?= $escaper->escapeHtmlAttr($autoCreateCustomer) ?>
                                        value="true">
                                 Auto Create Customer while SSO, if they do not exist.
                             </div>
@@ -93,7 +93,7 @@ $enableDebugLog = $this->isDebugLogEnable() ? 'checked' : '';
                                 <input type="checkbox"
                                        name="mo_oauth_enable_login_redirect"
                                        id="mo_oauth_enable_login_redirect"
-                                       <?= $block->escapeHtmlAttr($enableLoginRedirect) ?>
+                                       <?= $escaper->escapeHtmlAttr($enableLoginRedirect) ?>
                                        value="true"
                                        disabled="true"
                                        onchange="togglePostLogoutUrl()">
@@ -106,7 +106,7 @@ $enableDebugLog = $this->isDebugLogEnable() ? 'checked' : '';
                                     <input type="text"
                                            name="mo_oauth_logout_redirect_url"
                                            id="mo_oauth_logout_redirect_url"
-                                           value="<?= $block->escapeHtmlAttr($logoutUrl) ?>"
+                                           value="<?= $escaper->escapeHtmlAttr($logoutUrl) ?>"
                                            style="width: 300px; margin-top: 5px;"
                                            <?= $enableLoginRedirect ? 'required' : 'disabled' ?>>
                                     <br>
@@ -144,12 +144,12 @@ $enableDebugLog = $this->isDebugLogEnable() ? 'checked' : '';
 
             <!-- Enable Debug Log Form -->
             <form id="enable_debug_log" method="post" action="">
-                <input name="form_key" type="hidden" value="<?= $block->escapeHtmlAttr($block->getFormKey()) ?>" />
+                <input name="form_key" type="hidden" value="<?= $escaper->escapeHtmlAttr($block->getFormKey()) ?>" />
                 <input type="hidden" name="option" value="enable_debug_log">
                 <br>
                 <input type="checkbox"
                        name="debug_log_on"
-                       <?= $block->escapeHtmlAttr($enableDebugLog) ?>
+                       <?= $escaper->escapeHtmlAttr($enableDebugLog) ?>
                        value="true">
                 Enable Debug Log
                 <input type="button"
@@ -162,7 +162,7 @@ $enableDebugLog = $this->isDebugLogEnable() ? 'checked' : '';
 
             <!-- Download/Clear Logs Form -->
             <form id="clear_download_logs" method="post" action="">
-                <input name="form_key" type="hidden" value="<?= $block->escapeHtmlAttr($block->getFormKey()) ?>" />
+                <input name="form_key" type="hidden" value="<?= $escaper->escapeHtmlAttr($block->getFormKey()) ?>" />
                 <input type="hidden" name="option" value="clear_download_logs">
                 <p style="margin-top:20px; margin-left:10px">
                     The error logs will be cleared automatically on a weekly basis.
