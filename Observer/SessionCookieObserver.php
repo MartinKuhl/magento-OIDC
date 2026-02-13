@@ -6,7 +6,7 @@ use MiniOrange\OAuth\Helper\SessionHelper;
 
 /**
  * Observer für Session-Cookie-Anpassung
- * 
+ *
  * Dieser Observer wird aufgerufen, bevor die Response gesendet wird
  */
 class SessionCookieObserver implements ObserverInterface

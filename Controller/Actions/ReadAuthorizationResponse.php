@@ -175,7 +175,7 @@ class ReadAuthorizationResponse extends BaseAction
 
         // Fetch user info
         $userInfoURL = $clientDetails['user_info_endpoint'];
-        if (!($userInfoURL == NULL || $userInfoURL == '') && isset($accessTokenResponseData['access_token'])) {
+        if (!($userInfoURL == null || $userInfoURL == '') && isset($accessTokenResponseData['access_token'])) {
             $accessToken = $accessTokenResponseData['access_token'];
             $headerAuth = "Bearer " . $accessToken;
             $authHeader = ["Authorization: $headerAuth"];

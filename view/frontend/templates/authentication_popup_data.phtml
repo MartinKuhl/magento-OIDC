@@ -4,8 +4,8 @@
         'use strict';
 
         window.ssoData = {
-            ssoUrl: "<?= $this->escapeJsQuote($this->getSPInitiatedUrl(null, $this->getAppName())) ?>",
-            ssoButtonText: "<?= $this->escapeJsQuote($this->getSSOButtonText()) ?>"
+            ssoUrl: "<?= $escaper->escapeJsQuote($block->getSPInitiatedUrl(null, $block->getAppName())) ?>",
+            ssoButtonText: "<?= $escaper->escapeJsQuote($block->getSSOButtonText()) ?>"
         };
 
         document.addEventListener('click', function(e) {

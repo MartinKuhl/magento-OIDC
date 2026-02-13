@@ -42,17 +42,17 @@ class SendAuthorizationRequest extends BaseAction
         $islogEnable = $this->oauthUtility->getStoreConfig(OAuthConstants::ENABLE_DEBUG_LOG);
         $log_file_exist = $this->oauthUtility->isCustomLogExist();
 
-        if ((($Log_file_time != NULL && ($current_time - $Log_file_time) >= 60 * 60 * 24 * 7) && $islogEnable) || ($islogEnable == 0 && $log_file_exist)) {
+        if ((($Log_file_time != null && ($current_time - $Log_file_time) >= 60 * 60 * 24 * 7) && $islogEnable) || ($islogEnable == 0 && $log_file_exist)) {
             $this->oauthUtility->setStoreConfig(OAuthConstants::ENABLE_DEBUG_LOG, 0);
             $chk_enable_log = 0;
-            $this->oauthUtility->setStoreConfig(OAuthConstants::LOG_FILE_TIME, NULL);
+            $this->oauthUtility->setStoreConfig(OAuthConstants::LOG_FILE_TIME, null);
             $this->oauthUtility->deleteCustomLogFile();
             $this->oauthUtility->flushCache();
         }
-        $chk_enable_log ? $this->oauthUtility->customlog("SendAuthorizationRequest: execute") : NULL;
+        $chk_enable_log ? $this->oauthUtility->customlog("SendAuthorizationRequest: execute") : null;
 
         $params = $this->getRequest()->getParams();
-        $chk_enable_log ? $this->oauthUtility->customlog("SendAuthorizationRequest: Full params: " . print_r($params, true)) : NULL;
+        $chk_enable_log ? $this->oauthUtility->customlog("SendAuthorizationRequest: Full params: " . print_r($params, true)) : null;
 
         $isFromPopup = isset($params['from_popup']) && $params['from_popup'] == '1';
 
@@ -96,8 +96,11 @@ class SendAuthorizationRequest extends BaseAction
         $relayState = $this->securityHelper->validateRedirectUrl($rawRelayState, '/');
         $stateToken = $this->securityHelper->createStateToken($currentSessionId);
         $relayState = $this->securityHelper->encodeRelayState(
-            $relayState, $currentSessionId, $app_name,
-            OAuthConstants::LOGIN_TYPE_ADMIN, $stateToken
+            $relayState,
+            $currentSessionId,
+            $app_name,
+            OAuthConstants::LOGIN_TYPE_ADMIN,
+            $stateToken
         );
 
         $isTest = (
@@ -113,8 +116,11 @@ class SendAuthorizationRequest extends BaseAction
             $this->oauthUtility->customlog("SendAuthorizationRequest: Test-Flow, setting relayState to: " . $testRelayState);
             // Rebuild combined state preserving sessionId, appName, loginType, stateToken
             $relayState = $this->securityHelper->encodeRelayState(
-                $testRelayState, $currentSessionId, $app_name,
-                OAuthConstants::LOGIN_TYPE_ADMIN, $stateToken
+                $testRelayState,
+                $currentSessionId,
+                $app_name,
+                OAuthConstants::LOGIN_TYPE_ADMIN,
+                $stateToken
             );
         }
 
@@ -132,7 +138,7 @@ class SendAuthorizationRequest extends BaseAction
 
         $chk_enable_log ? $this->oauthUtility->customlog(
             "SendAuthorizationRequest:  Authorization Request: " . $authorizationRequest
-        ) : NULL;
+        ) : null;
 
         return $this->sendHTTPRedirectRequest($authorizationRequest, $authorizeURL, $relayState, $params);
     }

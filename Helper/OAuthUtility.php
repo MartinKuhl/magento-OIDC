@@ -19,7 +19,6 @@ use MiniOrange\OAuth\Helper\OAuthConstants;
 use MiniOrange\OAuth\Helper\Data;
 use Magento\Framework\Stdlib\DateTime\DateTime;
 
-
 /**
  * This class contains some common Utility functions
  * which can be called from anywhere in the module. This is
@@ -117,10 +116,10 @@ class OAuthUtility extends Data
      */
     public function customlog($txt)
     {
-        $this->isLogEnable() ? $this->_logger->debug($txt) : NULL;
+        $this->isLogEnable() ? $this->_logger->debug($txt) : null;
     }
     /**
-     * This function check whether any custom log file exist or not. 
+     * This function check whether any custom log file exist or not.
      */
     public function isCustomLogExist()
     {
@@ -161,7 +160,7 @@ class OAuthUtility extends Data
     /**
      * This function checks if cURL has been installed
      * or enabled on the site.
-     * 
+     *
      * Magento 2 uses \Magento\Framework\HTTP\Adapter\Curl for HTTP requests,
      * but verifying curl_init availability is a standard check for the underlying library.
      *
@@ -343,7 +342,7 @@ class OAuthUtility extends Data
 
     /**
      * Get is Test Configuration clicked
-     *  @return bool
+     * @return bool
      * @psalm-suppress PossiblyUnusedMethod – Called from templates
      */
     public function getIsTestConfigurationClicked()
@@ -452,7 +451,7 @@ class OAuthUtility extends Data
     /**
      * Check if debug logging is enabled
      * Uses the existing configuration path from the database
-     * 
+     *
      * @return bool
      */
     public function isLogEnable()
@@ -461,7 +460,7 @@ class OAuthUtility extends Data
     }
 
     /**
-     *Common Log Method .. Accessible in all classes through
+     * Common Log Method .. Accessible in all classes through
      * @psalm-suppress PossiblyUnusedMethod – Called dynamically
      **/
     public function log_debug($msg = "", $obj = null)
@@ -503,7 +502,7 @@ class OAuthUtility extends Data
         $attribute_email = $this->getStoreConfig(OAuthConstants::MAP_EMAIL);
         $attribute_username = $this->getStoreConfig(OAuthConstants::MAP_USERNAME);
         $customer_email = $this->getStoreConfig(OAuthConstants::DEFAULT_MAP_EMAIL);
-        return array($appName, $scope, $clientID, $clientSecret, $authorize_url, $accesstoken_url, $getuserinfo_url, $header, $body, $endpoint_url, $show_customer_link, $attribute_email, $attribute_username, $customer_email);
+        return [$appName, $scope, $clientID, $clientSecret, $authorize_url, $accesstoken_url, $getuserinfo_url, $header, $body, $endpoint_url, $show_customer_link, $attribute_email, $attribute_username, $customer_email];
     }
 
     public function getProductVersion()

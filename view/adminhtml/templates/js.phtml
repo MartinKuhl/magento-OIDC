@@ -1,2 +1,2 @@
 <!-- This phtml is used to add the javascript file to the necessary page -->
-<script src="<?php echo $block->escapeUrl($this->getAdminJSURL()); ?>"></script>
+<script src="<?= $escaper->escapeUrl($block->getAdminJSURL()); ?>"></script>

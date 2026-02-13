@@ -161,5 +161,4 @@ class OAuthConstants
     const PLUGIN_VERSION = 'v4.2.0';
     const TIME_STAMP = 'time_stamp';
     const CUSTOMER_EMAIL = 'email';
-
 }

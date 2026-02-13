@@ -11,7 +11,7 @@ class OidcErrorMessage extends Template
 {
     /**
      * Constructor
-     * 
+     *
      * @param Context $context
      * @param array $data
      */
@@ -24,7 +24,7 @@ class OidcErrorMessage extends Template
 
     /**
      * Get OIDC error message from URL parameter
-     * 
+     *
      * @return string|null
      */
     public function getOidcErrorMessage()
@@ -38,7 +38,7 @@ class OidcErrorMessage extends Template
 
     /**
      * Check if there is an OIDC error
-     * 
+     *
      * @return bool
      */
     public function hasOidcError()

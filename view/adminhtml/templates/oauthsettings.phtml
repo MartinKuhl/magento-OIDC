@@ -4,22 +4,22 @@
 -->
 <?php
 // Initialize all values
-$isEnabled = $this->isEnabled() ? "" : "disabled";
-$appName = $this->getAppName();
-$logoutURL = $this->getLogoutURL();
-$callbackURL = $this->getCallBackUrl();
-$jwksURL = $this->getJwksUrl();
-$x509Certificate = $this->getX509Cert();
+$isEnabled = $block->isEnabled() ? "" : "disabled";
+$appName = $block->getAppName();
+$logoutURL = $block->getLogoutURL();
+$callbackURL = $block->getCallBackUrl();
+$jwksURL = $block->getJwksUrl();
+$x509Certificate = $block->getX509Cert();
 $disabled = !$isEnabled ? "disabled" : "";
-$testUrl = $this->getTestUrl();
-$premiumlink = $this->getExtensionPageUrl('upgrade');
+$testUrl = $block->getTestUrl();
+$premiumlink = $block->getExtensionPageUrl('upgrade');
 $isJwksUrl = empty($jwksURL) ? "" : "checked";
 $isCertificate = empty($x509Certificate) ? "" : "checked";
-$grantType = $this->getGrantType();
+$grantType = $block->getGrantType();
 
 // Fetching values from 'miniorange_oauth_client_apps' table
 if (isset($appName)) {
-    $collection = $this->getAllIdpConfiguration();
+    $collection = $block->getAllIdpConfiguration();
     $clientDetails = null;
     foreach ($collection as $item) {
         if ($item->getData()["app_name"] === $appName) {
@@ -41,7 +41,7 @@ $scope = isset($clientDetails['scope']) ? $clientDetails['scope'] : '';
 ?>
 
 <script>
-    var testURL = "<?= $block->escapeJs($testUrl) ?>";
+    var testURL = "<?= $escaper->escapeJs($testUrl) ?>";
 </script>
 
 <div class="row">
@@ -60,7 +60,7 @@ $scope = isset($clientDetails['scope']) ? $clientDetails['scope'] : '';
 
             <!-- OAuth Settings Form -->
             <form name="f" method="post" action="">
-                <input type="hidden" name="form_key" value="<?= $block->escapeHtmlAttr($block->getFormKey()) ?>" />
+                <input type="hidden" name="form_key" value="<?= $escaper->escapeHtmlAttr($block->getFormKey()) ?>" />
                 <input type="hidden" name="option" value="saveOAuthSettings" />
 
                 <table style="width:100%;">
@@ -73,7 +73,7 @@ $scope = isset($clientDetails['scope']) ? $clientDetails['scope'] : '';
                             <input type="text"
                                    name="mo_oauth_app_name"
                                    style="width: 100%;"
-                                   value="<?= $block->escapeHtmlAttr($appName) ?>"
+                                   value="<?= $escaper->escapeHtmlAttr($appName) ?>"
                                    required
                                    pattern="^\w*$"
                                    title="Only alphabets, numbers and underscore is allowed" />
@@ -89,7 +89,7 @@ $scope = isset($clientDetails['scope']) ? $clientDetails['scope'] : '';
                             <input type="text"
                                    name="mo_oauth_client_id"
                                    style="width: 100%;"
-                                   value="<?= $block->escapeHtmlAttr($clientID) ?>"
+                                   value="<?= $escaper->escapeHtmlAttr($clientID) ?>"
                                    required />
                         </td>
                     </tr>
@@ -103,7 +103,7 @@ $scope = isset($clientDetails['scope']) ? $clientDetails['scope'] : '';
                             <input type="password"
                                    name="mo_oauth_client_secret"
                                    style="width: 100%;"
-                                   value="<?= $block->escapeHtmlAttr($clientSecret) ?>"
+                                   value="<?= $escaper->escapeHtmlAttr($clientSecret) ?>"
                                    required />
                         </td>
                     </tr>
@@ -117,13 +117,13 @@ $scope = isset($clientDetails['scope']) ? $clientDetails['scope'] : '';
                             <input type="text"
                                    name="mo_oauth_scope"
                                    style="width: 100%;"
-                                   value="<?= $block->escapeHtmlAttr($scope) ?>"
+                                   value="<?= $escaper->escapeHtmlAttr($scope) ?>"
                                    required />
                         </td>
                     </tr>
 
                     <input type="hidden"
-                           value="<?= $block->escapeHtmlAttr($grantType) ?>"
+                           value="<?= $escaper->escapeHtmlAttr($grantType) ?>"
                            name="mo_selected_grant"
                            id="mo_selected_grant" />
 
@@ -136,12 +136,12 @@ $scope = isset($clientDetails['scope']) ? $clientDetails['scope'] : '';
                             <input type="checkbox"
                                    name="send_header"
                                    value="Yes"
-                                   <?= $block->escapeHtmlAttr($isHeader) ?> /> Headers
+                                   <?= $escaper->escapeHtmlAttr($isHeader) ?> /> Headers
                             &nbsp;&nbsp;&nbsp;
                             <input type="checkbox"
                                    name="send_body"
                                    value="Yes"
-                                   <?= $block->escapeHtmlAttr($isBody) ?> /> Body
+                                   <?= $escaper->escapeHtmlAttr($isBody) ?> /> Body
                         </td>
                     </tr>
 
@@ -181,18 +181,19 @@ $scope = isset($clientDetails['scope']) ? $clientDetails['scope'] : '';
                            name="endpoint_url"
                            style="width: 59%; padding: 8px; margin-left: 23px; border: 1px solid #B7B5B5; box-shadow: 3px 2px 4px #ebebeb;"
                            id="endpoint_url_input"
-                           value="<?= $block->escapeHtmlAttr($endpoint_url) ?>" />
+                           value="<?= $escaper->escapeHtmlAttr($endpoint_url) ?>" />
                 </div>
 
                 <!-- Manual Endpoints Section -->
-                <div style="<?php if ($authorizeURL || $accessTokenURL || $getUserInfoURL) { echo 'display: block'; } else { echo 'display: none'; } ?>;" id="mo_oauth_authorize_url">
+                <div style="<?php if ($authorizeURL || $accessTokenURL || $getUserInfoURL) { echo 'display: block';
+                            } else { echo 'display: none'; } ?>;" id="mo_oauth_authorize_url">
                     <!-- Authorization Endpoint -->
                     <div style="padding: 8px 0px 5px 10px;">
                         <label><strong>Authorization Endpoint<span style="color:red;">*</span>:</strong></label>
                         <input type="url"
                                name="mo_oauth_authorize_url"
                                style="width: 59%; padding: 8px; margin-left: 22px; border: 1px solid #B7B5B5; box-shadow: 3px 2px 4px #ebebeb;"
-                               value="<?= $block->escapeHtmlAttr($authorizeURL) ?>" />
+                               value="<?= $escaper->escapeHtmlAttr($authorizeURL) ?>" />
                     </div>
                     <br>
 
@@ -202,7 +203,7 @@ $scope = isset($clientDetails['scope']) ? $clientDetails['scope'] : '';
                         <input type="url"
                                name="mo_oauth_accesstoken_url"
                                style="width: 59%; padding: 8px; margin-left: 31px; border: 1px solid #B7B5B5; box-shadow: 3px 2px 4px #ebebeb;"
-                               value="<?= $block->escapeHtmlAttr($accessTokenURL) ?>" />
+                               value="<?= $escaper->escapeHtmlAttr($accessTokenURL) ?>" />
                     </div>
                     <br>
 
@@ -212,7 +213,7 @@ $scope = isset($clientDetails['scope']) ? $clientDetails['scope'] : '';
                         <input type="url"
                                name="mo_oauth_getuserinfo_url"
                                style="width: 59%; padding: 8px; margin-left: 33px; border: 1px solid #B7B5B5; box-shadow: 3px 2px 4px #ebebeb;"
-                               value="<?= $block->escapeHtmlAttr($getUserInfoURL) ?>" />
+                               value="<?= $escaper->escapeHtmlAttr($getUserInfoURL) ?>" />
                     </div>
                     <br>
                 </div>
@@ -245,7 +246,7 @@ $scope = isset($clientDetails['scope']) ? $clientDetails['scope'] : '';
                            name="test"
                            title="You can only test your Configuration after saving your Service Provider Settings."
                            onclick="showTestWindow();"
-                           <?= $block->escapeHtmlAttr($isOAuthConfigured) ?>
+                           <?= $escaper->escapeHtmlAttr($isOAuthConfigured) ?>
                            value="Test configuration"
                            style="width: 150px;" />
                 </div>

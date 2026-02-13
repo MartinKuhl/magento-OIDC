@@ -52,8 +52,7 @@ abstract class BaseAction extends \Magento\Framework\App\Action\Action
 
         // Legacy single-parameter form
         foreach ($array as $key => $value) {
-            if (
-                (is_array($value) && (!isset($value[$key]) || $this->oauthUtility->isBlank($value[$key])))
+            if ((is_array($value) && (!isset($value[$key]) || $this->oauthUtility->isBlank($value[$key])))
                 || $this->oauthUtility->isBlank($value)
             ) {
                 throw new RequiredFieldsException();
@@ -86,6 +85,4 @@ abstract class BaseAction extends \Magento\Framework\App\Action\Action
 
     /** This function is abstract that needs to be implemented by each Action Class */
     abstract public function execute();
-
-
 }

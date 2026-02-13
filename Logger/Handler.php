@@ -16,7 +16,7 @@ class Handler extends \Magento\Framework\Logger\Handler\Base
     protected $loggerType = Logger::DEBUG;
 
     /**
-     * File name - relative to Magento root  
+     * File name - relative to Magento root
      * @var string
      */
     protected $fileName = '/var/log/mo_oauth.log';

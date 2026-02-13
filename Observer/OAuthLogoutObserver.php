@@ -27,11 +27,11 @@ class OAuthLogoutObserver implements ObserverInterface
     }
 
    /**
-     * Handle logout event and redirect to OAuth provider logout URL if configured.
-     *
-     * @param Observer $observer
-     * @return void
-     */
+    * Handle logout event and redirect to OAuth provider logout URL if configured.
+    *
+    * @param Observer $observer
+    * @return void
+    */
     public function execute(Observer $observer): void
     {
         $logoutUrl = $this->oauthUtility->getStoreConfig(OAuthConstants::OAUTH_LOGOUT_URL);
@@ -44,5 +44,4 @@ class OAuthLogoutObserver implements ObserverInterface
             $this->_response->setRedirect($logoutUrl);
         }
     }
-
 }

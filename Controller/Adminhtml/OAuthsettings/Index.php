@@ -52,7 +52,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
 
                     $url = $params['endpoint_url'];
 
-                    if ($url != NULL) {
+                    if ($url != null) {
 
                         //get URL content
                         $url = filter_var($url, FILTER_SANITIZE_URL);
@@ -68,7 +68,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
                             'mo_oauth_scope' => $params
                         ]);
                         //check if url has any information or not.
-                        if ($obj != NULL) { /**
+                        if ($obj != null) { /**
                               * Fetch endpoints from data obtained from URL
                               */
 
@@ -201,8 +201,6 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         $userEmail = $currentAdminUser['email'];
 
         $this->oauthUtility->setStoreConfig(OAuthConstants::ADMINEMAIL, $userEmail);
-
-
     }
 
     /**
