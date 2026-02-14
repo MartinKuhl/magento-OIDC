@@ -56,20 +56,23 @@ jobs:
       - name: Debug PHPCS Standards
         run: phpcs -i
 
+      - name: Create reports directory
+        run: mkdir -p reports
+
       - name: PHP Compatibility Check (non-blocking)
         run: |
           phpcs --standard=PHPCompatibility \
                 --runtime-set testVersion 8.1- \
                 --extensions=php,phtml \
                 --ignore=vendor/*,node_modules/*,.github/* \
+                --report=full \
+                --report-file=reports/phpcompat-php${{ matrix.php-version }}.txt \
                 . || true
 
       - name: Auto-fix with PHPCBF
         id: phpcbf
         run: |
-          # PHPCBF nutzt phpcs.xml automatisch (LiteralNamespaces ist dort excluded)
-          # Exit-Codes: 0 = nichts zu tun, 1 = Fixes angewendet, 2 = Fixes + Rest, 3 = Fehler
-          phpcbf . || PHPCBF_EXIT=$?
+          phpcbf . 2>&1 | tee reports/phpcbf-php${{ matrix.php-version }}.txt || PHPCBF_EXIT=$?
           PHPCBF_EXIT=${PHPCBF_EXIT:-0}
 
           if [ "$PHPCBF_EXIT" -eq 1 ] || [ "$PHPCBF_EXIT" -eq 2 ]; then
@@ -102,7 +105,18 @@ jobs:
           delete-branch: true
 
       - name: Magento2 Standard (blocking)
-        run: phpcs .
+        run: |
+          phpcs --report=full \
+                --report-checkstyle=reports/phpcs-checkstyle-php${{ matrix.php-version }}.xml \
+                . 2>&1 | tee reports/phpcs-php${{ matrix.php-version }}.txt
+
+      - name: Upload PHP QA Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: php-qa-reports-php${{ matrix.php-version }}
+          path: reports/
+          retention-days: 14
 
 
   # -----------------------------------------------------
@@ -179,8 +193,29 @@ jobs:
             rm -f composer.json
           fi
 
+      - name: Create reports directory
+        run: mkdir -p reports
+
       - name: Run PHPStan
-        run: vendor/bin/phpstan analyse --memory-limit=1G || exit 1
+        run: |
+          vendor/bin/phpstan analyse --memory-limit=1G \
+            --error-format=table 2>&1 | tee reports/phpstan.txt
+          # Zusätzlich Checkstyle-Format für Tool-Integration
+          vendor/bin/phpstan analyse --memory-limit=1G \
+            --error-format=checkstyle > reports/phpstan-checkstyle.xml 2>/dev/null || true
 
       - name: Run Psalm
-        run: vendor/bin/psalm --no-cache || exit 1
+        run: |
+          vendor/bin/psalm --no-cache \
+            --output-format=text 2>&1 | tee reports/psalm.txt
+          # Zusätzlich Checkstyle-Format für Tool-Integration
+          vendor/bin/psalm --no-cache \
+            --output-format=checkstyle > reports/psalm-checkstyle.xml 2>/dev/null || true
+
+      - name: Upload Static Analysis Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: static-analysis-reports
+          path: reports/
+          retention-days: 3
