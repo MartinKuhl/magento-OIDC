@@ -106,6 +106,7 @@ jobs:
 
       - name: Magento2 Standard (blocking)
         run: |
+          set -o pipefail
           phpcs --report=full \
                 --report-checkstyle=reports/phpcs-checkstyle-php${{ matrix.php-version }}.xml \
                 . 2>&1 | tee reports/phpcs-php${{ matrix.php-version }}.txt
@@ -198,6 +199,7 @@ jobs:
 
       - name: Run PHPStan
         run: |
+          set -o pipefail
           vendor/bin/phpstan analyse --memory-limit=1G \
             --error-format=table 2>&1 | tee reports/phpstan.txt
           # Zusätzlich Checkstyle-Format für Tool-Integration
@@ -206,6 +208,7 @@ jobs:
 
       - name: Run Psalm
         run: |
+          set -o pipefail
           vendor/bin/psalm --no-cache \
             --output-format=text 2>&1 | tee reports/psalm.txt
           # Zusätzlich Checkstyle-Format für Tool-Integration
