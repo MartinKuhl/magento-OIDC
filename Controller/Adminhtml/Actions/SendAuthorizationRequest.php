@@ -10,12 +10,38 @@ use Magento\Backend\App\Action;
 use MiniOrange\OAuth\Helper\OAuthUtility;
 use MiniOrange\OAuth\Controller\Actions\BaseAction;
 
+/**
+ * Admin: Send authorization request to the configured OIDC provider.
+ *
+ * Builds an authorization URL and redirects the admin user to the
+ * provider's authorization endpoint. Uses `AuthorizationRequest` helper
+ * to construct the final URL.
+ */
 class SendAuthorizationRequest extends BaseAction
 {
+    /**
+     * @var OAuthUtility
+     */
     protected $oauthUtility;
+
+    /**
+     * @var \Magento\Framework\UrlInterface
+     */
     protected $urlBuilder;
+
+    /**
+     * @var SessionHelper
+     */
     private $sessionHelper;
+
+    /**
+     * @var OAuthSecurityHelper
+     */
     private $securityHelper;
+
+    /**
+     * @var \Magento\Framework\Session\SessionManagerInterface
+     */
     private $sessionManager;
 
     public function __construct(

@@ -54,29 +54,29 @@ abstract class BaseAdminAction extends \Magento\Backend\App\Action
 
 
     /**
-     * Check if form is being saved in the backend other just
-     * show the page. Checks if the request parameter has
-     * an option key. All our forms need to have a hidden option
-     * key.
+     * Determine whether the incoming request is attempting to save a form option.
+     * Checks for the presence of an `option` key in the request data.
      *
-     * @param params
+     * @param array $params Request parameters
      * @return bool
      */
-    protected function isFormOptionBeingSaved($params)
+    protected function isFormOptionBeingSaved(array $params)
     {
         return isset($params['option']);
     }
 
     /**
-     * This function checks if the required fields passed to
-     * this function are empty or not. If empty throw an exception.
+     * Validate that required fields are present and not blank.
      *
-     * @param $array
+     * Expects an associative array where keys map to values or an array of
+     * required keys paired with the source array. Throws {@see RequiredFieldsException}
+     * when a required value is missing or blank.
+     *
+     * @param array $array Required keys or legacy associative mapping
      * @throws RequiredFieldsException
      */
-    protected function checkIfRequiredFieldsEmpty($array)
+    protected function checkIfRequiredFieldsEmpty(array $array)
     {
-
         foreach ($array as $key => $value) {
             if ((is_array($value) && (!isset($value[$key]) || $this->oauthUtility->isBlank($value[$key])))
                 || $this->oauthUtility->isBlank($value)
@@ -88,16 +88,13 @@ abstract class BaseAdminAction extends \Magento\Backend\App\Action
 
 
     /**
-     * Check if support query forms are empty. If empty throw
-     * an exception. This is an extension of the requiredFields
-     * function.
+     * Validate support query specific fields and translate the exception type.
      *
-     * @param $array
+     * @param array $array Required fields mapping
      * @throws SupportQueryRequiredFieldsException
      */
-    public function checkIfSupportQueryFieldsEmpty($array)
+    public function checkIfSupportQueryFieldsEmpty(array $array)
     {
-
         try {
             $this->checkIfRequiredFieldsEmpty($array);
         } catch (RequiredFieldsException $e) {

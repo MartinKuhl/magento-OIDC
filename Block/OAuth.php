@@ -6,7 +6,10 @@ use Magento\Customer\Model\Session;
 use Magento\Framework\Escaper;
 
 /**
- * Admin block providing utility methods for OAuth/OIDC templates.
+ * Utility block for OAuth/OIDC admin templates.
+ *
+ * Provides helper methods used by admin and frontend templates to access
+ * configuration values, URLs and attribute mappings.
  */
 class OAuth extends \Magento\Framework\View\Element\Template
 {
@@ -38,6 +41,18 @@ class OAuth extends \Magento\Framework\View\Element\Template
         \Magento\Framework\Data\Form\FormKey $formKey,
         array $data = []
     ) {
+        /**
+         * OAuth block constructor.
+         *
+         * @param \Magento\Framework\View\Element\Template\Context $context
+         * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+         * @param \Magento\Authorization\Model\ResourceModel\Role\Collection $adminRoleModel
+         * @param \Magento\Customer\Model\ResourceModel\Group\Collection $userGroupModel
+         * @param Session $customerSession
+         * @param Escaper $escaper
+         * @param \Magento\Framework\Data\Form\FormKey $formKey
+         * @param array $data
+         */
         $this->oauthUtility = $oauthUtility;
         $this->adminRoleModel = $adminRoleModel;
         $this->userGroupModel = $userGroupModel;

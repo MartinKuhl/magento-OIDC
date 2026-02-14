@@ -74,17 +74,26 @@ class Debug extends Template
      */
     public function getOidcConfiguration()
     {
+        $clientId = $this->oauthUtility->getStoreConfig(OAuthConstants::CLIENT_ID);
+        $clientSecret = $this->maskSecret($this->oauthUtility->getStoreConfig(OAuthConstants::CLIENT_SECRET));
+        $authorizeEndpoint = $this->oauthUtility->getStoreConfig(OAuthConstants::AUTHORIZE_URL);
+        $tokenEndpoint = $this->oauthUtility->getStoreConfig(OAuthConstants::ACCESSTOKEN_URL);
+        $userInfoEndpoint = $this->oauthUtility->getStoreConfig(OAuthConstants::GETUSERINFO_URL);
+        $callbackUrl = $this->getUrl('', ['_direct' => 'mooauth/actions/readauthorizationresponse']);
+        $scope = $this->oauthUtility->getStoreConfig(OAuthConstants::SCOPE);
+        $emailMapping = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_EMAIL) ?: OAuthConstants::DEFAULT_MAP_EMAIL;
+        $usernameMapping = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_USERNAME) ?: OAuthConstants::DEFAULT_MAP_USERN;
+
         return [
-            'Client ID' => $this->oauthUtility->getStoreConfig(OAuthConstants::CLIENT_ID),
-            'Client Secret' => $this->maskSecret($this->oauthUtility->getStoreConfig(OAuthConstants::CLIENT_SECRET)),
-            'Authorization Endpoint' => $this->oauthUtility->getStoreConfig(OAuthConstants::AUTHORIZE_URL),
-            'Token Endpoint' => $this->oauthUtility->getStoreConfig(OAuthConstants::ACCESSTOKEN_URL),
-            'User Info Endpoint' => $this->oauthUtility->getStoreConfig(OAuthConstants::GETUSERINFO_URL),
-            'Callback URL' =>
-                $this->getUrl('', ['_direct' => 'mooauth/actions/readauthorizationresponse']),
-            'Scope' => $this->oauthUtility->getStoreConfig(OAuthConstants::SCOPE),
-            'Email Attribute Mapping' => $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_EMAIL) ?: OAuthConstants::DEFAULT_MAP_EMAIL,
-            'Username Attribute Mapping' => $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_USERNAME) ?: OAuthConstants::DEFAULT_MAP_USERN,
+            'Client ID' => $clientId,
+            'Client Secret' => $clientSecret,
+            'Authorization Endpoint' => $authorizeEndpoint,
+            'Token Endpoint' => $tokenEndpoint,
+            'User Info Endpoint' => $userInfoEndpoint,
+            'Callback URL' => $callbackUrl,
+            'Scope' => $scope,
+            'Email Attribute Mapping' => $emailMapping,
+            'Username Attribute Mapping' => $usernameMapping,
             'Logging Enabled' => $this->oauthUtility->isLogEnable() ? 'Yes' : 'No',
             'Log File' => '/var/log/mo_oauth.log'
         ];

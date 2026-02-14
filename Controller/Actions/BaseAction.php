@@ -65,11 +65,12 @@ abstract class BaseAction extends \Magento\Framework\App\Action\Action
 
 
     /**
-     * This function is used to send AuthorizeRequest as a request Parameter.
-     * LogoutRequest & AuthRequest is sent in the request parameter if the binding is
-     * set as HTTP Redirect. Http Redirect is the default way Authn Request
-     * is sent. Function also generates the signature and appends it in the
-     * parameter as well along with the relayState parameter
+     * Send an authorization request via HTTP Redirect.
+     *
+     * This prepares and returns a redirect response for the provided
+     * authorize URL or query string. The method does not perform manual
+     * session handling to avoid interfering with Magento session managers.
+     *
      * @param string $oauthRequest Full authorize URL or query string
      * @param string $authorizeUrl Base authorize URL to prepend
      * @param string $relayState Optional relay state to include

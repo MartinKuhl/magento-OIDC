@@ -5,6 +5,6 @@ class Collection extends \Magento\Framework\Model\ResourceModel\Db\Collection\Ab
 {
     public function _construct()
     {
-        $this->_init("MiniOrange\OAuth\Model\MiniorangeOauthClientApps", "MiniOrange\OAuth\Model\ResourceModel\MiniorangeOauthClientApps");
+        $this->_init("MiniOrange\\OAuth\\Model\\MiniorangeOauthClientApps", "MiniOrange\\OAuth\\Model\\ResourceModel\\MiniorangeOauthClientApps");
     }
 }

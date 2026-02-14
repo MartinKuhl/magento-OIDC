@@ -15,10 +15,29 @@ use MiniOrange\OAuth\Helper\OAuthUtility;
  */
 class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
 {
+    /**
+     * @var \Magento\Customer\Model\Data\Customer|null
+     */
     private $user;
+
+    /**
+     * @var Session
+     */
     private $customerSession;
+
+    /**
+     * @var ResponseFactory
+     */
     private $responseFactory;
+
+    /**
+     * @var string|null
+     */
     private $relayState;
+
+    /**
+     * @var OAuthSecurityHelper
+     */
     private $securityHelper;
 
 
@@ -74,8 +93,10 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
     }
 
 
-    /** Setter for the user Parameter
-     * @param $user
+    /**
+     * Setter for the user parameter.
+     *
+     * @param \Magento\Customer\Model\Data\Customer|null $user
      * @return CustomerLoginAction
      */
     public function setUser($user)
@@ -87,8 +108,9 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
     }
 
     /**
-     * Setter for the relayState parameter
-     * @param $relayState
+     * Setter for the relayState parameter.
+     *
+     * @param string|null $relayState
      * @return CustomerLoginAction
      */
     public function setRelayState($relayState)

@@ -104,11 +104,9 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
         $nonce = $this->cookieManager->getCookie('oidc_admin_nonce');
         // Delete the cookie immediately (one-time use)
         if ($nonce !== null) {
-            $this->cookieManager->deleteCookie(
-                'oidc_admin_nonce',
-                $this->cookieMetadataFactory->createCookieMetadata()
-                    ->setPath('/' . $this->backendUrl->getAreaFrontName())
-            );
+            $adminPath = '/' . $this->backendUrl->getAreaFrontName();
+            $cookieMeta = $this->cookieMetadataFactory->createCookieMetadata()->setPath($adminPath);
+            $this->cookieManager->deleteCookie('oidc_admin_nonce', $cookieMeta);
         }
 
         $this->oauthUtility->customlog("OIDC Admin Callback: Starting authentication");
@@ -181,11 +179,11 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
                     // Set OIDC authentication cookie (persists across session boundary)
                     $adminPath = '/' . $this->backendUrl->getAreaFrontName();
                     $adminSessionLifetime = (int) $this->scopeConfig->getValue('admin/security/session_lifetime') ?: 3600;
-                    $metadata = $this->cookieMetadataFactory->createPublicCookieMetadata()
-                        ->setDuration($adminSessionLifetime)
-                        ->setPath($adminPath)
-                        ->setHttpOnly(true)
-                        ->setSecure(true);
+                    $metadata = $this->cookieMetadataFactory->createPublicCookieMetadata();
+                    $metadata->setDuration($adminSessionLifetime);
+                    $metadata->setPath($adminPath);
+                    $metadata->setHttpOnly(true);
+                    $metadata->setSecure(true);
                     $this->cookieManager->setPublicCookie('oidc_authenticated', '1', $metadata);
 
                     $this->oauthUtility->customlog("OIDC cookie set for path: " . $adminPath);
@@ -210,7 +208,8 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
 
         } catch (\Exception $e) {
             $this->oauthUtility->customlog("EXCEPTION in OIDC admin callback: " . $e->getMessage());
-            $this->oauthUtility->customlog("Stack trace: " . $e->getTraceAsString());
+            $trace = $e->getTraceAsString();
+            $this->oauthUtility->customlog("Stack trace: " . $trace);
 
             return $this->redirectToLoginWithError(
                 __(
@@ -233,11 +232,8 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
         $resultRedirect = $this->resultFactory->create(ResultFactory::TYPE_REDIRECT);
 
         // Create admin login URL with error parameter
-        $loginUrl = $this->url->getUrl('admin', [
-            '_query' => [
-                'oidc_error' => base64_encode((string) $message)
-            ]
-        ]);
+        $encoded = base64_encode((string) $message);
+        $loginUrl = $this->url->getUrl('admin', ['_query' => ['oidc_error' => $encoded]]);
 
         $resultRedirect->setUrl($loginUrl);
         return $resultRedirect;

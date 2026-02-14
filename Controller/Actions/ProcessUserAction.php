@@ -13,31 +13,130 @@ use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Controller\Result\RedirectFactory;
 use Magento\Framework\Message\ManagerInterface;
 
+/**
+ * Handles creation or lookup of customer users from OIDC attributes
+ * and performs the customer login flow.
+ */
 class ProcessUserAction
 {
+    /**
+     * @var array|null
+     */
     private $attrs;
+
+    /**
+     * @var array|null
+     */
     private $flattenedattrs;
+
+    /**
+     * @var string|null
+     */
     private $userEmail;
+
+    /**
+     * @var string|null
+     */
     private $defaultRole;
+
+    /**
+     * @var string
+     */
     private $emailAttribute;
+
+    /**
+     * @var string
+     */
     private $usernameAttribute;
+
+    /**
+     * @var string
+     */
     private $firstNameKey;
+
+    /**
+     * @var string
+     */
     private $lastNameKey;
+
+    /**
+     * @var string|null
+     */
     private $dobAttribute;
+
+    /**
+     * @var string|null
+     */
     private $genderAttribute;
+
+    /**
+     * @var string|null
+     */
     private $phoneAttribute;
+
+    /**
+     * @var string|null
+     */
     private $streetAttribute;
+
+    /**
+     * @var string|null
+     */
     private $zipAttribute;
+
+    /**
+     * @var string|null
+     */
     private $cityAttribute;
+
+    /**
+     * @var string|null
+     */
     private $countryAttribute;
+
+    /**
+     * @var Customer
+     */
     private $customerModel;
+
+    /**
+     * @var CustomerLoginAction
+     */
     private $customerLoginAction;
+
+    /**
+     * @var ResponseFactory
+     */
     private $responseFactory;
+
+    /**
+     * @var StoreManagerInterface
+     */
     private $storeManager;
+
+    /**
+     * @var ScopeConfigInterface
+     */
     private $scopeConfig;
+
+    /**
+     * @var OAuthUtility
+     */
     private $oauthUtility;
+
+    /**
+     * @var CustomerUserCreator
+     */
     private $customerUserCreator;
+
+    /**
+     * @var RedirectFactory
+     */
     private $resultRedirectFactory;
+
+    /**
+     * @var ManagerInterface
+     */
     private $messageManager;
 
 
@@ -91,6 +190,10 @@ class ProcessUserAction
 
     public function execute()
     {
+        /**
+         * Entry point for processing user attributes and performing login.
+         * @return \Magento\Framework\Controller\Result\Redirect
+         */
         try {
             $this->oauthUtility->customlog("ProcessUserAction: execute");
             if (empty($this->attrs)) {
@@ -120,6 +223,16 @@ class ProcessUserAction
 
     private function processUserAction($user_email, $firstName, $lastName, $userName, $defaultRole)
     {
+        /**
+         * Process the user login/create flow for customer logins.
+         *
+         * @param string $user_email
+         * @param string|null $firstName
+         * @param string|null $lastName
+         * @param string|null $userName
+         * @param string $defaultRole
+         * @return \Magento\Framework\Controller\Result\Redirect
+         */
         $admin = false;
         $user = $this->getCustomerFromAttributes($user_email);
 
@@ -133,8 +246,9 @@ class ProcessUserAction
                 $this->oauthUtility->customlog("Auto Create Customer is disabled. Rejecting login.");
                 // Use same error handling pattern as other OIDC errors (oidc_error query param)
                 $encodedError = base64_encode(OAuthMessages::AUTO_CREATE_USER_DISABLED);
-                $loginUrl = $this->oauthUtility->getCustomerLoginUrl();
-                $loginUrl .= (strpos($loginUrl, '?') !== false ? '&' : '?') . 'oidc_error=' . $encodedError;
+                $baseLoginUrl = $this->oauthUtility->getCustomerLoginUrl();
+                $sep = (strpos($baseLoginUrl, '?') !== false) ? '&' : '?';
+                $loginUrl = $baseLoginUrl . $sep . 'oidc_error=' . $encodedError;
                 return $this->resultRedirectFactory->create()->setUrl($loginUrl);
             }
 
@@ -159,12 +273,15 @@ class ProcessUserAction
 
         if ($this->oauthUtility->getSessionData('guest_checkout')) {
             $this->oauthUtility->setSessionData('guest_checkout', null);
-            return $this->customerLoginAction->setUser($user)->setRelayState($this->oauthUtility->getBaseUrl() . 'checkout')->execute();
-        } elseif (!empty($relayState)) {
-            return $this->customerLoginAction->setUser($user)->setRelayState($relayState)->execute();
-        } else {
-            return $this->customerLoginAction->setUser($user)->setRelayState('/')->execute();
+            $target = rtrim($this->oauthUtility->getBaseUrl(), '/') . '/checkout';
+            return $this->customerLoginAction->setUser($user)->setRelayState($target)->execute();
         }
+
+        if (!empty($relayState)) {
+            return $this->customerLoginAction->setUser($user)->setRelayState($relayState)->execute();
+        }
+
+        return $this->customerLoginAction->setUser($user)->setRelayState('/')->execute();
     }
 
     //additionally handle admin user creation if required
@@ -196,7 +313,7 @@ class ProcessUserAction
     {
         $this->customerModel->setWebsiteId($this->storeManager->getStore()->getWebsiteId());
         $customer = $this->customerModel->loadByEmail($user_email);
-        return !is_null($customer->getId()) ? $customer : false;
+        return $customer->getId() !== null ? $customer : false;
     }
 
     public function setAttrs($attrs)
@@ -211,6 +328,42 @@ class ProcessUserAction
         return $this;
     }
 
+    public function setUserEmail($userEmail)
+    {
+        $this->userEmail = $userEmail;
+        return $this;
+    }
+
+    /**
+     * Set raw attribute array received from OIDC provider.
+     *
+     * @param array $attrs
+     * @return $this
+     */
+    public function setAttrs($attrs)
+    {
+        $this->attrs = $attrs;
+        return $this;
+    }
+
+    /**
+     * Set flattened attribute map (simple key => value mapping).
+     *
+     * @param array $flattenedattrs
+     * @return $this
+     */
+    public function setFlattenedAttrs($flattenedattrs)
+    {
+        $this->flattenedattrs = $flattenedattrs;
+        return $this;
+    }
+
+    /**
+     * Set the user's email address resolved from attributes.
+     *
+     * @param string $userEmail
+     * @return $this
+     */
     public function setUserEmail($userEmail)
     {
         $this->userEmail = $userEmail;

@@ -117,7 +117,8 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
             });
             $roleMappingsJson = json_encode(array_values($roleMappings));
             $this->oauthUtility->setStoreConfig('adminRoleMapping', $roleMappingsJson, true);
-            $this->oauthUtility->customlog('Saved admin role mappings: ' . $roleMappingsJson);
+            $logMsg = 'Saved admin role mappings: ' . $roleMappingsJson;
+            $this->oauthUtility->customlog($logMsg);
         }
 
         // Save customer data mapping fields (directly from dropdown selection)

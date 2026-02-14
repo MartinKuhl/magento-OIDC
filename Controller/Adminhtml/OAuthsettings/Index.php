@@ -12,10 +12,10 @@ use MiniOrange\OAuth\Controller\Actions\BaseAdminAction;
 use MiniOrange\OAuth\Helper\Curl;
 
 /**
- * This class handles the action for endpoint: mooauth/oauthsettings/Index
- * Extends the \Magento\Backend\App\Action for Admin Actions which
- * inturn extends the \Magento\Framework\App\Action\Action class necessary
- * for each Controller class
+ * OAuth Settings admin controller.
+ *
+ * Handles discovery by URL or manual endpoint entry and saves OAuth/OIDC
+ * client configuration provided by the administrator.
  */
 class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetActionInterface
 {
@@ -147,8 +147,6 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
             $this->messageManager->addErrorMessage($e->getMessage());
             $this->oauthUtility->customlog($e->getMessage());
         }
-
-
 
         // generate page
         $resultPage = $this->resultPageFactory->create();

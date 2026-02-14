@@ -5,19 +5,27 @@ use MiniOrange\OAuth\Helper\Exception\IncorrectUserInfoDataException;
 use MiniOrange\OAuth\Helper\OAuthConstants;
 
 /**
- * @deprecated Use OidcAuthenticationService + CheckAttributeMappingAction directly.
- * This controller existed as a chaining intermediary between ReadAuthorizationResponse
- * and CheckAttributeMappingAction. Its logic has been extracted into
- * \MiniOrange\OAuth\Model\Service\OidcAuthenticationService.
+ * Backwards-compatible shim for older flow.
+ *
+ * @deprecated This controller has been superseded by the service layer
+ *             and `CheckAttributeMappingAction`.
+ *             Use `\MiniOrange\OAuth\Model\Service\OidcAuthenticationService`
+ *             together with `CheckAttributeMappingAction` instead.
+ * @see \MiniOrange\OAuth\Model\Service\OidcAuthenticationService
  */
 class ProcessResponseAction extends BaseAction
 {
+    /**
+     * @var array|object|null Raw userinfo response (array or stdClass)
+     */
     private $userInfoResponse;
-    private $processUserAction;
 
     /**
-     * @var CheckAttributeMappingAction
+     * @var mixed Placeholder for legacy processing hook (unused)
      */
+    private $processUserAction;
+
+    /** @var CheckAttributeMappingAction */
     private $attrMappingAction;
 
     public function __construct(

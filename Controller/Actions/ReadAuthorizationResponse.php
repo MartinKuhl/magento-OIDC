@@ -15,12 +15,25 @@ use MiniOrange\OAuth\Model\Service\OidcAuthenticationService;
 
 class ReadAuthorizationResponse extends BaseAction
 {
+    /** @var \Magento\Framework\UrlInterface */
     protected $_url;
+
+    /** @var \Magento\Customer\Model\Session */
     private $customerSession;
+
+    /** @var OAuthSecurityHelper */
     private $securityHelper;
+
+    /** @var JwtVerifier */
     private $jwtVerifier;
+
+    /** @var Curl */
     private $curl;
+
+    /** @var OidcAuthenticationService */
     private $oidcAuthService;
+
+    /** @var CheckAttributeMappingAction */
     private $attrMappingAction;
 
     public function __construct(
@@ -88,12 +101,13 @@ class ReadAuthorizationResponse extends BaseAction
                     return $this->_redirect($errorUrl);
                 }
 
+                $query = ['_query' => ['oidc_error' => $encodedError]];
                 if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
                     // Admin: redirect to admin login page
-                    $loginUrl = $this->_url->getUrl('admin', ['_query' => ['oidc_error' => $encodedError]]);
+                    $loginUrl = $this->_url->getUrl('admin', $query);
                 } else {
                     // Customer: redirect to customer login page
-                    $loginUrl = $this->_url->getUrl('customer/account/login', ['_query' => ['oidc_error' => $encodedError]]);
+                    $loginUrl = $this->_url->getUrl('customer/account/login', $query);
                 }
                 return $this->_redirect($loginUrl);
             }
@@ -121,15 +135,16 @@ class ReadAuthorizationResponse extends BaseAction
         }
 
         // Validate CSRF state token
-        if (empty($stateToken) || !$this->securityHelper->validateStateToken($originalSessionId, $stateToken)) {
+            if (empty($stateToken) || !$this->securityHelper->validateStateToken($originalSessionId, $stateToken)) {
             $this->oauthUtility->customlog("ERROR: State token validation failed (CSRF protection)");
             $encodedError = base64_encode('Security validation failed. Please try logging in again.');
-            if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
-                $loginUrl = $this->_url->getUrl('admin', ['_query' => ['oidc_error' => $encodedError]]);
-            } else {
-                $loginUrl = $this->_url->getUrl('customer/account/login', ['_query' => ['oidc_error' => $encodedError]]);
-            }
-            return $this->_redirect($loginUrl);
+                $query = ['_query' => ['oidc_error' => $encodedError]];
+                if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
+                    $loginUrl = $this->_url->getUrl('admin', $query);
+                } else {
+                    $loginUrl = $this->_url->getUrl('customer/account/login', $query);
+                }
+                return $this->_redirect($loginUrl);
         }
 
         // Look up OAuth client details by app name
@@ -141,14 +156,14 @@ class ReadAuthorizationResponse extends BaseAction
                 $clientDetails = $collection->getFirstItem()->getData();
                 $app_name = $clientDetails["app_name"];
                 $this->oauthUtility->setSessionData(OAuthConstants::APP_NAME, $app_name);
-            }
-            if (!$clientDetails) {
+            } else {
                 $this->oauthUtility->customlog("ERROR: Invalid OAuth app configuration");
                 $encodedError = base64_encode('Invalid OAuth app configuration. Please contact the administrator.');
+                $query = ['_query' => ['oidc_error' => $encodedError]];
                 if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
-                    $loginUrl = $this->_url->getUrl('admin', ['_query' => ['oidc_error' => $encodedError]]);
+                    $loginUrl = $this->_url->getUrl('admin', $query);
                 } else {
-                    $loginUrl = $this->_url->getUrl('customer/account/login', ['_query' => ['oidc_error' => $encodedError]]);
+                    $loginUrl = $this->_url->getUrl('customer/account/login', $query);
                 }
                 return $this->_redirect($loginUrl);
             }
@@ -199,10 +214,11 @@ class ReadAuthorizationResponse extends BaseAction
                     if ($userInfoResponseData === null) {
                         $this->oauthUtility->customlog("ERROR: JWT signature verification failed");
                         $encodedError = base64_encode('ID token verification failed. Please contact the administrator.');
+                        $query = ['_query' => ['oidc_error' => $encodedError]];
                         if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
-                            $loginUrl = $this->_url->getUrl('admin', ['_query' => ['oidc_error' => $encodedError]]);
+                            $loginUrl = $this->_url->getUrl('admin', $query);
                         } else {
-                            $loginUrl = $this->_url->getUrl('customer/account/login', ['_query' => ['oidc_error' => $encodedError]]);
+                            $loginUrl = $this->_url->getUrl('customer/account/login', $query);
                         }
                         return $this->_redirect($loginUrl);
                     }
@@ -210,10 +226,11 @@ class ReadAuthorizationResponse extends BaseAction
                     // SECURITY: Refuse unverified JWTs — JWKS endpoint is required
                     $this->oauthUtility->customlog("ERROR: Cannot verify id_token - no JWKS endpoint configured.");
                     $encodedError = base64_encode('OIDC configuration error: JWKS endpoint is required for id_token verification. Please configure it in the OAuth settings.');
+                    $query = ['_query' => ['oidc_error' => $encodedError]];
                     if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
-                        $loginUrl = $this->_url->getUrl('admin', ['_query' => ['oidc_error' => $encodedError]]);
+                        $loginUrl = $this->_url->getUrl('admin', $query);
                     } else {
-                        $loginUrl = $this->_url->getUrl('customer/account/login', ['_query' => ['oidc_error' => $encodedError]]);
+                        $loginUrl = $this->_url->getUrl('customer/account/login', $query);
                     }
                     return $this->_redirect($loginUrl);
                 }
@@ -221,10 +238,11 @@ class ReadAuthorizationResponse extends BaseAction
         } else {
             $this->oauthUtility->customlog("ERROR: Invalid token response - no access_token or id_token");
             $encodedError = base64_encode('Invalid response from OAuth provider. Please try again.');
+            $query = ['_query' => ['oidc_error' => $encodedError]];
             if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
-                $loginUrl = $this->_url->getUrl('admin', ['_query' => ['oidc_error' => $encodedError]]);
+                $loginUrl = $this->_url->getUrl('admin', $query);
             } else {
-                $loginUrl = $this->_url->getUrl('customer/account/login', ['_query' => ['oidc_error' => $encodedError]]);
+                $loginUrl = $this->_url->getUrl('customer/account/login', $query);
             }
             return $this->_redirect($loginUrl);
         }
@@ -232,10 +250,11 @@ class ReadAuthorizationResponse extends BaseAction
         if (empty($userInfoResponseData)) {
             $this->oauthUtility->customlog("ERROR: Empty user info response data");
             $encodedError = base64_encode('Invalid response from OAuth provider. Please try again.');
+            $query = ['_query' => ['oidc_error' => $encodedError]];
             if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
-                $loginUrl = $this->_url->getUrl('admin', ['_query' => ['oidc_error' => $encodedError]]);
+                $loginUrl = $this->_url->getUrl('admin', $query);
             } else {
-                $loginUrl = $this->_url->getUrl('customer/account/login', ['_query' => ['oidc_error' => $encodedError]]);
+                $loginUrl = $this->_url->getUrl('customer/account/login', $query);
             }
             return $this->_redirect($loginUrl);
         }

@@ -68,6 +68,12 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         $this->userGroupModel = $userGroupModel;
         $this->productMetadata = $productMetadata;
     }
+    /**
+     * Main controller entry-point for Sign-in settings page.
+     * Handles saving, debug log toggling, clearing and downloading logs.
+     *
+     * @return \Magento\Backend\Model\View\Result\Page
+     */
     public function execute()
     {
         try {
@@ -124,8 +130,24 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
                                     $plugin_version = OAuthConstants::VERSION;
                                     $magento_version = $this->productMetadata->getVersion();
                                     $php_version = phpversion();
-                                    $values = [$appName, $scope, $authorize_url, $accesstoken_url, $getuserinfo_url, $header, $body, $endpoint_url, $show_customer_link, $attribute_email, $attribute_username, $customer_email, $plugin_version, $magento_version, $php_version];
-                                    //save configuration
+                                    $values = [
+                                        $appName,
+                                        $scope,
+                                        $authorize_url,
+                                        $accesstoken_url,
+                                        $getuserinfo_url,
+                                        $header,
+                                        $body,
+                                        $endpoint_url,
+                                        $show_customer_link,
+                                        $attribute_email,
+                                        $attribute_username,
+                                        $customer_email,
+                                        $plugin_version,
+                                        $magento_version,
+                                        $php_version
+                                    ];
+                                    // save configuration
                                     $this->customerConfigurationSettings($values);
                                 }
 

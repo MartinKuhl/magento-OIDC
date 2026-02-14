@@ -14,8 +14,19 @@ use MiniOrange\OAuth\Helper\SessionHelper;
  */
 class SendAuthorizationRequest extends BaseAction
 {
+    /**
+     * @var SessionHelper
+     */
     private $sessionHelper;
+
+    /**
+     * @var OAuthSecurityHelper
+     */
     private $securityHelper;
+
+    /**
+     * @var \Magento\Framework\Session\SessionManagerInterface
+     */
     private $sessionManager;
 
     public function __construct(

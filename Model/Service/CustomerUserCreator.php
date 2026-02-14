@@ -64,12 +64,19 @@ class CustomerUserCreator
     private $directoryData;
 
     // Attribute mapping keys
+    /** @var string|null OIDC claim name for date of birth */
     private $dobAttribute;
+    /** @var string|null OIDC claim name for gender */
     private $genderAttribute;
+    /** @var string|null OIDC claim name for phone number */
     private $phoneAttribute;
+    /** @var string|null OIDC claim name for street address */
     private $streetAttribute;
+    /** @var string|null OIDC claim name for postal/zip code */
     private $zipAttribute;
+    /** @var string|null OIDC claim name for city/locality */
     private $cityAttribute;
+    /** @var string|null OIDC claim name for country */
     private $countryAttribute;
 
     /**
@@ -207,8 +214,15 @@ class CustomerUserCreator
 
     /**
      * Create customer address with mapped OIDC attributes
-     */
-    private function createCustomerAddress($customer, $firstName, $lastName, $flattenedAttrs, $rawAttrs)
+        *
+        * @param \Magento\Customer\Model\Customer $customer
+        * @param string $firstName
+        * @param string $lastName
+        * @param array $flattenedAttrs
+        * @param array $rawAttrs
+        * @return void
+        */
+        private function createCustomerAddress($customer, $firstName, $lastName, $flattenedAttrs, $rawAttrs)
     {
         // Extract address fields
         $street = $this->extractAttributeValue($this->streetAttribute, $flattenedAttrs, $rawAttrs);
@@ -247,8 +261,13 @@ class CustomerUserCreator
 
     /**
      * Extract attribute value from flattened attributes with support for nested paths
-     */
-    private function extractAttributeValue($key, $flattenedAttrs, $rawAttrs)
+        *
+        * @param string $key Attribute key or dotted path (e.g., "address.locality")
+        * @param array|null $flattenedAttrs Flattened key/value map
+        * @param array|object|null $rawAttrs Original attributes structure
+        * @return string|null
+        */
+        private function extractAttributeValue($key, $flattenedAttrs, $rawAttrs)
     {
         if (empty($key)) {
             return null;
@@ -299,8 +318,11 @@ class CustomerUserCreator
 
     /**
      * Format date of birth to Y-m-d format
-     */
-    private function formatDateOfBirth($dob)
+        *
+        * @param string $dob Raw date string
+        * @return string|null Formatted date `Y-m-d` or null on parse failure
+        */
+        private function formatDateOfBirth($dob)
     {
         try {
             $date = date_create($dob);
