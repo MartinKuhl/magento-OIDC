@@ -26,6 +26,10 @@ class Data extends AbstractHelper
     protected $userResource;
     protected $customerResource;
     private $encryptor;
+    /**
+     * @var \Magento\Framework\Escaper|null
+     */
+    protected $escaper;
 
     public function __construct(
         \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
@@ -40,7 +44,8 @@ class Data extends AbstractHelper
         \MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps $appResource,
         \Magento\User\Model\ResourceModel\User $userResource,
         \Magento\Customer\Model\ResourceModel\Customer $customerResource,
-        \Magento\Framework\Encryption\EncryptorInterface $encryptor
+        \Magento\Framework\Encryption\EncryptorInterface $encryptor,
+        \Magento\Framework\Escaper $escaper = null
     ) {
         $this->scopeConfig = $scopeConfig;
         $this->adminFactory = $adminFactory;
@@ -55,6 +60,7 @@ class Data extends AbstractHelper
         $this->userResource = $userResource;
         $this->customerResource = $customerResource;
         $this->encryptor = $encryptor;
+        $this->escaper = $escaper;
     }
 
 
@@ -401,7 +407,11 @@ class Data extends AbstractHelper
             return $value;
         }
         if (is_string($value)) {
-            return htmlspecialchars(strip_tags(trim($value)), ENT_QUOTES, 'UTF-8');
+            $clean = strip_tags(trim($value));
+            if ($this->escaper !== null) {
+                return $this->escaper->escapeHtml($clean);
+            }
+            return htmlspecialchars($clean, ENT_QUOTES, 'UTF-8');
         }
         return $value;
     }

@@ -55,7 +55,7 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
 
         // If relayState points to the login page, redirect to account dashboard instead.
         // This happens when SSO is initiated from the login page itself.
-        $relayPath = parse_url($this->relayState, PHP_URL_PATH) ?? '';
+        $relayPath = $this->oauthUtility->extractPathFromUrl($this->relayState) ?? '';
         if (str_starts_with(rtrim($relayPath, '/'), '/customer/account/login')) {
             $this->relayState = $this->oauthUtility->getBaseUrl() . 'customer/account';
         }

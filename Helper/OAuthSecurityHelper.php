@@ -141,8 +141,9 @@ class OAuthSecurityHelper
      */
     public function decodeRelayState(string $encoded): ?array
     {
-        $decoded = base64_decode(strtr($encoded, '-_', '+/'));
-        if ($decoded === false) {
+        $translated = strtr($encoded, '-_', '+/');
+        $decoded = $this->oauthUtility->decodeBase64($translated);
+        if ($decoded === '') {
             return null;
         }
         $data = json_decode($decoded, true);
@@ -180,8 +181,8 @@ class OAuthSecurityHelper
         }
 
         // For absolute URLs, validate host matches the Magento store
-        $parsed = parse_url($url);
-        if ($parsed === false || empty($parsed['host'])) {
+        $parsed = $this->oauthUtility->parseUrlComponents($url);
+        if (empty($parsed['host'])) {
             return $fallback;
         }
 
@@ -193,7 +194,7 @@ class OAuthSecurityHelper
 
         // Compare host against Magento base URL host
         $baseUrl = $this->oauthUtility->getBaseUrl();
-        $baseParsed = parse_url($baseUrl);
+        $baseParsed = $this->oauthUtility->parseUrlComponents($baseUrl);
         $baseHost = $baseParsed['host'] ?? '';
 
         if (strcasecmp($parsed['host'], $baseHost) !== 0) {

@@ -19,6 +19,7 @@ use MiniOrange\OAuth\Helper\Curl;
  */
 class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetActionInterface
 {
+    /** @var Curl */
     private Curl $curl;
 
     public function __construct(
@@ -151,14 +152,17 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
 
         // generate page
         $resultPage = $this->resultPageFactory->create();
-        $resultPage->getConfig()->getTitle()->prepend(__(OAuthConstants::MODULE_TITLE));
+        $resultPage->getConfig()->getTitle()->prepend(__('MiniOrange OAuth'));
         return $resultPage;
     }
 
     /**
      * Process Values being submitted and save data in the database.
+     *
+     * @param array $params
+     * @return void
      */
-    private function processValuesAndSaveData($params)
+    private function processValuesAndSaveData(array $params)
     {
         $mo_oauth_app_name = trim($params['mo_oauth_app_name']);
         $mo_oauth_client_id = trim($params['mo_oauth_client_id']);

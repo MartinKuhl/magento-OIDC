@@ -467,7 +467,7 @@ class OAuthUtility extends Data
     {
 
         if (is_object($msg)) {
-            $this->customlog(print_r($msg, true));
+            $this->customlog(var_export($msg, true));
         } else {
             $this->customlog($msg);
 
@@ -528,5 +528,50 @@ class OAuthUtility extends Data
         }
         $dateTime = new \DateTime('now', $dateTimeZone);
         return $dateTime->format('n/j/Y, g:i:s a');
+    }
+
+    /**
+     * Decode a base64 encoded string safely.
+     * Returns empty string on invalid input.
+     *
+     * @param string|null $input
+     * @return string
+     */
+    public function decodeBase64(?string $input): string
+    {
+        if (empty($input)) {
+            return '';
+        }
+        $decoded = base64_decode($input, true);
+        return $decoded === false ? '' : $decoded;
+    }
+
+    /**
+     * Extract the path component from a URL in a safe manner.
+     * Returns empty string on failure.
+     *
+     * @param string $url
+     * @return string
+     */
+    public function extractPathFromUrl(string $url): string
+    {
+        $parsed = @parse_url($url);
+        if ($parsed === false) {
+            return '';
+        }
+        return $parsed['path'] ?? '';
+    }
+
+    /**
+     * Parse a URL and return components in a safe manner.
+     * Returns empty array on failure.
+     *
+     * @param string $url
+     * @return array
+     */
+    public function parseUrlComponents(string $url): array
+    {
+        $parsed = @parse_url($url);
+        return is_array($parsed) ? $parsed : [];
     }
 }

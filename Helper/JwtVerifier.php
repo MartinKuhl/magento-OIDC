@@ -311,6 +311,7 @@ class JwtVerifier
         if ($remainder) {
             $input .= str_repeat('=', 4 - $remainder);
         }
-        return base64_decode(strtr($input, '-_', '+/'));
+        $translated = strtr($input, '-_', '+/');
+        return $this->oauthUtility->decodeBase64($translated);
     }
 }

@@ -23,6 +23,16 @@ class Debug extends Template
     protected $directoryList;
 
     /**
+     * @var \Magento\Framework\Filesystem\Driver\File
+     */
+    protected $fileDriver;
+
+    /**
+     * @var \Magento\Framework\HTTP\Client\Curl
+     */
+    protected $curlClient;
+
+    /**
      * @param Context $context
      * @param OAuthUtility $oauthUtility
      * @param DirectoryList $directoryList
@@ -32,10 +42,26 @@ class Debug extends Template
         Context $context,
         OAuthUtility $oauthUtility,
         DirectoryList $directoryList,
+        \Magento\Framework\Filesystem\Driver\File $fileDriver = null,
+        \Magento\Framework\HTTP\Client\Curl $curlClient = null,
         array $data = []
     ) {
         $this->oauthUtility = $oauthUtility;
         $this->directoryList = $directoryList;
+        // optional DI for environments where driver/client are not configured
+        if ($fileDriver === null || $curlClient === null) {
+            $om = \Magento\Framework\App\ObjectManager::getInstance();
+            if ($fileDriver === null) {
+                $fileDriver = $om->get(\Magento\Framework\Filesystem\Driver\File::class);
+            }
+            if ($curlClient === null) {
+                $curlClient = $om->get(\Magento\Framework\HTTP\Client\Curl::class);
+            }
+        }
+
+        $this->fileDriver = $fileDriver;
+        $this->curlClient = $curlClient;
+
         parent::__construct($context, $data);
     }
 
@@ -77,7 +103,7 @@ class Debug extends Template
                 return json_decode($response, true);
             }
         } catch (\Exception $e) {
-            // Session data not available
+            $this->oauthUtility->customlog('Debug::getLastOAuthResponse exception: ' . $e->getMessage());
         }
 
         return null;
@@ -94,13 +120,17 @@ class Debug extends Template
         $logFile = $this->directoryList->getPath(DirectoryList::VAR_DIR) . '/log/mo_oauth.log';
         $entries = [];
 
-        if (file_exists($logFile)) {
-            $lines = file($logFile);
-            $recentLines = array_slice($lines, -50);
-
-            foreach ($recentLines as $line) {
-                $entries[] = trim($line);
+        try {
+            if ($this->fileDriver->isExists($logFile)) {
+                $contents = $this->fileDriver->fileGetContents($logFile);
+                $lines = preg_split('/\r\n|\n|\r/', $contents);
+                $recentLines = array_slice($lines, -50);
+                foreach ($recentLines as $line) {
+                    $entries[] = trim($line);
+                }
             }
+        } catch (\Exception $e) {
+            $this->oauthUtility->customlog('Debug::getRecentLogEntries exception: ' . $e->getMessage());
         }
 
         return array_reverse($entries);
@@ -141,27 +171,31 @@ class Debug extends Template
      */
     protected function testUrl($url)
     {
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_NOBODY, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 5);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        $curl = $this->curlClient;
+        $responseTime = null;
+        $error = null;
+        $httpCode = null;
 
-        $startTime = microtime(true);
-        curl_exec($ch);
-        $endTime = microtime(true);
+        try {
+            $curl->setOption(CURLOPT_NOBODY, true);
+            $curl->setOption(CURLOPT_TIMEOUT, 5);
+            $curl->setOption(CURLOPT_SSL_VERIFYPEER, false);
 
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $error = curl_error($ch);
-        curl_close($ch);
+            $startTime = microtime(true);
+            $curl->get($url);
+            $endTime = microtime(true);
 
-        $responseTime = round(($endTime - $startTime) * 1000, 2);
+            $httpCode = $curl->getStatus();
+            $responseTime = round(($endTime - $startTime) * 1000, 2);
+        } catch (\Exception $e) {
+            $error = $e->getMessage();
+        }
 
         return [
             'status' => $httpCode ?: 'Error',
             'reachable' => !empty($httpCode),
-            'response_time' => $responseTime . ' ms',
-            'error' => $error ?: null
+            'response_time' => $responseTime !== null ? $responseTime . ' ms' : null,
+            'error' => $error
         ];
     }
 
@@ -203,7 +237,7 @@ class Debug extends Template
         $result = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 
         if ($result === false) {
-            return '{"error": "JSON encoding failed: ' . json_last_error_msg() . '"}';
+            return json_encode(['error' => 'JSON encoding failed: ' . json_last_error_msg()]);
         }
 
         return $result;
@@ -220,7 +254,7 @@ class Debug extends Template
             'PHP Version' => PHP_VERSION,
             'Magento Version' => $this->oauthUtility->getProductVersion(),
             'Plugin Version' => '1.0.0',
-            'Curl Installed' => function_exists('curl_version') ? 'Yes (v' . curl_version()['version'] . ')' : 'No',
+            'Curl Installed' => extension_loaded('curl') ? 'Yes' : 'No',
             'OpenSSL Version' => OPENSSL_VERSION_TEXT,
             'Server Time' => date('Y-m-d H:i:s T'),
             'Timezone' => date_default_timezone_get()

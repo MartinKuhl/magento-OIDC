@@ -23,7 +23,10 @@ use Psr\Log\LoggerInterface;
 class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetActionInterface
 {
 
+    /** @var \Magento\Authorization\Model\ResourceModel\Role\Collection */
     private $adminRoleModel;
+
+    /** @var \Magento\Customer\Model\ResourceModel\Group\Collection */
     private $userGroupModel;
 
     public function __construct(
@@ -71,16 +74,18 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
             $this->oauthUtility->customlog($e->getMessage());
         }
         $resultPage = $this->resultPageFactory->create();
-        $resultPage->getConfig()->getTitle()->prepend(__(OAuthConstants::MODULE_TITLE));
+        $resultPage->getConfig()->getTitle()->prepend(__('MiniOrange OAuth'));
         return $resultPage;
     }
 
 
     /**
      * Process Values being submitted and save data in the database.
-     * @param $param
+     *
+     * @param array $params
+     * @return void
      */
-    private function processValuesAndSaveData($params)
+    private function processValuesAndSaveData(array $params)
     {
         //ToDo_MK extend for other attributes like first name, last name if needed
         $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_USERNAME, $params['oauth_am_username']);

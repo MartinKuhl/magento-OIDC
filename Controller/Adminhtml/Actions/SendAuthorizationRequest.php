@@ -52,7 +52,7 @@ class SendAuthorizationRequest extends BaseAction
         $chk_enable_log ? $this->oauthUtility->customlog("SendAuthorizationRequest: execute") : null;
 
         $params = $this->getRequest()->getParams();
-        $chk_enable_log ? $this->oauthUtility->customlog("SendAuthorizationRequest: Full params: " . print_r($params, true)) : null;
+        $chk_enable_log ? $this->oauthUtility->customlog("SendAuthorizationRequest: Full params: " . var_export($params, true)) : null;
 
         $isFromPopup = isset($params['from_popup']) && $params['from_popup'] == '1';
 

@@ -17,16 +17,37 @@ use Magento\Framework\Controller\ResultFactory;
  */
 class ShowTestResults extends Action
 {
+    /** @var array|null Attributes received from OIDC provider */
     private $attrs;
+
+    /** @var string|null User email */
     private $userEmail;
+
+    /** @var string|null Greeting name derived from attributes */
     private $greetingName;
+
+    /** @var string|null Status of the test (TEST SUCCESSFUL / TEST FAILED) */
     protected $status;
+
+    /** @var bool */
     private $hasExceptionOccurred;
+
+    /** @var \Exception|null */
     private $oauthException;
+
+    /** @var OAuthUtility */
     private OAuthUtility $oauthUtility;
+
+    /** @var \Magento\Framework\App\Request\Http */
     protected $request;
+
+    /** @var ScopeConfigInterface */
     protected $scopeConfig;
 
+    /** @var \Magento\Framework\Escaper|null */
+    private $escaper;
+
+    /** @var \Magento\Customer\Model\Session */
     private $customerSession;
 
     private $template = '<div style="font-family:Calibri;padding:0 3%;">{{header}}{{commonbody}}{{footer}}</div>';
@@ -69,6 +90,7 @@ class ShowTestResults extends Action
         $this->scopeConfig = $scopeConfig;
         $this->request = $request;
         $this->customerSession = $customerSession;
+        $this->escaper = $context->getObjectManager()->get(\Magento\Framework\Escaper::class);
         parent::__construct($context);
     }
 
@@ -99,7 +121,7 @@ class ShowTestResults extends Action
             $this->oauthUtility->customlog("Stored received OIDC claims: " . json_encode($claimKeys));
         }
 
-        if (ob_get_contents()) {
+        if (ob_get_length()) {
             ob_end_clean();
         }
         $this->oauthUtility->customlog("ShowTestResultsAction: execute");
@@ -163,12 +185,12 @@ class ShowTestResults extends Action
      */
     private function handleOidcError($encodedError)
     {
-        if (ob_get_contents()) {
+        if (ob_get_length()) {
             ob_end_clean();
         }
         $this->oauthUtility->customlog("ShowTestResultsAction: handleOidcError");
 
-        $errorMessage = base64_decode($encodedError);
+        $errorMessage = $this->oauthUtility->decodeBase64($encodedError);
         $this->status = "TEST UNSUCCESSFUL";
         $this->hasExceptionOccurred = true;
 
@@ -178,7 +200,8 @@ class ShowTestResults extends Action
         $this->template = str_replace("{{header}}", $header, $this->template);
 
         // Add error body
-        $errorBodyContent = str_replace("{{error_message}}", htmlspecialchars($errorMessage), $this->errorBody);
+        $escapedError = $this->escaper ? $this->escaper->escapeHtml($errorMessage) : htmlspecialchars($errorMessage, ENT_QUOTES, 'UTF-8');
+        $errorBodyContent = str_replace("{{error_message}}", $escapedError, $this->errorBody);
         $this->template = str_replace("{{commonbody}}", $errorBodyContent, $this->template);
 
         // Add footer
@@ -201,7 +224,9 @@ class ShowTestResults extends Action
 
     private function processTemplateContent()
     {
-        $this->commonBody = str_replace("{{greeting_name}}", htmlspecialchars($this->greetingName ?? '', ENT_QUOTES, 'UTF-8'), $this->commonBody);
+        $greet = $this->greetingName ?? '';
+        $greetEscaped = $this->escaper ? $this->escaper->escapeHtml($greet) : htmlspecialchars($greet, ENT_QUOTES, 'UTF-8');
+        $this->commonBody = str_replace("{{greeting_name}}", $greetEscaped, $this->commonBody);
         $tableContent = !array_filter($this->attrs ?? []) ? "No Attributes Received." : $this->getTableContent();
         //$this->oauthUtility->customlog("ShowTestResultsAction: attribute" . json_encode($this->attrs));
         $this->commonBody = str_replace("{{tablecontent}}", $tableContent ?? '', $this->commonBody);
@@ -217,9 +242,9 @@ class ShowTestResults extends Action
                     $value = [$value];
                 }
                 if (!in_array(null, $value)) {
-                    $escapedKey = htmlspecialchars((string)$key, ENT_QUOTES, 'UTF-8');
+                    $escapedKey = $this->escaper ? $this->escaper->escapeHtml((string)$key) : htmlspecialchars((string)$key, ENT_QUOTES, 'UTF-8');
                     $escapedValues = array_map(
-                        fn($v) => htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'),
+                        fn($v) => $this->escaper ? $this->escaper->escapeHtml((string)$v) : htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'),
                         $value
                     );
                     $tableContent .= str_replace("{{key}}", $escapedKey, str_replace(

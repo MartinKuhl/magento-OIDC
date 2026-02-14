@@ -37,8 +37,13 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
      *
      * @return \Magento\Backend\Model\View\Result\Page
      */
+    /** @var \Magento\Customer\Model\ResourceModel\Group\Collection */
     private $userGroupModel;
+
+    /** @var \Magento\Framework\App\Response\Http\FileFactory */
     protected $fileFactory;
+
+    /** @var \Magento\Store\Model\StoreManagerInterface */
     protected $_storeManager;
     /**
      * @var \Magento\Framework\App\ProductMetadataInterface
@@ -154,15 +159,18 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         }
         // generate page
         $resultPage = $this->resultPageFactory->create();
-        $resultPage->getConfig()->getTitle()->prepend(__(OAuthConstants::MODULE_TITLE));
+        $resultPage->getConfig()->getTitle()->prepend(__('MiniOrange OAuth'));
         return $resultPage;
     }
 
 
     /**
      * Process Values being submitted and save data in the database.
+     *
+     * @param array $params
+     * @return void
      */
-    private function processValuesAndSaveData($params)
+    private function processValuesAndSaveData(array $params)
     {
         $mo_oauth_show_customer_link = isset($params['mo_oauth_show_customer_link']) ? 1 : 0;
         $mo_oauth_show_admin_link = isset($params['mo_oauth_show_admin_link']) ? 1 : 0;

@@ -28,17 +28,40 @@ use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
  */
 class Oidccallback implements ActionInterface, HttpGetActionInterface
 {
+    /** @var \Magento\User\Model\UserFactory */
     protected $userFactory;
+
+    /** @var \Magento\Backend\Model\Auth */
     protected $auth;
+
+    /** @var ResultFactory */
     protected $resultFactory;
+
+    /** @var RequestInterface */
     protected $request;
+
+    /** @var \MiniOrange\OAuth\Helper\OAuthUtility */
     protected $oauthUtility;
+
+    /** @var ManagerInterface */
     protected $messageManager;
+
+    /** @var UrlInterface */
     protected $url;
+
+    /** @var CookieManagerInterface */
     protected $cookieManager;
+
+    /** @var CookieMetadataFactory */
     protected $cookieMetadataFactory;
+
+    /** @var BackendUrlInterface */
     protected $backendUrl;
+
+    /** @var OAuthSecurityHelper */
     private $securityHelper;
+
+    /** @var \Magento\Framework\App\Config\ScopeConfigInterface */
     private $scopeConfig;
 
     public function __construct(
