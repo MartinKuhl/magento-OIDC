@@ -177,9 +177,12 @@ class Data extends AbstractHelper
      */
     public function deleteAllRecords()
     {
-        $this->clientCollectionFactory
-            ->create()
-            ->walk('delete');
+        $collection = $this->clientCollectionFactory->create();
+        foreach ($collection as $item) {
+            if (is_object($item) && method_exists($item, 'delete')) {
+                $item->delete();
+            }
+        }
     }
     /**
      * Get All the entry from the OAuthClientApp Table
