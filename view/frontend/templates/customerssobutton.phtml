@@ -7,7 +7,6 @@
         <line x1="0" y1="0" x2="210" y2="0"></line>
     </svg>
 </div>
-<?php
 <?php if ($block->hasOidcError()): ?>
     <div style="
         width: 470px;
@@ -39,4 +38,3 @@
        <span><?= $escaper->escapeHtml($block->getSSOButtonText()) ?></span>
    </a>
 </div>
-<?php
