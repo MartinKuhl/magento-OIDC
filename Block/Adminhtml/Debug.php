@@ -36,8 +36,8 @@ class Debug extends Template
      * @param Context $context
      * @param OAuthUtility $oauthUtility
      * @param DirectoryList $directoryList
-        * @param \Magento\Framework\Filesystem\Driver\File|null $fileDriver
-        * @param \Magento\Framework\HTTP\Client\Curl|null $curlClient
+     * @param \Magento\Framework\Filesystem\Driver\File|null $fileDriver
+     * @param \Magento\Framework\HTTP\Client\Curl|null $curlClient
      * @param array $data
      */
     public function __construct(
