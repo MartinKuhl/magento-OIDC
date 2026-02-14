@@ -255,7 +255,9 @@ class ProcessUserAction
             $user = $this->createNewUser($user_email, $firstName, $lastName, $userName, $user, $admin);
         }
 
-        $store_url = $this->storeManager->getStore()->getBaseUrl(\Magento\Framework\UrlInterface::URL_TYPE_WEB);
+        /** @var \Magento\Store\Model\Store $store */
+        $store = $this->storeManager->getStore();
+        $store_url = $store->getBaseUrl(\Magento\Framework\UrlInterface::URL_TYPE_WEB);
         $store_url = rtrim($store_url, '/\\');
 
         if (isset($this->attrs['relayState']) && !str_contains($this->attrs['relayState'], $store_url) && $this->attrs['relayState'] != '/') {

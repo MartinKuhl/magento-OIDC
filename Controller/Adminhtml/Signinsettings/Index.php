@@ -72,7 +72,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
      * Main controller entry-point for Sign-in settings page.
      * Handles saving, debug log toggling, clearing and downloading logs.
      *
-     * @return \Magento\Backend\Model\View\Result\Page
+     * @return \Magento\Backend\Model\View\Result\Page|\Magento\Framework\App\ResponseInterface
      */
     public function execute()
     {

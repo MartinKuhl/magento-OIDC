@@ -3,16 +3,13 @@
 namespace MiniOrange\OAuth\Controller\Actions;
 
 use Magento\Customer\Model\Session;
+use Magento\Customer\Model\CustomerFactory;
 use Magento\Framework\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
 use Magento\Framework\App\ResponseFactory;
 use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
 use MiniOrange\OAuth\Helper\OAuthUtility;
 
-/**
- * This class is called to log the customer user in. RelayState and
- * user are set separately. This is a simple class.
- */
 class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
 {
     /**
@@ -40,19 +37,26 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
      */
     private $securityHelper;
 
+    /**
+     * @var CustomerFactory
+     */
+    private $customerFactory;
 
     public function __construct(
         Context $context,
         OAuthUtility $oauthUtility,
         Session $customerSession,
         ResponseFactory $responseFactory,
-        OAuthSecurityHelper $securityHelper
+        OAuthSecurityHelper $securityHelper,
+        CustomerFactory $customerFactory
     ) {
         $this->customerSession = $customerSession;
         $this->responseFactory = $responseFactory;
         $this->securityHelper = $securityHelper;
+        $this->customerFactory = $customerFactory;
         parent::__construct($context, $oauthUtility);
     }
+
 
     /**
      * Execute function to execute the classes function.
@@ -79,7 +83,8 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
             $this->relayState = $this->oauthUtility->getBaseUrl() . 'customer/account';
         }
 
-        $this->customerSession->setCustomerAsLoggedIn($this->user);
+        $customerModel = $this->customerFactory->create()->load($this->user->getId());
+        $this->customerSession->setCustomerAsLoggedIn($customerModel);
         $safeRelayState = $this->securityHelper->validateRedirectUrl(
             $this->relayState,
             $this->oauthUtility->getBaseUrl() . 'customer/account'
