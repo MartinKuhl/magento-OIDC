@@ -179,9 +179,9 @@ class Debug extends Template
         $httpCode = null;
 
         try {
-            $curl->setOption(CURLOPT_NOBODY, true);
-            $curl->setOption(CURLOPT_TIMEOUT, 5);
-            $curl->setOption(CURLOPT_SSL_VERIFYPEER, false);
+            $curl->setOption('CURLOPT_NOBODY', true);
+            $curl->setOption('CURLOPT_TIMEOUT', 5);
+            $curl->setOption('CURLOPT_SSL_VERIFYPEER', false);
 
             $startTime = microtime(true);
             $curl->get($url);
@@ -239,7 +239,11 @@ class Debug extends Template
         $result = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 
         if ($result === false) {
-            return json_encode(['error' => 'JSON encoding failed: ' . json_last_error_msg()]);
+            $fallback = json_encode(['error' => 'JSON encoding failed: ' . json_last_error_msg()]);
+            if ($fallback === false) {
+                return '{"error":"JSON encoding failed"}';
+            }
+            return $fallback;
         }
 
         return $result;

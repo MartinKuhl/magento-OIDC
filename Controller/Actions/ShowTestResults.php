@@ -244,7 +244,9 @@ class ShowTestResults extends Action
                 if (!in_array(null, $value)) {
                     $escapedKey = $this->escaper->escapeHtml((string)$key);
                     $escapedValues = array_map(
-                        fn($v) => $this->escaper->escapeHtml((string)$v),
+                        function ($v): string {
+                            return $this->escaper->escapeHtml((string)$v);
+                        },
                         $value
                     );
                     $tableContent .= str_replace("{{key}}", $escapedKey, str_replace(
