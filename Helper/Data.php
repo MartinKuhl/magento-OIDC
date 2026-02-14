@@ -12,24 +12,75 @@ use MiniOrange\OAuth\Helper\OAuthConstants;
  */
 class Data extends AbstractHelper
 {
-
-    protected $scopeConfig;
-    protected $adminFactory;
-    protected $customerFactory;
-    protected $urlInterface;
-    protected $configWriter;
-    protected $assetRepo;
-    protected $helperBackend;
-    protected $frontendUrl;
-    protected $_miniorangeOauthClientAppsFactory;
-    protected $appResource;
-    protected $userResource;
-    protected $customerResource;
-    private $encryptor;
     /**
-     * @var \Magento\Framework\Escaper|null
+     * @var \Magento\Framework\App\Config\ScopeConfigInterface
      */
-    protected $escaper;
+    protected $scopeConfig;
+
+    /**
+     * @var \Magento\User\Model\UserFactory
+     */
+    protected $adminFactory;
+
+    /**
+     * @var \Magento\Customer\Model\CustomerFactory
+     */
+    protected $customerFactory;
+
+    /**
+     * @var \Magento\Framework\UrlInterface
+     */
+    protected $urlInterface;
+
+    /**
+     * @var \Magento\Framework\App\Config\Storage\WriterInterface
+     */
+    protected $configWriter;
+
+    /**
+     * @var \Magento\Framework\View\Asset\Repository
+     */
+    protected $assetRepo;
+
+    /**
+     * @var \Magento\Backend\Helper\Data
+     */
+    protected $helperBackend;
+
+    /**
+     * @var \Magento\Framework\Url
+     */
+    protected $frontendUrl;
+
+    /**
+     * @var \MiniOrange\OAuth\Model\MiniorangeOauthClientAppsFactory
+     */
+    protected $_miniorangeOauthClientAppsFactory;
+
+    /**
+     * @var \MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps
+     */
+    protected $appResource;
+
+    /**
+     * @var \Magento\User\Model\ResourceModel\User
+     */
+    protected $userResource;
+
+    /**
+     * @var \Magento\Customer\Model\ResourceModel\Customer
+     */
+    protected $customerResource;
+
+    /**
+     * @var \Magento\Framework\Encryption\EncryptorInterface
+     */
+    private $encryptor;
+
+    /**
+     * @var \Magento\Framework\Escaper
+     */
+    protected \Magento\Framework\Escaper $escaper;
 
     public function __construct(
         \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
@@ -45,7 +96,7 @@ class Data extends AbstractHelper
         \Magento\User\Model\ResourceModel\User $userResource,
         \Magento\Customer\Model\ResourceModel\Customer $customerResource,
         \Magento\Framework\Encryption\EncryptorInterface $encryptor,
-        \Magento\Framework\Escaper $escaper = null
+        \Magento\Framework\Escaper $escaper
     ) {
         $this->scopeConfig = $scopeConfig;
         $this->adminFactory = $adminFactory;
@@ -408,10 +459,7 @@ class Data extends AbstractHelper
         }
         if (is_string($value)) {
             $clean = strip_tags(trim($value));
-            if ($this->escaper !== null) {
-                return $this->escaper->escapeHtml($clean);
-            }
-            return htmlspecialchars($clean, ENT_QUOTES, 'UTF-8');
+            return $this->escaper->escapeHtml($clean);
         }
         return $value;
     }

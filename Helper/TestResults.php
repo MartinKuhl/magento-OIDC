@@ -5,10 +5,10 @@ use Magento\Framework\Escaper;
 
 class TestResults
 {
-    /** @var Escaper|null */
-    private $escaper;
+    /** @var Escaper */
+    private Escaper $escaper;
 
-    public function __construct(Escaper $escaper = null)
+    public function __construct(Escaper $escaper)
     {
         $this->escaper = $escaper;
     }
@@ -17,22 +17,22 @@ class TestResults
     {
         $html = '';
         if ($hasException && $exception) {
-            $html .= "<div class='error'>" . ($this->escaper ? $this->escaper->escapeHtml($exception->getMessage()) : htmlspecialchars($exception->getMessage(), ENT_QUOTES, 'UTF-8')) . "</div>";
+            $html .= "<div class='error'>" . $this->escaper->escapeHtml($exception->getMessage()) . "</div>";
         } else {
             $html .= "<div class='success'>Test successful!</div>";
             $mail = $data['mail'] ?? '';
             $userinfo = $data['userinfo'] ?? [];
             $debug = $data['debug'] ?? null;
 
-            $mailOut = $this->escaper ? $this->escaper->escapeHtml($mail) : htmlspecialchars($mail, ENT_QUOTES, 'UTF-8');
-            $userinfoOut = $this->escaper ? $this->escaper->escapeHtml(var_export($userinfo, true)) : htmlspecialchars(var_export($userinfo, true), ENT_QUOTES, 'UTF-8');
+            $mailOut = $this->escaper->escapeHtml($mail);
+            $userinfoOut = $this->escaper->escapeHtml(var_export($userinfo, true));
 
             $html .= "<div><strong>Mail:</strong> " . $mailOut . "</div>";
             $html .= "<div><strong>Userinfo:</strong> <pre>" . $userinfoOut . "</pre></div>";
 
             // Debugging: Ausgabe aller empfangenen Parameter
             if (!empty($debug)) {
-                $debugOut = $this->escaper ? $this->escaper->escapeHtml(var_export($debug, true)) : htmlspecialchars(var_export($debug, true), ENT_QUOTES, 'UTF-8');
+                $debugOut = $this->escaper->escapeHtml(var_export($debug, true));
                 $html .= "<div style='background:#fafafa; border:1px solid #ccc;padding:10px;'><strong>Full Params (Debug):</strong><pre>" . $debugOut . "</pre></div>";
             }
         }

@@ -36,6 +36,8 @@ class Debug extends Template
      * @param Context $context
      * @param OAuthUtility $oauthUtility
      * @param DirectoryList $directoryList
+        * @param \Magento\Framework\Filesystem\Driver\File|null $fileDriver
+        * @param \Magento\Framework\HTTP\Client\Curl|null $curlClient
      * @param array $data
      */
     public function __construct(
@@ -78,7 +80,8 @@ class Debug extends Template
             'Authorization Endpoint' => $this->oauthUtility->getStoreConfig(OAuthConstants::AUTHORIZE_URL),
             'Token Endpoint' => $this->oauthUtility->getStoreConfig(OAuthConstants::ACCESSTOKEN_URL),
             'User Info Endpoint' => $this->oauthUtility->getStoreConfig(OAuthConstants::GETUSERINFO_URL),
-            'Callback URL' => $this->getUrl('', ['_direct' => 'mooauth/actions/readauthorizationresponse']),
+            'Callback URL' =>
+                $this->getUrl('', ['_direct' => 'mooauth/actions/readauthorizationresponse']),
             'Scope' => $this->oauthUtility->getStoreConfig(OAuthConstants::SCOPE),
             'Email Attribute Mapping' => $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_EMAIL) ?: OAuthConstants::DEFAULT_MAP_EMAIL,
             'Username Attribute Mapping' => $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_USERNAME) ?: OAuthConstants::DEFAULT_MAP_USERN,
@@ -111,7 +114,6 @@ class Debug extends Template
 
     /**
      * Get Recent Log Entries
-     *
      *
      * @return array
      */

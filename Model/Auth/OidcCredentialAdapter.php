@@ -25,7 +25,7 @@ class OidcCredentialAdapter implements StorageInterface
     /**
      * OIDC verification token marker
      */
-    const OIDC_TOKEN_MARKER = 'OIDC_VERIFIED_USER';
+    public const OIDC_TOKEN_MARKER = 'OIDC_VERIFIED_USER';
 
     /**
      * @var UserFactory
@@ -318,6 +318,7 @@ class OidcCredentialAdapter implements StorageInterface
     public function __wakeup()
     {
         // Dependencies will be restored lazily by restoreDependencies()
+        // No explicit action required here (keeps method non-empty for linters)
     }
 
     /**
@@ -334,7 +335,7 @@ class OidcCredentialAdapter implements StorageInterface
         // Don't check method_exists() because User model has magic methods (__call)
         // that handle getters/setters like getReloadAclFlag()
         if ($this->user) {
-            return call_user_func_array([$this->user, $method], $args);
+            return $this->user->{$method}(...$args);
         }
 
         // If no user, throw exception

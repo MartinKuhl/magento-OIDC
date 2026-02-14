@@ -147,7 +147,7 @@ class JwtVerifier
      */
     private function fetchJwks(string $jwksUrl): ?array
     {
-        $cacheKey = 'mooauth_jwks_' . md5($jwksUrl);
+        $cacheKey = 'mooauth_jwks_' . hash('sha256', $jwksUrl);
         $cached = $this->cache->load($cacheKey);
         if ($cached) {
             $cachedData = json_decode($cached, true);
@@ -292,11 +292,11 @@ class JwtVerifier
     private function asn1Length(int $length): string
     {
         if ($length < 0x80) {
-            return chr($length);
+            return pack('C', $length);
         }
 
         $temp = ltrim(pack('N', $length), "\x00");
-        return chr(0x80 | strlen($temp)) . $temp;
+        return pack('C', 0x80 | strlen($temp)) . $temp;
     }
 
     /**

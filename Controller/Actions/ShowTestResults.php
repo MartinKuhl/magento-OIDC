@@ -44,8 +44,8 @@ class ShowTestResults extends Action
     /** @var ScopeConfigInterface */
     protected $scopeConfig;
 
-    /** @var \Magento\Framework\Escaper|null */
-    private $escaper;
+    /** @var \Magento\Framework\Escaper */
+    private \Magento\Framework\Escaper $escaper;
 
     /** @var \Magento\Customer\Model\Session */
     private $customerSession;
@@ -147,7 +147,7 @@ class ShowTestResults extends Action
 
         // Tracking für MiniOrange
         $timeStamp = $this->oauthUtility->getStoreConfig(OAuthConstants::TIME_STAMP);
-        if ($timeStamp == null) {
+        if ($timeStamp === null) {
             $timeStamp = time();
             $this->oauthUtility->setStoreConfig(OAuthConstants::TIME_STAMP, $timeStamp);
 
@@ -200,7 +200,7 @@ class ShowTestResults extends Action
         $this->template = str_replace("{{header}}", $header, $this->template);
 
         // Add error body
-        $escapedError = $this->escaper ? $this->escaper->escapeHtml($errorMessage) : htmlspecialchars($errorMessage, ENT_QUOTES, 'UTF-8');
+        $escapedError = $this->escaper->escapeHtml($errorMessage);
         $errorBodyContent = str_replace("{{error_message}}", $escapedError, $this->errorBody);
         $this->template = str_replace("{{commonbody}}", $errorBodyContent, $this->template);
 
@@ -225,7 +225,7 @@ class ShowTestResults extends Action
     private function processTemplateContent()
     {
         $greet = $this->greetingName ?? '';
-        $greetEscaped = $this->escaper ? $this->escaper->escapeHtml($greet) : htmlspecialchars($greet, ENT_QUOTES, 'UTF-8');
+        $greetEscaped = $this->escaper->escapeHtml($greet);
         $this->commonBody = str_replace("{{greeting_name}}", $greetEscaped, $this->commonBody);
         $tableContent = !array_filter($this->attrs ?? []) ? "No Attributes Received." : $this->getTableContent();
         //$this->oauthUtility->customlog("ShowTestResultsAction: attribute" . json_encode($this->attrs));
@@ -242,9 +242,9 @@ class ShowTestResults extends Action
                     $value = [$value];
                 }
                 if (!in_array(null, $value)) {
-                    $escapedKey = $this->escaper ? $this->escaper->escapeHtml((string)$key) : htmlspecialchars((string)$key, ENT_QUOTES, 'UTF-8');
+                    $escapedKey = $this->escaper->escapeHtml((string)$key);
                     $escapedValues = array_map(
-                        fn($v) => $this->escaper ? $this->escaper->escapeHtml((string)$v) : htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'),
+                        fn($v) => $this->escaper->escapeHtml((string)$v),
                         $value
                     );
                     $tableContent .= str_replace("{{key}}", $escapedKey, str_replace(
@@ -377,7 +377,9 @@ class ShowTestResults extends Action
             // Skip indexed arrays (like arrays of values)
             if (is_array($value) && !empty($value) && !isset($value[0])) {
                 $nestedKeys = $this->extractClaimKeys($value, $fullKey);
-                $keys = array_merge($keys, $nestedKeys);
+                foreach ($nestedKeys as $nk) {
+                    $keys[] = $nk;
+                }
             }
         }
         return $keys;

@@ -7,98 +7,98 @@ namespace MiniOrange\OAuth\Helper;
  */
 class OAuthConstants
 {
-    const MODULE_DIR = 'MiniOrange_OAuth';
-    const MODULE_TITLE = 'Authelia OIDC';
+    public const MODULE_DIR = 'MiniOrange_OAuth';
+    public const MODULE_TITLE = 'Authelia OIDC';
 
     //ACL Settings
-    const MODULE_OAUTHSETTINGS = '::oauth_settings';
-    const MODULE_SIGNIN = '::signin_settings';
-    const MODULE_ATTR = '::attr_settings';
+    public const MODULE_OAUTHSETTINGS = '::oauth_settings';
+    public const MODULE_SIGNIN = '::signin_settings';
+    public const MODULE_ATTR = '::attr_settings';
 
-    const MODULE_IMAGES = '::images/';
-    const MODULE_CERTS = '::certs/';
-    const MODULE_CSS = '::css/';
-    const MODULE_JS = '::js/';
-    const MODULE_METADATA = '::metadata/metadata.xml';
-    const ISSUER_URL_PATH = '/';
+    public const MODULE_IMAGES = '::images/';
+    public const MODULE_CERTS = '::certs/';
+    public const MODULE_CSS = '::css/';
+    public const MODULE_JS = '::js/';
+    public const MODULE_METADATA = '::metadata/metadata.xml';
+    public const ISSUER_URL_PATH = '/';
 
     // request option parameter values
-    const TEST_CONFIG_OPT = 'mooauth_test';
+    public const TEST_CONFIG_OPT = 'mooauth_test';
 
     //database keys
 
-    const APP_NAME = 'appName';
-    const CLIENT_ID = 'clientID';
-    const CLIENT_SECRET = 'clientSecret';
-    const SCOPE = 'scope';
-    const AUTHORIZE_URL = 'authorizeURL';
-    const ACCESSTOKEN_URL = 'accessTokenURL';
-    const GETUSERINFO_URL = 'getUserInfoURL';
-    const OAUTH_LOGOUT_URL = 'oauthLogoutURL';
+    public const APP_NAME = 'appName';
+    public const CLIENT_ID = 'clientID';
+    public const CLIENT_SECRET = 'clientSecret';
+    public const SCOPE = 'scope';
+    public const AUTHORIZE_URL = 'authorizeURL';
+    public const ACCESSTOKEN_URL = 'accessTokenURL';
+    public const GETUSERINFO_URL = 'getUserInfoURL';
+    public const OAUTH_LOGOUT_URL = 'oauthLogoutURL';
 
-    const TEST_RELAYSTATE = 'testvalidate';
-    const MAP_MAP_BY = 'amAccountMatcher';
-    const DEFAULT_MAP_BY = 'email';
-    const DEFAULT_GROUP = 'General';
-    const SEND_HEADER = 'header';
-    const SEND_BODY = 'body';
-    const ENDPOINT_URL = 'endpoint_url';
+    public const TEST_RELAYSTATE = 'testvalidate';
+    public const MAP_MAP_BY = 'amAccountMatcher';
+    public const DEFAULT_MAP_BY = 'email';
+    public const DEFAULT_GROUP = 'General';
+    public const SEND_HEADER = 'header';
+    public const SEND_BODY = 'body';
+    public const ENDPOINT_URL = 'endpoint_url';
 
-    const X509CERT = 'certificate';
-    const JWKS_URL = 'jwks_url';
-    const ISSUER = 'samlIssuer';
-    const DB_FIRSTNAME = 'firstname';
-    const USER_NAME = 'username';
-    const DB_LASTNAME = 'lastname';
-    const SHOW_ADMIN_LINK = 'showadminlink';
-    const SHOW_CUSTOMER_LINK = 'showcustomerlink';
-    const BUTTON_TEXT = 'buttonText';
-    const IS_TEST = 'isTest';
-    const AUTO_CREATE_ADMIN = 'autoCreateAdmin';
-    const AUTO_CREATE_CUSTOMER = 'autoCreateCustomer';
-    const ENABLE_LOGIN_REDIRECT = 'enableLoginRedirect';
-    const DISABLE_NON_OIDC_ADMIN_LOGIN = 'disableNonOidcAdminLogin';
+    public const X509CERT = 'certificate';
+    public const JWKS_URL = 'jwks_url';
+    public const ISSUER = 'samlIssuer';
+    public const DB_FIRSTNAME = 'firstname';
+    public const USER_NAME = 'username';
+    public const DB_LASTNAME = 'lastname';
+    public const SHOW_ADMIN_LINK = 'showadminlink';
+    public const SHOW_CUSTOMER_LINK = 'showcustomerlink';
+    public const BUTTON_TEXT = 'buttonText';
+    public const IS_TEST = 'isTest';
+    public const AUTO_CREATE_ADMIN = 'autoCreateAdmin';
+    public const AUTO_CREATE_CUSTOMER = 'autoCreateCustomer';
+    public const ENABLE_LOGIN_REDIRECT = 'enableLoginRedirect';
+    public const DISABLE_NON_OIDC_ADMIN_LOGIN = 'disableNonOidcAdminLogin';
 
     // Login type constants for differentiating admin vs customer OIDC login
-    const LOGIN_TYPE_CUSTOMER = 'customer';
-    const LOGIN_TYPE_ADMIN = 'admin';
+    public const LOGIN_TYPE_CUSTOMER = 'customer';
+    public const LOGIN_TYPE_ADMIN = 'admin';
 
     // attribute mapping constants
     // extend as needed
-    const MAP_EMAIL = 'amEmail';
-    const DEFAULT_MAP_EMAIL = 'email';
-    const MAP_USERNAME = 'amUsername';
-    const DEFAULT_MAP_USERN = 'username';
-    const MAP_FIRSTNAME = 'amFirstName';
-    const DEFAULT_MAP_FN = 'firstName';
-    const DEFAULT_MAP_LN = 'lastName';
-    const MAP_LASTNAME = 'amLastName';
-    const MAP_DEFAULT_ROLE = 'defaultRole';
-    const DEFAULT_ROLE = 'General';
-    const MAP_GROUP = 'group';
-    const UNLISTED_ROLE = 'unlistedRole';
-    const CREATEIFNOTMAP = 'createUserIfRoleNotMapped';
+    public const MAP_EMAIL = 'amEmail';
+    public const DEFAULT_MAP_EMAIL = 'email';
+    public const MAP_USERNAME = 'amUsername';
+    public const DEFAULT_MAP_USERN = 'username';
+    public const MAP_FIRSTNAME = 'amFirstName';
+    public const DEFAULT_MAP_FN = 'firstName';
+    public const DEFAULT_MAP_LN = 'lastName';
+    public const MAP_LASTNAME = 'amLastName';
+    public const MAP_DEFAULT_ROLE = 'defaultRole';
+    public const DEFAULT_ROLE = 'General';
+    public const MAP_GROUP = 'group';
+    public const UNLISTED_ROLE = 'unlistedRole';
+    public const CREATEIFNOTMAP = 'createUserIfRoleNotMapped';
 
     // Customer data attribute mapping constants
-    const MAP_DOB = 'amDob';
-    const DEFAULT_MAP_DOB = 'birthdate';
-    const MAP_GENDER = 'amGender';
-    const DEFAULT_MAP_GENDER = 'gender';
-    const MAP_PHONE = 'amPhone';
-    const DEFAULT_MAP_PHONE = 'phone_number';
-    const MAP_STREET = 'amStreet';
-    const DEFAULT_MAP_STREET = 'address.street_address';
-    const MAP_ZIP = 'amZip';
-    const DEFAULT_MAP_ZIP = 'address.postal_code';
-    const MAP_CITY = 'amCity';
-    const DEFAULT_MAP_CITY = 'address.locality';
-    const MAP_STATE = 'amState';
-    const DEFAULT_MAP_STATE = 'address.region';
-    const MAP_COUNTRY = 'amCountry';
-    const DEFAULT_MAP_COUNTRY = 'address.country';
+    public const MAP_DOB = 'amDob';
+    public const DEFAULT_MAP_DOB = 'birthdate';
+    public const MAP_GENDER = 'amGender';
+    public const DEFAULT_MAP_GENDER = 'gender';
+    public const MAP_PHONE = 'amPhone';
+    public const DEFAULT_MAP_PHONE = 'phone_number';
+    public const MAP_STREET = 'amStreet';
+    public const DEFAULT_MAP_STREET = 'address.street_address';
+    public const MAP_ZIP = 'amZip';
+    public const DEFAULT_MAP_ZIP = 'address.postal_code';
+    public const MAP_CITY = 'amCity';
+    public const DEFAULT_MAP_CITY = 'address.locality';
+    public const MAP_STATE = 'amState';
+    public const DEFAULT_MAP_STATE = 'address.region';
+    public const MAP_COUNTRY = 'amCountry';
+    public const DEFAULT_MAP_COUNTRY = 'address.country';
 
     // Standard OIDC Claims for dropdown selection in admin UI
-    const OIDC_STANDARD_CLAIMS = [
+    public const OIDC_STANDARD_CLAIMS = [
         'sub',
         'name',
         'given_name',
@@ -127,38 +127,38 @@ class OAuthConstants
     ];
 
     // Stores received OIDC claims from Test Configuration
-    const RECEIVED_OIDC_CLAIMS = 'receivedOidcClaims';
+    public const RECEIVED_OIDC_CLAIMS = 'receivedOidcClaims';
 
     //URLs
-    const OAUTH_LOGIN_URL = 'mooauth/actions/sendAuthorizationRequest';
+    public const OAUTH_LOGIN_URL = 'mooauth/actions/sendAuthorizationRequest';
 
     //images
-    const IMAGE_RIGHT = 'right.png';
-    const IMAGE_WRONG = 'wrong.png';
+    public const IMAGE_RIGHT = 'right.png';
+    public const IMAGE_WRONG = 'wrong.png';
 
-    const CALLBACK_URL = 'mooauth/actions/ReadAuthorizationResponse';
-    const CODE = 'code';
-    const GRANT_TYPE = 'authorization_code';
+    public const CALLBACK_URL = 'mooauth/actions/ReadAuthorizationResponse';
+    public const CODE = 'code';
+    public const GRANT_TYPE = 'authorization_code';
 
     //OAUTH Constants
-    const OAUTH = 'OAUTH';
-    const HTTP_REDIRECT = 'HttpRedirect';
+    public const OAUTH = 'OAUTH';
+    public const HTTP_REDIRECT = 'HttpRedirect';
 
     //Registration Status
-    const STATUS_VERIFY_LOGIN = "MO_VERIFY_CUSTOMER";
-    const STATUS_COMPLETE_LOGIN = "MO_VERIFIED";
+    public const STATUS_VERIFY_LOGIN = "MO_VERIFY_CUSTOMER";
+    public const STATUS_COMPLETE_LOGIN = "MO_VERIFIED";
 
     //plugin constants
-    const VERSION = "v4.2.0";
-    const MAGENTO_COUNTER = "magento_count";
+    public const VERSION = "v4.2.0";
+    public const MAGENTO_COUNTER = "magento_count";
 
     //Debug log
-    const ENABLE_DEBUG_LOG = 'debug_log';
-    const LOG_FILE_TIME = 'log_file_time';
-    const SEND_EMAIL = 'send_email';
-    const SEND_EMAIL_CORE_CONFIG_DATA = 'send_email_config_data';
-    const ADMINEMAIL = 'admin_email';
-    const PLUGIN_VERSION = 'v4.2.0';
-    const TIME_STAMP = 'time_stamp';
-    const CUSTOMER_EMAIL = 'email';
+    public const ENABLE_DEBUG_LOG = 'debug_log';
+    public const LOG_FILE_TIME = 'log_file_time';
+    public const SEND_EMAIL = 'send_email';
+    public const SEND_EMAIL_CORE_CONFIG_DATA = 'send_email_config_data';
+    public const ADMINEMAIL = 'admin_email';
+    public const PLUGIN_VERSION = 'v4.2.0';
+    public const TIME_STAMP = 'time_stamp';
+    public const CUSTOMER_EMAIL = 'email';
 }

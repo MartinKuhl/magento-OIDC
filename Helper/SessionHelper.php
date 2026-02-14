@@ -71,9 +71,8 @@ class SessionHelper
     public function updateSessionCookies()
     {
         try {
-            // Check if the session is active
-            $isSessionActive = (session_status() == PHP_SESSION_ACTIVE);
-            $sessionName = session_name();
+            // Obtain configured session name without using session_* functions
+            $sessionName = ini_get('session.name') ?: 'PHPSESSID';
 
             // Handle the frontend session cookie (/ path)
             $cookieValue = $this->cookieManager->getCookie($sessionName);
@@ -128,14 +127,11 @@ class SessionHelper
     public function forceSameSiteNone()
     {
         try {
-            if (session_status() !== PHP_SESSION_ACTIVE) {
-                return;
-            }
+            // Avoid direct session_* usage — prefer CookieManager for cookie access
+            $sessionName = ini_get('session.name') ?: 'PHPSESSID';
+            $sessionId = $this->cookieManager->getCookie($sessionName);
 
-            $sessionName = session_name();
-            $sessionId = session_id();
-
-            if (empty($sessionId) || $this->cookieManager->getCookie($sessionName) === null) {
+            if (empty($sessionId)) {
                 return;
             }
 

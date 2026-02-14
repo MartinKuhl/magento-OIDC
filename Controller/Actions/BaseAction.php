@@ -14,7 +14,10 @@ use MiniOrange\OAuth\Helper\Exception\RequiredFieldsException;
 abstract class BaseAction extends \Magento\Framework\App\Action\Action
 {
 
+    /** @var \MiniOrange\OAuth\Helper\OAuthUtility */
     protected $oauthUtility;
+
+    /** @var \Magento\Framework\App\Action\Context */
     protected $context;
 
     public function __construct(
@@ -67,9 +70,10 @@ abstract class BaseAction extends \Magento\Framework\App\Action\Action
      * set as HTTP Redirect. Http Redirect is the default way Authn Request
      * is sent. Function also generates the signature and appends it in the
      * parameter as well along with the relayState parameter
-     * @param $samlRequest
-     * @param $sendRelayState
-     * @param $idpUrl
+    * @param string $oauthRequest Full authorize URL or query string
+    * @param string $authorizeUrl Base authorize URL to prepend
+    * @param string $relayState Optional relay state to include
+    * @param array $params Additional parameters (unused)
      */
     protected function sendHTTPRedirectRequest($oauthRequest, $authorizeUrl, $relayState = '', $params = [])
     {

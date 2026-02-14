@@ -22,12 +22,13 @@ use Magento\Framework\Controller\ResultFactory;
  *
  * All logging respects the plugin's logging configuration and writes to
  * var/log/mo_oauth.log when enabled.
-
-
  */
 class CheckAttributeMappingAction extends BaseAction
 {
-    const TEST_VALIDATE_RELAYSTATE = OAuthConstants::TEST_RELAYSTATE;
+    /**
+     * Constant for validating the relay state during tests.
+     */
+    private const TEST_VALIDATE_RELAYSTATE = OAuthConstants::TEST_RELAYSTATE;
 
     /** @var array|null Raw userinfo response from provider */
     private $userInfoResponse;
@@ -76,6 +77,12 @@ class CheckAttributeMappingAction extends BaseAction
 
     /** @var \Magento\Backend\Model\UrlInterface */
     protected $backendUrl;
+    
+    /** @var \Magento\Authorization\Model\ResourceModel\Role\Collection */
+    protected $roleCollection;
+
+    /** @var \Magento\Framework\Math\Random */
+    protected $randomUtility;
 
     /** @var AdminUserCreator */
     protected $adminUserCreator;
@@ -104,6 +111,8 @@ class CheckAttributeMappingAction extends BaseAction
      * @param \Magento\Backend\Model\UrlInterface $backendUrl
      * @param \Magento\Authorization\Model\ResourceModel\Role\Collection $roleCollection
      * @param \Magento\Framework\Math\Random $randomUtility
+     * @param AdminUserCreator $adminUserCreator
+     * @param \Magento\Customer\Model\Session $customerSession
      */
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
@@ -112,6 +121,8 @@ class CheckAttributeMappingAction extends BaseAction
         \MiniOrange\OAuth\Controller\Actions\ProcessUserAction $processUserAction,
         \Magento\User\Model\UserFactory $userFactory,
         \Magento\Backend\Model\UrlInterface $backendUrl,
+        \Magento\Authorization\Model\ResourceModel\Role\Collection $roleCollection,
+        \Magento\Framework\Math\Random $randomUtility,
         AdminUserCreator $adminUserCreator,
         \Magento\Customer\Model\Session $customerSession,
         \MiniOrange\OAuth\Controller\Actions\ShowTestResults $testAction,
@@ -150,6 +161,8 @@ class CheckAttributeMappingAction extends BaseAction
         $this->processUserAction = $processUserAction;
         $this->userFactory = $userFactory;
         $this->backendUrl = $backendUrl;
+        $this->roleCollection = $roleCollection;
+        $this->randomUtility = $randomUtility;
         $this->adminUserCreator = $adminUserCreator;
         $this->customerSession = $customerSession;
         $this->securityHelper = $securityHelper;
@@ -230,7 +243,8 @@ class CheckAttributeMappingAction extends BaseAction
                     $adminLastName = $flattenedAttrs[$this->lastName] ?? null;
                     $adminUserName = $flattenedAttrs[$this->usernameAttribute] ?? $userEmail;
 
-                    $this->oauthUtility->customlog("Mapped attributes - userName: $adminUserName, firstName: $adminFirstName, lastName: $adminLastName");
+                        $mappedLog = sprintf('Mapped attributes - userName: %s, firstName: %s, lastName: %s', $adminUserName, $adminFirstName, $adminLastName);
+                        $this->oauthUtility->customlog($mappedLog);
 
                     // Get groups from OIDC response
                     $groupAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_GROUP);
@@ -241,7 +255,8 @@ class CheckAttributeMappingAction extends BaseAction
                             $userGroups = [$userGroups];
                         }
                     }
-                    $this->oauthUtility->customlog("User groups from OIDC: " . json_encode($userGroups));
+                    $groupsJson = json_encode($userGroups);
+                    $this->oauthUtility->customlog("User groups from OIDC: " . $groupsJson);
 
                     // Create the admin user via Service
                     $adminUser = $this->adminUserCreator->createAdminUser($userEmail, $adminUserName, $adminFirstName, $adminLastName, $userGroups);
@@ -376,6 +391,7 @@ class CheckAttributeMappingAction extends BaseAction
 
     /**
      * Process first name attribute
+     *
      * Falls back to email prefix if not provided
      *
      * @param array $attrs Attribute array
@@ -391,6 +407,7 @@ class CheckAttributeMappingAction extends BaseAction
 
     /**
      * Process last name attribute
+     *
      * Falls back to email domain if not provided
      *
      * @param array $attrs Attribute array
@@ -406,6 +423,7 @@ class CheckAttributeMappingAction extends BaseAction
 
     /**
      * Process username attribute
+     *
      * Falls back to email if not provided
      *
      * @param array $attrs Attribute array
@@ -420,6 +438,7 @@ class CheckAttributeMappingAction extends BaseAction
 
     /**
      * Process email attribute
+     *
      * Falls back to userEmail if not provided
      *
      * @param array $attrs Attribute array
@@ -434,6 +453,7 @@ class CheckAttributeMappingAction extends BaseAction
 
     /**
      * Process group/role name attribute
+     *
      * Defaults to empty array if not provided
      *
      * @param array $attrs Attribute array
@@ -551,15 +571,20 @@ class CheckAttributeMappingAction extends BaseAction
                 'timestamp' => date('Y-m-d H:i:s'),
                 'raw_attributes' => $filteredUserInfo,
                 'flattened_attributes' => $filteredAttrs,
-                'email_found' => isset($filteredAttrs[$this->emailAttribute]) ? $filteredAttrs[$this->emailAttribute] : null,
-                'username_found' => isset($filteredAttrs[$this->usernameAttribute]) ? $filteredAttrs[$this->usernameAttribute] : null
+                'email_found' => isset($filteredAttrs[$this->emailAttribute])
+                    ? $filteredAttrs[$this->emailAttribute]
+                    : null,
+                'username_found' => isset($filteredAttrs[$this->usernameAttribute])
+                    ? $filteredAttrs[$this->usernameAttribute]
+                    : null,
             ];
 
             $json = json_encode($debugData);
             if (strlen($json) <= 8192) {
                 $this->customerSession->setData('mo_oauth_debug_response', $json);
             } else {
-                $this->oauthUtility->customlog("Debug data too large for session (" . strlen($json) . " bytes), skipping");
+                $sizeMsg = 'Debug data too large for session (' . strlen($json) . " bytes), skipping";
+                $this->oauthUtility->customlog($sizeMsg);
             }
 
             $this->oauthUtility->customlog("Debug data (filtered) saved to session");

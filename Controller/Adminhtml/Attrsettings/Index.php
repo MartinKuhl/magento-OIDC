@@ -77,8 +77,6 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         $resultPage->getConfig()->getTitle()->prepend(__('MiniOrange OAuth'));
         return $resultPage;
     }
-
-
     /**
      * Process Values being submitted and save data in the database.
      *
@@ -117,8 +115,9 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
             $roleMappings = array_filter($params['oauth_role_mapping'], function ($mapping) {
                 return !empty($mapping['group']) && !empty($mapping['role']);
             });
-            $this->oauthUtility->setStoreConfig('adminRoleMapping', json_encode(array_values($roleMappings)), true);
-            $this->oauthUtility->customlog("Saved admin role mappings: " . json_encode(array_values($roleMappings)));
+            $roleMappingsJson = json_encode(array_values($roleMappings));
+            $this->oauthUtility->setStoreConfig('adminRoleMapping', $roleMappingsJson, true);
+            $this->oauthUtility->customlog('Saved admin role mappings: ' . $roleMappingsJson);
         }
 
         // Save customer data mapping fields (directly from dropdown selection)

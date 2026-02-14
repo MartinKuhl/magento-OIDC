@@ -6,19 +6,26 @@ use Magento\Customer\Model\Session;
 use Magento\Framework\Escaper;
 
 /**
- * This class is used to denote our admin block for all our
- * backend templates. This class has certain commmon
- * functions which can be called from our admin template pages.
+ * Admin block providing utility methods for OAuth/OIDC templates.
  */
 class OAuth extends \Magento\Framework\View\Element\Template
 {
-
-
+    /** @var \MiniOrange\OAuth\Helper\OAuthUtility */
     private $oauthUtility;
+
+    /** @var \Magento\Authorization\Model\ResourceModel\Role\Collection */
     private $adminRoleModel;
+
+    /** @var \Magento\Customer\Model\ResourceModel\Group\Collection */
     private $userGroupModel;
+
+    /** @var Session */
     protected $customerSession;
+
+    /** @var Escaper */
     protected $escaper;
+
+    /** @var \Magento\Framework\Data\Form\FormKey */
     protected $_formKey;
 
     public function __construct(
@@ -40,36 +47,72 @@ class OAuth extends \Magento\Framework\View\Element\Template
         parent::__construct($context, $data);
     }
 
-    public function getCustomerSession()  // Returns the customer session
+    /**
+     * Get customer session
+     *
+     * @return Session
+     */
+    public function getCustomerSession()
     {
         return $this->customerSession;
     }
 
-    public function escapeHtml($data, $allowedTags = null)        // Escapes HTML to prevent XSS
+    /**
+     * Escape HTML to prevent XSS
+     *
+     * @param string $data
+     * @param string|null $allowedTags
+     * @return string
+     */
+    public function escapeHtml($data, $allowedTags = null)
     {
         return $this->escaper->escapeHtml($data, $allowedTags);
     }
 
 
-    public function escapeHtmlAttr($string, $escapeSingleQuote = true)      // Escapes strings for HTML attributes
+    /**
+     * Escape string for HTML attribute
+     *
+     * @param string $string
+     * @param bool $escapeSingleQuote
+     * @return string
+     */
+    public function escapeHtmlAttr($string, $escapeSingleQuote = true)
     {
         return $this->escaper->escapeHtmlAttr($string, $escapeSingleQuote);
     }
 
 
-    public function escapeUrl($string)    // Escapes URLs to make them safe
+    /**
+     * Escape URL
+     *
+     * @param string $string
+     * @return string
+     */
+    public function escapeUrl($string)
     {
         return $this->escaper->escapeUrl($string);
     }
 
+    /**
+     * Escape JavaScript string
+     *
+     * @param string $string
+     * @return string
+     */
     public function escapeJs($string)
     {
         return $this->escaper->escapeJs($string);
     }
 
+    /**
+     * Get CSRF form key
+     *
+     * @return string
+     */
     public function getFormKey()
     {
-        return $this->_formKey->getFormKey(); // _formKey injected via constructor
+        return $this->_formKey->getFormKey();
     }
 
 

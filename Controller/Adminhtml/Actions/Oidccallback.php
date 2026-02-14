@@ -15,16 +15,14 @@ use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
 /**
  * OIDC Callback Controller for Admin Login
  *
- * This controller handles admin user login after successful OIDC authentication.
- * It does NOT extend Backend\App\Action to avoid authentication middleware,
- * allowing unauthenticated access for the login process itself.
+ * Handles admin user login after successful OIDC authentication. This
+ * controller intentionally avoids extending Backend\App\Action so the
+ * login endpoint can be accessed without prior authentication.
  *
- * All logging is done via OAuthUtility to respect the plugin's logging configuration.
- * Logs are written to var/log/mo_oauth.log when logging is enabled.
+ * Logging goes through `OAuthUtility` and is written to
+ * `var/log/mo_oauth.log` when enabled.
  *
- * Security: Only authenticates users that exist in the admin_user table
- * and are marked as active.
- *
+ * Security: only authenticate users that exist in `admin_user` and are active.
  */
 class Oidccallback implements ActionInterface, HttpGetActionInterface
 {
@@ -63,6 +61,8 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
 
     /** @var \Magento\Framework\App\Config\ScopeConfigInterface */
     private $scopeConfig;
+    /** @var \Magento\User\Model\ResourceModel\User\CollectionFactory */
+    protected $userCollectionFactory;
 
     public function __construct(
         \Magento\User\Model\UserFactory $userFactory,
@@ -76,6 +76,7 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
         CookieMetadataFactory $cookieMetadataFactory,
         BackendUrlInterface $backendUrl,
         OAuthSecurityHelper $securityHelper,
+        \Magento\User\Model\ResourceModel\User\CollectionFactory $userCollectionFactory,
         \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
     ) {
         $this->userFactory = $userFactory;
@@ -89,6 +90,7 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
         $this->cookieMetadataFactory = $cookieMetadataFactory;
         $this->backendUrl = $backendUrl;
         $this->securityHelper = $securityHelper;
+        $this->userCollectionFactory = $userCollectionFactory;
         $this->scopeConfig = $scopeConfig;
     }
 
@@ -131,8 +133,8 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
         try {
             $this->oauthUtility->customlog("Searching for admin user with email: " . $email);
 
-            // Find admin user by email
-            $userCollection = $this->userFactory->create()->getCollection()
+            // Find admin user by email using collection factory (avoid getCollection on model)
+            $userCollection = $this->userCollectionFactory->create()
                 ->addFieldToFilter('email', $email);
 
             if ($userCollection->getSize() === 0) {
