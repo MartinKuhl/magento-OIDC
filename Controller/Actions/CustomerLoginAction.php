@@ -2,8 +2,9 @@
 
 namespace MiniOrange\OAuth\Controller\Actions;
 
-use Magento\Customer\Model\Session;
+use Magento\Customer\Api\CustomerRepositoryInterface;
 use Magento\Customer\Model\CustomerFactory;
+use Magento\Customer\Model\Session;
 use Magento\Framework\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
 use Magento\Framework\App\ResponseFactory;
@@ -38,6 +39,11 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
     private $securityHelper;
 
     /**
+     * @var CustomerRepositoryInterface
+     */
+    private $customerRepository;
+
+    /**
      * @var CustomerFactory
      */
     private $customerFactory;
@@ -48,11 +54,13 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
         Session $customerSession,
         ResponseFactory $responseFactory,
         OAuthSecurityHelper $securityHelper,
+        CustomerRepositoryInterface $customerRepository,
         CustomerFactory $customerFactory
     ) {
         $this->customerSession = $customerSession;
         $this->responseFactory = $responseFactory;
         $this->securityHelper = $securityHelper;
+        $this->customerRepository = $customerRepository;
         $this->customerFactory = $customerFactory;
         parent::__construct($context, $oauthUtility);
     }
@@ -60,6 +68,8 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
 
     /**
      * Execute function to execute the classes function.
+     *
+     * @return \Magento\Framework\Controller\Result\Redirect
      */
     public function execute()
     {
@@ -83,8 +93,12 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
             $this->relayState = $this->oauthUtility->getBaseUrl() . 'customer/account';
         }
 
-        $customerModel = $this->customerFactory->create()->load($this->user->getId());
+        // Service Contract: Customer über Repository laden (Data-Model → Entity-Model)
+        $customerData = $this->customerRepository->getById($this->user->getId());
+        $customerModel = $this->customerFactory->create();
+        $customerModel->updateData($customerData);
         $this->customerSession->setCustomerAsLoggedIn($customerModel);
+
         $safeRelayState = $this->securityHelper->validateRedirectUrl(
             $this->relayState,
             $this->oauthUtility->getBaseUrl() . 'customer/account'
