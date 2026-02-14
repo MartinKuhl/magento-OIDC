@@ -67,8 +67,8 @@ class OAuthUtility extends Data
         \Magento\Customer\Model\ResourceModel\Customer $customerResource,
         DateTime $dateTime,
         DirectoryList $directoryList,
-        \Magento\Framework\Encryption\EncryptorInterface $encryptor
-        ,\Magento\Framework\Escaper $escaper
+        \Magento\Framework\Encryption\EncryptorInterface $encryptor,
+        \Magento\Framework\Escaper $escaper
     ) {
         $this->adminSession = $adminSession;
         $this->customerSession = $customerSession;
@@ -96,8 +96,8 @@ class OAuthUtility extends Data
             $appResource,
             $userResource,
             $customerResource,
-            $encryptor
-            ,$escaper
+            $encryptor,
+            $escaper
         );
     }
 
