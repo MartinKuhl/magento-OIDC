@@ -60,8 +60,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
     /**
      * Escape HTML to prevent XSS
      *
-    * @param array<array-key, mixed>|string $data
-    * @param array<array-key, mixed>|null|string $allowedTags Allowed tags as array or string (e.g. "<b><i>")
+     * @param array<array-key, mixed>|string $data
+     * @param array<array-key, mixed>|null|string $allowedTags Allowed tags as array or string (e.g. "<b><i>")
      * @return array<array-key, mixed>|string
      */
     public function escapeHtml($data, $allowedTags = null)
