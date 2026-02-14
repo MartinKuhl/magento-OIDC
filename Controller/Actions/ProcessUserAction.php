@@ -316,23 +316,6 @@ class ProcessUserAction
         return $customer->getId() !== null ? $customer : false;
     }
 
-    public function setAttrs($attrs)
-    {
-        $this->attrs = $attrs;
-        return $this;
-    }
-
-    public function setFlattenedAttrs($flattenedattrs)
-    {
-        $this->flattenedattrs = $flattenedattrs;
-        return $this;
-    }
-
-    public function setUserEmail($userEmail)
-    {
-        $this->userEmail = $userEmail;
-        return $this;
-    }
 
     /**
      * Set raw attribute array received from OIDC provider.
