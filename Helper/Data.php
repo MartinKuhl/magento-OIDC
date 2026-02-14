@@ -58,6 +58,11 @@ class Data extends AbstractHelper
     protected $_miniorangeOauthClientAppsFactory;
 
     /**
+     * @var \MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps\CollectionFactory
+     */
+    protected $clientCollectionFactory;
+
+    /**
      * @var \MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps
      */
     protected $appResource;
@@ -92,6 +97,7 @@ class Data extends AbstractHelper
         \Magento\Backend\Helper\Data $helperBackend,
         \Magento\Framework\Url $frontendUrl,
         \MiniOrange\OAuth\Model\MiniorangeOauthClientAppsFactory $miniorangeOauthClientAppsFactory,
+        \MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps\CollectionFactory $clientCollectionFactory,
         \MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps $appResource,
         \Magento\User\Model\ResourceModel\User $userResource,
         \Magento\Customer\Model\ResourceModel\Customer $customerResource,
@@ -107,6 +113,7 @@ class Data extends AbstractHelper
         $this->helperBackend = $helperBackend;
         $this->frontendUrl = $frontendUrl;
         $this->_miniorangeOauthClientAppsFactory = $miniorangeOauthClientAppsFactory;
+        $this->clientCollectionFactory = $clientCollectionFactory;
         $this->appResource = $appResource;
         $this->userResource = $userResource;
         $this->customerResource = $customerResource;
@@ -170,9 +177,8 @@ class Data extends AbstractHelper
      */
     public function deleteAllRecords()
     {
-        $this->_miniorangeOauthClientAppsFactory
+        $this->clientCollectionFactory
             ->create()
-            ->getCollection()
             ->walk('delete');
     }
     /**
@@ -180,9 +186,7 @@ class Data extends AbstractHelper
      */
     public function getOAuthClientApps()
     {
-        $model = $this->_miniorangeOauthClientAppsFactory->create();
-        $collection = $model->getCollection();
-        return $collection;
+        return $this->clientCollectionFactory->create();
     }
 
     /**
@@ -237,7 +241,8 @@ class Data extends AbstractHelper
                 $collection = $this->getOAuthClientApps();
                 if ($collection && count($collection) > 0) {
                     foreach ($collection as $item) {
-                        $model = $this->_miniorangeOauthClientAppsFactory->create()->load($item->getId());
+                        $model = $this->_miniorangeOauthClientAppsFactory->create();
+                        $this->appResource->load($model, $item->getId());
                         $model->setData($config, $finalValue);
                         $this->appResource->save($model);
                     }
@@ -274,7 +279,9 @@ class Data extends AbstractHelper
      */
     public function getAdminStoreConfig($config, $id)
     {
-        return $this->adminFactory->create()->load($id)->getData($config);
+        $model = $this->adminFactory->create();
+        $this->userResource->load($model, $id);
+        return $model->getData($config);
     }
 
 
@@ -291,7 +298,9 @@ class Data extends AbstractHelper
     private function saveAdminStoreConfig($url, $value, $id)
     {
         $data = [$url => $value];
-        $model = $this->adminFactory->create()->load($id)->addData($data);
+        $model = $this->adminFactory->create();
+        $this->userResource->load($model, $id);
+        $model->addData($data);
         $model->setId($id);
         $this->userResource->save($model);
     }
@@ -305,7 +314,9 @@ class Data extends AbstractHelper
      */
     public function getCustomerStoreConfig($config, $id)
     {
-        return $this->customerFactory->create()->load($id)->getData($config);
+        $model = $this->customerFactory->create();
+        $this->customerResource->load($model, $id);
+        return $model->getData($config);
     }
 
 
@@ -322,7 +333,9 @@ class Data extends AbstractHelper
     private function saveCustomerStoreConfig($url, $value, $id)
     {
         $data = [$url => $value];
-        $model = $this->customerFactory->create()->load($id)->addData($data);
+        $model = $this->customerFactory->create();
+        $this->customerResource->load($model, $id);
+        $model->addData($data);
         $model->setId($id);
         $this->customerResource->save($model);
     }

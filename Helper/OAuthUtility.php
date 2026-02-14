@@ -61,12 +61,14 @@ class OAuthUtility extends Data
         File $fileSystem,
         \Magento\Framework\App\ProductMetadataInterface $productMetadata,
         \MiniOrange\OAuth\Model\MiniorangeOauthClientAppsFactory $miniorangeOauthClientAppsFactory,
+        \MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps\CollectionFactory $clientCollectionFactory,
         \MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps $appResource,
         \Magento\User\Model\ResourceModel\User $userResource,
         \Magento\Customer\Model\ResourceModel\Customer $customerResource,
         DateTime $dateTime,
         DirectoryList $directoryList,
         \Magento\Framework\Encryption\EncryptorInterface $encryptor
+        ,\Magento\Framework\Escaper $escaper
     ) {
         $this->adminSession = $adminSession;
         $this->customerSession = $customerSession;
@@ -90,10 +92,12 @@ class OAuthUtility extends Data
             $helperBackend,
             $frontendUrl,
             $miniorangeOauthClientAppsFactory,
+            $clientCollectionFactory,
             $appResource,
             $userResource,
             $customerResource,
             $encryptor
+            ,$escaper
         );
     }
 
