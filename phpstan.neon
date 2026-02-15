@@ -6,6 +6,10 @@ parameters:
     paths:
         - .
     excludePaths:
-        - vendor
-        - .github
+        analyseAndScan:
+            - vendor
+            - .github
+        analyse:
+            - psalm-stubs.php
+    scanFiles:
         - psalm-stubs.php

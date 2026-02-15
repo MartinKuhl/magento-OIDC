@@ -236,30 +236,25 @@ class ProcessUserAction
     }
 
     /**
-     * Process the user login/create flow for customer logins.
-     *
-     * @param string $user_email
+     * @param string $userEmail
      * @param string|null $firstName
      * @param string|null $lastName
      * @param string|null $userName
      * @param string $defaultRole
      * @return \Magento\Framework\Controller\Result\Redirect
      */
-    private function processUserAction($user_email, $firstName, $lastName, $userName, $defaultRole)
+    private function processUserAction(string $userEmail, ?string $firstName, ?string $lastName, ?string $userName, string $defaultRole)
     {
-
         $admin = false;
-        $user = $this->getCustomerFromAttributes($user_email);
+        $user = $this->getCustomerFromAttributes($userEmail);
 
         if (!$user) {
             $this->oauthUtility->customlog("User not found. Checking auto-create configuration");
 
-            // Check if auto-create customer is enabled in configuration
             $autoCreateEnabled = $this->oauthUtility->getStoreConfig(OAuthConstants::AUTO_CREATE_CUSTOMER);
 
             if (!$autoCreateEnabled) {
                 $this->oauthUtility->customlog("Auto Create Customer is disabled. Rejecting login.");
-                // Use same error handling pattern as other OIDC errors (oidc_error query param)
                 $encodedError = base64_encode(OAuthMessages::AUTO_CREATE_USER_DISABLED);
                 $baseLoginUrl = $this->oauthUtility->getCustomerLoginUrl();
                 $sep = (strpos($baseLoginUrl, '?') !== false) ? '&' : '?';
@@ -268,7 +263,6 @@ class ProcessUserAction
             }
 
             $user = $this->createNewUser($userEmail, $firstName, $lastName, $userName, $user);
-
         }
 
         /** @var \Magento\Store\Model\Store $store */
