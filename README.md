@@ -94,7 +94,7 @@ Psalm:   Level 3
 
 
 # Magento Coding Standard installieren (bringt phpcs/phpcbf automatisch mit)
-composer require --dev magento/magento-coding-standard vimeo/psalm
+composer require --dev magento/magento-coding-standard vimeo/psalm bitexpert/phpstan-magento
 
 # Prüfen, ob phpcs verfügbar ist
 vendor/bin/phpcs --version
