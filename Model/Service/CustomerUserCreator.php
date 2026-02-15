@@ -161,7 +161,7 @@ class CustomerUserCreator
      * @param array $rawAttrs
      * @return \Magento\Customer\Api\Data\CustomerInterface|null
      */
-    public function createCustomer($email, $userName, $firstName, $lastName, $flattenedAttrs, $rawAttrs)
+    public function createCustomer(string $email, string $userName, string $firstName, string $lastName, array $flattenedAttrs, array $attrs): ?CustomerInterface 
     {
         $this->oauthUtility->customlog("CustomerUserCreator: Starting creation for " . $email);
 

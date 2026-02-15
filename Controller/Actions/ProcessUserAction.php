@@ -13,6 +13,7 @@ use Magento\Framework\Controller\Result\RedirectFactory;
 use Magento\Framework\Message\ManagerInterface;
 use Magento\Customer\Api\CustomerRepositoryInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
+use Magento\Customer\Api\Data\CustomerInterface;
 
 /**
  * Handles creation or lookup of customer users from OIDC attributes
@@ -307,30 +308,36 @@ class ProcessUserAction
      * @param \Magento\Customer\Model\Customer|false $user
      * @return \Magento\Customer\Model\Customer
      */
-    private function createNewUser(string $userEmail, ?string $firstName, ?string $lastName, ?string $userName, $user): \Magento\Customer\Model\Customer
-    {
-        if (empty($firstName)) {
-            $parts = explode("@", $userEmail);
-            $firstName = $parts[0];
+    private function createNewUser(
+        string $userEmail,
+        string $userName,
+        string $firstName,
+        string $lastName
+    ): ?CustomerInterface {
+        {
+            if (empty($firstName)) {
+                $parts = explode("@", $userEmail);
+                $firstName = $parts[0];
+            }
+
+            if (empty($lastName)) {
+                $parts = explode("@", $userEmail);
+                $lastName = $parts[1] ?? $parts[0];
+            }
+
+            $userName = !$this->oauthUtility->isBlank($userName) ? $userName : $userEmail;
+            $firstName = !$this->oauthUtility->isBlank($firstName) ? $firstName : $userName;
+            $lastName = !$this->oauthUtility->isBlank($lastName) ? $lastName : $userName;
+
+            return $this->customerUserCreator->createCustomer(
+                $userEmail,
+                $userName,
+                $firstName,
+                $lastName,
+                $this->flattenedattrs,
+                $this->attrs
+            );
         }
-
-        if (empty($lastName)) {
-            $parts = explode("@", $userEmail);
-            $lastName = $parts[1] ?? $parts[0];
-        }
-
-        $userName = !$this->oauthUtility->isBlank($userName) ? $userName : $userEmail;
-        $firstName = !$this->oauthUtility->isBlank($firstName) ? $firstName : $userName;
-        $lastName = !$this->oauthUtility->isBlank($lastName) ? $lastName : $userName;
-
-        return $this->customerUserCreator->createCustomer(
-            $userEmail,
-            $userName,
-            $firstName,
-            $lastName,
-            $this->flattenedattrs,
-            $this->attrs
-        );
     }
 
     /**
