@@ -16,9 +16,6 @@
         <directory name="Observer" />
         <directory name="Plugin" />
         <directory name="Logger" />
-        <ignoreFiles>
-            <directory name="vendor" />
-        </ignoreFiles>
     </projectFiles>
 
     <issueHandlers>

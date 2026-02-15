@@ -86,7 +86,7 @@ Psalm:   Level 3
 
 
 # Magento Coding Standard installieren (bringt phpcs/phpcbf automatisch mit)
-composer require --dev magento/magento-coding-standard
+composer require --dev magento/magento-coding-standard vimeo/psalm
 
 # Prüfen, ob phpcs verfügbar ist
 vendor/bin/phpcs --version
@@ -108,3 +108,4 @@ vendor/bin/phpcs -i
 vendor/bin/phpcbf --standard=Magento2 ./github/miniorange-oauth-sso/
 vendor/bin/phpcs --standard=Magento2 ./github/miniorange-oauth-sso/
 
+vendor/bin/psalm --no-cache --config=github/miniorange-oauth-sso/psalm.xml
