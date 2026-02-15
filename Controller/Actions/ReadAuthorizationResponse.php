@@ -146,16 +146,16 @@ class ReadAuthorizationResponse extends BaseAction
         }
 
         // Validate CSRF state token
-            if (empty($stateToken) || !$this->securityHelper->validateStateToken($originalSessionId, $stateToken)) {
+        if (empty($stateToken) || !$this->securityHelper->validateStateToken($originalSessionId, $stateToken)) {
             $this->oauthUtility->customlog("ERROR: State token validation failed (CSRF protection)");
             $encodedError = base64_encode('Security validation failed. Please try logging in again.');
-                $query = ['_query' => ['oidc_error' => $encodedError]];
-                if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
-                    $loginUrl = $this->_url->getUrl('admin', $query);
-                } else {
-                    $loginUrl = $this->_url->getUrl('customer/account/login', $query);
-                }
-                return $this->_redirect($loginUrl);
+            $query = ['_query' => ['oidc_error' => $encodedError]];
+            if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
+                $loginUrl = $this->_url->getUrl('admin', $query);
+            } else {
+                $loginUrl = $this->_url->getUrl('customer/account/login', $query);
+            }
+            return $this->_redirect($loginUrl);
         }
 
         // Look up OAuth client details by app name

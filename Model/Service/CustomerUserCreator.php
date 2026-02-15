@@ -230,15 +230,15 @@ class CustomerUserCreator
 
     /**
      * Create customer address with mapped OIDC attributes
-        *
-        * @param \Magento\Customer\Model\Customer $customer
-        * @param string $firstName
-        * @param string $lastName
-        * @param array $flattenedAttrs
-        * @param array $rawAttrs
-        * @return void
-        */
-        private function createCustomerAddress($customer, $firstName, $lastName, $flattenedAttrs, $rawAttrs)
+     *
+     * @param \Magento\Customer\Model\Customer $customer
+     * @param string $firstName
+     * @param string $lastName
+     * @param array $flattenedAttrs
+     * @param array $rawAttrs
+     * @return void
+     */
+    private function createCustomerAddress($customer, $firstName, $lastName, $flattenedAttrs, $rawAttrs)
     {
         // Extract address fields
         $street = $this->extractAttributeValue($this->streetAttribute, $flattenedAttrs, $rawAttrs);
@@ -277,13 +277,13 @@ class CustomerUserCreator
 
     /**
      * Extract attribute value from flattened attributes with support for nested paths
-        *
-        * @param string $key Attribute key or dotted path (e.g., "address.locality")
-        * @param array|null $flattenedAttrs Flattened key/value map
-        * @param array|object|null $rawAttrs Original attributes structure
-        * @return string|null
-        */
-        private function extractAttributeValue($key, $flattenedAttrs, $rawAttrs)
+     *
+     * @param string $key Attribute key or dotted path (e.g., "address.locality")
+     * @param array|null $flattenedAttrs Flattened key/value map
+     * @param array|object|null $rawAttrs Original attributes structure
+     * @return string|null
+     */
+    private function extractAttributeValue($key, $flattenedAttrs, $rawAttrs)
     {
         if (empty($key)) {
             return null;
@@ -334,11 +334,11 @@ class CustomerUserCreator
 
     /**
      * Format date of birth to Y-m-d format
-        *
-        * @param string $dob Raw date string
-        * @return string|null Formatted date `Y-m-d` or null on parse failure
-        */
-        private function formatDateOfBirth($dob)
+     *
+     * @param string $dob Raw date string
+     * @return string|null Formatted date `Y-m-d` or null on parse failure
+     */
+    private function formatDateOfBirth($dob)
     {
         try {
             $date = date_create($dob);

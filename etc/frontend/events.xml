@@ -7,7 +7,7 @@
         <observer name="oauth_observer" instance="MiniOrange\OAuth\Observer\OAuthObserver" />
     </event>
 
-	<event name="controller_action_postdispatch_customer_account_logout">
+    <event name="controller_action_postdispatch_customer_account_logout">
         <observer name="oauth_logout_observer" instance="MiniOrange\OAuth\Observer\OAuthLogoutObserver" />
     </event>
 

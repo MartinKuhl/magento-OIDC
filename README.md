@@ -81,3 +81,28 @@ Psalm:   Level 4
 Langfristig (Ziel für sauberen Code):
 PHPStan: Level 6
 Psalm:   Level 3
+
+
+# Magento Coding Standard installieren (bringt phpcs/phpcbf automatisch mit)
+composer require --dev magento/magento-coding-standard
+
+# Prüfen, ob phpcs verfügbar ist
+vendor/bin/phpcs --version
+vendor/bin/phpcbf --version
+
+vendor/bin/phpcs
+vendor/bin/phpcbf
+
+# Den Magento2-Standard in phpcs registrieren
+vendor/bin/phpcs --config-set installed_paths vendor/magento/magento-coding-standard/,vendor/phpcompatibility/php-compatibility/
+
+vendor/bin/phpcs --config-set installed_paths "$COMPOSER_HOME/vendor/magento/magento-coding-standard,/vendor/magento/php-compatibility-fork"
+
+
+# Verfügbare Standards anzeigen
+vendor/bin/phpcs -i
+# Ausgabe sollte enthalten: Magento2, PSR1, PSR2, PSR12, ...
+
+vendor/bin/phpcbf --standard=Magento2 ./github/miniorange-oauth-sso/
+vendor/bin/phpcs --standard=Magento2 ./github/miniorange-oauth-sso/
+

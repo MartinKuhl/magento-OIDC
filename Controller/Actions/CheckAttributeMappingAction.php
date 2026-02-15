@@ -113,10 +113,10 @@ class CheckAttributeMappingAction extends BaseAction
      * @param \Magento\Framework\Math\Random $randomUtility
      * @param AdminUserCreator $adminUserCreator
      * @param \Magento\Customer\Model\Session $customerSession
-    * @param \MiniOrange\OAuth\Controller\Actions\ShowTestResults $testAction
-    * @param OAuthSecurityHelper $securityHelper
-    * @param CookieManagerInterface $cookieManager
-    * @param CookieMetadataFactory $cookieMetadataFactory
+     * @param \MiniOrange\OAuth\Controller\Actions\ShowTestResults $testAction
+     * @param OAuthSecurityHelper $securityHelper
+     * @param CookieManagerInterface $cookieManager
+     * @param CookieMetadataFactory $cookieMetadataFactory
      */
     public function __construct(
         \Magento\Framework\App\Action\Context $context,

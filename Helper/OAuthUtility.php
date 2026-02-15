@@ -469,13 +469,12 @@ class OAuthUtility extends Data
      * Retrieve the current admin user session.
      *
      * @return mixed
-     * 
+     *
      */
-     public function isLogEnable()
-     {
+    public function isLogEnable()
+    {
 
-       return (bool) $this->getStoreConfig(OAuthConstants::ENABLE_DEBUG_LOG);
-     
+        return (bool) $this->getStoreConfig(OAuthConstants::ENABLE_DEBUG_LOG);
     }
 
     /**
