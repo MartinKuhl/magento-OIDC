@@ -195,10 +195,9 @@ class CheckAttributeMappingAction extends BaseAction
         if ($isTest === true) {
             $this->oauthUtility->setStoreConfig(OAuthConstants::IS_TEST, false);
             $this->oauthUtility->flushCache();
-            return $this->testAction
-                ->setAttrs($flattenedAttrs)
-                ->setUserEmail($userEmail)
-                ->execute();
+            $this->testAction->setAttrs($flattenedAttrs);
+            $this->testAction->setUserEmail($userEmail);
+            return $this->testAction->execute();
         }
 
         // Only execute admin logic and redirect when NOT in test mode:
