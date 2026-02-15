@@ -206,6 +206,12 @@ jobs:
           vendor/bin/phpstan analyse --memory-limit=1G \
             --error-format=checkstyle > reports/phpstan-checkstyle.xml 2>/dev/null || true
 
+      - name: Adapt psalm.xml for CI environment
+        run: |
+          # Lokal zeigt ../../vendor auf den Magento-Root vendor-Ordner.
+          # Im CI liegt vendor/ direkt im Workspace – Pfad anpassen.
+          sed -i 's|<directory name="../../vendor" />|<directory name="vendor" />|' psalm.xml
+
       - name: Run Psalm
         run: |
           set -o pipefail
