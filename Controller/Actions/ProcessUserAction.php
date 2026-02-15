@@ -309,32 +309,34 @@ class ProcessUserAction
      * @param string|null $firstName
      * @param string|null $lastName
      * @param string|null $userName
-     * @param \Magento\Customer\Api\Data\CustomerInterface|false $user
-     * @param bool $admin
-     * @return \Magento\Customer\Api\Data\CustomerInterface
+     * @param \Magento\Customer\Model\Customer|false $user
+     * @return \Magento\Customer\Model\Customer
      */
-    private function createNewUser(string $user_email, ?string $firstName, ?string $lastName, ?string $userName, $user, bool &$admin): \Magento\Customer\Model\Customer
+    private function createNewUser(string $userEmail, ?string $firstName, ?string $lastName, ?string $userName, $user): \Magento\Customer\Model\Customer
     {
-
         if (empty($firstName)) {
-            $parts = explode("@", $user_email);
+            $parts = explode("@", $userEmail);
             $firstName = $parts[0];
         }
 
         if (empty($lastName)) {
-            $parts = explode("@", $user_email);
-            $lastName = isset($parts[1]) ? $parts[1] : $parts[0];
+            $parts = explode("@", $userEmail);
+            $lastName = $parts[1] ?? $parts[0];
         }
 
-        $userName = !$this->oauthUtility->isBlank($userName) ? $userName : $user_email;
+        $userName = !$this->oauthUtility->isBlank($userName) ? $userName : $userEmail;
         $firstName = !$this->oauthUtility->isBlank($firstName) ? $firstName : $userName;
         $lastName = !$this->oauthUtility->isBlank($lastName) ? $lastName : $userName;
 
-        return $this->customerUserCreator->createCustomer($userEmail, $userName, $firstName, $lastName, $this->flattenedattrs, $this->attrs);
+        return $this->customerUserCreator->createCustomer(
+            $userEmail,
+            $userName,
+            $firstName,
+            $lastName,
+            $this->flattenedattrs,
+            $this->attrs
+        );
     }
-
-    // Customer creation and address handling moved to CustomerUserCreator service.
-
 
     /**
      * Load customer by email from the current website.
