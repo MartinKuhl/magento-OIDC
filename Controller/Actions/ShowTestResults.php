@@ -303,8 +303,6 @@ class ShowTestResults extends Action
     public function setAttrs($attrs)
     {
         $this->attrs = $attrs;
-        //$this->oauthUtility->customlog("attributes: " . print_r($attrs, true));
-        return $this;
     }
 
     /**
@@ -316,7 +314,6 @@ class ShowTestResults extends Action
     public function setOAuthException($exception)
     {
         $this->oauthException = $exception;
-        return $this;
     }
 
     /**
@@ -328,7 +325,6 @@ class ShowTestResults extends Action
     public function setUserEmail($userEmail)
     {
         $this->userEmail = $userEmail;
-        return $this;
     }
 
     /**
@@ -340,7 +336,6 @@ class ShowTestResults extends Action
     public function setHasExceptionOccurred($hasExceptionOccurred)
     {
         $this->hasExceptionOccurred = $hasExceptionOccurred;
-        return $this;
     }
 
     /**
