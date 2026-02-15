@@ -146,12 +146,11 @@ class OAuthUtility extends Data
     }
 
     /**
-     * Check if customer account exists by email.
+     * Delete the custom OAuth log file if it exists.
      *
-     * @param string $email
-     * @return bool
+     * @return void
      */
-    public function deleteCustomLogFile()
+    public function deleteCustomLogFile(): void
     {
         try {
             $logPath = $this->directoryList->getPath(DirectoryList::VAR_DIR) . '/log/mo_oauth.log';

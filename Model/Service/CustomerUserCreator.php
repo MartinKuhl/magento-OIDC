@@ -124,9 +124,9 @@ class CustomerUserCreator
      * @param string $firstName
      * @param string $lastName
      * @param string $userName
-     * @return \Magento\Customer\Api\Data\CustomerInterface
+     * @return void
      */
-    private function initializeAttributeMapping()
+    private function initializeAttributeMapping(): void
     {
         $this->dobAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_DOB);
         $this->dobAttribute = $this->oauthUtility->isBlank($this->dobAttribute) ? OAuthConstants::DEFAULT_MAP_DOB : $this->dobAttribute;

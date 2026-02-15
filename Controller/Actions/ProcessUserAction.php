@@ -306,12 +306,12 @@ class ProcessUserAction
      * Create a new customer user from OIDC attributes.
      *
      * @param string $user_email
-     * @param string $firstName
-     * @param string $lastName
-     * @param string $userName
-     * @param mixed $user
-     * @param mixed $admin
-     * @return void
+     * @param string|null $firstName
+     * @param string|null $lastName
+     * @param string|null $userName
+     * @param \Magento\Customer\Model\Customer|false $user
+     * @param bool $admin
+     * @return \Magento\Customer\Model\Customer
      */
     private function createNewUser($user_email, $firstName, $lastName, $userName, $user, &$admin)
     {
