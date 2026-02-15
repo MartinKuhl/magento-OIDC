@@ -8,3 +8,4 @@ parameters:
     excludePaths:
         - vendor
         - .github
+        - psalm-stubs.php
