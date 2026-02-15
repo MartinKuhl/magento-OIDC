@@ -267,7 +267,8 @@ class ProcessUserAction
                 return $this->resultRedirectFactory->create()->setUrl($loginUrl);
             }
 
-            $user = $this->createNewUser($user_email, $firstName, $lastName, $userName, $user, $admin);
+            $user = $this->createNewUser($userEmail, $firstName, $lastName, $userName, $user);
+
         }
 
         /** @var \Magento\Store\Model\Store $store */
