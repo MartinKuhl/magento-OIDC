@@ -151,7 +151,7 @@ class CustomerUserCreator
     }
 
     /**
-     * Create a new customer
+     * Create a customer from OIDC attributes.
      *
      * @param string $email
      * @param string $userName
@@ -159,7 +159,7 @@ class CustomerUserCreator
      * @param string $lastName
      * @param array $flattenedAttrs
      * @param array $rawAttrs
-     * @return \Magento\Customer\Model\Customer|null
+     * @return \Magento\Customer\Api\Data\CustomerInterface|null
      */
     public function createCustomer($email, $userName, $firstName, $lastName, $flattenedAttrs, $rawAttrs)
     {
@@ -213,13 +213,15 @@ class CustomerUserCreator
             // Convert model to data interface for repository save, pass password as second arg
             $customerDataModel = $customer->getDataModel();
             $savedCustomer = $this->customerRepository->save($customerDataModel, $randomPassword);
-            $customer->updateData($savedCustomer);
-            $this->oauthUtility->customlog("CustomerUserCreator: Customer created with ID: " . $customer->getId());
+
+            $this->oauthUtility->customlog(
+                "CustomerUserCreator: Customer created with ID: " . $savedCustomer->getId()
+            );
 
             // Create customer address
-            $this->createCustomerAddress($customer, $firstName, $lastName, $flattenedAttrs, $rawAttrs);
+            $this->createCustomerAddress($savedCustomer, $firstName, $lastName, $flattenedAttrs, $rawAttrs);
 
-            return $customer;
+            return $savedCustomer;
 
         } catch (\Exception $e) {
             $this->oauthUtility->customlog("CustomerUserCreator: Error creating customer: " . $e->getMessage());

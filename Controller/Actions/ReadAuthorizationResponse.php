@@ -65,9 +65,12 @@ class ReadAuthorizationResponse extends BaseAction
 
 
     /**
-     * Execute the authorization response reading.
+     * Process the OAuth/OIDC authorization callback.
      *
-     * @return array
+     * Validates state token, exchanges authorization code for access/ID tokens,
+     * verifies JWT signatures, and redirects to the appropriate destination.
+     *
+     * @return \Magento\Framework\Controller\ResultInterface|\Magento\Framework\App\ResponseInterface
      */
     public function execute()
     {

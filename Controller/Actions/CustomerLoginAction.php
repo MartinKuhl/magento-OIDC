@@ -101,9 +101,8 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
         }
 
         // Service Contract: Customer über Repository laden (Data-Model → Entity-Model)
-        $customerData = $this->customerRepository->getById($this->user->getId());
         $customerModel = $this->customerFactory->create();
-        $customerModel->updateData($customerData);
+        $customerModel->updateData($this->user);
         $this->customerSession->setCustomerAsLoggedIn($customerModel);
 
         $safeRelayState = $this->securityHelper->validateRedirectUrl(

@@ -2,7 +2,6 @@
 namespace MiniOrange\OAuth\Controller\Actions;
 
 use MiniOrange\OAuth\Model\Service\CustomerUserCreator;
-use Magento\Customer\Model\Customer;
 use Magento\Framework\App\ResponseFactory;
 use Magento\Store\Model\StoreManagerInterface;
 use MiniOrange\OAuth\Helper\Exception\MissingAttributesException;
@@ -12,6 +11,8 @@ use MiniOrange\OAuth\Helper\OAuthMessages;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Controller\Result\RedirectFactory;
 use Magento\Framework\Message\ManagerInterface;
+use Magento\Customer\Api\CustomerRepositoryInterface;
+use Magento\Framework\Exception\NoSuchEntityException;
 
 /**
  * Handles creation or lookup of customer users from OIDC attributes
@@ -95,11 +96,6 @@ class ProcessUserAction
     private $countryAttribute;
 
     /**
-     * @var Customer
-     */
-    private $customerModel;
-
-    /**
      * @var CustomerLoginAction
      */
     private $customerLoginAction;
@@ -139,6 +135,10 @@ class ProcessUserAction
      */
     private $messageManager;
 
+    /** 
+     * @var CustomerRepositoryInterface 
+     */
+    private $customerRepository;
 
     /**
      * Initialize ProcessUserAction.
@@ -151,7 +151,7 @@ class ProcessUserAction
      */
     public function __construct(
         OAuthUtility $oauthUtility,
-        Customer $customerModel,
+        CustomerRepositoryInterface $customerRepository,
         StoreManagerInterface $storeManager,
         ResponseFactory $responseFactory,
         CustomerLoginAction $customerLoginAction,
@@ -186,7 +186,7 @@ class ProcessUserAction
         $this->countryAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_COUNTRY);
         $this->countryAttribute = $oauthUtility->isBlank($this->countryAttribute) ? OAuthConstants::DEFAULT_MAP_COUNTRY : $this->countryAttribute;
 
-        $this->customerModel = $customerModel;
+        $this->customerRepository = $customerRepository;
         $this->storeManager = $storeManager;
         $this->responseFactory = $responseFactory;
         $this->customerLoginAction = $customerLoginAction;
@@ -305,15 +305,15 @@ class ProcessUserAction
     /**
      * Create a new customer user from OIDC attributes.
      *
-     * @param string $user_email
+     * @param string $userEmail
      * @param string|null $firstName
      * @param string|null $lastName
      * @param string|null $userName
-     * @param \Magento\Customer\Model\Customer|false $user
+     * @param \Magento\Customer\Api\Data\CustomerInterface|false $user
      * @param bool $admin
-     * @return \Magento\Customer\Model\Customer
+     * @return \Magento\Customer\Api\Data\CustomerInterface
      */
-    private function createNewUser($user_email, $firstName, $lastName, $userName, $user, &$admin)
+    private function createNewUser($userEmail, $firstName, $lastName, $userName, $user, &$admin)
     {
 
         if (empty($firstName)) {
@@ -330,8 +330,7 @@ class ProcessUserAction
         $firstName = !$this->oauthUtility->isBlank($firstName) ? $firstName : $userName;
         $lastName = !$this->oauthUtility->isBlank($lastName) ? $lastName : $userName;
 
-        $user = $this->customerUserCreator->createCustomer($user_email, $userName, $firstName, $lastName, $this->flattenedattrs, $this->attrs);
-        return $user;
+        return $this->customerUserCreator->createCustomer($userEmail, $userName, $firstName, $lastName, $this->flattenedattrs, $this->attrs);
     }
 
     // Customer creation and address handling moved to CustomerUserCreator service.
@@ -340,14 +339,16 @@ class ProcessUserAction
     /**
      * Load customer by email from the current website.
      *
-     * @param string $user_email
-     * @return \Magento\Customer\Model\Customer|false
+     * @param string $userEmail
+     * @return \Magento\Customer\Api\Data\CustomerInterface|false
      */
-    private function getCustomerFromAttributes($user_email)
+    private function getCustomerFromAttributes(string $userEmail)
     {
-        $this->customerModel->setWebsiteId($this->storeManager->getStore()->getWebsiteId());
-        $customer = $this->customerModel->loadByEmail($user_email);
-        return $customer->getId() !== null ? $customer : false;
+        try {
+            return $this->customerRepository->get($userEmail);
+        } catch (NoSuchEntityException $e) {
+            return false;
+        }
     }
 
 
