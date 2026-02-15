@@ -313,7 +313,7 @@ class ProcessUserAction
      * @param bool $admin
      * @return \Magento\Customer\Api\Data\CustomerInterface
      */
-    private function createNewUser($userEmail, $firstName, $lastName, $userName, $user, &$admin)
+    private function createNewUser(string $user_email, ?string $firstName, ?string $lastName, ?string $userName, $user, bool &$admin): \Magento\Customer\Model\Customer
     {
 
         if (empty($firstName)) {
