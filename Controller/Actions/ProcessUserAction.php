@@ -236,27 +236,18 @@ class ProcessUserAction
     }
 
     /**
-     * Process the user login or creation flow.
+     * Process the user login/create flow for customer logins.
      *
      * @param string $user_email
-     * @param string $firstName
-     * @param string $lastName
-     * @param string $userName
+     * @param string|null $firstName
+     * @param string|null $lastName
+     * @param string|null $userName
      * @param string $defaultRole
-     * @return void
+     * @return \Magento\Framework\Controller\Result\Redirect
      */
     private function processUserAction($user_email, $firstName, $lastName, $userName, $defaultRole)
     {
-        /**
-         * Process the user login/create flow for customer logins.
-         *
-         * @param string $user_email
-         * @param string|null $firstName
-         * @param string|null $lastName
-         * @param string|null $userName
-         * @param string $defaultRole
-         * @return \Magento\Framework\Controller\Result\Redirect
-         */
+
         $admin = false;
         $user = $this->getCustomerFromAttributes($user_email);
 
