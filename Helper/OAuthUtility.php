@@ -467,18 +467,16 @@ class OAuthUtility extends Data
 
     /**
      * Check if debug logging is enabled
-    /**
      * Retrieve the current admin user session.
      *
      * @return mixed
+     * 
      */
-     * Uses the existing configuration path from the database
-     *
-     * @return bool
-     */
-    public function isLogEnable()
-    {
-        return (bool) $this->getStoreConfig(OAuthConstants::ENABLE_DEBUG_LOG);
+     public function isLogEnable()
+     {
+
+       return (bool) $this->getStoreConfig(OAuthConstants::ENABLE_DEBUG_LOG);
+     
     }
 
     /**
