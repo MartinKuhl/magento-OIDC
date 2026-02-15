@@ -22,6 +22,10 @@
         </ignoreFiles>
     </projectFiles>
 
+    <stubs>
+        <file name="psalm-stubs.php" />
+    </stubs>
+
     <issueHandlers>
         <!-- PHP 8.3+ Feature – nicht relevant für PHP 8.1 Minimum -->
         <MissingOverrideAttribute errorLevel="suppress" />

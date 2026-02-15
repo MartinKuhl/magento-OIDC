@@ -165,6 +165,8 @@ jobs:
               "magento/module-config": "*",
               "magento/module-ui": "*",
               "magento/module-authorization": "*",
+              "magento/module-user": "*",
+              "magento/module-directory": "*",
               "vimeo/psalm": "*"
             },
             "repositories": [
