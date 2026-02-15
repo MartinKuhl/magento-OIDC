@@ -69,6 +69,8 @@ Write for a developer who's new to this codebase but not new to coding.
 
 ####################################################################################
 
+
+- Time to change your password warning
 - Storage of settings in 2 different tables why -> merging?
 - whats needs to be adjusted to be future-proof and support multiple OIDC providers?
 
