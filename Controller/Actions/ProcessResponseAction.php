@@ -28,6 +28,11 @@ class ProcessResponseAction extends BaseAction
     /** @var CheckAttributeMappingAction */
     private $attrMappingAction;
 
+    /**
+     * Initialize process response action.
+     *
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     */
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
         \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,

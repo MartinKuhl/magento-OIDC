@@ -20,6 +20,12 @@ class OAuthSecurityHelper
     private CacheInterface $cache;
     private OAuthUtility $oauthUtility;
 
+    /**
+     * Initialize OAuth security helper.
+     *
+     * @param \Magento\Framework\App\Helper\Context $context
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     */
     public function __construct(
         CacheInterface $cache,
         OAuthUtility $oauthUtility

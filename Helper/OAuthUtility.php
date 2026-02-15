@@ -41,6 +41,13 @@ class OAuthUtility extends Data
     protected $directoryList;
 
 
+    /**
+     * Initialize OAuthUtility helper.
+     *
+     * @param \Magento\Framework\App\Helper\Context $context
+     * @param \Magento\Store\Model\StoreManagerInterface $storeManager
+     * @param \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
+     */
     public function __construct(
         ScopeConfigInterface $scopeConfig,
         UserFactory $adminFactory,
@@ -138,6 +145,12 @@ class OAuthUtility extends Data
         return 0;
     }
 
+    /**
+     * Check if customer account exists by email.
+     *
+     * @param string $email
+     * @return bool
+     */
     public function deleteCustomLogFile()
     {
         try {
@@ -454,6 +467,11 @@ class OAuthUtility extends Data
 
     /**
      * Check if debug logging is enabled
+    /**
+     * Retrieve the current admin user session.
+     *
+     * @return mixed
+     */
      * Uses the existing configuration path from the database
      *
      * @return bool
@@ -509,16 +527,31 @@ class OAuthUtility extends Data
         return [$appName, $scope, $clientID, $clientSecret, $authorize_url, $accesstoken_url, $getuserinfo_url, $header, $body, $endpoint_url, $show_customer_link, $attribute_email, $attribute_username, $customer_email];
     }
 
+    /**
+     * Retrieve the base URL of the store.
+     *
+     * @return string
+     */
     public function getProductVersion()
     {
         return $this->productMetadata->getVersion();
     }
 
+    /**
+     * Retrieve the current store URL.
+     *
+     * @return string
+     */
     public function getEdition()
     {
         return $this->productMetadata->getEdition() == 'Community' ? 'Magento Open Source' : 'Adobe Commerce Enterprise/Cloud';
     }
 
+    /**
+     * Retrieve the admin base URL.
+     *
+     * @return string
+     */
     public function getCurrentDate()
     {
         try {

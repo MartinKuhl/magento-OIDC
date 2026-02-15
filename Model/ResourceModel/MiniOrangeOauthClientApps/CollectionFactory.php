@@ -10,6 +10,11 @@ class CollectionFactory
      */
     private $objectManager;
 
+    /**
+     * Create a new collection instance.
+     *
+     * @param \Magento\Framework\ObjectManagerInterface $objectManager
+     */
     public function __construct(ObjectManagerInterface $objectManager)
     {
         $this->objectManager = $objectManager;

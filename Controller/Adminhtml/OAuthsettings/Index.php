@@ -22,6 +22,12 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
     /** @var Curl */
     private Curl $curl;
 
+    /**
+     * Initialize OAuth settings controller.
+     *
+     * @param \Magento\Backend\App\Action\Context $context
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     */
     public function __construct(
         \Magento\Backend\App\Action\Context $context,
         \Magento\Framework\View\Result\PageFactory $resultPageFactory,

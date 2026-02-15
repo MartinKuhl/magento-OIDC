@@ -35,6 +35,12 @@ class OAuthObserver implements ObserverInterface
     private $currentActionName;
     private $request;
 
+    /**
+     * Initialize OAuth observer.
+     *
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     * @param \Magento\Framework\App\ResponseFactory $responseFactory
+     */
     public function __construct(
         ManagerInterface $messageManager,
         LoggerInterface $logger,

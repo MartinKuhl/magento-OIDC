@@ -20,6 +20,11 @@ abstract class BaseAction extends \Magento\Framework\App\Action\Action
     /** @var \Magento\Framework\App\Action\Context */
     protected $context;
 
+    /**
+     * Initialize base action with OAuth utility.
+     *
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     */
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
         \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility

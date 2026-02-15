@@ -29,6 +29,12 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
     /** @var \Magento\Customer\Model\ResourceModel\Group\Collection */
     private $userGroupModel;
 
+    /**
+     * Initialize attribute settings controller.
+     *
+     * @param \Magento\Backend\App\Action\Context $context
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     */
     public function __construct(
         Context $context,
         PageFactory $resultPageFactory,

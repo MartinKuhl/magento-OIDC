@@ -16,6 +16,13 @@ class JwtVerifier
     private CacheInterface $cache;
     private \Magento\Framework\HTTP\Adapter\CurlFactory $curlFactory;
 
+    /**
+     * Initialize JWT verifier.
+     *
+     * @param \Magento\Framework\App\Helper\Context $context
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     * @param \MiniOrange\OAuth\Helper\Curl $curl
+     */
     public function __construct(
         OAuthUtility $oauthUtility,
         CacheInterface $cache,

@@ -44,6 +44,12 @@ class SendAuthorizationRequest extends BaseAction
      */
     private $sessionManager;
 
+    /**
+     * Initialize admin send authorization request action.
+     *
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     * @param \Magento\Backend\App\Action\Context $context
+     */
     public function __construct(
         \Magento\Backend\App\Action\Context $context,
         \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
@@ -58,6 +64,11 @@ class SendAuthorizationRequest extends BaseAction
         $this->sessionManager = $sessionManager;
     }
 
+    /**
+     * Execute the admin authorization request.
+     *
+     * @return \Magento\Framework\Controller\Result\Redirect
+     */
     public function execute()
     {
         $this->sessionHelper->configureSSOSession();

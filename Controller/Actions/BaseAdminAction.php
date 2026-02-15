@@ -37,6 +37,12 @@ abstract class BaseAdminAction extends \Magento\Backend\App\Action
     /** @var \Magento\Framework\Auth\AuthorizationInterface */
     protected $_authorization;
 
+    /**
+     * Initialize base admin action.
+     *
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     * @param \Magento\Backend\App\Action\Context $context
+     */
     public function __construct(
         \Magento\Backend\App\Action\Context $context,
         \Magento\Framework\View\Result\PageFactory $resultPageFactory,

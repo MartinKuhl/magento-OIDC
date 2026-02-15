@@ -48,6 +48,13 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
      */
     private $customerFactory;
 
+    /**
+     * Initialize customer login action.
+     *
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     * @param \Magento\Customer\Model\Session $customerSession
+     * @param \Magento\Customer\Model\CustomerFactory $customerFactory
+     */
     public function __construct(
         Context $context,
         OAuthUtility $oauthUtility,

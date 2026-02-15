@@ -8,11 +8,19 @@ class TestResults
     /** @var Escaper */
     private Escaper $escaper;
 
+/**
+ * Data class for holding OAuth test result attributes.
+ */
     public function __construct(Escaper $escaper)
     {
         $this->escaper = $escaper;
     }
 
+    /**
+     * Initialize test results with attributes.
+     *
+     * @param array $attrs
+     */
     public function output($exception = null, $hasException = false, $data = [])
     {
         $html = '';

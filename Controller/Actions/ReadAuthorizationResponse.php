@@ -36,6 +36,12 @@ class ReadAuthorizationResponse extends BaseAction
     /** @var CheckAttributeMappingAction */
     private $attrMappingAction;
 
+    /**
+     * Initialize read authorization response action.
+     *
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     * @param \MiniOrange\OAuth\Helper\Curl $curl
+     */
     public function __construct(
         Context $context,
         OAuthUtility $oauthUtility,
@@ -58,6 +64,11 @@ class ReadAuthorizationResponse extends BaseAction
     }
 
 
+    /**
+     * Execute the authorization response reading.
+     *
+     * @return array
+     */
     public function execute()
     {
         // configureSSOSession() removed from callback handler.

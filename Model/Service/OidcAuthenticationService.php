@@ -19,6 +19,11 @@ class OidcAuthenticationService
 
     private $oauthUtility;
 
+    /**
+     * Initialize OIDC authentication service.
+     *
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     */
     public function __construct(OAuthUtility $oauthUtility)
     {
         $this->oauthUtility = $oauthUtility;

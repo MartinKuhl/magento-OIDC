@@ -87,6 +87,12 @@ class Data extends AbstractHelper
      */
     protected \Magento\Framework\Escaper $escaper;
 
+    /**
+     * Initialize Data helper with OAuth configuration.
+     *
+     * @param \Magento\Framework\App\Helper\Context $context
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     */
     public function __construct(
         \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
         \Magento\User\Model\UserFactory $adminFactory,
@@ -454,6 +460,11 @@ class Data extends AbstractHelper
     }
 
 
+    /**
+     * Retrieve the admin session object.
+     *
+     * @return mixed
+     */
     public function getAdminBaseUrl()
     {
         return $this->helperBackend->getHomePageUrl();

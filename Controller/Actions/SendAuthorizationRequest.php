@@ -29,6 +29,11 @@ class SendAuthorizationRequest extends BaseAction
      */
     private $sessionManager;
 
+    /**
+     * Initialize send authorization request action.
+     *
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     */
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
         \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,

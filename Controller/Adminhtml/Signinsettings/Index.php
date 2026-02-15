@@ -50,6 +50,12 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
      */
     private $productMetadata;
 
+    /**
+     * Initialize sign-in settings controller.
+     *
+     * @param \Magento\Backend\App\Action\Context $context
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     */
     public function __construct(
         Context $context,
         PageFactory $resultPageFactory,
@@ -220,6 +226,11 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         $this->oauthUtility->setStoreConfig(OAuthConstants::DISABLE_NON_OIDC_ADMIN_LOGIN, $mo_disable_non_oidc_admin_login);
     }
 
+    /**
+     * Save the sign-in settings configuration.
+     *
+     * @return void
+     */
     private function customerConfigurationSettings($values)
     {
         $this->oauthUtility->customlog("......................................................................");

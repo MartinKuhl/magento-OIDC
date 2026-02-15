@@ -79,6 +79,15 @@ class ShowTestResults extends Action
     private $tableContent = "<tr><td style='font-weight:bold;border:2px solid #949090;padding:2%;'>{{key}}</td><td style='padding:2%;
                                     border:2px solid #949090; word-wrap:break-word;'>{{value}}</td></tr>";
 
+    /**
+     * Initialize ShowTestResults action.
+     *
+     * @param \Magento\Framework\View\Element\Template\Context $context
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     * @param \Magento\Framework\App\Request\Http $request
+     * @param \Magento\Framework\Escaper $escaper
+     * @param array $data
+     */
     public function __construct(
         Context $context,
         OAuthUtility $oauthUtility,
@@ -213,6 +222,11 @@ class ShowTestResults extends Action
         return $result;
     }
 
+    /**
+     * Process the template header based on test result status.
+     *
+     * @return void
+     */
     private function processTemplateHeader()
     {
         $header = $this->oauthUtility->isBlank($this->userEmail) ? $this->errorHeader : $this->successHeader;
@@ -222,6 +236,11 @@ class ShowTestResults extends Action
         $this->template = str_replace("{{header}}", $header, $this->template);
     }
 
+    /**
+     * Process the template content with user greeting and attributes.
+     *
+     * @return void
+     */
     private function processTemplateContent()
     {
         $greet = $this->greetingName ?? '';
@@ -233,6 +252,11 @@ class ShowTestResults extends Action
         $this->template = str_replace("{{commonbody}}", $this->commonBody ?? '', $this->template);
     }
 
+    /**
+     * Build HTML table content from user attributes.
+     *
+     * @return string
+     */
     private function getTableContent()
     {
         $tableContent = '';
@@ -260,11 +284,22 @@ class ShowTestResults extends Action
         return $tableContent;
     }
 
+    /**
+     * Process the template footer section.
+     *
+     * @return void
+     */
     private function processTemplateFooter()
     {
         $this->template = str_replace("{{footer}}", $this->footer ?? '', $this->template);
     }
 
+    /**
+     * Set the user attributes for display.
+     *
+     * @param array $attrs
+     * @return void
+     */
     public function setAttrs($attrs)
     {
         $this->attrs = $attrs;
@@ -272,18 +307,36 @@ class ShowTestResults extends Action
         return $this;
     }
 
+    /**
+     * Set the OAuth utility instance.
+     *
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     * @return void
+     */
     public function setOAuthException($exception)
     {
         $this->oauthException = $exception;
         return $this;
     }
 
+    /**
+     * Set the user email address.
+     *
+     * @param string|null $userEmail
+     * @return void
+     */
     public function setUserEmail($userEmail)
     {
         $this->userEmail = $userEmail;
         return $this;
     }
 
+    /**
+     * Set the error message.
+     *
+     * @param string|null $errorMessage
+     * @return void
+     */
     public function setHasExceptionOccurred($hasExceptionOccurred)
     {
         $this->hasExceptionOccurred = $hasExceptionOccurred;

@@ -40,6 +40,12 @@ class SessionHelper
      */
     private $backendUrl;
 
+    /**
+     * Initialize session helper.
+     *
+     * @param \Magento\Framework\App\Helper\Context $context
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     */
     public function __construct(
         CookieManagerInterface $cookieManager,
         CookieMetadataFactory $cookieMetadataFactory,

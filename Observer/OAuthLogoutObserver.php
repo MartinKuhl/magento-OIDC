@@ -18,6 +18,12 @@ class OAuthLogoutObserver implements ObserverInterface
     private $oauthUtility;
     protected $_response;
 
+    /**
+     * Initialize OAuth logout observer.
+     *
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     * @param \Magento\Customer\Model\Session $customerSession
+     */
     public function __construct(
         \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
         ResponseInterface $response

@@ -23,6 +23,14 @@ class AuthorizationRequest
     private $params;
     private $state;
 
+    /**
+     * Initialize authorization request parameters.
+     *
+     * @param string $clientId
+     * @param string $scope
+     * @param string $redirectUri
+     * @param string $state
+     */
     public function __construct($clientID, $scope, $authorizeURL, $responseType, $redirectURL, $relayState, $params)
     {
         $this->clientID = $clientID;

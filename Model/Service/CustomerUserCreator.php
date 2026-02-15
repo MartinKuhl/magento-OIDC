@@ -84,6 +84,13 @@ class CustomerUserCreator
      */
     private $customerRepository;
 
+    /**
+     * Initialize customer user creator service.
+     *
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     * @param \Magento\Store\Model\StoreManagerInterface $storeManager
+     * @param \Magento\Customer\Api\CustomerRepositoryInterface $customerRepository
+     */
     public function __construct(
         CustomerFactory $customerFactory,
         AddressInterfaceFactory $addressFactory,
@@ -110,6 +117,15 @@ class CustomerUserCreator
         $this->initializeAttributeMapping();
     }
 
+    /**
+     * Create or update a customer from OIDC attributes.
+     *
+     * @param string $email
+     * @param string $firstName
+     * @param string $lastName
+     * @param string $userName
+     * @return \Magento\Customer\Api\Data\CustomerInterface
+     */
     private function initializeAttributeMapping()
     {
         $this->dobAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_DOB);

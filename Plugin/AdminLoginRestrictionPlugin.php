@@ -14,6 +14,11 @@ class AdminLoginRestrictionPlugin
 {
     private $oauthUtility;
 
+    /**
+     * Initialize admin login restriction plugin.
+     *
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     */
     public function __construct(
         OAuthUtility $oauthUtility
     ) {

@@ -31,6 +31,16 @@ class OAuth extends \Magento\Framework\View\Element\Template
     /** @var \Magento\Framework\Data\Form\FormKey */
     protected $_formKey;
 
+    /**
+     * Initialize OAuth block.
+     *
+     * @param \Magento\Framework\View\Element\Template\Context $context
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     * @param \Magento\Authorization\Model\ResourceModel\Role\Collection $adminRoleModel
+     * @param \Magento\Customer\Model\ResourceModel\Group\Collection $userGroupModel
+     * @param \Magento\Framework\Data\Form\FormKey $formKey
+     * @param array $data
+     */
     public function __construct(
         \Magento\Framework\View\Element\Template\Context $context,
         \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
@@ -150,12 +160,22 @@ class OAuth extends \Magento\Framework\View\Element\Template
     }
 
 
+    /**
+     * Check if header sending is enabled.
+     *
+     * @return string|null
+     */
     public function isHeader()
     {
         return $this->oauthUtility->getStoreConfig(OAuthConstants::SEND_HEADER);
     }
 
 
+    /**
+     * Check if body sending is enabled.
+     *
+     * @return string|null
+     */
     public function isBody()
     {
         return $this->oauthUtility->getStoreConfig(OAuthConstants::SEND_BODY);
@@ -321,6 +341,11 @@ class OAuth extends \Magento\Framework\View\Element\Template
         return $this->oauthUtility->getStoreConfig(OAuthConstants::CLIENT_ID);
     }
 
+    /**
+     * Retrieve the configured endpoint URL.
+     *
+     * @return string|null
+     */
     public function getConfigUrl()
     {
         return $this->oauthUtility->getStoreConfig(OAuthConstants::ENDPOINT_URL);
@@ -367,6 +392,11 @@ class OAuth extends \Magento\Framework\View\Element\Template
     }
 
 
+    /**
+     * Retrieve the configured logout URL.
+     *
+     * @return string|null
+     */
     public function getLogoutURL()
     {
         return $this->oauthUtility->getStoreConfig(OAuthConstants::OAUTH_LOGOUT_URL);
@@ -463,16 +493,31 @@ class OAuth extends \Magento\Framework\View\Element\Template
         return $tab;
     }
 
+    /**
+     * Check if auto-create admin is enabled.
+     *
+     * @return string|null
+     */
     public function autoCreateAdmin()
     {
         return $this->oauthUtility->getStoreConfig(OAuthConstants::AUTO_CREATE_ADMIN);
     }
 
+    /**
+     * Check if auto-create customer is enabled.
+     *
+     * @return string|null
+     */
     public function autoCreateCustomer()
     {
         return $this->oauthUtility->getStoreConfig(OAuthConstants::AUTO_CREATE_CUSTOMER);
     }
 
+    /**
+     * Check if auto-redirect to login is enabled.
+     *
+     * @return string|null
+     */
     public function isLoginRedirectEnabled()
     {
         return $this->oauthUtility->getStoreConfig(OAuthConstants::ENABLE_LOGIN_REDIRECT);
@@ -575,6 +620,11 @@ class OAuth extends \Magento\Framework\View\Element\Template
     }
 
 
+    /**
+     * Check if admin auto-redirect is enabled.
+     *
+     * @return string|null
+     */
     public function getGroupMapping()
     {
         $amGroupName = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_GROUP);
@@ -718,25 +768,50 @@ class OAuth extends \Magento\Framework\View\Element\Template
         return $this->oauthUtility->getStoreConfig(OAuthConstants::X509CERT);
     }
 
+    /**
+     * Retrieve the configured license type.
+     *
+     * @return string|null
+     */
     public function getJwksUrl()
     {
         return $this->oauthUtility->getStoreConfig(OAuthConstants::JWKS_URL);
     }
 
+    /**
+     * Retrieve the current license plan.
+     *
+     * @return string|null
+     */
     public function getProductVersion()
     {
         return $this->oauthUtility->getProductVersion();
     }
 
+    /**
+     * Retrieve the license expiry date.
+     *
+     * @return string|null
+     */
     public function getEdition()
     {
         return $this->oauthUtility->getEdition();
     }
 
+    /**
+     * Retrieve the current date.
+     *
+     * @return string|null
+     */
     public function getCurrentDate()
     {
         return $this->oauthUtility->getCurrentDate();
     }
+    /**
+     * Retrieve the stored timestamp.
+     *
+     * @return string|null
+     */
     public function getTimeStamp()
     {
         return $this->oauthUtility->getStoreConfig(OAuthConstants::TIME_STAMP);

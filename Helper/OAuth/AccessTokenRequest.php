@@ -22,6 +22,12 @@ class AccessTokenRequest
     private $redirectURL;
     private $code;
 
+    /**
+     * Initialize access token request.
+     *
+     * @param string $tokenEndpoint
+     * @param \MiniOrange\OAuth\Helper\OAuth\AccessTokenRequestBody $body
+     */
     public function __construct($clientID, $clientSecret, $grantType, $redirectURL, $code)
     {
         // all values required in the authn request are set here
@@ -35,6 +41,11 @@ class AccessTokenRequest
     /*
      *
      *
+     */
+    /**
+     * Build the access token request as an associative array.
+     *
+     * @return array
      */
     private function generateRequest()
     {

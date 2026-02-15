@@ -22,6 +22,15 @@ class AccessTokenRequestBody
     private $redirectURL;
     private $code;
 
+    /**
+     * Initialize access token request body.
+     *
+     * @param string $grantType
+     * @param string $code
+     * @param string $redirectUri
+     * @param string $clientId
+     * @param string $clientSecret
+     */
     public function __construct($grantType, $redirectURL, $code)
     {
         // all values required in the authn request are set here
@@ -35,6 +44,11 @@ class AccessTokenRequestBody
     /*
      *
      *
+     */
+    /**
+     * Build the request body as an associative array.
+     *
+     * @return array
      */
     private function generateRequest()
     {

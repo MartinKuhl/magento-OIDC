@@ -64,6 +64,12 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
     /** @var \Magento\User\Model\ResourceModel\User\CollectionFactory */
     protected $userCollectionFactory;
 
+    /**
+     * Initialize OIDC callback action.
+     *
+     * @param \Magento\Backend\App\Action\Context $context
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     */
     public function __construct(
         \Magento\User\Model\UserFactory $userFactory,
         \Magento\Backend\Model\Auth $auth,

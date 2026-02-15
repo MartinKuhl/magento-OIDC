@@ -140,6 +140,15 @@ class ProcessUserAction
     private $messageManager;
 
 
+    /**
+     * Initialize ProcessUserAction.
+     *
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     * @param \Magento\Customer\Model\Customer $customerModel
+     * @param \Magento\Store\Model\StoreManagerInterface $storeManager
+     * @param \Magento\Framework\App\ResponseFactory $responseFactory
+     * @param \MiniOrange\OAuth\Controller\Actions\CustomerLoginAction $customerLoginAction
+     */
     public function __construct(
         OAuthUtility $oauthUtility,
         Customer $customerModel,
@@ -188,6 +197,11 @@ class ProcessUserAction
         $this->messageManager = $messageManager;
     }
 
+    /**
+     * Execute the user processing action.
+     *
+     * @return \Magento\Framework\Controller\Result\Redirect|void
+     */
     public function execute()
     {
         /**
@@ -221,6 +235,16 @@ class ProcessUserAction
         }
     }
 
+    /**
+     * Process the user login or creation flow.
+     *
+     * @param string $user_email
+     * @param string $firstName
+     * @param string $lastName
+     * @param string $userName
+     * @param string $defaultRole
+     * @return void
+     */
     private function processUserAction($user_email, $firstName, $lastName, $userName, $defaultRole)
     {
         /**
@@ -287,6 +311,17 @@ class ProcessUserAction
     }
 
     //additionally handle admin user creation if required
+    /**
+     * Create a new customer user from OIDC attributes.
+     *
+     * @param string $user_email
+     * @param string $firstName
+     * @param string $lastName
+     * @param string $userName
+     * @param mixed $user
+     * @param mixed $admin
+     * @return void
+     */
     private function createNewUser($user_email, $firstName, $lastName, $userName, $user, &$admin)
     {
 
@@ -311,6 +346,12 @@ class ProcessUserAction
     // Customer creation and address handling moved to CustomerUserCreator service.
 
 
+    /**
+     * Load customer by email from the current website.
+     *
+     * @param string $user_email
+     * @return \Magento\Customer\Model\Customer|false
+     */
     private function getCustomerFromAttributes($user_email)
     {
         $this->customerModel->setWebsiteId($this->storeManager->getStore()->getWebsiteId());
