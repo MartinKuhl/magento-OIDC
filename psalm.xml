@@ -16,6 +16,10 @@
         <directory name="Observer" />
         <directory name="Plugin" />
         <directory name="Logger" />
+        <!-- Magento-Core NICHT scannen -->
+        <ignoreFiles>
+            <directory name="../../vendor" />
+        </ignoreFiles>
     </projectFiles>
 
     <issueHandlers>
@@ -27,33 +31,6 @@
 
         <!-- Magento Factory-Klassen werden zur Laufzeit generiert -->
         <UndefinedDocblockClass errorLevel="suppress" />
-
-        <!-- Magento Magic Methods (getData, setData, etc.) -->
-        <UndefinedClass>
-            <errorLevel type="suppress">
-                <referencedClass name="Magento\User\Model\UserFactory" />
-                <referencedClass name="Magento\Customer\Model\CustomerFactory" />
-                <referencedClass name="Magento\Customer\Api\Data\AddressInterfaceFactory" />
-                <referencedClass name="Magento\Directory\Model\ResourceModel\Country\CollectionFactory" />
-                <referencedClass name="Magento\User\Model\ResourceModel\User\CollectionFactory" />
-                <referencedClass name="Magento\Framework\HTTP\Adapter\CurlFactory" />
-                <referencedClass name="MiniOrange\OAuth\Model\MiniorangeOauthClientAppsFactory" />
-            </errorLevel>
-        </UndefinedClass>
-
-        <!-- Magento DI: Konstruktoren werden via di.xml aufgerufen 
-        <PossiblyUnusedMethod>
-            <errorLevel type="suppress">
-                <referencedMethod name="MiniOrange\OAuth\*::__construct" />
-            </errorLevel>
-        </PossiblyUnusedMethod>-->
-
-        <!-- Magento Plugin-Parameter ($subject) sind Pflicht aber oft ungenutzt 
-        <PossiblyUnusedParam>
-            <errorLevel type="suppress">
-                <directory name="Plugin" />
-            </errorLevel>
-        </PossiblyUnusedParam>-->
 
     </issueHandlers>
 </psalm>

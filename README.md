@@ -77,6 +77,7 @@ Write for a developer who's new to this codebase but not new to coding.
     - for customer and admin
     
 - Time to change your password warning
+- Password verifcation plugin is not working anymore
 
 - Storage of settings in 2 different tables why -> merging?
 - whats needs to be adjusted to be future-proof and support multiple OIDC providers?
