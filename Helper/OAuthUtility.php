@@ -14,10 +14,12 @@ use Magento\Framework\Url;
 use Magento\Framework\UrlInterface;
 use Magento\Framework\View\Asset\Repository;
 use Magento\User\Model\UserFactory;
+use Magento\Framework\App\Helper\Context;
+use Magento\Framework\Stdlib\DateTime\DateTime;
 
 use MiniOrange\OAuth\Helper\OAuthConstants;
 use MiniOrange\OAuth\Helper\Data;
-use Magento\Framework\Stdlib\DateTime\DateTime;
+
 
 /**
  * This class contains some common Utility functions
@@ -96,6 +98,7 @@ class OAuthUtility extends Data
      * @param \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
      */
     public function __construct(
+        Context $context, 
         ScopeConfigInterface $scopeConfig,
         UserFactory $adminFactory,
         CustomerFactory $customerFactory,

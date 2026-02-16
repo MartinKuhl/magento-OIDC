@@ -31,11 +31,6 @@ use Psr\Log\LoggerInterface;
 class Data extends AbstractHelper
 {
     /**
-     * @var ScopeConfigInterface
-     */
-    protected ScopeConfigInterface $scopeConfig;
-
-    /**
      * @var UserFactory
      */
     private UserFactory $adminFactory;
@@ -112,7 +107,6 @@ class Data extends AbstractHelper
 
     /**
      * @param Context                         $context
-     * @param ScopeConfigInterface            $scopeConfig
      * @param UserFactory                     $adminFactory
      * @param CustomerFactory                 $customerFactory
      * @param UrlInterface                    $urlInterface
@@ -131,7 +125,6 @@ class Data extends AbstractHelper
      */
     public function __construct(
         Context $context,
-        ScopeConfigInterface $scopeConfig,
         UserFactory $adminFactory,
         CustomerFactory $customerFactory,
         UrlInterface $urlInterface,
@@ -149,7 +142,6 @@ class Data extends AbstractHelper
         LoggerInterface $logger
     ) {
         parent::__construct($context);
-        $this->scopeConfig = $scopeConfig;
         $this->adminFactory = $adminFactory;
         $this->customerFactory = $customerFactory;
         $this->urlInterface = $urlInterface;
