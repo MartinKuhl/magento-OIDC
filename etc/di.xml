@@ -163,6 +163,20 @@
                 sortOrder="20"/>
     </type>
 
+    <!-- Suppress password expiration warning for OIDC users -->
+    <type name="Magento\User\Observer\Backend\AuthObserver">
+        <plugin name="miniorange_oidc_password_expiration"
+                type="MiniOrange\OAuth\Plugin\User\OidcPasswordExpirationPlugin"
+                sortOrder="10" />
+    </type>
+
+    <!-- Suppress forced password change redirect for OIDC users -->
+    <type name="Magento\User\Observer\Backend\ForceAdminPasswordChangeObserver">
+        <plugin name="miniorange_oidc_force_password_change"
+                type="MiniOrange\OAuth\Plugin\User\OidcForcePasswordChangePlugin"
+                sortOrder="10" />
+    </type>
+
     <!-- JwtVerifier Cache and Curl Configuration -->
     <type name="MiniOrange\OAuth\Helper\JwtVerifier">
         <arguments>
