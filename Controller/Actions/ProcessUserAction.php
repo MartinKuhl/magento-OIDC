@@ -201,14 +201,11 @@ class ProcessUserAction
     /**
      * Execute the user processing action.
      *
-     * @return \Magento\Framework\Controller\Result\Redirect|void
+     * @return \Magento\Framework\Controller\Result\Redirect
      */
-    public function execute()
+    public function execute(): \Magento\Framework\Controller\Result\Redirect
     {
-        /**
-         * Entry point for processing user attributes and performing login.
-         * @return \Magento\Framework\Controller\Result\Redirect
-         */
+
         try {
             $this->oauthUtility->customlog("ProcessUserAction: execute");
             if (empty($this->attrs)) {
@@ -244,7 +241,13 @@ class ProcessUserAction
      * @param string $defaultRole
      * @return \Magento\Framework\Controller\Result\Redirect
      */
-    private function processUserAction(string $userEmail, ?string $firstName, ?string $lastName, ?string $userName, string $defaultRole)
+    private function processUserAction(
+        string $userEmail,
+        ?string $firstName,
+        ?string $lastName,
+        ?string $userName,
+        string $defaultRole
+    ): \Magento\Framework\Controller\Result\Redirect 
     {
         $admin = false;
         $user = $this->getCustomerFromAttributes($userEmail);

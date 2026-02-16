@@ -360,8 +360,11 @@ class CheckAttributeMappingAction extends BaseAction
      * @param string $email User email
      * @return \Magento\Framework\Controller\ResultInterface
      */
-    private function processResult($attrs, $flattenedattrs, $email)
-    {
+    private function processResult(
+        array $attrs,
+        array $flattenedattrs,
+        string $email
+    ): \Magento\Framework\Controller\ResultInterface {
         $isTest = $this->oauthUtility->getStoreConfig(OAuthConstants::IS_TEST);
 
         if ($isTest == true) {
