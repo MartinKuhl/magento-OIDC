@@ -31,10 +31,16 @@ class OidcCredentialPlugin
 
     /**
      * Flag indicating OIDC authentication is in progress
-     *
-     * @var bool
      */
-    protected bool $isOidcAuth = false;
+    private bool $isOidcAuth = false;
+
+    /**
+     * Guard flag to prevent duplicate log entries.
+     *
+     * getCredentialStorage() is called multiple times during a single login
+     * flow (login method, observers, session init). We only log once.
+     */
+    private bool $adapterLogged = false;
 
     /**
      * @param OidcCredentialAdapter $oidcCredentialAdapter
@@ -64,8 +70,11 @@ class OidcCredentialPlugin
         string $password
     ): array {
         if ($password === OidcCredentialAdapter::OIDC_TOKEN_MARKER) {
-            $this->oauthUtility->customlog("OidcCredentialPlugin: OIDC authentication detected for: " . $username);
+            $this->oauthUtility->customlog(
+                "OidcCredentialPlugin: OIDC authentication detected for: " . $username
+            );
             $this->isOidcAuth = true;
+            $this->adapterLogged = false;
         } else {
             $this->isOidcAuth = false;
         }
@@ -76,7 +85,12 @@ class OidcCredentialPlugin
     /**
      * Around plugin for Auth::getCredentialStorage()
      *
-     * Returns OIDC adapter when OIDC authentication is active.
+     * During an OIDC login flow, this replaces Magento's default credential
+     * storage with the OidcCredentialAdapter.
+     *
+     * Note: This method is called multiple times during a single login
+     * (by Auth::login(), observers, session initialization, etc.).
+     * The log guard ensures we only emit one log entry per login flow.
      *
      * @param Auth $subject
      * @param callable $proceed
@@ -87,7 +101,13 @@ class OidcCredentialPlugin
         callable $proceed
     ): StorageInterface {
         if ($this->isOidcAuth) {
-            $this->oauthUtility->customlog("OidcCredentialPlugin: Returning OIDC credential adapter");
+            if (!$this->adapterLogged) {
+                $this->oauthUtility->customlog(
+                    "OidcCredentialPlugin: Returning OIDC credential adapter"
+                );
+                $this->adapterLogged = true;
+            }
+
             return $this->oidcCredentialAdapter;
         }
 
@@ -108,8 +128,11 @@ class OidcCredentialPlugin
         $result
     ): void {
         if ($this->isOidcAuth) {
-            $this->oauthUtility->customlog("OidcCredentialPlugin: Cleaning up OIDC flag after login");
+            $this->oauthUtility->customlog(
+                "OidcCredentialPlugin: Cleaning up OIDC flag after login"
+            );
             $this->isOidcAuth = false;
+            $this->adapterLogged = false;
         }
     }
 }

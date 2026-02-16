@@ -1,32 +1,47 @@
-/* Authelia OIDC menu icon - matches Magento admin style using Admin Icons font */
+/**
+ * Authelia OIDC admin menu icon
+ *
+ * Uses Magento's native 'Admin Icons' font for consistent styling.
+ * Positioning matches Magento core menu items exactly.
+ */
+
+/* Icon (pseudo-element) */
 .admin__menu .item-oauth.parent.level-0 > a:before,
 .admin__menu .item-oauth.level-0 > a:before {
     content: '\e61b'; /* Lock icon from Admin Icons font */
     font-family: 'Admin Icons';
     font-size: 2.2rem;
-    display: block;
-    width: auto;
-    height: auto;
-    margin: 0 auto 5px auto;
-    text-align: center;
-    color: #b5b9bc; /* Matches Magento admin icon color */
-    text-decoration: none;
+    font-style: normal;
     font-weight: normal;
+    line-height: 1;
+    speak: none;
+    display: block;
+    width: 100%;
+    height: auto;
+    margin: 0 0 5px 0;
+    text-align: center;
+    color: #b5b9bc;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
+/* Menu link text */
 .admin__menu .item-oauth.level-0 > a {
-    color: #b5b9bc; /* Match Magento admin text color */
+    color: #b5b9bc;
     font-weight: 600;
     text-transform: none;
+    text-align: center;
+    padding: 14px 5px 10px;
 }
 
-/* Hover state to match Magento admin */
-.admin__menu .item-oauth.level-0 > a:hover {
-    color: #fff;
-}
-
+/* Hover states */
+.admin__menu .item-oauth.level-0 > a:hover,
 .admin__menu .item-oauth.level-0 > a:hover:before {
     color: #fff;
 }
 
+/* Active state */
+.admin__menu .item-oauth._current.level-0 > a,
+.admin__menu .item-oauth._current.level-0 > a:before {
+    color: #fff;
+}
