@@ -263,7 +263,7 @@ class ProcessUserAction
                 return $this->resultRedirectFactory->create()->setUrl($loginUrl);
             }
 
-            $user = $this->createNewUser($userEmail, $firstName, $lastName, $userName, $user);
+            $user = $this->createNewUser($userEmail, $firstName, $lastName, $userName);
         }
 
         /** @var \Magento\Store\Model\Store $store */
@@ -305,7 +305,6 @@ class ProcessUserAction
      * @param string|null $firstName
      * @param string|null $lastName
      * @param string|null $userName
-     * @param \Magento\Customer\Model\Customer|false $user
      * @return \Magento\Customer\Model\Customer
      */
     private function createNewUser(

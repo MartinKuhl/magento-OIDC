@@ -12,6 +12,7 @@ use Magento\Framework\Math\Random;
 use Magento\Directory\Model\ResourceModel\Country\CollectionFactory as CountryCollectionFactory;
 use Magento\Directory\Helper\Data as DirectoryData;
 use Magento\Framework\Stdlib\DateTime\DateTime;
+use Magento\Customer\Api\Data\CustomerInterface;
 
 /**
  * Service class for creating Customer Users via OAuth/OIDC
@@ -159,9 +160,9 @@ class CustomerUserCreator
      * @param string $lastName
      * @param array $flattenedAttrs
      * @param array $rawAttrs
-     * @return \Magento\Customer\Api\Data\CustomerInterface|null
-     */
-    public function createCustomer(string $email, string $userName, string $firstName, string $lastName, array $flattenedAttrs, array $attrs): ?CustomerInterface 
+     * @return CustomerInterface|null
+ */
+    public function createCustomer(string $email, string $userName, string $firstName, string $lastName, array $flattenedAttrs, array $rawAttrs): ?CustomerInterface 
     {
         $this->oauthUtility->customlog("CustomerUserCreator: Starting creation for " . $email);
 
