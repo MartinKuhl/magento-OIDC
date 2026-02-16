@@ -107,8 +107,10 @@ class ShowTestResults extends Action
 
     /**
      * Hauptfunktion: Daten aus der Session holen (mit Key), anzeigen und Body ausgeben.
+     *
+     * @return \Magento\Framework\Controller\ResultInterface
      */
-    public function execute()
+    public function execute(): \Magento\Framework\Controller\ResultInterface
     {
         // Check for OIDC error first
         $oidcError = $this->request->getParam('oidc_error');
@@ -193,8 +195,11 @@ class ShowTestResults extends Action
 
     /**
      * Handle OIDC error and display TEST UNSUCCESSFUL page
+     *
+     * @param string $encodedError
+     * @return \Magento\Framework\Controller\ResultInterface
      */
-    private function handleOidcError($encodedError)
+    private function handleOidcError(string $encodedError): \Magento\Framework\Controller\ResultInterface
     {
         if (ob_get_length()) {
             ob_end_clean();

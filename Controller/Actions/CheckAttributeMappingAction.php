@@ -175,7 +175,7 @@ class CheckAttributeMappingAction extends BaseAction
         parent::__construct($context, $oauthUtility);
     }
 
-    /**
+   /**
      * Execute attribute mapping and route users accordingly
      *
      * Admin users are redirected to a separate callback endpoint that handles
@@ -183,7 +183,7 @@ class CheckAttributeMappingAction extends BaseAction
      *
      * @return \Magento\Framework\Controller\ResultInterface
      */
-    public function execute()
+    public function execute(): \Magento\Framework\Controller\ResultInterface
     {
         $attrs = $this->userInfoResponse;
         $flattenedAttrs = $this->flattenedUserInfoResponse;
