@@ -10,6 +10,6 @@ parameters:
             - vendor
             - .github
         analyse:
-            - psalm-stubs.php
+            - psalm-stubs.stub
     scanFiles:
-        - psalm-stubs.php
+        - psalm-stubs.stub
