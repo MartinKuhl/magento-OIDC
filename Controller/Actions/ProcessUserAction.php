@@ -136,8 +136,8 @@ class ProcessUserAction
      */
     private $messageManager;
 
-    /** 
-     * @var CustomerRepositoryInterface 
+    /**
+     * @var CustomerRepositoryInterface
      */
     private $customerRepository;
 
@@ -247,8 +247,7 @@ class ProcessUserAction
         ?string $lastName,
         ?string $userName,
         string $defaultRole
-    ): \Magento\Framework\Controller\Result\Redirect 
-    {
+    ): \Magento\Framework\Controller\Result\Redirect {
         $admin = false;
         $user = $this->getCustomerFromAttributes($userEmail);
 

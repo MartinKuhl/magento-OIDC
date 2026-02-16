@@ -176,13 +176,13 @@ class CheckAttributeMappingAction extends BaseAction
     }
 
    /**
-     * Execute attribute mapping and route users accordingly
-     *
-     * Admin users are redirected to a separate callback endpoint that handles
-     * admin authentication. Regular users proceed with the normal customer login flow.
-     *
-     * @return \Magento\Framework\Controller\ResultInterface
-     */
+    * Execute attribute mapping and route users accordingly
+    *
+    * Admin users are redirected to a separate callback endpoint that handles
+    * admin authentication. Regular users proceed with the normal customer login flow.
+    *
+    * @return \Magento\Framework\Controller\ResultInterface
+    */
     public function execute(): \Magento\Framework\Controller\ResultInterface
     {
         $attrs = $this->userInfoResponse;

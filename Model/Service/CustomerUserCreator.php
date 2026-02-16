@@ -161,8 +161,8 @@ class CustomerUserCreator
      * @param array $flattenedAttrs
      * @param array $rawAttrs
      * @return CustomerInterface|null
- */
-    public function createCustomer(string $email, string $userName, string $firstName, string $lastName, array $flattenedAttrs, array $rawAttrs): ?CustomerInterface 
+     */
+    public function createCustomer(string $email, string $userName, string $firstName, string $lastName, array $flattenedAttrs, array $rawAttrs): ?CustomerInterface
     {
         $this->oauthUtility->customlog("CustomerUserCreator: Starting creation for " . $email);
 

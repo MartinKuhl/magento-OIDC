@@ -88,7 +88,7 @@ class ShowTestResults extends Action
      * @param \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
      * @param \Magento\Customer\Model\Session $customerSession
      * @param \Magento\Framework\Escaper $escaper
-    */
+     */
     public function __construct(
         Context $context,
         OAuthUtility $oauthUtility,
