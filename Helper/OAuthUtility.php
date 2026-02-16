@@ -27,17 +27,40 @@ use Magento\Framework\Stdlib\DateTime\DateTime;
  */
 class OAuthUtility extends Data
 {
+    /** @var \Magento\Backend\Model\Session */
     protected $adminSession;
+
+    /** @var \Magento\Customer\Model\Session */
     protected $customerSession;
+
+    /** @var \Magento\Backend\Model\Auth\Session */
     protected $authSession;
+
+    /** @var \Magento\Framework\App\Cache\TypeListInterface */
     protected $cacheTypeList;
+
+    /** @var \Magento\Framework\App\Cache\Frontend\Pool */
     protected $cacheFrontendPool;
+
+    /** @var \Magento\Framework\Filesystem\Driver\File */
     protected $fileSystem;
+
+    /** @var \Psr\Log\LoggerInterface */
     protected $logger;
+
+    /** @var \Magento\Framework\App\Config\ReinitableConfigInterface */
     protected $reinitableConfig;
+
+    /** @var \MiniOrange\OAuth\Logger\Logger */
     protected $_logger;
+
+    /** @var \Magento\Framework\App\ProductMetadataInterface */
     protected $productMetadata;
+
+    /** @var \Magento\Framework\Stdlib\DateTime\DateTime */
     protected $dateTime;
+
+    /** @var \Magento\Framework\App\Filesystem\DirectoryList */
     protected $directoryList;
 
 
@@ -112,7 +135,7 @@ class OAuthUtility extends Data
      * This function returns phone number as a obfuscated
      * string which can be used to show as a message to the user.
      *
-     * @param $phone references the phone number.
+     * @param string $phone references the phone number.
      * @return string
      */
     public function getHiddenPhone($phone)
@@ -135,7 +158,8 @@ class OAuthUtility extends Data
     public function isCustomLogExist()
     {
         try {
-            $logPath = $this->directoryList->getPath(DirectoryList::VAR_DIR) . '/log/mo_oauth.log';
+            $logPath = $this->directoryList->getPath(DirectoryList::VAR_DIR)
+                . '/log/mo_oauth.log';
             if ($this->fileSystem->isExists($logPath)) {
                 return 1;
             }
@@ -185,18 +209,13 @@ class OAuthUtility extends Data
     public function isCurlInstalled()
     {
         return function_exists('curl_init') ? 1 : 0;
-    }
-
-
-
-
-    /**
-     * This function is used to obfuscate and return
-     * the email in question.
-     *
-     * @param $email //refers to the email id to be obfuscated
-     * @return string obfuscated email id.
-     */
+    }    /**
+         * This function is used to obfuscate and return
+         * the email in question.
+         *
+         * @param string $email //refers to the email id to be obfuscated
+         * @return string obfuscated email id.
+         */
     public function getHiddenEmail($email)
     {
         if (!isset($email) || trim($email) === '') {
@@ -226,9 +245,9 @@ class OAuthUtility extends Data
     /**
      * set Admin Session Data
      *
-     * @param $key
-     * @param $value
-     * @return
+     * @param string $key
+     * @param mixed $value
+     * @return mixed
      */
     public function setAdminSessionData($key, $value)
     {
@@ -239,8 +258,8 @@ class OAuthUtility extends Data
     /**
      * get Admin Session data based of on the key
      *
-     * @param $key
-     * @param $remove
+     * @param string $key
+     * @param bool $remove
      * @return mixed
      */
     public function getAdminSessionData($key, $remove = false)
@@ -252,9 +271,9 @@ class OAuthUtility extends Data
     /**
      * set customer Session Data
      *
-     * @param $key
-     * @param $value
-     * @return
+     * @param string $key
+     * @param mixed $value
+     * @return mixed
      */
     public function setSessionData($key, $value)
     {
@@ -265,8 +284,9 @@ class OAuthUtility extends Data
     /**
      * Get customer Session data based off on the key
      *
-     * @param $key
-     * @param $remove
+     * @param string $key
+     * @param bool $remove
+     * @return mixed
      */
     public function getSessionData($key, $remove = false)
     {
@@ -279,8 +299,9 @@ class OAuthUtility extends Data
      * is in the backend of frontend. Call this function only if
      * you are not sure where the user is logged in at.
      *
-     * @param $key
-     * @param $value
+     * @param string $key
+     * @param mixed $value
+     * @return void
      */
     public function setSessionDataForCurrentUser($key, $value)
     {
@@ -520,7 +541,22 @@ class OAuthUtility extends Data
         $attribute_email = $this->getStoreConfig(OAuthConstants::MAP_EMAIL);
         $attribute_username = $this->getStoreConfig(OAuthConstants::MAP_USERNAME);
         $customer_email = $this->getStoreConfig(OAuthConstants::DEFAULT_MAP_EMAIL);
-        return [$appName, $scope, $clientID, $clientSecret, $authorize_url, $accesstoken_url, $getuserinfo_url, $header, $body, $endpoint_url, $show_customer_link, $attribute_email, $attribute_username, $customer_email];
+        return [
+            $appName,
+            $scope,
+            $clientID,
+            $clientSecret,
+            $authorize_url,
+            $accesstoken_url,
+            $getuserinfo_url,
+            $header,
+            $body,
+            $endpoint_url,
+            $show_customer_link,
+            $attribute_email,
+            $attribute_username,
+            $customer_email
+        ];
     }
 
     /**
@@ -540,7 +576,9 @@ class OAuthUtility extends Data
      */
     public function getEdition()
     {
-        return $this->productMetadata->getEdition() == 'Community' ? 'Magento Open Source' : 'Adobe Commerce Enterprise/Cloud';
+        return $this->productMetadata->getEdition() == 'Community'
+            ? 'Magento Open Source'
+            : 'Adobe Commerce Enterprise/Cloud';
     }
 
     /**

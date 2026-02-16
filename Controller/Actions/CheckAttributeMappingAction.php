@@ -200,7 +200,9 @@ class CheckAttributeMappingAction extends BaseAction
         }
 
         // Only execute admin logic and redirect when NOT in test mode:
-        $this->oauthUtility->customlog("=== CheckAttributeMappingAction: Processing authentication for: " . $userEmail);
+        $this->oauthUtility->customlog(
+            "=== CheckAttributeMappingAction: Processing authentication for: " . $userEmail
+        );
 
         // Use explicit loginType for routing decision instead of just checking admin_user table
         $isAdminLoginIntent = ($this->loginType === OAuthConstants::LOGIN_TYPE_ADMIN);
@@ -328,7 +330,9 @@ class CheckAttributeMappingAction extends BaseAction
             return $this->moOAuthCheckMapping($attrs, $flattenedAttrs, $userEmail);
         } catch (MissingAttributesException $e) {
             $this->oauthUtility->customlog("ERROR: Missing attributes - " . $e->getMessage());
-            $this->messageManager->addErrorMessage(__('Authentication failed: Required user attributes not received.'));
+            $this->messageManager->addErrorMessage(
+                __('Authentication failed: Required user attributes not received.')
+            );
             return $this->resultRedirectFactory->create()->setPath('customer/account/login');
         }
     }
@@ -442,7 +446,9 @@ class CheckAttributeMappingAction extends BaseAction
         if (!isset($attrs[$this->lastName])) {
             $parts = explode("@", $this->userEmail);
             $attrs[$this->lastName] = isset($parts[1]) ? $parts[1] : '';
-            $this->oauthUtility->customlog("Last name not provided, using email domain: " . ($parts[1] ?? 'empty'));
+            $this->oauthUtility->customlog(
+                "Last name not provided, using email domain: " . ($parts[1] ?? 'empty')
+            );
         }
     }
 
@@ -472,7 +478,9 @@ class CheckAttributeMappingAction extends BaseAction
     {
         if (!isset($attrs[$this->emailAttribute])) {
             $attrs[$this->emailAttribute] = $this->userEmail;
-            $this->oauthUtility->customlog("Email attribute not mapped, using userEmail: " . $this->userEmail);
+            $this->oauthUtility->customlog(
+                "Email attribute not mapped, using userEmail: " . $this->userEmail
+            );
         }
     }
 
@@ -566,7 +574,14 @@ class CheckAttributeMappingAction extends BaseAction
 
         try {
             // Filter sensitive data
-            $sensitiveKeys = ['access_token', 'refresh_token', 'id_token', 'client_secret', 'password', 'token'];
+            $sensitiveKeys = [
+                'access_token',
+                'refresh_token',
+                'id_token',
+                'client_secret',
+                'password',
+                'token'
+            ];
             $filteredAttrs = $attrs;
             $filteredUserInfo = $this->userInfoResponse;
 

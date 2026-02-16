@@ -111,7 +111,8 @@ class ReadAuthorizationResponse extends BaseAction
 
                 if ($isTest && strpos($relayState, 'showTestResults') !== false) {
                     // Test mode: redirect to showTestResults with error
-                    $errorUrl = $relayState . (strpos($relayState, '?') !== false ? '&' : '?') . 'oidc_error=' . $encodedError;
+                    $errorUrl = $relayState . (strpos($relayState, '?') !== false ? '&' : '?')
+                        . 'oidc_error=' . $encodedError;
                     return $this->_redirect($errorUrl);
                 }
 
@@ -149,7 +150,10 @@ class ReadAuthorizationResponse extends BaseAction
         }
 
         // Validate CSRF state token
-        if (empty($stateToken) || !$this->securityHelper->validateStateToken($originalSessionId, $stateToken)) {
+        if (
+            empty($stateToken)
+            || !$this->securityHelper->validateStateToken($originalSessionId, $stateToken)
+        ) {
             $this->oauthUtility->customlog("ERROR: State token validation failed (CSRF protection)");
             $encodedError = base64_encode('Security validation failed. Please try logging in again.');
             $query = ['_query' => ['oidc_error' => $encodedError]];
@@ -172,7 +176,9 @@ class ReadAuthorizationResponse extends BaseAction
                 $this->oauthUtility->setSessionData(OAuthConstants::APP_NAME, $app_name);
             } else {
                 $this->oauthUtility->customlog("ERROR: Invalid OAuth app configuration");
-                $encodedError = base64_encode('Invalid OAuth app configuration. Please contact the administrator.');
+                $encodedError = base64_encode(
+                    'Invalid OAuth app configuration. Please contact the administrator.'
+                );
                 $query = ['_query' => ['oidc_error' => $encodedError]];
                 if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
                     $loginUrl = $this->_url->getUrl('admin', $query);
@@ -195,10 +201,23 @@ class ReadAuthorizationResponse extends BaseAction
         if ($header == 1 && $body == 0) {
             $accessTokenRequest = (new AccessTokenRequestBody($grantType, $redirectURL, $authorizationCode))->build();
         } else {
-            $accessTokenRequest = (new AccessTokenRequest($clientID, $clientSecret, $grantType, $redirectURL, $authorizationCode))->build();
+            $accessTokenRequest = (new AccessTokenRequest(
+                $clientID,
+                $clientSecret,
+                $grantType,
+                $redirectURL,
+                $authorizationCode
+            ))->build();
         }
 
-        $accessTokenResponse = $this->curl->sendAccessTokenRequest($accessTokenRequest, $accessTokenURL, $clientID, $clientSecret, $header, $body);
+        $accessTokenResponse = $this->curl->sendAccessTokenRequest(
+            $accessTokenRequest,
+            $accessTokenURL,
+            $clientID,
+            $clientSecret,
+            $header,
+            $body
+        );
 
         $accessTokenResponseData = json_decode($accessTokenResponse, true);
 
@@ -221,13 +240,24 @@ class ReadAuthorizationResponse extends BaseAction
                         // Fallback: derive issuer from well-known URL
                         $wellKnownUrl = $clientDetails['well_known_config_url'] ?? '';
                         if (!empty($wellKnownUrl)) {
-                            $expectedIssuer = preg_replace('#/\.well-known/openid-configuration$#i', '', $wellKnownUrl);
+                            $expectedIssuer = preg_replace(
+                                '#/\.well-known/openid-configuration$#i',
+                                '',
+                                $wellKnownUrl
+                            );
                         }
                     }
-                    $userInfoResponseData = $this->jwtVerifier->verifyAndDecode($idToken, $jwksEndpoint, $expectedIssuer, $clientID);
+                    $userInfoResponseData = $this->jwtVerifier->verifyAndDecode(
+                        $idToken,
+                        $jwksEndpoint,
+                        $expectedIssuer,
+                        $clientID
+                    );
                     if ($userInfoResponseData === null) {
                         $this->oauthUtility->customlog("ERROR: JWT signature verification failed");
-                        $encodedError = base64_encode('ID token verification failed. Please contact the administrator.');
+                        $encodedError = base64_encode(
+                            'ID token verification failed. Please contact the administrator.'
+                        );
                         $query = ['_query' => ['oidc_error' => $encodedError]];
                         if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
                             $loginUrl = $this->_url->getUrl('admin', $query);
@@ -239,7 +269,10 @@ class ReadAuthorizationResponse extends BaseAction
                 } else {
                     // SECURITY: Refuse unverified JWTs — JWKS endpoint is required
                     $this->oauthUtility->customlog("ERROR: Cannot verify id_token - no JWKS endpoint configured.");
-                    $encodedError = base64_encode('OIDC configuration error: JWKS endpoint is required for id_token verification. Please configure it in the OAuth settings.');
+                    $encodedError = base64_encode(
+                        'OIDC configuration error: JWKS endpoint is required for id_token verification.'
+                        . ' Please configure it in the OAuth settings.'
+                    );
                     $query = ['_query' => ['oidc_error' => $encodedError]];
                     if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
                         $loginUrl = $this->_url->getUrl('admin', $query);
@@ -318,8 +351,12 @@ class ReadAuthorizationResponse extends BaseAction
         try {
             $this->oidcAuthService->validateUserInfo($userInfoResponseData);
         } catch (IncorrectUserInfoDataException $e) {
-            $this->oauthUtility->customlog("ERROR: Invalid user info data from OAuth provider - " . $e->getMessage());
-            $this->messageManager->addErrorMessage(__('Authentication failed: Invalid user information received from identity provider.'));
+            $this->oauthUtility->customlog(
+                "ERROR: Invalid user info data from OAuth provider - " . $e->getMessage()
+            );
+            $this->messageManager->addErrorMessage(
+                __('Authentication failed: Invalid user information received from identity provider.')
+            );
             $errorPath = ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) ? 'admin' : 'customer/account/login';
             return $this->resultRedirectFactory->create()->setPath($errorPath);
         }
@@ -329,7 +366,9 @@ class ReadAuthorizationResponse extends BaseAction
 
         $userEmail = $this->oidcAuthService->extractEmail($flattenedResponse, $userInfoResponseData);
         if (empty($userEmail)) {
-            $this->messageManager->addErrorMessage(__('Email address not received. Please check attribute mapping.'));
+            $this->messageManager->addErrorMessage(
+                __('Email address not received. Please check attribute mapping.')
+            );
             return $this->resultRedirectFactory->create()->setPath('customer/account/login');
         }
 

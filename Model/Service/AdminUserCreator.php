@@ -129,7 +129,9 @@ class AdminUserCreator
 
             $user->setRoleId($roleId);
             $this->userResource->save($user);
-            $this->oauthUtility->customlog("AdminUserCreator: Role " . $roleId . " assigned to user ID: " . $user->getId());
+            $this->oauthUtility->customlog(
+                "AdminUserCreator: Role " . $roleId . " assigned to user ID: " . $user->getId()
+            );
 
             $connection->commit();
             return $user;
@@ -193,7 +195,10 @@ class AdminUserCreator
                     // Check if user has this group (case-insensitive comparison)
                     foreach ($userGroups as $userGroup) {
                         if (strcasecmp($userGroup, $mappedGroup) === 0) {
-                            $this->oauthUtility->customlog("AdminUserCreator: Found matching role mapping: group '$userGroup' -> role ID '$mappedRole'");
+                            $this->oauthUtility->customlog(
+                                "AdminUserCreator: Found matching role mapping: group '$userGroup' "
+                                . "-> role ID '$mappedRole'"
+                            );
                             return (int) $mappedRole;
                         }
                     }
@@ -208,7 +213,10 @@ class AdminUserCreator
             return (int) $defaultRole;
         }
 
-        $this->oauthUtility->customlog("AdminUserCreator: No role mapping found and no default role configured. Denying admin creation.");
+        $this->oauthUtility->customlog(
+            "AdminUserCreator: No role mapping found and no default role configured. "
+            . "Denying admin creation."
+        );
         return null;
     }
 

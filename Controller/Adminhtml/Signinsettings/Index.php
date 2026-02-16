@@ -114,7 +114,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
                             $filePath = '../var/log/' . $fileName;
                             $content['type'] = 'filename';// type has to be "filename"
                             $content['value'] = $filePath; // path where file place
-                            $content['rm'] = 0; // if you add 1 then it will be delete from server after being download, otherwise add 0.
+                            $content['rm'] = 0; // 1 to delete from server after being download, otherwise add 0.
                             if ($this->oauthUtility->isLogEnable()) {
                                 //Customer Configuration settings.
                                 $appName = $this->oauthUtility->getStoreConfig(OAuthConstants::APP_NAME);
@@ -129,10 +129,16 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
                                     $accesstoken_url = $clientDetails['access_token_endpoint'];
                                     $getuserinfo_url = $clientDetails['user_info_endpoint'];
                                     $endpoint_url = $clientDetails['well_known_config_url'];
-                                    $show_customer_link = $this->oauthUtility->getStoreConfig(OAuthConstants::SHOW_CUSTOMER_LINK);
+                                    $show_customer_link = $this->oauthUtility->getStoreConfig(
+                                        OAuthConstants::SHOW_CUSTOMER_LINK
+                                    );
                                     $attribute_email = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_EMAIL);
-                                    $attribute_username = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_USERNAME);
-                                    $customer_email = $this->oauthUtility->getStoreConfig(OAuthConstants::DEFAULT_MAP_EMAIL);
+                                    $attribute_username = $this->oauthUtility->getStoreConfig(
+                                        OAuthConstants::MAP_USERNAME
+                                    );
+                                    $customer_email = $this->oauthUtility->getStoreConfig(
+                                        OAuthConstants::DEFAULT_MAP_EMAIL
+                                    );
                                     $plugin_version = OAuthConstants::VERSION;
                                     $magento_version = $this->productMetadata->getVersion();
                                     $php_version = phpversion();
@@ -205,16 +211,25 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         $mo_sso_auto_create_admin = isset($params['mo_sso_auto_create_admin']) ? 1 : 0;
         $mo_sso_auto_create_customer = isset($params['mo_sso_auto_create_customer']) ? 1 : 0;
         $mo_oauth_enable_login_redirect = isset($params['mo_oauth_enable_login_redirect']) ? 1 : 0;
-        $mo_oauth_logout_redirect_url = isset($params['mo_oauth_logout_redirect_url']) ? $params['mo_oauth_logout_redirect_url'] : '';
+        $mo_oauth_logout_redirect_url = isset($params['mo_oauth_logout_redirect_url'])
+            ? $params['mo_oauth_logout_redirect_url'] : '';
         $mo_disable_non_oidc_admin_login = isset($params['mo_disable_non_oidc_admin_login']) ? 1 : 0;
 
         $this->oauthUtility->customlog("SignInSettings: Saving customer link setting: " . $mo_oauth_show_customer_link);
         $this->oauthUtility->customlog("SignInSettings: Saving admin link setting: " . $mo_oauth_show_admin_link);
-        $this->oauthUtility->customlog("SignInSettings: Saving auto create admin setting: " . $mo_sso_auto_create_admin);
-        $this->oauthUtility->customlog("SignInSettings: Saving auto create customer setting: " . $mo_sso_auto_create_customer);
-        $this->oauthUtility->customlog("SignInSettings: Saving login redirect setting: " . $mo_oauth_enable_login_redirect);
+        $this->oauthUtility->customlog(
+            "SignInSettings: Saving auto create admin setting: " . $mo_sso_auto_create_admin
+        );
+        $this->oauthUtility->customlog(
+            "SignInSettings: Saving auto create customer setting: " . $mo_sso_auto_create_customer
+        );
+        $this->oauthUtility->customlog(
+            "SignInSettings: Saving login redirect setting: " . $mo_oauth_enable_login_redirect
+        );
         $this->oauthUtility->customlog("SignInSettings: Saving logout redirect url: " . $mo_oauth_logout_redirect_url);
-        $this->oauthUtility->customlog("SignInSettings: Saving disable non-OIDC admin login: " . $mo_disable_non_oidc_admin_login);
+        $this->oauthUtility->customlog(
+            "SignInSettings: Saving disable non-OIDC admin login: " . $mo_disable_non_oidc_admin_login
+        );
 
 
         $this->oauthUtility->setStoreConfig(OAuthConstants::SHOW_CUSTOMER_LINK, $mo_oauth_show_customer_link);
@@ -223,7 +238,10 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         $this->oauthUtility->setStoreConfig(OAuthConstants::AUTO_CREATE_CUSTOMER, $mo_sso_auto_create_customer);
         $this->oauthUtility->setStoreConfig(OAuthConstants::ENABLE_LOGIN_REDIRECT, $mo_oauth_enable_login_redirect);
         $this->oauthUtility->setStoreConfig(OAuthConstants::OAUTH_LOGOUT_URL, $mo_oauth_logout_redirect_url);
-        $this->oauthUtility->setStoreConfig(OAuthConstants::DISABLE_NON_OIDC_ADMIN_LOGIN, $mo_disable_non_oidc_admin_login);
+        $this->oauthUtility->setStoreConfig(
+            OAuthConstants::DISABLE_NON_OIDC_ADMIN_LOGIN,
+            $mo_disable_non_oidc_admin_login
+        );
     }
 
     /**

@@ -289,7 +289,9 @@ class CustomerUserCreator
                 ->setIsDefaultShipping(true);
 
             $this->addressRepository->save($address);
-            $this->oauthUtility->customlog("CustomerUserCreator: Address created for customer ID: " . $customer->getId());
+            $this->oauthUtility->customlog(
+                "CustomerUserCreator: Address created for customer ID: " . $customer->getId()
+            );
 
         } catch (\Exception $e) {
             $this->oauthUtility->customlog("CustomerUserCreator: ERROR creating address: " . $e->getMessage());

@@ -139,7 +139,10 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
                         $this->oauthUtility->reinitConfig();
                     } else {
                         $this->messageManager->addErrorMessage('Please Select Required OAuth Endpoints option');
-                        $this->oauthUtility->customlog('Error in Controller->Adminhtml->OAuthsettings->index file...Please Select Required OAuth Endpoints option');
+                        $this->oauthUtility->customlog(
+                            'Error in Controller->Adminhtml->OAuthsettings->index file...'
+                            . 'Please Select Required OAuth Endpoints option'
+                        );
                     }
 
 

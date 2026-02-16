@@ -33,24 +33,25 @@ class OAuthMessages
     //General Flow Messages
     public const REQUIRED_FIELDS = 'Please fill in the required fields.';
     public const ERROR_OCCURRED = 'An error occured while processing your request. Please try again.';
-    public const NOT_REG_ERROR = 'Please register and verify your account before trying to configure your settings. Go the Account 
-                                            Section to complete your registration registered.';
+    public const NOT_REG_ERROR = 'Please register and verify your account before trying to configure your settings.'
+        . ' Go the Account Section to complete your registration registered.';
     public const INVALID_OP = 'Invalid Operation. Please Try Again.';
     public const INVALID_REG = "Incomplete Details or Session Expired. Please Register again.";
 
     //Licensing Messages
-    public const INVALID_LICENSE = 'License key for this instance is incorrect. Make sure you have not tampered with it at all. 
-                                            Please enter a valid license key.';
-    public const LICENSE_KEY_IN_USE = 'License key you have entered has already been used. Please enter a key which has not been used 
-                                            before on any other instance or if you have exausted all your keys then contact us at 
-                                            info@xecurify.com to buy more keys.';
+    public const INVALID_LICENSE = 'License key for this instance is incorrect. Make sure you have not'
+        . ' tampered with it at all. Please enter a valid license key.';
+    public const LICENSE_KEY_IN_USE = 'License key you have entered has already been used. Please enter a key'
+        . ' which has not been used before on any other instance or if you have exausted all your keys then'
+        . ' contact us at info@xecurify.com to buy more keys.';
     public const ENTERED_INVALID_KEY = 'You have entered an invalid license key. Please enter a valid license key.';
     public const LICENSE_VERIFIED = 'Your license is verified. You can now setup the plugin.';
-    public const NOT_UPGRADED_YET = 'You have not upgraded yet. <a href="{{url}}">Click here</a> to upgrade to premium version.';
+    public const NOT_UPGRADED_YET = 'You have not upgraded yet. <a href="{{url}}">Click here</a>'
+        . ' to upgrade to premium version.';
 
     //cURL Error
-    public const CURL_ERROR = 'ERROR: <a href="http://php.net/manual/en/curl.installation.php" target="_blank">PHP cURL extension</a> 
-                                            is not installed or disabled. Query submit failed.';
+    public const CURL_ERROR = 'ERROR: <a href="http://php.net/manual/en/curl.installation.php" target="_blank">'
+        . 'PHP cURL extension</a> is not installed or disabled. Query submit failed.';
 
     //Query Form Error
     public const REQUIRED_QUERY_FIELDS = 'Please fill up Email and Query fields to submit your query.';
@@ -79,15 +80,14 @@ class OAuthMessages
         . " This login option is only available for users with existing admin accounts. Please contact your site"
         . " administrator if you believe you should have admin access.";
 
-
-
     /**
      * Parse the message and replace the dynamic values with the
      * necessary values. The dynamic values needs to be passed in
      * the key value pair. Key is usually of the form {{key}}.
      *
-     * @param $message
-     * @param $data
+     * @param string $message
+     * @param array $data
+     * @return string
      */
     public static function parse(string $message, array $data = []): string
     {

@@ -131,18 +131,18 @@ class Data extends AbstractHelper
     /**
      * Set the entry in the OAuthClientApp Table
      *
-     * @param $mo_oauth_app_name
-     * @param $mo_oauth_client_id
-     * @param  $mo_oauth_client_secret
-     * @param  $mo_oauth_scope
-     * @param  $mo_oauth_endsession_url
-     * @param  $mo_oauth_authorize_url
-     * @param  $mo_oauth_accesstoken_url
-     * @param  $mo_oauth_grant_type
-     * @param  $mo_oauth_getuserinfo_url
-     * @param  $send_header
-     * @param  $send_body
-     * @param  $jwksURL
+     * @param string $mo_oauth_app_name
+     * @param string $mo_oauth_client_id
+     * @param string $mo_oauth_client_secret
+     * @param string $mo_oauth_scope
+     * @param string $mo_oauth_authorize_url
+     * @param string $mo_oauth_accesstoken_url
+     * @param string $mo_oauth_getuserinfo_url
+     * @param string $mo_oauth_well_known_config_url
+     * @param string $mo_oauth_grant_type
+     * @param bool $send_header
+     * @param bool $send_body
+     * @param string $mo_oauth_issuer
      */
 
     public function setOAuthClientApps(
@@ -164,7 +164,9 @@ class Data extends AbstractHelper
             "app_name" => $this->sanitize($mo_oauth_app_name),
             "callback_uri" => '',
             "clientID" => $this->sanitize($mo_oauth_client_id),
-            "client_secret" => $this->encryptor->encrypt($this->sanitize($mo_oauth_client_secret)),
+            "client_secret" => $this->encryptor->encrypt(
+                $this->sanitize($mo_oauth_client_secret)
+            ),
             "scope" => $this->sanitize($mo_oauth_scope),
             "authorize_endpoint" => $this->sanitize($mo_oauth_authorize_url),
             "access_token_endpoint" => $this->sanitize($mo_oauth_accesstoken_url),
@@ -223,7 +225,8 @@ class Data extends AbstractHelper
     /**
      * Function to extract data stored in the store config table.
      *
-     * @param $config
+     * @param string $config
+     * @return mixed
      */
     public function getStoreConfig($config)
     {
@@ -245,7 +248,10 @@ class Data extends AbstractHelper
         $this->configWriter->save('miniorange/oauth/' . $config, $finalValue);
 
         // If this is an admin or customer link setting, also update the OAuth client app table
-        if ($config === OAuthConstants::SHOW_ADMIN_LINK || $config === OAuthConstants::SHOW_CUSTOMER_LINK) {
+        if (
+            $config === OAuthConstants::SHOW_ADMIN_LINK
+            || $config === OAuthConstants::SHOW_CUSTOMER_LINK
+        ) {
             try {
                 $collection = $this->getOAuthClientApps();
                 if ($collection && count($collection) > 0) {
@@ -268,10 +274,10 @@ class Data extends AbstractHelper
      * database and save it. Mostly used in the SSO flow to
      * update user attributes. Decides which user to update.
      *
-     * @param $url
-     * @param $value
-     * @param $id
-     * @param $admin
+     * @param string $url
+     * @param mixed $value
+     * @param int|string $id
+     * @param bool $admin
      * @throws \Exception
      */
     public function saveConfig($url, $value, $id, $admin)
@@ -283,8 +289,9 @@ class Data extends AbstractHelper
     /**
      * Function to extract information stored in the admin user table.
      *
-     * @param $config
-     * @param $id
+     * @param string $config
+     * @param int|string $id
+     * @return mixed
      */
     public function getAdminStoreConfig($config, $id)
     {
@@ -318,8 +325,9 @@ class Data extends AbstractHelper
     /**
      * Function to extract information stored in the customer user table.
      *
-     * @param $config
-     * @param $id
+     * @param string $config
+     * @param int|string $id
+     * @return mixed
      */
     public function getCustomerStoreConfig($config, $id)
     {
@@ -406,7 +414,9 @@ class Data extends AbstractHelper
      */
     public function getImageUrl($image)
     {
-        return $this->assetRepo->getUrl(OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_IMAGES . $image);
+        return $this->assetRepo->getUrl(
+            OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_IMAGES . $image
+        );
     }
 
 
@@ -466,7 +476,10 @@ class Data extends AbstractHelper
     public function getResourcePath($key)
     {
         return $this->assetRepo
-            ->createAsset(OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_CERTS . $key, ['area' => 'adminhtml'])
+            ->createAsset(
+                OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_CERTS . $key,
+                ['area' => 'adminhtml']
+            )
             ->getSourceFile();
     }
 

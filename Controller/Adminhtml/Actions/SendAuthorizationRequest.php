@@ -82,7 +82,10 @@ class SendAuthorizationRequest extends BaseAction
         $islogEnable = $this->oauthUtility->getStoreConfig(OAuthConstants::ENABLE_DEBUG_LOG);
         $log_file_exist = $this->oauthUtility->isCustomLogExist();
 
-        if ((($Log_file_time != null && ($current_time - $Log_file_time) >= 60 * 60 * 24 * 7) && $islogEnable) || ($islogEnable == 0 && $log_file_exist)) {
+        if (
+            (($Log_file_time != null && ($current_time - $Log_file_time) >= 60 * 60 * 24 * 7) && $islogEnable)
+            || ($islogEnable == 0 && $log_file_exist)
+        ) {
             $this->oauthUtility->setStoreConfig(OAuthConstants::ENABLE_DEBUG_LOG, 0);
             $chk_enable_log = 0;
             $this->oauthUtility->setStoreConfig(OAuthConstants::LOG_FILE_TIME, null);
@@ -99,7 +102,9 @@ class SendAuthorizationRequest extends BaseAction
 
         $isFromPopup = isset($params['from_popup']) && $params['from_popup'] == '1';
 
-        $app_name = isset($params['app_name']) ? $params['app_name'] : $this->oauthUtility->getStoreConfig(OAuthConstants::APP_NAME);
+        $app_name = isset($params['app_name'])
+            ? $params['app_name']
+            : $this->oauthUtility->getStoreConfig(OAuthConstants::APP_NAME);
         $this->oauthUtility->customlog("SendAuthorizationRequest: Using app_name: " . $app_name);
 
         $currentSessionId = $this->sessionManager->getSessionId();
@@ -107,7 +112,9 @@ class SendAuthorizationRequest extends BaseAction
 
         if (!$app_name) {
             $backendLoginUrl = $this->urlBuilder->getUrl('adminhtml/auth/login');
-            $this->messageManager->addErrorMessage('App name not found. Please contact the administrator for assistance.');
+            $this->messageManager->addErrorMessage(
+                'App name not found. Please contact the administrator for assistance.'
+            );
             return $this->resultRedirectFactory->create()->setUrl($backendLoginUrl);
         }
         $this->oauthUtility->setSessionData(OAuthConstants::APP_NAME, $app_name);
@@ -158,7 +165,9 @@ class SendAuthorizationRequest extends BaseAction
             $testKey = bin2hex(random_bytes(16));
             $baseUrl = $this->oauthUtility->getBaseUrl();
             $testRelayState = $baseUrl . 'mooauth/actions/showTestResults/key/' . $testKey . '/';
-            $this->oauthUtility->customlog("SendAuthorizationRequest: Test-Flow, setting relayState to: " . $testRelayState);
+            $this->oauthUtility->customlog(
+                "SendAuthorizationRequest: Test-Flow, setting relayState to: " . $testRelayState
+            );
             // Rebuild combined state preserving sessionId, appName, loginType, stateToken
             $relayState = $this->securityHelper->encodeRelayState(
                 $testRelayState,

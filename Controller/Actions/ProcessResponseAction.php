@@ -55,8 +55,12 @@ class ProcessResponseAction extends BaseAction
         try {
             $this->validateUserInfoData();
         } catch (IncorrectUserInfoDataException $e) {
-            $this->oauthUtility->customlog("ERROR: Invalid user info data from OAuth provider - " . $e->getMessage());
-            $this->messageManager->addErrorMessage(__('Authentication failed: Invalid user information received from identity provider.'));
+            $this->oauthUtility->customlog(
+                "ERROR: Invalid user info data from OAuth provider - " . $e->getMessage()
+            );
+            $this->messageManager->addErrorMessage(
+                __('Authentication failed: Invalid user information received from identity provider.')
+            );
             return $this->resultRedirectFactory->create()->setPath('customer/account/login');
         }
 
@@ -73,11 +77,14 @@ class ProcessResponseAction extends BaseAction
         }
 
         $userEmail = '';
-        if (isset($flattenedUserInfoResponse[$emailAttribute])
+        if (
+            isset($flattenedUserInfoResponse[$emailAttribute])
             && filter_var($flattenedUserInfoResponse[$emailAttribute], FILTER_VALIDATE_EMAIL)
         ) {
             $userEmail = $flattenedUserInfoResponse[$emailAttribute];
-            $this->oauthUtility->customlog("ProcessResponseAction: Email found via configured attribute '$emailAttribute': " . $userEmail);
+            $this->oauthUtility->customlog(
+                "ProcessResponseAction: Email found via configured attribute '$emailAttribute': " . $userEmail
+            );
         }
 
         // Fallback to recursive search if configured attribute didn't yield an email
@@ -86,7 +93,9 @@ class ProcessResponseAction extends BaseAction
         }
 
         if (empty($userEmail)) {
-            $this->messageManager->addErrorMessage(__('Email address not received. Please check attribute mapping.'));
+            $this->messageManager->addErrorMessage(
+                __('Email address not received. Please check attribute mapping.')
+            );
             return $this->resultRedirectFactory->create()->setPath('customer/account/login');
         }
 

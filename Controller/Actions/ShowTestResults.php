@@ -50,34 +50,52 @@ class ShowTestResults extends Action
     /** @var \Magento\Customer\Model\Session */
     private $customerSession;
 
+    /** @var string HTML template for the test results page */
     private $template = '<div style="font-family:Calibri;padding:0 3%;">{{header}}{{commonbody}}{{footer}}</div>';
-    private $successHeader = '<div style="color: #3c763d;background-color: #dff0d8; padding:2%;margin-bottom:20px;text-align:center; border:1px solid #AEDB9A; font-size:18pt;">TEST SUCCESSFUL</div>
-                              <div style="display:block;text-align:center;margin-bottom:4%;"><img style="width:15%;" src="{{right}}"></div>';
-    private $errorHeader = '<div style="color: #a94442;background-color: #f2dede;padding: 15px;margin-bottom: 20px;text-align:center; border:1px solid #E6B3B2;font-size:18pt;">TEST FAILED</div>
-                              <div style="display:block;text-align:center;margin-bottom:4%;"><img style="width:15%;"src="{{wrong}}"></div>';
-    private $unsuccessfulHeader = '<div style="color: #a94442;background-color: #f2dede;padding: 15px;margin-bottom: 20px;text-align:center; border:1px solid #E6B3B2;font-size:18pt;">TEST UNSUCCESSFUL</div>
-                              <div style="display:block;text-align:center;margin-bottom:4%;"><img style="width:15%;"src="{{wrong}}"></div>';
-    private $errorBody = '<div style="font-size:14pt;padding:15px;background-color:#fff3cd;border:1px solid #ffc107;border-radius:4px;margin-bottom:20px;">
-                            <p style="font-weight:bold;color:#856404;margin:0 0 10px 0;">Error Message:</p>
-                            <p style="color:#856404;margin:0;">{{error_message}}</p>
-                          </div>';
-    private $commonBody = '<span style="font-size:14pt;"><b>Hello {{greeting_name}},</b></span><br/>
-                                <p style="font-weight:bold;font-size:14pt;margin-left:1%;">ATTRIBUTES RECEIVED:</p>
-                                <table style="border-collapse:collapse;border-spacing:0; display:table;width:100%;
-                                    font-size:14pt;background-color:#EDEDED;">
-                                    <tr style="text-align:center;">
-                                        <td style="font-weight:bold;border:2px solid #949090;padding:2%;">ATTRIBUTE NAME</td>
-                                        <td style="font-weight:bold;padding:2%;border:2px solid #949090; word-wrap:break-word;">ATTRIBUTE VALUE</td>
-                                    </tr>{{tablecontent}}
-                                </table>';
-    private $footer = '<div style="margin:3%;display:block;text-align:center;">
-                            <input style="padding:1%;width:100px;background: #0091CD none repeat scroll 0% 0%;cursor: pointer;
-                                font-size:15px;border-width: 1px;border-style: solid;border-radius: 3px;white-space: nowrap;
-                                    box-sizing: border-box;border-color: #0073AA;box-shadow: 0px 1px 0px rgba(120, 200, 230, 0.6) inset;
-                                    color: #FFF;" type="button" value="Done" onClick="window.close();"></div>';
 
-    private $tableContent = "<tr><td style='font-weight:bold;border:2px solid #949090;padding:2%;'>{{key}}</td><td style='padding:2%;
-                                    border:2px solid #949090; word-wrap:break-word;'>{{value}}</td></tr>";
+    /** @var string HTML header for successful test */
+    private $successHeader = '<div style="color: #3c763d;background-color: #dff0d8; padding:2%;'
+        . 'margin-bottom:20px;text-align:center; border:1px solid #AEDB9A; '
+        . 'font-size:18pt;">TEST SUCCESSFUL</div>'
+        . '<div style="display:block;text-align:center;margin-bottom:4%;">'
+        . '<img style="width:15%;" src="{{right}}"></div>';
+    /** @var string HTML header for failed test */
+    private $errorHeader = '<div style="color: #a94442;background-color: #f2dede;padding: 15px;'
+        . 'margin-bottom: 20px;text-align:center; border:1px solid #E6B3B2;font-size:18pt;">TEST FAILED</div>'
+        . '<div style="display:block;text-align:center;margin-bottom:4%;">'
+        . '<img style="width:15%;"src="{{wrong}}"></div>';
+    /** @var string HTML header for unsuccessful test */
+    private $unsuccessfulHeader = '<div style="color: #a94442;background-color: #f2dede;padding: 15px;'
+        . 'margin-bottom: 20px;text-align:center; border:1px solid #E6B3B2;font-size:18pt;">'
+        . 'TEST UNSUCCESSFUL</div>'
+        . '<div style="display:block;text-align:center;margin-bottom:4%;">'
+        . '<img style="width:15%;"src="{{wrong}}"></div>';
+    /** @var string HTML template for error message display */
+    private $errorBody = '<div style="font-size:14pt;padding:15px;background-color:#fff3cd;'
+        . 'border:1px solid #ffc107;border-radius:4px;margin-bottom:20px;">'
+        . '<p style="font-weight:bold;color:#856404;margin:0 0 10px 0;">Error Message:</p>'
+        . '<p style="color:#856404;margin:0;">{{error_message}}</p></div>';
+    /** @var string HTML template for common body with attributes table */
+    private $commonBody = '<span style="font-size:14pt;"><b>Hello {{greeting_name}},</b></span><br/>'
+        . '<p style="font-weight:bold;font-size:14pt;margin-left:1%;">ATTRIBUTES RECEIVED:</p>'
+        . '<table style="border-collapse:collapse;border-spacing:0; display:table;width:100%;'
+        . 'font-size:14pt;background-color:#EDEDED;">'
+        . '<tr style="text-align:center;">'
+        . '<td style="font-weight:bold;border:2px solid #949090;padding:2%;">ATTRIBUTE NAME</td>'
+        . '<td style="font-weight:bold;padding:2%;border:2px solid #949090; '
+        . 'word-wrap:break-word;">ATTRIBUTE VALUE</td>'
+        . '</tr>{{tablecontent}}</table>';
+    /** @var string HTML template for footer with Done button */
+    private $footer = '<div style="margin:3%;display:block;text-align:center;">'
+        . '<input style="padding:1%;width:100px;background: #0091CD none repeat scroll 0% 0%;cursor: pointer;'
+        . 'font-size:15px;border-width: 1px;border-style: solid;border-radius: 3px;white-space: nowrap;'
+        . 'box-sizing: border-box;border-color: #0073AA;'
+        . 'box-shadow: 0px 1px 0px rgba(120, 200, 230, 0.6) inset;'
+        . 'color: #FFF;" type="button" value="Done" onClick="window.close();"></div>';
+
+    /** @var string HTML template for table row content */
+    private $tableContent = "<tr><td style='font-weight:bold;border:2px solid #949090;padding:2%;'>{{key}}</td>"
+        . "<td style='padding:2%;border:2px solid #949090; word-wrap:break-word;'>{{value}}</td></tr>";
 
     /**
      * Initialize ShowTestResults action.
@@ -273,10 +291,10 @@ class ShowTestResults extends Action
                     $value = [$value];
                 }
                 if (!in_array(null, $value)) {
-                    $escapedKey = $this->escaper->escapeHtml((string)$key);
+                    $escapedKey = $this->escaper->escapeHtml((string) $key);
                     $escapedValues = array_map(
                         function ($v) {
-                                return (string)$this->escaper->escapeHtml((string)$v);
+                            return (string) $this->escaper->escapeHtml((string) $v);
                         },
                         $value
                     );

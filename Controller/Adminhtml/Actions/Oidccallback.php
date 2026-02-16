@@ -164,7 +164,9 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
             }
 
             $user = $userCollection->getFirstItem();
-            $this->oauthUtility->customlog("Admin user found - ID: " . $user->getId() . ", Username: " . $user->getUsername());
+            $this->oauthUtility->customlog(
+                "Admin user found - ID: " . $user->getId() . ", Username: " . $user->getUsername()
+            );
 
             // Verify user is active
             if (!$user->getIsActive()) {
@@ -217,7 +219,9 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
                 }
 
             } catch (\Magento\Framework\Exception\AuthenticationException $e) {
-                $this->oauthUtility->customlog("ERROR: Authentication failed: " . $e->getMessage());
+                $this->oauthUtility->customlog(
+                    "ERROR: Authentication failed: " . $e->getMessage()
+                );
                 return $this->redirectToLoginWithError(__($e->getMessage()));
             }
 
@@ -228,7 +232,9 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
             return $resultRedirect;
 
         } catch (\Exception $e) {
-            $this->oauthUtility->customlog("EXCEPTION in OIDC admin callback: " . $e->getMessage());
+            $this->oauthUtility->customlog(
+                "EXCEPTION in OIDC admin callback: " . $e->getMessage()
+            );
             $trace = $e->getTraceAsString();
             $this->oauthUtility->customlog("Stack trace: " . $trace);
 

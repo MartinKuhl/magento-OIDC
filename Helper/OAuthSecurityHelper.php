@@ -130,8 +130,13 @@ class OAuthSecurityHelper
      * @param string $stateToken CSRF state token
      * @return string URL-safe base64-encoded JSON string
      */
-    public function encodeRelayState(string $relayState, string $sessionId, string $appName, string $loginType, string $stateToken): string
-    {
+    public function encodeRelayState(
+        string $relayState,
+        string $sessionId,
+        string $appName,
+        string $loginType,
+        string $stateToken
+    ): string {
         $data = [
             'r' => $relayState,
             's' => $sessionId,
@@ -146,7 +151,8 @@ class OAuthSecurityHelper
      * Decode a URL-safe JSON+Base64 relay state string.
      *
      * @param string $encoded The encoded state string
-     * @return array|null Associative array with keys: relayState, sessionId, appName, loginType, stateToken; or null on failure
+     * @return array|null Associative array with keys: relayState, sessionId, appName,
+     *                    loginType, stateToken; or null on failure
      */
     public function decodeRelayState(string $encoded): ?array
     {

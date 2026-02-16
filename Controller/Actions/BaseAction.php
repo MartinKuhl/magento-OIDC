@@ -60,7 +60,8 @@ abstract class BaseAction extends \Magento\Framework\App\Action\Action
 
         // Legacy single-parameter form
         foreach ($array as $key => $value) {
-            if ((is_array($value) && (!isset($value[$key]) || $this->oauthUtility->isBlank($value[$key])))
+            if (
+                (is_array($value) && (!isset($value[$key]) || $this->oauthUtility->isBlank($value[$key])))
                 || $this->oauthUtility->isBlank($value)
             ) {
                 throw new RequiredFieldsException();
@@ -83,7 +84,9 @@ abstract class BaseAction extends \Magento\Framework\App\Action\Action
      */
     protected function sendHTTPRedirectRequest($oauthRequest, $authorizeUrl, $relayState = '', $params = [])
     {
-        $this->oauthUtility->customlog("BaseAction: sendHTTPRedirectRequest - Ensuring PHP session is properly saved before redirect");
+        $this->oauthUtility->customlog(
+            "BaseAction: sendHTTPRedirectRequest - Ensuring PHP session is properly saved before redirect"
+        );
 
         // Session handling relies on Magento specific session managers.
         // Manual session_write_close removed to prevent conflicts.

@@ -30,12 +30,12 @@ class OidcCredentialPlugin
     protected OAuthUtility $oauthUtility;
 
     /**
-     * Flag indicating OIDC authentication is in progress
+     * @var bool Flag indicating OIDC authentication is in progress
      */
     private bool $isOidcAuth = false;
 
     /**
-     * Guard flag to prevent duplicate log entries.
+     * @var bool Guard flag to prevent duplicate log entries.
      *
      * getCredentialStorage() is called multiple times during a single login
      * flow (login method, observers, session init). We only log once.
