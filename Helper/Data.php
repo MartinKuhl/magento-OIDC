@@ -33,7 +33,7 @@ class Data extends AbstractHelper
     /**
      * @var ScopeConfigInterface
      */
-    private ScopeConfigInterface $scopeConfig;
+    protected ScopeConfigInterface $scopeConfig;
 
     /**
      * @var UserFactory

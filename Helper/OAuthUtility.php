@@ -137,6 +137,7 @@ class OAuthUtility extends Data
         $this->dateTime = $dateTime;
         $this->directoryList = $directoryList;
         parent::__construct(
+            $context,
             $scopeConfig,
             $adminFactory,
             $customerFactory,
@@ -151,7 +152,8 @@ class OAuthUtility extends Data
             $userResource,
             $customerResource,
             $encryptor,
-            $escaper
+            $escaper,
+            $logger  
         );
     }
 
