@@ -297,7 +297,6 @@ class ProcessUserAction
         return $this->customerLoginAction->setUser($user)->setRelayState('/')->execute();
     }
 
-    //additionally handle admin user creation if required
     /**
      * Create a new customer user from OIDC attributes.
      *
@@ -305,38 +304,45 @@ class ProcessUserAction
      * @param string|null $firstName
      * @param string|null $lastName
      * @param string|null $userName
-     * @return \Magento\Customer\Model\Customer
+     * @return \Magento\Customer\Api\Data\CustomerInterface
+     * @throws \RuntimeException If customer creation fails
      */
     private function createNewUser(
         string $userEmail,
-        string $userName,
-        string $firstName,
-        string $lastName
-    ): ?CustomerInterface {
-        {
-            if (empty($firstName)) {
-                $parts = explode("@", $userEmail);
-                $firstName = $parts[0];
-            }
+        ?string $firstName,
+        ?string $lastName,
+        ?string $userName
+    ): \Magento\Customer\Api\Data\CustomerInterface {
+        if (empty($firstName)) {
+            $parts = explode("@", $userEmail);
+            $firstName = $parts[0];
+        }
 
-            if (empty($lastName)) {
-                $parts = explode("@", $userEmail);
-                $lastName = $parts[1] ?? $parts[0];
-            }
+        if (empty($lastName)) {
+            $parts = explode("@", $userEmail);
+            $lastName = $parts[1] ?? $parts[0];
+        }
 
-            $userName = !$this->oauthUtility->isBlank($userName) ? $userName : $userEmail;
-            $firstName = !$this->oauthUtility->isBlank($firstName) ? $firstName : $userName;
-            $lastName = !$this->oauthUtility->isBlank($lastName) ? $lastName : $userName;
+        $userName = !$this->oauthUtility->isBlank($userName) ? $userName : $userEmail;
+        $firstName = !$this->oauthUtility->isBlank($firstName) ? $firstName : $userName;
+        $lastName = !$this->oauthUtility->isBlank($lastName) ? $lastName : $userName;
 
-            return $this->customerUserCreator->createCustomer(
-                $userEmail,
-                $userName,
-                $firstName,
-                $lastName,
-                $this->flattenedattrs,
-                $this->attrs
+        $customer = $this->customerUserCreator->createCustomer(
+            $userEmail,
+            $userName,
+            $firstName,
+            $lastName,
+            $this->flattenedattrs,
+            $this->attrs
+        );
+
+        if ($customer === null) {
+            throw new \RuntimeException(
+                sprintf('Failed to create customer account for email: %s', $userEmail)
             );
         }
+
+        return $customer;
     }
 
     /**
