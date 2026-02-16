@@ -2,92 +2,72 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Plugin\User;
-
-use Magento\Backend\App\Action\Context;
-use Magento\Backend\Model\Auth;
-use Magento\Backend\Model\Auth\Session as AuthSession;
-use Magento\Framework\App\RequestInterface;
-use Magento\Framework\Event\ManagerInterface as EventManager;
-use MiniOrange\OAuth\Helper\OAuthUtility;
-use MiniOrange\OAuth\Model\OidcCredentialAdapter;
-
 /**
- * Plugin for Magento\Backend\Model\Auth
+ * OIDC Credential Plugin
  *
- * Intercepts the admin authentication flow to support OIDC (OpenID Connect)
- * single sign-on. When a login request originates from the OIDC callback,
- * the default credential storage is replaced with OidcCredentialAdapter,
- * which validates the user based on the OIDC identity token rather than
- * a username/password combination.
+ * Intercepts Auth credential storage retrieval to inject OIDC adapter when
+ * OIDC authentication is detected.
  *
- * Key responsibilities:
- * - Detect OIDC-originated login requests via the "oidc" request parameter
- * - Replace the credential storage with OidcCredentialAdapter for OIDC logins
- * - Set the session flag "IsOidcAuthenticated" so downstream plugins can
- *   distinguish OIDC users from password-authenticated users
- * - Prevent duplicate log entries for repeated getCredentialStorage() calls
- *
- * @see \MiniOrange\OAuth\Model\OidcCredentialAdapter
- * @see \MiniOrange\OAuth\Plugin\User\OidcPasswordExpirationPlugin
- * @see \MiniOrange\OAuth\Plugin\User\OidcForcePasswordChangePlugin
+ * @package MiniOrange\OAuth\Plugin\Auth
  */
+namespace MiniOrange\OAuth\Plugin\Auth;
+
+use Magento\Backend\Model\Auth;
+use Magento\Backend\Model\Auth\Credential\StorageInterface;
+use MiniOrange\OAuth\Model\Auth\OidcCredentialAdapter;
+use MiniOrange\OAuth\Helper\OAuthUtility;
+
 class OidcCredentialPlugin
 {
     /**
-     * Indicates whether the current request is an OIDC authentication flow.
+     * @var OidcCredentialAdapter
      */
-    private bool $isOidcAuth = false;
+    protected OidcCredentialAdapter $oidcCredentialAdapter;
 
     /**
-     * Guard flag to prevent duplicate log entries.
+     * @var OAuthUtility
+     */
+    protected OAuthUtility $oauthUtility;
+
+    /**
+     * Flag indicating OIDC authentication is in progress
      *
-     * getCredentialStorage() is called multiple times during a single login
-     * flow (login method, observers, session init). We only want to log once.
+     * @var bool
      */
-    private bool $adapterLogged = false;
+    protected bool $isOidcAuth = false;
 
     /**
-     * @param RequestInterface       $request
-     * @param OidcCredentialAdapter   $oidcCredentialAdapter
-     * @param AuthSession             $authSession
-     * @param OAuthUtility            $oauthUtility
-     * @param EventManager            $eventManager
+     * @param OidcCredentialAdapter $oidcCredentialAdapter
+     * @param OAuthUtility $oauthUtility
      */
     public function __construct(
-        private readonly RequestInterface $request,
-        private readonly OidcCredentialAdapter $oidcCredentialAdapter,
-        private readonly AuthSession $authSession,
-        private readonly OAuthUtility $oauthUtility,
-        private readonly EventManager $eventManager
+        OidcCredentialAdapter $oidcCredentialAdapter,
+        OAuthUtility $oauthUtility
     ) {
+        $this->oidcCredentialAdapter = $oidcCredentialAdapter;
+        $this->oauthUtility = $oauthUtility;
     }
 
     /**
      * Before plugin for Auth::login()
      *
-     * Detects whether the login request originates from the OIDC callback
-     * by checking for the "oidc" request parameter. If present, the plugin
-     * sets the internal OIDC flag so that getCredentialStorage() returns
-     * the OidcCredentialAdapter instead of the default credential storage.
+     * Detects OIDC authentication by checking for OIDC token marker.
      *
-     * @param Auth   $subject
+     * @param Auth $subject
      * @param string $username
      * @param string $password
-     *
-     * @return array The original arguments, unmodified
+     * @return array{0: string, 1: string}
      */
     public function beforeLogin(
         Auth $subject,
         string $username,
         string $password
     ): array {
-        if ($this->request->getParam('oidc')) {
-            $this->oauthUtility->customlog(
-                "OidcCredentialPlugin: OIDC login detected for user: " . $username
-            );
+        if ($password === OidcCredentialAdapter::OIDC_TOKEN_MARKER) {
+            $this->oauthUtility->customlog("OidcCredentialPlugin: OIDC authentication detected for: " . $username);
             $this->isOidcAuth = true;
-            $this->adapterLogged = false;
+        } else {
+            $this->isOidcAuth = false;
         }
 
         return [$username, $password];
@@ -96,30 +76,18 @@ class OidcCredentialPlugin
     /**
      * Around plugin for Auth::getCredentialStorage()
      *
-     * During an OIDC login flow, this replaces Magento's default credential
-     * storage (which expects a password hash) with the OidcCredentialAdapter.
+     * Returns OIDC adapter when OIDC authentication is active.
      *
-     * Note: This method is called multiple times during a single login
-     * (by Auth::login(), observers, session initialization, etc.).
-     * The log guard ensures we only emit one log entry per login flow.
-     *
-     * @param Auth     $subject
+     * @param Auth $subject
      * @param callable $proceed
-     *
-     * @return \Magento\Backend\Model\Auth\Credential\StorageInterface
+     * @return StorageInterface
      */
     public function aroundGetCredentialStorage(
         Auth $subject,
         callable $proceed
-    ) {
+    ): StorageInterface {
         if ($this->isOidcAuth) {
-            if (!$this->adapterLogged) {
-                $this->oauthUtility->customlog(
-                    "OidcCredentialPlugin: Returning OIDC credential adapter"
-                );
-                $this->adapterLogged = true;
-            }
-
+            $this->oauthUtility->customlog("OidcCredentialPlugin: Returning OIDC credential adapter");
             return $this->oidcCredentialAdapter;
         }
 
@@ -129,32 +97,19 @@ class OidcCredentialPlugin
     /**
      * After plugin for Auth::login()
      *
-     * Performs post-login cleanup for OIDC authentication:
-     * - Sets the session flag "IsOidcAuthenticated" so that other plugins
-     *   (e.g. OidcPasswordExpirationPlugin, OidcForcePasswordChangePlugin)
-     *   can identify this session as OIDC-authenticated
-     * - Resets internal state flags for the next potential login
+     * Cleans up OIDC authentication flag after login completes.
      *
-     * @param Auth  $subject
-     * @param mixed $result
-     *
-     * @return mixed The original result, unmodified
+     * @param Auth $subject
+     * @param null $result Result is always null (Auth::login() returns void)
+     * @return void
      */
     public function afterLogin(
         Auth $subject,
         $result
-    ) {
+    ): void {
         if ($this->isOidcAuth) {
-            $this->authSession->setIsOidcAuthenticated(true);
-
-            $this->oauthUtility->customlog(
-                "OidcCredentialPlugin: OIDC session flag set, cleaning up"
-            );
-
+            $this->oauthUtility->customlog("OidcCredentialPlugin: Cleaning up OIDC flag after login");
             $this->isOidcAuth = false;
-            $this->adapterLogged = false;
         }
-
-        return $result;
     }
 }
