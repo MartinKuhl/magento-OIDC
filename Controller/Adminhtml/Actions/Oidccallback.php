@@ -61,14 +61,26 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
 
     /** @var \Magento\Framework\App\Config\ScopeConfigInterface */
     private $scopeConfig;
+
     /** @var \Magento\User\Model\ResourceModel\User\CollectionFactory */
     protected $userCollectionFactory;
 
     /**
      * Initialize OIDC callback action.
      *
-     * @param \Magento\Backend\App\Action\Context $context
+     * @param \Magento\User\Model\UserFactory $userFactory
+     * @param \Magento\Backend\Model\Auth $auth
+     * @param ResultFactory $resultFactory
+     * @param RequestInterface $request
      * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     * @param ManagerInterface $messageManager
+     * @param UrlInterface $url
+     * @param CookieManagerInterface $cookieManager
+     * @param CookieMetadataFactory $cookieMetadataFactory
+     * @param BackendUrlInterface $backendUrl
+     * @param OAuthSecurityHelper $securityHelper
+     * @param \Magento\User\Model\ResourceModel\User\CollectionFactory $userCollectionFactory
+     * @param \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
      */
     public function __construct(
         \Magento\User\Model\UserFactory $userFactory,
@@ -183,18 +195,21 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
                     }
 
                     // Set OIDC authentication cookie (persists across session boundary)
-                    $adminPath = '/' . $this->backendUrl->getAreaFrontName();
+                    // Path MUST be '/' so the cookie is readable on all admin sub-paths.
+                    // Using $adminPath (e.g. '/admin') caused the cookie to be invisible
+                    // on sub-routes where performIdentityCheck() is triggered.
                     $adminSessionLifetime = (int) $this->scopeConfig->getValue('admin/security/session_lifetime') ?: 3600;
                     $metadata = $this->cookieMetadataFactory->createPublicCookieMetadata();
                     $metadata->setDuration($adminSessionLifetime);
-                    $metadata->setPath('/');                  // Root-Pfad: Cookie ist überall lesbar
-                    $metadata->setHttpOnly(true);            // OK für serverseitiges Lesen
-                    $metadata->setSameSite('Lax');           // CSRF-Schutz
-                    // setSecure() nur wenn tatsächlich HTTPS aktiv
+                    $metadata->setPath('/');
+                    $metadata->setHttpOnly(true);
+                    $metadata->setSameSite('Lax');
                     $metadata->setSecure($this->request->isSecure());
                     $this->cookieManager->setPublicCookie('oidc_authenticated', '1', $metadata);
 
-                    $this->oauthUtility->customlog("OIDC cookie set for path: " . $adminPath);
+                    $this->oauthUtility->customlog(
+                        "OIDC cookie set with path '/' and duration " . $adminSessionLifetime . "s"
+                    );
 
                     $this->messageManager->addSuccessMessage(
                         __('Welcome back, %1!', $loggedInUser->getFirstname() ?: $loggedInUser->getUsername())
