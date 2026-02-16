@@ -15,14 +15,21 @@ use MiniOrange\OAuth\Helper\OAuthConstants;
  */
 class OAuthLogoutObserver implements ObserverInterface
 {
+    /**
+     * @var \MiniOrange\OAuth\Helper\OAuthUtility
+     */
     private $oauthUtility;
+
+    /**
+     * @var \Magento\Framework\App\ResponseInterface
+     */
     protected $_response;
 
     /**
      * Initialize OAuth logout observer.
      *
      * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
-     * @param \Magento\Customer\Model\Session $customerSession
+     * @param \Magento\Framework\App\ResponseInterface $response
      */
     public function __construct(
         \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
@@ -32,12 +39,12 @@ class OAuthLogoutObserver implements ObserverInterface
         $this->_response = $response;
     }
 
-   /**
-    * Handle logout event and redirect to OAuth provider logout URL if configured.
-    *
-    * @param Observer $observer
-    * @return void
-    */
+    /**
+     * Handle logout event and redirect to OAuth provider logout URL if configured.
+     *
+     * @param Observer $observer
+     * @return void
+     */
     public function execute(Observer $observer): void
     {
         $logoutUrl = $this->oauthUtility->getStoreConfig(OAuthConstants::OAUTH_LOGOUT_URL);

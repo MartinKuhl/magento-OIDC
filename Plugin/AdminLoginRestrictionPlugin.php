@@ -12,6 +12,9 @@ use MiniOrange\OAuth\Helper\OAuthConstants;
  */
 class AdminLoginRestrictionPlugin
 {
+    /**
+     * @var \MiniOrange\OAuth\Helper\OAuthUtility
+     */
     private $oauthUtility;
 
     /**

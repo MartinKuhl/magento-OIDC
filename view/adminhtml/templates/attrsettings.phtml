@@ -90,8 +90,8 @@ $oauth_am_admin_role_mappings = $block->getAdminRoleMappings();
                             <select name="oauth_am_account_matcher"
                                     id="oauth_am_account_matcher"
                                     <?= $escaper->escapeHtmlAttr($disabled) ?>>
-                                <option value="email" <?= $emailSelected ?>>Email</option>
-                                <option value="username" <?= $usernameSelected ?>>Username</option>
+                                <option value="email" <?= $escaper->escapeHtmlAttr($emailSelected) ?>>Email</option>
+                                <option value="username" <?= $escaper->escapeHtmlAttr($usernameSelected) ?>>Username</option>
                             </select>
                         </td>
                     </tr>
@@ -226,13 +226,13 @@ $oauth_am_admin_role_mappings = $block->getAdminRoleMappings();
                                     <?php foreach ($oauth_am_admin_role_mappings as $index => $mapping): ?>
                                         <div class="mapping-row" style="margin-bottom: 10px;">
                                             <input type="text"
-                                                   name="oauth_role_mapping[<?= $index ?>][group]"
+                                                   name="oauth_role_mapping[<?= $escaper->escapeHtmlAttr($index) ?>][group]"
                                                    placeholder="OIDC Group Name"
                                                    value="<?= $escaper->escapeHtmlAttr($mapping['group'] ?? '') ?>"
                                                    style="width: 200px;"
                                                    <?= $escaper->escapeHtmlAttr($disabled) ?> />
                                             <span style="margin: 0 10px;">&rarr;</span>
-                                            <select name="oauth_role_mapping[<?= $index ?>][role]"
+                                            <select name="oauth_role_mapping[<?= $escaper->escapeHtmlAttr($index) ?>][role]"
                                                     <?= $escaper->escapeHtmlAttr($disabled) ?>>
                                                 <option value="">-- Select Role --</option>
                                                 <?php foreach ($roles as $role): ?>
@@ -242,7 +242,7 @@ $oauth_am_admin_role_mappings = $block->getAdminRoleMappings();
                                                     </option>
                                                 <?php endforeach; ?>
                                             </select>
-                                            <button type="button" onclick="removeRoleMapping(this)" style="margin-left: 10px;" <?= $disabled ?>>Remove</button>
+                                            <button type="button" onclick="removeRoleMapping(this)" style="margin-left: 10px;" <?= $escaper->escapeHtmlAttr($disabled) ?>>Remove</button>
                                         </div>
                                     <?php endforeach; ?>
                                 <?php else: ?>
@@ -262,11 +262,11 @@ $oauth_am_admin_role_mappings = $block->getAdminRoleMappings();
                                                 </option>
                                             <?php endforeach; ?>
                                         </select>
-                                        <button type="button" onclick="removeRoleMapping(this)" style="margin-left: 10px;" <?= $disabled ?>>Remove</button>
+                                        <button type="button" onclick="removeRoleMapping(this)" style="margin-left: 10px;" <?= $escaper->escapeHtmlAttr($disabled) ?>>Remove</button>
                                     </div>
                                 <?php endif; ?>
                             </div>
-                            <button type="button" onclick="addRoleMapping()" style="margin-top: 5px;" <?= $disabled ?>>+ Add Mapping</button>
+                            <button type="button" onclick="addRoleMapping()" style="margin-top: 5px;" <?= $escaper->escapeHtmlAttr($disabled) ?>>+ Add Mapping</button>
                             <br>
                             <small style="color: #666;">Map OIDC group names to Magento user roles</small>
                         </td>

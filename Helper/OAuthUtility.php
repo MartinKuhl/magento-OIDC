@@ -588,7 +588,7 @@ class OAuthUtility extends Data
      */
     public function extractPathFromUrl(string $url): string
     {
-        $parsed = @parse_url($url);
+        $parsed = parse_url($url);
         if ($parsed === false) {
             return '';
         }
@@ -604,7 +604,7 @@ class OAuthUtility extends Data
      */
     public function parseUrlComponents(string $url): array
     {
-        $parsed = @parse_url($url);
+        $parsed = parse_url($url);
         return is_array($parsed) ? $parsed : [];
     }
 }

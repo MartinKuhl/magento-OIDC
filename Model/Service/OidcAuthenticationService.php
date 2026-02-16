@@ -17,6 +17,9 @@ class OidcAuthenticationService
 {
     private const MAX_RECURSION_DEPTH = 5;
 
+    /**
+     * @var \MiniOrange\OAuth\Helper\OAuthUtility
+     */
     private $oauthUtility;
 
     /**

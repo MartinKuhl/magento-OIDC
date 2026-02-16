@@ -22,24 +22,68 @@ use Psr\Log\LoggerInterface;
  */
 class OAuthObserver implements ObserverInterface
 {
+    /**
+     * @var array
+     */
     private $requestParams = [
         'option'
     ];
+
+    /**
+     * @var \Magento\Framework\Message\ManagerInterface
+     */
     private $messageManager;
+
+    /**
+     * @var \Magento\Framework\App\ResponseInterface
+     */
     private $response;
+
+    /**
+     * @var \Psr\Log\LoggerInterface
+     */
     private $logger;
+
+    /**
+     * @var \MiniOrange\OAuth\Controller\Actions\ReadAuthorizationResponse
+     */
     private $readAuthorizationResponse;
+
+    /**
+     * @var \MiniOrange\OAuth\Helper\OAuthUtility
+     */
     private $oauthUtility;
+
+    /**
+     * @var TestResults
+     */
     private TestResults $testResults;
+
+    /**
+     * @var string
+     */
     private $currentControllerName;
+
+    /**
+     * @var string
+     */
     private $currentActionName;
+
+    /**
+     * @var \Magento\Framework\App\Request\Http
+     */
     private $request;
 
     /**
      * Initialize OAuth observer.
      *
+     * @param \Magento\Framework\Message\ManagerInterface $messageManager
+     * @param \Psr\Log\LoggerInterface $logger
+     * @param \MiniOrange\OAuth\Controller\Actions\ReadAuthorizationResponse $readAuthorizationResponse
      * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
-     * @param \Magento\Framework\App\ResponseFactory $responseFactory
+     * @param \Magento\Framework\App\Request\Http $request
+     * @param \MiniOrange\OAuth\Helper\TestResults $testResults
+     * @param \Magento\Framework\App\ResponseInterface $response
      */
     public function __construct(
         ManagerInterface $messageManager,
@@ -66,7 +110,7 @@ class OAuthObserver implements ObserverInterface
      * Checks if the request parameter has any of the configured request
      * parameters and handles any exception that the system might throw.
      *
-     * @param $observer
+     * @param Observer $observer
      */
     public function execute(Observer $observer)
     {
@@ -74,7 +118,7 @@ class OAuthObserver implements ObserverInterface
         $operation = array_intersect($keys, $this->requestParams);
 
         $isTest = false;
-        
+
         try {
             $params = $this->request->getParams(); // get params
             $postData = $this->request->getPost(); // get only post params
@@ -109,11 +153,14 @@ class OAuthObserver implements ObserverInterface
 
     /**
      * Route the request data to appropriate functions for processing.
+     *
      * Check for any kind of Exception that may occur during processing
      * of form post data. Call the appropriate action.
      *
-     * @param $op //refers to operation to perform
-     * @param $observer
+     * @param string $op Operation to perform
+     * @param Observer $observer
+     * @param array $params
+     * @param array $postData
      */
     private function _route_data($op, $observer, $params, $postData)
     {

@@ -17,6 +17,12 @@ use MiniOrange\OAuth\Helper\OAuthUtility;
  */
 class OidcPasswordExpirationPlugin
 {
+    /**
+     * Initialize OIDC password expiration plugin.
+     *
+     * @param AuthSession $authSession
+     * @param OAuthUtility $oauthUtility
+     */
     public function __construct(
         private readonly AuthSession $authSession,
         private readonly OAuthUtility $oauthUtility
@@ -28,6 +34,11 @@ class OidcPasswordExpirationPlugin
      *
      * Skips password expiration check entirely for OIDC users.
      * Event: backend_auth_user_login_success
+     *
+     * @param AuthObserver $subject
+     * @param callable $proceed
+     * @param EventObserver $observer
+     * @return void
      */
     public function aroundExecute(
         AuthObserver $subject,
@@ -44,6 +55,11 @@ class OidcPasswordExpirationPlugin
         $proceed($observer);
     }
 
+    /**
+     * Check if current session is OIDC authenticated.
+     *
+     * @return bool
+     */
     private function isOidcSession(): bool
     {
         return (bool) $this->authSession->getIsOidcAuthenticated();
