@@ -99,7 +99,6 @@ class OAuthUtility extends Data
      */
     public function __construct(
         Context $context, 
-        ScopeConfigInterface $scopeConfig,
         UserFactory $adminFactory,
         CustomerFactory $customerFactory,
         UrlInterface $urlInterface,
@@ -141,7 +140,6 @@ class OAuthUtility extends Data
         $this->directoryList = $directoryList;
         parent::__construct(
             $context,
-            $scopeConfig,
             $adminFactory,
             $customerFactory,
             $urlInterface,
