@@ -77,7 +77,7 @@ class CheckAttributeMappingAction extends BaseAction
 
     /** @var \Magento\Backend\Model\UrlInterface */
     protected $backendUrl;
-    
+
     /** @var \Magento\Authorization\Model\ResourceModel\Role\Collection */
     protected $roleCollection;
 
@@ -98,7 +98,6 @@ class CheckAttributeMappingAction extends BaseAction
 
     /** @var OAuthSecurityHelper */
     private $securityHelper;
-
 
     /**
      * Constructor with dependency injection
@@ -175,14 +174,14 @@ class CheckAttributeMappingAction extends BaseAction
         parent::__construct($context, $oauthUtility);
     }
 
-   /**
-    * Execute attribute mapping and route users accordingly
-    *
-    * Admin users are redirected to a separate callback endpoint that handles
-    * admin authentication. Regular users proceed with the normal customer login flow.
-    *
-    * @return \Magento\Framework\Controller\ResultInterface
-    */
+    /**
+     * Execute attribute mapping and route users accordingly
+     *
+     * Admin users are redirected to a separate callback endpoint that handles
+     * admin authentication. Regular users proceed with the normal customer login flow.
+     *
+     * @return \Magento\Framework\Controller\ResultInterface
+     */
     public function execute(): \Magento\Framework\Controller\ResultInterface
     {
         $attrs = $this->userInfoResponse;
@@ -205,12 +204,16 @@ class CheckAttributeMappingAction extends BaseAction
 
         // Use explicit loginType for routing decision instead of just checking admin_user table
         $isAdminLoginIntent = ($this->loginType === OAuthConstants::LOGIN_TYPE_ADMIN);
-        $this->oauthUtility->customlog("Login type: " . ($this->loginType ?? 'not set') . ", Admin intent: " . ($isAdminLoginIntent ? 'YES' : 'NO'));
+        $logMsg = "Login type: " . ($this->loginType ?? 'not set');
+        $logMsg .= ", Admin intent: " . ($isAdminLoginIntent ? 'YES' : 'NO');
+        $this->oauthUtility->customlog($logMsg);
 
         if ($isAdminLoginIntent) {
             // User initiated login from admin page - verify they have admin account
             $hasAdminAccount = $this->adminUserCreator->isAdminUser($userEmail);
-            $this->oauthUtility->customlog("Admin login intent detected. Has admin account: " . ($hasAdminAccount ? 'YES' : 'NO'));
+            $hasAccountMsg = "Admin login intent detected. Has admin account: ";
+            $hasAccountMsg .= ($hasAdminAccount ? 'YES' : 'NO');
+            $this->oauthUtility->customlog($hasAccountMsg);
 
             if ($hasAdminAccount) {
                 // Redirect admin users to dedicated admin login endpoint
@@ -236,7 +239,9 @@ class CheckAttributeMappingAction extends BaseAction
                 // User tried to login as admin but has no admin account
                 // Check if auto-create admin is enabled
                 $autoCreateAdmin = $this->oauthUtility->getStoreConfig(OAuthConstants::AUTO_CREATE_ADMIN);
-                $this->oauthUtility->customlog("Auto-create admin setting: " . ($autoCreateAdmin ? 'ENABLED' : 'DISABLED'));
+                $autoCreateMsg = "Auto-create admin setting: ";
+                $autoCreateMsg .= ($autoCreateAdmin ? 'ENABLED' : 'DISABLED');
+                $this->oauthUtility->customlog($autoCreateMsg);
 
                 if ($autoCreateAdmin) {
                     $this->oauthUtility->customlog("=== Auto-creating admin user for: " . $userEmail . " ===");
@@ -246,8 +251,13 @@ class CheckAttributeMappingAction extends BaseAction
                     $adminLastName = $flattenedAttrs[$this->lastName] ?? null;
                     $adminUserName = $flattenedAttrs[$this->usernameAttribute] ?? $userEmail;
 
-                        $mappedLog = sprintf('Mapped attributes - userName: %s, firstName: %s, lastName: %s', $adminUserName, $adminFirstName, $adminLastName);
-                        $this->oauthUtility->customlog($mappedLog);
+                    $mappedLog = sprintf(
+                        'Mapped attributes - userName: %s, firstName: %s, lastName: %s',
+                        $adminUserName,
+                        $adminFirstName,
+                        $adminLastName
+                    );
+                    $this->oauthUtility->customlog($mappedLog);
 
                     // Get groups from OIDC response
                     $groupAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_GROUP);
@@ -262,7 +272,13 @@ class CheckAttributeMappingAction extends BaseAction
                     $this->oauthUtility->customlog("User groups from OIDC: " . $groupsJson);
 
                     // Create the admin user via Service
-                    $adminUser = $this->adminUserCreator->createAdminUser($userEmail, $adminUserName, $adminFirstName, $adminLastName, $userGroups);
+                    $adminUser = $this->adminUserCreator->createAdminUser(
+                        $userEmail,
+                        $adminUserName,
+                        $adminFirstName,
+                        $adminLastName,
+                        $userGroups
+                    );
 
                     if ($adminUser && $adminUser->getId()) {
                         $this->oauthUtility->customlog("Admin user created successfully. ID: " . $adminUser->getId());
@@ -292,8 +308,12 @@ class CheckAttributeMappingAction extends BaseAction
                     }
                 } else {
                     // Auto-create disabled - show error
-                    $this->oauthUtility->customlog("ERROR: Admin login attempted but no admin account exists for: " . $userEmail);
-                    $errorMessage = OAuthMessages::parse('ADMIN_ACCOUNT_NOT_FOUND', ['email' => $userEmail]);
+                    $errorMsg = "ERROR: Admin login attempted but no admin account exists for: ";
+                    $this->oauthUtility->customlog($errorMsg . $userEmail);
+                    $errorMessage = OAuthMessages::parse(
+                        'ADMIN_ACCOUNT_NOT_FOUND',
+                        ['email' => $userEmail]
+                    );
                     $encodedError = base64_encode($errorMessage);
                     $adminLoginUrl = $this->backendUrl->getUrl('admin') . '?oidc_error=' . $encodedError;
                     return $this->resultRedirectFactory->create()->setUrl($adminLoginUrl);
@@ -312,7 +332,6 @@ class CheckAttributeMappingAction extends BaseAction
             return $this->resultRedirectFactory->create()->setPath('customer/account/login');
         }
     }
-
 
     /**
      * Process OAuth/OIDC attribute mapping for customer users
@@ -383,7 +402,7 @@ class CheckAttributeMappingAction extends BaseAction
             $result = $this->resultFactory->create(ResultFactory::TYPE_RAW);
             $result->setContents($output);
             return $result;
-            
+
         } else {
             // Production mode - process user login/registration
             $this->oauthUtility->customlog("Production mode - processing user login/registration");

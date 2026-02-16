@@ -51,9 +51,13 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
     /**
      * Initialize customer login action.
      *
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
-     * @param \Magento\Customer\Model\Session $customerSession
-     * @param \Magento\Customer\Model\CustomerFactory $customerFactory
+     * @param Context $context
+     * @param OAuthUtility $oauthUtility
+     * @param Session $customerSession
+     * @param ResponseFactory $responseFactory
+     * @param OAuthSecurityHelper $securityHelper
+     * @param CustomerRepositoryInterface $customerRepository
+     * @param CustomerFactory $customerFactory
      */
     public function __construct(
         Context $context,
@@ -71,7 +75,6 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
         $this->customerFactory = $customerFactory;
         parent::__construct($context, $oauthUtility);
     }
-
 
     /**
      * Execute function to execute the classes function.
@@ -116,7 +119,6 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
         $this->oauthUtility->customlog("CustomerLoginAction: Redirecting to: " . $safeRelayState);
         return $this->resultRedirectFactory->create()->setUrl($safeRelayState);
     }
-
 
     /**
      * Setter for the user parameter.

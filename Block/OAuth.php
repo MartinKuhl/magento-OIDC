@@ -100,7 +100,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
      * Escape HTML to prevent XSS
      *
      * @param array<array-key, mixed>|string $data
-     * @param array<array-key, mixed>|null|string $allowedTags Allowed tags as array or string (e.g. "<b><i>")
+     * @param array<array-key, mixed>|null|string $allowedTags
      * @return array<array-key, mixed>|string
      */
     public function escapeHtml($data, $allowedTags = null)
@@ -598,7 +598,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     }
 
     /**
-     * Fetch the setting saved by the admin which decides if the account should be mapped to username or email in Magento.
+     * Fetch the setting saved by the admin which decides if the account should be mapped to username or email.
      */
     public function getAccountMatcher()
     {
@@ -615,7 +615,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     }
 
     /**
-     * Fetch the setting saved by the admin which doesn't allow users to be created if roles are not mapped based on the admin settings.
+     * Fetch the setting which doesn't allow users to be created if roles are not mapped.
      */
     public function getDisallowUserCreationIfRoleNotMapped()
     {
@@ -625,7 +625,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     }
 
     /**
-     * Fetch the setting saved by the admin which decides what attribute in the SAML response should be mapped to the Magento user's userName.
+     * Fetch the setting which decides what attribute should be mapped to the user's userName.
      */
     public function getUserNameMapping()
     {
@@ -682,7 +682,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     }
 
     /**
-     * Fetch the setting saved by the admin which decides what attribute in the SAML response should be mapped to the Magento user's lastName
+     * Fetch the setting which decides what attribute should be mapped to the user's lastName
      */
     public function getLastNameMapping()
     {

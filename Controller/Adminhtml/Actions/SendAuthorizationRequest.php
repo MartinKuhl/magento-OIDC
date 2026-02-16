@@ -47,8 +47,11 @@ class SendAuthorizationRequest extends BaseAction
     /**
      * Initialize admin send authorization request action.
      *
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
      * @param \Magento\Backend\App\Action\Context $context
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     * @param SessionHelper $sessionHelper
+     * @param OAuthSecurityHelper $securityHelper
+     * @param \Magento\Framework\Session\SessionManagerInterface $sessionManager
      */
     public function __construct(
         \Magento\Backend\App\Action\Context $context,
@@ -89,7 +92,10 @@ class SendAuthorizationRequest extends BaseAction
         $chk_enable_log ? $this->oauthUtility->customlog("SendAuthorizationRequest: execute") : null;
 
         $params = $this->getRequest()->getParams();
-        $chk_enable_log ? $this->oauthUtility->customlog("SendAuthorizationRequest: Full params: " . var_export($params, true)) : null;
+        $chk_enable_log ?
+            $this->oauthUtility->customlog(
+                "SendAuthorizationRequest: Full params: " . var_export($params, true)
+            ) : null;
 
         $isFromPopup = isset($params['from_popup']) && $params['from_popup'] == '1';
 
@@ -109,9 +115,11 @@ class SendAuthorizationRequest extends BaseAction
         $clientDetails = $this->oauthUtility->getClientDetailsByAppName($app_name);
         if (empty($clientDetails)) {
             $backendLoginUrl = $this->urlBuilder->getUrl('adminhtml/auth/login');
-            $this->messageManager->addErrorMessage('Provided App name is not configured. Please contact the administrator for assistance.');
+            $msg = 'Provided App name is not configured. Please contact the administrator for assistance.';
+            $this->messageManager->addErrorMessage($msg);
             return $this->resultRedirectFactory->create()->setUrl($backendLoginUrl);
         }
+
         if (!$clientDetails["authorize_endpoint"]) {
             $this->messageManager->addErrorMessage(
                 __('Authorization endpoint is not configured. Please contact the administrator.')

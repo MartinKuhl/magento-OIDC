@@ -157,7 +157,9 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
                 $this->oauthUtility->customlog("ERROR: Admin user not found for email: " . $email);
 
                 return $this->redirectToLoginWithError(
-                    __('OIDC authentication failed. Please try again or contact your administrator.')
+                    __(
+                        'OIDC authentication failed. Please try again or contact your administrator.'
+                    )
                 );
             }
 
@@ -240,6 +242,7 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
 
     /**
      * Redirect to admin login page with error message in URL
+     *
      * Messages in URL are displayed on the login page via JavaScript or template
      *
      * @param \Magento\Framework\Phrase $message

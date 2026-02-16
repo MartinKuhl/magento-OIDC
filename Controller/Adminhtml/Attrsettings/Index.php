@@ -33,7 +33,12 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
      * Initialize attribute settings controller.
      *
      * @param \Magento\Backend\App\Action\Context $context
+     * @param PageFactory $resultPageFactory
      * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     * @param ManagerInterface $messageManager
+     * @param LoggerInterface $logger
+     * @param \Magento\Authorization\Model\ResourceModel\Role\Collection $adminRoleModel
+     * @param Collection $userGroupModel
      */
     public function __construct(
         Context $context,
@@ -99,11 +104,17 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_LASTNAME, $params['oauth_am_last_name']);
 
         if (isset($params['dont_create_user_if_role_not_mapped'])) {
-            $this->oauthUtility->setStoreConfig(OAuthConstants::CREATEIFNOTMAP, $params['dont_create_user_if_role_not_mapped']);
+            $this->oauthUtility->setStoreConfig(
+                OAuthConstants::CREATEIFNOTMAP,
+                $params['dont_create_user_if_role_not_mapped']
+            );
         }
 
         if (isset($params['dont_allow_unlisted_user_role'])) {
-            $this->oauthUtility->setStoreConfig(OAuthConstants::UNLISTED_ROLE, $params['dont_allow_unlisted_user_role']);
+            $this->oauthUtility->setStoreConfig(
+                OAuthConstants::UNLISTED_ROLE,
+                $params['dont_allow_unlisted_user_role']
+            );
         }
 
         // Save group attribute name for OIDC groups claim
