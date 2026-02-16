@@ -50,6 +50,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
      * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
      * @param \Magento\Authorization\Model\ResourceModel\Role\Collection $adminRoleModel
      * @param \Magento\Customer\Model\ResourceModel\Group\Collection $userGroupModel
+     * @param Session $customerSession
+     * @param Escaper $escaper
      * @param \Magento\Framework\Data\Form\FormKey $formKey
      * @param array $data
      */
@@ -115,7 +117,6 @@ class OAuth extends \Magento\Framework\View\Element\Template
         return $this->escaper->escapeHtml($data, $allowedTags);
     }
 
-
     /**
      * Escape string for HTML attribute
      *
@@ -127,7 +128,6 @@ class OAuth extends \Magento\Framework\View\Element\Template
     {
         return $this->escaper->escapeHtmlAttr($string, $escapeSingleQuote);
     }
-
 
     /**
      * Escape URL
@@ -161,16 +161,13 @@ class OAuth extends \Magento\Framework\View\Element\Template
         return $this->_formKey->getFormKey();
     }
 
-
     /**
-     * This function is a test function to check if the template
-     * is being loaded properly in the frontend without any issues.
+     * Test function to check if the template is being loaded properly in the frontend without any issues.
      */
     public function getHelloWorldTxt()
     {
         return 'Hello world!';
     }
-
 
     /**
      * Check if header sending is enabled.
@@ -181,7 +178,6 @@ class OAuth extends \Magento\Framework\View\Element\Template
     {
         return $this->oauthUtility->getStoreConfig(OAuthConstants::SEND_HEADER);
     }
-
 
     /**
      * Check if body sending is enabled.
@@ -300,6 +296,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * Get OIDC claims for dropdown selection
+     *
      * Returns claims received from last test configuration, filtered to remove technical claims
      */
     public function getOidcStandardClaims()
@@ -419,7 +416,6 @@ class OAuth extends \Magento\Framework\View\Element\Template
         return $this->oauthUtility->getStoreConfig(OAuthConstants::GETUSERINFO_URL);
     }
 
-
     /**
      * Retrieve the configured logout URL.
      *
@@ -431,8 +427,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     }
 
     /**
-     * This function gets the admin CSS URL to be appended to the
-     * admin dashboard screen.
+     * Get the admin CSS URL to be appended to the admin dashboard screen.
      */
     public function getAdminCssURL()
     {
@@ -440,45 +435,38 @@ class OAuth extends \Magento\Framework\View\Element\Template
     }
 
     /**
-     * This function gets the current version of the plugin
-     * admin dashboard screen.
+     * Get the current version of the plugin admin dashboard screen.
      */
     public function getCurrentVersion()
     {
         return OAuthConstants::VERSION;
     }
 
-
     /**
-     * This function gets the admin JS URL to be appended to the
-     * admin dashboard pages for plugin functionality
+     * Get the admin JS URL to be appended to the admin dashboard pages for plugin functionality
      */
     public function getAdminJSURL()
     {
         return $this->oauthUtility->getAdminJSUrl('adminSettings.js');
     }
 
-
     /**
-     * This function gets the IntelTelInput JS URL to be appended
-     * to admin pages to show country code dropdown on phone number
-     * fields.
+     * Get the IntelTelInput JS URL to be appended to admin pages to show country code dropdown on phone number fields.
      */
     public function getIntlTelInputJs()
     {
         return $this->oauthUtility->getAdminJSUrl('intlTelInput.min.js');
     }
 
-
     /**
-     * This function fetches/creates the TEST Configuration URL of the
-     * Plugin.
+     * Fetch/create the TEST Configuration URL of the Plugin.
+     *
+     * @return string
      */
     public function getTestUrl()
     {
         return $this->getUrl('mooauth/actions/sendAuthorizationRequest');
     }
-
 
     /**
      * Get/Create Base URL of the site
@@ -496,21 +484,19 @@ class OAuth extends \Magento\Framework\View\Element\Template
         return $this->oauthUtility->getBaseUrl() . OAuthConstants::CALLBACK_URL;
     }
 
-
     /**
-     * Create the URL for one of the SAML SP plugin
-     * sections to be shown as link on any of the
-     * template files.
+     * Create the URL for one of the SAML SP plugin sections to be shown as link on any of the template files.
+     *
+     * @param string $page
+     * @return string
      */
     public function getExtensionPageUrl($page)
     {
         return $this->oauthUtility->getAdminUrl('mooauth/' . $page . '/index');
     }
 
-
     /**
-     * Reads the Tab and retrieves the current active tab
-     * if any.
+     * Read the Tab and retrieve the current active tab if any.
      */
     public function getCurrentActiveTab()
     {
@@ -552,8 +538,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     }
 
     /**
-     * Is the option to show SSO link on the Admin login page enabled
-     * by the admin.
+     * Check if the option to show SSO link on the Admin login page is enabled by the admin.
      */
     public function showAdminLink()
     {
@@ -570,10 +555,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
         return $this->oauthUtility->getStoreConfig(OAuthConstants::DISABLE_NON_OIDC_ADMIN_LOGIN);
     }
 
-
     /**
-     * Is the option to show SSO link on the Customer login page enabled
-     * by the admin.
+     * Check if the option to show SSO link on the Customer login page is enabled by the admin.
      */
     public function showCustomerLink()
     {
@@ -582,6 +565,10 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * Create/Get the SP initiated URL for the site (frontend/customer login).
+     *
+     * @param string|null $relayState
+     * @param string|null $app_name
+     * @return string
      */
     public function getSPInitiatedUrl($relayState = null, $app_name = null)
     {
@@ -590,7 +577,12 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * Create/Get the Admin SP initiated URL (admin backend OIDC login).
+     *
      * Uses the admin controller which sets loginType=admin.
+     *
+     * @param string|null $relayState
+     * @param string|null $app_name
+     * @return string
      */
     public function getAdminSPInitiatedUrl($relayState = null, $app_name = null)
     {
@@ -606,8 +598,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     }
 
     /**
-     * This fetches the setting saved by the admin which decides if the
-     * account should be mapped to username or email in Magento.
+     * Fetch the setting saved by the admin which decides if the account should be mapped to username or email in Magento.
      */
     public function getAccountMatcher()
     {
@@ -615,8 +606,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     }
 
     /**
-     * This fetches the setting saved by the admin which doesn't allow
-     * roles to be assigned to unlisted users.
+     * Fetch the setting saved by the admin which doesn't allow roles to be assigned to unlisted users.
      */
     public function getDisallowUnlistedUserRole()
     {
@@ -624,10 +614,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
         return !$this->oauthUtility->isBlank($disallowUnlistedRole) ? $disallowUnlistedRole : '';
     }
 
-
     /**
-     * This fetches the setting saved by the admin which doesn't allow
-     * users to be created if roles are not mapped based on the admin settings.
+     * Fetch the setting saved by the admin which doesn't allow users to be created if roles are not mapped based on the admin settings.
      */
     public function getDisallowUserCreationIfRoleNotMapped()
     {
@@ -636,18 +624,14 @@ class OAuth extends \Magento\Framework\View\Element\Template
             ? $disallowUserCreationIfRoleNotMapped : '';
     }
 
-
     /**
-     * This fetches the setting saved by the admin which decides what
-     * attribute in the SAML response should be mapped to the Magento
-     * user's userName.
+     * Fetch the setting saved by the admin which decides what attribute in the SAML response should be mapped to the Magento user's userName.
      */
     public function getUserNameMapping()
     {
         $amUserName = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_USERNAME);
         return !$this->oauthUtility->isBlank($amUserName) ? $amUserName : '';
     }
-
 
     /**
      * Check if admin auto-redirect is enabled.
@@ -697,18 +681,14 @@ class OAuth extends \Magento\Framework\View\Element\Template
         return !$this->oauthUtility->isBlank($amFirstName) ? $amFirstName : '';
     }
 
-
     /**
-     * This fetches the setting saved by the admin which decides what
-     * attributein the SAML resposne should be mapped to the Magento
-     * user's lastName
+     * Fetch the setting saved by the admin which decides what attribute in the SAML response should be mapped to the Magento user's lastName
      */
     public function getLastNameMapping()
     {
         $amLastName = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_LASTNAME);
         return !$this->oauthUtility->isBlank($amLastName) ? $amLastName : '';
     }
-
 
     /**
      * Get all admin roles set by the admin on his site.
@@ -722,7 +702,6 @@ class OAuth extends \Magento\Framework\View\Element\Template
         return $rolesOptionsArray;
     }
 
-
     /**
      * Get all customer groups set by the admin on his site.
      */
@@ -731,17 +710,14 @@ class OAuth extends \Magento\Framework\View\Element\Template
         return $this->userGroupModel->toOptionArray();
     }
 
-
     /**
-     * Get the default role to be set for the user if it
-     * doesn't match any of the role/group mappings
+     * Get the default role to be set for the user if it doesn't match any of the role/group mappings
      */
     public function getDefaultRole()
     {
         $defaultRole = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_DEFAULT_ROLE);
         return !$this->oauthUtility->isBlank($defaultRole) ? $defaultRole : OAuthConstants::DEFAULT_ROLE;
     }
-
 
     /**
      * Get the Current Admin user from session
@@ -751,11 +727,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
         return $this->oauthUtility->getCurrentAdminUser();
     }
 
-
     /**
-     * Fetches/Creates the text of the button to be shown
-     * for SP inititated login from the admin / customer
-     * login pages.
+     * Fetch/Create the text of the button to be shown for SP initiated login from the admin / customer login pages.
      */
     public function getSSOButtonText()
     {
@@ -763,7 +736,6 @@ class OAuth extends \Magento\Framework\View\Element\Template
         $idpName = $this->oauthUtility->getStoreConfig(OAuthConstants::APP_NAME);
         return !$this->oauthUtility->isBlank($buttonText) ? $buttonText : 'Login with ' . $idpName;
     }
-
 
     /**
      * Get Admin Logout URL for the site
@@ -782,15 +754,15 @@ class OAuth extends \Magento\Framework\View\Element\Template
     }
 
     /**
-     * check if log printing is on or off
+     * Check if log printing is on or off
      */
     public function isDebugLogEnable()
     {
         return $this->oauthUtility->getStoreConfig(OAuthConstants::ENABLE_DEBUG_LOG);
     }
+
     /**
-     * This function fetches the X509 cert saved by the admin for the IDP
-     * in the plugin settings.
+     * Fetch the X509 cert saved by the admin for the IDP in the plugin settings.
      */
     public function getX509Cert()
     {
