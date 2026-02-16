@@ -17,7 +17,10 @@ class OAuthSecurityHelper
     private const NONCE_TTL = 120;     // 2 minutes
     private const STATE_TTL = 600;     // 10 minutes
 
+    /** @var CacheInterface */
     private CacheInterface $cache;
+
+    /** @var OAuthUtility */
     private OAuthUtility $oauthUtility;
 
     /**

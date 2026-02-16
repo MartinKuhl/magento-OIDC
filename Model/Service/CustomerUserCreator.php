@@ -130,25 +130,32 @@ class CustomerUserCreator
     private function initializeAttributeMapping(): void
     {
         $this->dobAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_DOB);
-        $this->dobAttribute = $this->oauthUtility->isBlank($this->dobAttribute) ? OAuthConstants::DEFAULT_MAP_DOB : $this->dobAttribute;
+        $this->dobAttribute = $this->oauthUtility->isBlank($this->dobAttribute)
+            ? OAuthConstants::DEFAULT_MAP_DOB : $this->dobAttribute;
 
         $this->genderAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_GENDER);
-        $this->genderAttribute = $this->oauthUtility->isBlank($this->genderAttribute) ? OAuthConstants::DEFAULT_MAP_GENDER : $this->genderAttribute;
+        $this->genderAttribute = $this->oauthUtility->isBlank($this->genderAttribute)
+            ? OAuthConstants::DEFAULT_MAP_GENDER : $this->genderAttribute;
 
         $this->phoneAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_PHONE);
-        $this->phoneAttribute = $this->oauthUtility->isBlank($this->phoneAttribute) ? OAuthConstants::DEFAULT_MAP_PHONE : $this->phoneAttribute;
+        $this->phoneAttribute = $this->oauthUtility->isBlank($this->phoneAttribute)
+            ? OAuthConstants::DEFAULT_MAP_PHONE : $this->phoneAttribute;
 
         $this->streetAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_STREET);
-        $this->streetAttribute = $this->oauthUtility->isBlank($this->streetAttribute) ? OAuthConstants::DEFAULT_MAP_STREET : $this->streetAttribute;
+        $this->streetAttribute = $this->oauthUtility->isBlank($this->streetAttribute)
+            ? OAuthConstants::DEFAULT_MAP_STREET : $this->streetAttribute;
 
         $this->zipAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_ZIP);
-        $this->zipAttribute = $this->oauthUtility->isBlank($this->zipAttribute) ? OAuthConstants::DEFAULT_MAP_ZIP : $this->zipAttribute;
+        $this->zipAttribute = $this->oauthUtility->isBlank($this->zipAttribute)
+            ? OAuthConstants::DEFAULT_MAP_ZIP : $this->zipAttribute;
 
         $this->cityAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_CITY);
-        $this->cityAttribute = $this->oauthUtility->isBlank($this->cityAttribute) ? OAuthConstants::DEFAULT_MAP_CITY : $this->cityAttribute;
+        $this->cityAttribute = $this->oauthUtility->isBlank($this->cityAttribute)
+            ? OAuthConstants::DEFAULT_MAP_CITY : $this->cityAttribute;
 
         $this->countryAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_COUNTRY);
-        $this->countryAttribute = $this->oauthUtility->isBlank($this->countryAttribute) ? OAuthConstants::DEFAULT_MAP_COUNTRY : $this->countryAttribute;
+        $this->countryAttribute = $this->oauthUtility->isBlank($this->countryAttribute)
+            ? OAuthConstants::DEFAULT_MAP_COUNTRY : $this->countryAttribute;
     }
 
     /**
@@ -162,8 +169,14 @@ class CustomerUserCreator
      * @param array $rawAttrs
      * @return CustomerInterface|null
      */
-    public function createCustomer(string $email, string $userName, string $firstName, string $lastName, array $flattenedAttrs, array $rawAttrs): ?CustomerInterface
-    {
+    public function createCustomer(
+        string $email,
+        string $userName,
+        string $firstName,
+        string $lastName,
+        array $flattenedAttrs,
+        array $rawAttrs
+    ): ?CustomerInterface {
         $this->oauthUtility->customlog("CustomerUserCreator: Starting creation for " . $email);
 
         try {

@@ -13,22 +13,34 @@ use Magento\Framework\Escaper;
  */
 class OAuth extends \Magento\Framework\View\Element\Template
 {
-    /** @var \MiniOrange\OAuth\Helper\OAuthUtility */
+    /**
+     * @var \MiniOrange\OAuth\Helper\OAuthUtility
+     */
     private $oauthUtility;
 
-    /** @var \Magento\Authorization\Model\ResourceModel\Role\Collection */
+    /**
+     * @var \Magento\Authorization\Model\ResourceModel\Role\Collection
+     */
     private $adminRoleModel;
 
-    /** @var \Magento\Customer\Model\ResourceModel\Group\Collection */
+    /**
+     * @var \Magento\Customer\Model\ResourceModel\Group\Collection
+     */
     private $userGroupModel;
 
-    /** @var Session */
+    /**
+     * @var Session
+     */
     protected $customerSession;
 
-    /** @var Escaper */
+    /**
+     * @var Escaper
+     */
     protected $escaper;
 
-    /** @var \Magento\Framework\Data\Form\FormKey */
+    /**
+     * @var \Magento\Framework\Data\Form\FormKey
+     */
     protected $_formKey;
 
     /**
@@ -293,7 +305,23 @@ class OAuth extends \Magento\Framework\View\Element\Template
     public function getOidcStandardClaims()
     {
         // Technical claims to exclude from dropdown (tokens, timestamps, identifiers)
-        $excludedClaims = ['sub', 'iat', 'rat', 'at_hash', 'updated_at', 'exp', 'nbf', 'aud', 'iss', 'azp', 'nonce', 'auth_time', 'acr', 'amr', 'sid'];
+        $excludedClaims = [
+            'sub',
+            'iat',
+            'rat',
+            'at_hash',
+            'updated_at',
+            'exp',
+            'nbf',
+            'aud',
+            'iss',
+            'azp',
+            'nonce',
+            'auth_time',
+            'acr',
+            'amr',
+            'sid'
+        ];
 
         $storedClaims = $this->oauthUtility->getStoreConfig(OAuthConstants::RECEIVED_OIDC_CLAIMS);
         if (!$this->oauthUtility->isBlank($storedClaims)) {
@@ -604,7 +632,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
     public function getDisallowUserCreationIfRoleNotMapped()
     {
         $disallowUserCreationIfRoleNotMapped = $this->oauthUtility->getStoreConfig(OAuthConstants::CREATEIFNOTMAP);
-        return !$this->oauthUtility->isBlank($disallowUserCreationIfRoleNotMapped) ? $disallowUserCreationIfRoleNotMapped : '';
+        return !$this->oauthUtility->isBlank($disallowUserCreationIfRoleNotMapped)
+            ? $disallowUserCreationIfRoleNotMapped : '';
     }
 
 

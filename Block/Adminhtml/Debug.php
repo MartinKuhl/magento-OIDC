@@ -81,8 +81,10 @@ class Debug extends Template
         $userInfoEndpoint = $this->oauthUtility->getStoreConfig(OAuthConstants::GETUSERINFO_URL);
         $callbackUrl = $this->getUrl('', ['_direct' => 'mooauth/actions/readauthorizationresponse']);
         $scope = $this->oauthUtility->getStoreConfig(OAuthConstants::SCOPE);
-        $emailMapping = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_EMAIL) ?: OAuthConstants::DEFAULT_MAP_EMAIL;
-        $usernameMapping = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_USERNAME) ?: OAuthConstants::DEFAULT_MAP_USERN;
+        $emailMapping = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_EMAIL)
+            ?: OAuthConstants::DEFAULT_MAP_EMAIL;
+        $usernameMapping = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_USERNAME)
+            ?: OAuthConstants::DEFAULT_MAP_USERN;
 
         return [
             'Client ID' => $clientId,

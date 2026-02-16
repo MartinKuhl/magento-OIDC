@@ -415,7 +415,10 @@ class Data extends AbstractHelper
      */
     public function getAdminCssUrl($css)
     {
-        return $this->assetRepo->getUrl(OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_CSS . $css, ['area' => 'adminhtml']);
+        return $this->assetRepo->getUrl(
+            OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_CSS . $css,
+            ['area' => 'adminhtml']
+        );
     }
 
 
@@ -424,7 +427,10 @@ class Data extends AbstractHelper
      */
     public function getAdminJSUrl($js)
     {
-        return $this->assetRepo->getUrl(OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_JS . $js, ['area' => 'adminhtml']);
+        return $this->assetRepo->getUrl(
+            OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_JS . $js,
+            ['area' => 'adminhtml']
+        );
     }
 
 
@@ -433,7 +439,10 @@ class Data extends AbstractHelper
      */
     public function getMetadataUrl()
     {
-        return $this->assetRepo->getUrl(OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_METADATA, ['area' => 'adminhtml']);
+        return $this->assetRepo->getUrl(
+            OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_METADATA,
+            ['area' => 'adminhtml']
+        );
     }
 
 
@@ -442,8 +451,10 @@ class Data extends AbstractHelper
      */
     public function getMetadataFilePath()
     {
-        return $this->assetRepo->createAsset(OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_METADATA, ['area' => 'adminhtml'])
-            ->getSourceFile();
+        return $this->assetRepo->createAsset(
+            OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_METADATA,
+            ['area' => 'adminhtml']
+        )->getSourceFile();
     }
 
 

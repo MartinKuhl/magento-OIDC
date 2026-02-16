@@ -92,10 +92,14 @@ class OidcAuthenticationService
             $emailAttribute = OAuthConstants::DEFAULT_MAP_EMAIL;
         }
 
-        if (isset($flattenedResponse[$emailAttribute])
+        if (
+            isset($flattenedResponse[$emailAttribute])
             && filter_var($flattenedResponse[$emailAttribute], FILTER_VALIDATE_EMAIL)
         ) {
-            $this->oauthUtility->customlog("OidcAuthenticationService: Email found via configured attribute '$emailAttribute': " . $flattenedResponse[$emailAttribute]);
+            $this->oauthUtility->customlog(
+                "OidcAuthenticationService: Email found via configured attribute '$emailAttribute': "
+                . $flattenedResponse[$emailAttribute]
+            );
             return $flattenedResponse[$emailAttribute];
         }
 

@@ -15,12 +15,25 @@ use MiniOrange\OAuth\Helper\Exception\MissingIssuerValueException;
 class AuthorizationRequest
 {
 
+    /** @var string */
     private $clientID;
+
+    /** @var string */
     private $scope;
+
+    /** @var string */
     private $authorizeURL;
+
+    /** @var string */
     private $responseType;
+
+    /** @var string */
     private $redirectURL;
+
+    /** @var array */
     private $params;
+
+    /** @var string */
     private $state;
 
     /**

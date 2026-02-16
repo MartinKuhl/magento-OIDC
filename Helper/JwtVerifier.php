@@ -12,8 +12,13 @@ use Magento\Framework\App\CacheInterface;
  */
 class JwtVerifier
 {
+    /** @var OAuthUtility */
     private OAuthUtility $oauthUtility;
+
+    /** @var CacheInterface */
     private CacheInterface $cache;
+
+    /** @var \Magento\Framework\HTTP\Adapter\CurlFactory */
     private \Magento\Framework\HTTP\Adapter\CurlFactory $curlFactory;
 
     /**

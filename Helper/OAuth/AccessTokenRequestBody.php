@@ -16,10 +16,19 @@ use MiniOrange\OAuth\Helper\OAuthConstants;
  */
 class AccessTokenRequestBody
 {
+    /** @var string */
     private $clientID;
+
+    /** @var string */
     private $clientSecret;
+
+    /** @var string */
     private $grantType;
+
+    /** @var string */
     private $redirectURL;
+
+    /** @var string */
     private $code;
 
     /**
@@ -52,11 +61,11 @@ class AccessTokenRequestBody
      */
     private function generateRequest()
     {
-       
-        $accessTokenRequestPostData =  [
-            'redirect_uri'     => $this->redirectURL,
-            'grant_type'  => OAuthConstants::GRANT_TYPE,
-            'code'  => $this->code
+
+        $accessTokenRequestPostData = [
+            'redirect_uri' => $this->redirectURL,
+            'grant_type' => OAuthConstants::GRANT_TYPE,
+            'code' => $this->code
         ];
 
         return $accessTokenRequestPostData;

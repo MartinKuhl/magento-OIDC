@@ -6,11 +6,12 @@ use Magento\Framework\Escaper;
 class TestResults
 {
     /** @var Escaper */
+    /** @var Escaper */
     private Escaper $escaper;
 
-/**
- * Data class for holding OAuth test result attributes.
- */
+    /**
+     * Data class for holding OAuth test result attributes.
+     */
     public function __construct(Escaper $escaper)
     {
         $this->escaper = $escaper;
@@ -41,7 +42,8 @@ class TestResults
             // Debugging: Ausgabe aller empfangenen Parameter
             if (!empty($debug)) {
                 $debugOut = $this->escaper->escapeHtml(var_export($debug, true));
-                $html .= "<div style='background:#fafafa; border:1px solid #ccc;padding:10px;'><strong>Full Params (Debug):</strong><pre>" . $debugOut . "</pre></div>";
+                $html .= "<div style='background:#fafafa; border:1px solid #ccc;padding:10px;'>"
+                    . "<strong>Full Params (Debug):</strong><pre>" . $debugOut . "</pre></div>";
             }
         }
         return $html;
