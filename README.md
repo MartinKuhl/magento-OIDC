@@ -73,11 +73,6 @@ Write for a developer who's new to this codebase but not new to coding.
 
 - Time to change your password warning
 
-- Password verifcation plugin is not working anymore
-
-- OIDC login: unexpected user type returned from Auth::getUser() [] []
-- clean up debug log: miniorange_oauth.DEBUG: User data reloaded for ID: 4 [] []
-
 ### NEW ###:
 - deaktiviate OIDC login button if
     - no valid OIDC config

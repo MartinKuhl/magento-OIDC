@@ -185,20 +185,13 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
 
                 // Verify login success and set OIDC cookie
                 if ($this->auth->isLoggedIn()) {
-                    $loggedInUser = $this->auth->getUser();
-
-                    if (!$loggedInUser instanceof \Magento\User\Model\User) {
-                        $this->oauthUtility->customlog("OIDC login: unexpected user type returned from Auth::getUser()");
-                        return $this->redirectToLoginWithError(
-                            __('OIDC authentication failed. Please try again or contact your administrator.')
-                        );
-                    }
-
                     // Set OIDC authentication cookie (persists across session boundary)
                     // Path MUST be '/' so the cookie is readable on all admin sub-paths.
                     // Using $adminPath (e.g. '/admin') caused the cookie to be invisible
                     // on sub-routes where performIdentityCheck() is triggered.
-                    $adminSessionLifetime = (int) $this->scopeConfig->getValue('admin/security/session_lifetime') ?: 3600;
+                    $adminSessionLifetime = (int) $this->scopeConfig->getValue(
+                        'admin/security/session_lifetime'
+                    ) ?: 3600;
                     $metadata = $this->cookieMetadataFactory->createPublicCookieMetadata();
                     $metadata->setDuration($adminSessionLifetime);
                     $metadata->setPath('/');
@@ -211,8 +204,11 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
                         "OIDC cookie set with path '/' and duration " . $adminSessionLifetime . "s"
                     );
 
+                    // Welcome message – Auth::getUser() may return a Proxy/Interceptor
+                    // that does not pass instanceof checks against the concrete User class.
+                    // Use the $user we already loaded from the collection instead.
                     $this->messageManager->addSuccessMessage(
-                        __('Welcome back, %1!', $loggedInUser->getFirstname() ?: $loggedInUser->getUsername())
+                        __('Welcome back, %1!', $user->getFirstname() ?: $user->getUsername())
                     );
                 } else {
                     $this->oauthUtility->customlog("WARNING: Login processed but isLoggedIn() returned false");
