@@ -1,5 +1,6 @@
 .sso-divider {
     display: flex;
+    flex-wrap: nowrap;
     margin-top: 2%;
     width: 100%;
     gap: 10px;
@@ -9,9 +10,8 @@
 
 .sso-line {
     display: block;
-    /* Flex-grow is handled inline or inherited, but we can enforce it here if preferred, 
-       though inline style 'flex: 1' in phtml ensures it works strictly on the item. 
-       Let's keep the stroke styling here. */
+    flex: 1;
+    min-width: 0; /* Critical for allowing flex items to shrink below content size */
 }
 
 .sso-line line {
