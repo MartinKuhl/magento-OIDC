@@ -70,12 +70,12 @@ Write for a developer who's new to this codebase but not new to coding.
 ####################################################################################
 
 ### FIX ###:
-- fix style OIDC login button admin maybe customer to (horizontal line)
 
 - Time to change your password warning
 
 - Password verifcation plugin is not working anymore
 
+- OIDC login: unexpected user type returned from Auth::getUser() [] []
 - clean up debug log: miniorange_oauth.DEBUG: User data reloaded for ID: 4 [] []
 
 ### NEW ###:

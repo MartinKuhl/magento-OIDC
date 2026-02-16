@@ -187,9 +187,11 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
                     $adminSessionLifetime = (int) $this->scopeConfig->getValue('admin/security/session_lifetime') ?: 3600;
                     $metadata = $this->cookieMetadataFactory->createPublicCookieMetadata();
                     $metadata->setDuration($adminSessionLifetime);
-                    $metadata->setPath($adminPath);
-                    $metadata->setHttpOnly(true);
-                    $metadata->setSecure(true);
+                    $metadata->setPath('/');                  // Root-Pfad: Cookie ist überall lesbar
+                    $metadata->setHttpOnly(true);            // OK für serverseitiges Lesen
+                    $metadata->setSameSite('Lax');           // CSRF-Schutz
+                    // setSecure() nur wenn tatsächlich HTTPS aktiv
+                    $metadata->setSecure($this->request->isSecure());
                     $this->cookieManager->setPublicCookie('oidc_authenticated', '1', $metadata);
 
                     $this->oauthUtility->customlog("OIDC cookie set for path: " . $adminPath);
