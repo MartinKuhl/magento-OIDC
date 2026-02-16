@@ -113,9 +113,6 @@ vendor/bin/phpcs --config-set installed_paths "$COMPOSER_HOME/vendor/magento/mag
 vendor/bin/phpcs -i
 # Ausgabe sollte enthalten: Magento2, PSR1, PSR2, PSR12, ...
 
-vendor/bin/phpcbf --standard=Magento2 ./github/miniorange-oauth-sso/
-vendor/bin/phpcs --standard=Magento2 ./github/miniorange-oauth-sso/
-
 vendor/bin/phpstan clear-result-cache
 vendor/bin/phpstan analyse --memory-limit=1G --configuration=github/miniorange-oauth-sso/phpstan.neon
 
@@ -123,5 +120,3 @@ vendor/bin/psalm --no-cache --config=github/miniorange-oauth-sso/psalm.xml
 
 vendor/bin/phpcs ./github/miniorange-oauth-sso/
 vendor/bin/phpcbf ./github/miniorange-oauth-sso/
-
-vendor/bin/phpcs --standard=PHPCompatibility  ./github/miniorange-oauth-sso/
