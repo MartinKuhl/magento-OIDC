@@ -71,8 +71,6 @@ Write for a developer who's new to this codebase but not new to coding.
 
 ### FIX ###:
 
-- Time to change your password warning
-
 ### NEW ###:
 - deaktiviate OIDC login button if
     - no valid OIDC config
