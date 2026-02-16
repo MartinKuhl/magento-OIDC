@@ -2,6 +2,19 @@
     This template shows a SSO box on the admin backend pages
     Use this if you want to show a sso button on your backend pages
 -->
+<style>
+    #login-form .form-actions {
+        width: 100% !important;
+        display: block !important;
+        box-sizing: border-box !important;
+    }
+    #login-form .form-actions > .actions {
+        width: 100% !important;
+        display: block !important;
+        box-sizing: border-box !important;
+    }
+</style>
+
 <div class="actions" style="text-align:center; width:100%; display:block; box-sizing:border-box;">
     <div style="display:flex; flex-direction:row; flex-wrap:nowrap; align-items:center; width:100%; gap:10px; margin-bottom:10px;">
         <span style="flex:1 1 0%; height:1px; background-color:#969393;"></span>
@@ -37,23 +50,13 @@
 
             var actionsDivs = document.querySelectorAll('.form-actions .actions');
             actionsDivs.forEach(function (div) {
-                var ssoButton = div.querySelector('.action-login');
-                if (!ssoButton) {
+                if (!div.querySelector('[onclick]')) {
                     div.style.display = 'none';
                 }
             });
 
             var forgotPasswordDiv = document.querySelector('#login-form .links');
             if (forgotPasswordDiv) { forgotPasswordDiv.style.display = 'none'; }
-
-            var fieldset = document.querySelector('#login-form .admin__fieldset');
-            if (fieldset) { fieldset.style.width = '100%'; }
-
-            var formActions = document.querySelector('.form-actions');
-            if (formActions) {
-                formActions.style.width = '100%';
-                formActions.style.marginTop = '20px';
-            }
         });
     </script>
 <?php endif; ?>
