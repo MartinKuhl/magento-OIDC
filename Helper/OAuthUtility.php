@@ -218,7 +218,7 @@ class OAuthUtility extends Data
          */
     public function getHiddenEmail($email)
     {
-        if (!isset($email) || trim($email) === '') {
+        if (trim($email) === '') {
             return "";
         }
 
