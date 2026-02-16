@@ -1,30 +1,19 @@
-/* SSO Divider */
 .sso-divider {
-    display: flex !important;
-    flex-direction: row !important;
-    flex-wrap: nowrap !important;
-    align-items: center !important;
+    display: flex;
+    margin-top: 2%;
     width: 100%;
-    margin-top: 15px;
     gap: 10px;
 }
 
-.sso-divider .sso-line {
-    display: block !important;
-    flex: 1 1 0% !important;
-    height: 1px;
-    background-color: #969393;
-    min-width: 0;
-    border: none;
+.sso-line line {
+    stroke: #969393;
+    stroke-width: 3;
 }
 
-.sso-divider .sso-or-text {
-    display: inline-block !important;
-    flex: 0 0 auto !important;
+.sso-or-text {
     white-space: nowrap;
     font-weight: bold;
-    color: #444;
-    line-height: 1;
+    margin-top: -0.5%;
 }
 
 /* SSO Button Styling */

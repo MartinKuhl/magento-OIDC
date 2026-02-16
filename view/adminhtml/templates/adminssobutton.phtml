@@ -2,85 +2,50 @@
         This template shows a SSO box on the admin backend pages
         Use this if you want to show a sso button on your backend pages
     -->
-<div class="actions" style="text-align:center;">
-    <svg height="5" width="131">
-        <line x1="0" y1="0" x2="127" y2="0" style="stroke:#969393;stroke-width:3"></line>
-    </svg>
-    OR
-    <svg height="5" width="133">
-        <line x1="0" y1="0" x2="128" y2="0" style="stroke:#969393;stroke-width:3"></line>
-    </svg>
-    <button
-        type="button"
-        class="action-login action-primary"
-        style="margin-top:3%; padding: 3% 14%; width:100%; text-align:center;"
-        onclick="window.location.href='<?= $escaper->escapeUrl($block->getAdminSPInitiatedUrl(null, $block->getAppName())) ?>';"
-    >
-        <?= $escaper->escapeHtml($block->getSSOButtonText()) ?>
-    </button>
+<div class="actions" style="text-align:center; width:100%;">
+    <div style="display:flex; flex-direction:row; flex-wrap:nowrap; align-items:center; width:100%; gap:10px; margin:15px 0;">
+        <span style="flex:1 1 0%; height:1px; background-color:#969393;"></span>
+        <span style="flex:0 0 auto; white-space:nowrap; font-weight:bold; color:#444;">OR</span>
+        <span style="flex:1 1 0%; height:1px; background-color:#969393;"></span>
+    </div>
+    <?php
+    /** @var \MiniOrange\OAuth\Block\Adminhtml\AdminSSOButton $block */
+    $oauthHelper = $block->getOauthHelper();
+    $adminSPInitiatedUrl = $oauthHelper->getAdminSPInitiatedUrl();
+    $appName = $oauthHelper->getAppName();
+    $isOAuthConfigured = $oauthHelper->isOAuthConfigured();
+    ?>
+    <?php if ($isOAuthConfigured) : ?>
+        <a href="<?= $block->escapeUrl($adminSPInitiatedUrl) ?>"
+           style="display:block; width:100%; padding:12px 0; font-weight:bold; font-size:1.4rem;
+                  text-align:center; background-color:#eb5202; color:#fff; border-radius:4px;
+                  text-decoration:none; box-sizing:border-box; transition:background-color 0.3s ease-in-out;"
+           onmouseover="this.style.backgroundColor='#c44400'"
+           onmouseout="this.style.backgroundColor='#eb5202'">
+            Login with <?= $block->escapeHtml($appName) ?>
+        </a>
+    <?php endif; ?>
 </div>
 
-<?php if ($block->isNonOidcAdminLoginDisabled()): ?>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            // Hide username field
-            var usernameField = document.querySelector('.field-username');
-            if (usernameField) {
-                usernameField.style.display = 'none';
-            }
+<script>
+    require(['jquery', 'domReady!'], function ($) {
+        'use strict';
 
-            // Hide password field
-            var passwordField = document.querySelector('.field-password');
-            if (passwordField) {
-                passwordField.style.display = 'none';
-            }
+        // Move the SSO block after the standard Magento login button
+        var ssoBlock = $('.form-actions .actions').last();
+        var loginButton = $('.form-actions .actions').first();
 
-            // Hide the welcome message and the <br/> after it
-            var legend = document.querySelector('#login-form .admin__legend');
-            if (legend) {
-                legend.style.display = 'none';
-                if (legend.nextSibling && legend.nextSibling.nodeName === 'BR') {
-                    legend.nextSibling.style.display = 'none';
-                }
-            }
+        if (ssoBlock.length && loginButton.length && ssoBlock[0] !== loginButton[0]) {
+            loginButton.after(ssoBlock);
+        }
 
-            // Hide standard Magento actions div and OR separator from OIDC div
-            var actionsDivs = document.querySelectorAll('.form-actions .actions');
-            actionsDivs.forEach(function (div) {
-                var svgs = div.querySelectorAll('svg');
-                if (svgs.length > 0) {
-                    // This is our OIDC div - hide SVGs and OR text, ensure full width
-                    div.style.width = '100%';
-                    svgs.forEach(function (svg) {
-                        svg.style.display = 'none';
-                    });
-                    div.childNodes.forEach(function (node) {
-                        if (node.nodeType === 3 && node.textContent.trim() === 'OR') {
-                            node.textContent = '';
-                        }
-                    });
-                } else {
-                    // This is Magento's standard actions div - hide entirely
-                    div.style.display = 'none';
-                }
-            });
-
-            // Hide the "Forgot your password?" link
-            var forgotPasswordDiv = document.querySelector('#login-form .links');
-            if (forgotPasswordDiv) {
-                forgotPasswordDiv.style.display = 'none';
-            }
-
-            // Ensure full-width chain so the OIDC button fills the login card
-            var fieldset = document.querySelector('#login-form .admin__fieldset');
-            if (fieldset) {
-                fieldset.style.width = '100%';
-            }
-            var formActions = document.querySelector('.form-actions');
-            if (formActions) {
-                formActions.style.width = '100%';
-                formActions.style.marginTop = '20px';
+        // Hide standard Magento actions div and OR separator from OIDC div
+        var actionsDivs = document.querySelectorAll('.form-actions .actions');
+        actionsDivs.forEach(function (div) {
+            var svgs = div.querySelectorAll('svg');
+            if (svgs.length > 0) {
+                div.style.display = 'none';
             }
         });
-    </script>
-<?php endif;
+    });
+</script>

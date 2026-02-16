@@ -1,8 +1,7 @@
-<div class="sso-divider" style="display:flex !important; flex-direction:row !important; flex-wrap:nowrap !important; align-items:center !important; width:100% !important; gap:10px; margin-top:15px;">
-    <span class="sso-line" style="display:block !important; flex:1 1 0% !important; height:1px; background-color:#969393; min-width:0 !important; border:none;"></span>
-    <span class="sso-or-text" style="flex:0 0 auto !important; white-space:nowrap; font-weight:bold; color:#444;">OR</span>
-    <span class="sso-line" style="display:block !important; flex:1 1 0% !important; height:1px; background-color:#969393; min-width:0 !important; border:none;"></span>
-</div>
+<?php
+/** @var \MiniOrange\OAuth\Block\OAuth $block */
+/** @var \Magento\Framework\Escaper $escaper */
+?>
 <?php if ($block->hasOidcError()): ?>
     <div style="
         width: 470px;
@@ -30,8 +29,17 @@
         </div>
     </div>
 <?php endif; ?>
+<div class="sso-divider">
+    <svg class="sso-line" height="5" width="215">
+        <line x1="0" y1="0" x2="210" y2="0"></line>
+    </svg>
+    <span class="sso-or-text">OR</span>
+    <svg class="sso-line" height="5" width="215">
+        <line x1="0" y1="0" x2="210" y2="0"></line>
+    </svg>
+</div>
 <div class="sso-button-container">
-    <a href="<?= $escaper->escapeUrl($block->getSPInitiatedUrl(null, $block->getAppName())) ?>" class="sso-button">
-        <span><?= $escaper->escapeHtml($block->getSSOButtonText()) ?></span>
+    <a class="sso-button" href="<?= $escaper->escapeUrl($block->getSPInitiatedUrl(null, $block->getAppName())) ?>">
+        <?= $escaper->escapeHtml($block->getSSOButtonText()) ?>
     </a>
 </div>
