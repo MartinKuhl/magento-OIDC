@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace MiniOrange\OAuth\Observer;
 
-use Magento\Framework\App\RequestInterface;
-use Magento\Framework\App\ResponseInterface;
+use Magento\Framework\App\Request\Http as HttpRequest;
+use Magento\Framework\App\Response\Http as HttpResponse;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Message\ManagerInterface;
@@ -31,8 +31,8 @@ class OAuthObserver implements ObserverInterface
 
     /**
      * @param ManagerInterface          $messageManager
-     * @param RequestInterface          $request
-     * @param ResponseInterface         $response
+     * @param HttpRequest               $request
+     * @param HttpResponse              $response
      * @param OAuthUtility              $oauthUtility
      * @param ReadAuthorizationResponse $readAuthorizationResponse
      * @param TestResults               $testResults
@@ -40,8 +40,8 @@ class OAuthObserver implements ObserverInterface
      */
     public function __construct(
         private readonly ManagerInterface $messageManager,
-        private readonly RequestInterface $request,
-        private readonly ResponseInterface $response,
+        private readonly HttpRequest $request,
+        private readonly HttpResponse $response,
         private readonly OAuthUtility $oauthUtility,
         private readonly ReadAuthorizationResponse $readAuthorizationResponse,
         private readonly TestResults $testResults,
