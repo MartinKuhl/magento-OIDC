@@ -234,15 +234,20 @@ class CustomerUserCreator
     /**
      * Create customer address with mapped OIDC attributes
      *
-     * @param \Magento\Customer\Model\Customer $customer
+     * @param CustomerInterface $customer
      * @param string $firstName
      * @param string $lastName
      * @param array $flattenedAttrs
      * @param array $rawAttrs
      * @return void
      */
-    private function createCustomerAddress($customer, $firstName, $lastName, $flattenedAttrs, $rawAttrs)
-    {
+    private function createCustomerAddress(
+        CustomerInterface $customer,
+        string $firstName,
+        string $lastName,
+        array $flattenedAttrs,
+        array $rawAttrs
+    ): void {
         // Extract address fields
         $street = $this->extractAttributeValue($this->streetAttribute, $flattenedAttrs, $rawAttrs);
         $city = $this->extractAttributeValue($this->cityAttribute, $flattenedAttrs, $rawAttrs);

@@ -82,24 +82,26 @@ class ShowTestResults extends Action
     /**
      * Initialize ShowTestResults action.
      *
-     * @param \Magento\Framework\View\Element\Template\Context $context
+     * @param \Magento\Framework\App\Action\Context $context
      * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
      * @param \Magento\Framework\App\Request\Http $request
+     * @param \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
+     * @param \Magento\Customer\Model\Session $customerSession
      * @param \Magento\Framework\Escaper $escaper
-     * @param array $data
-     */
+    */
     public function __construct(
         Context $context,
         OAuthUtility $oauthUtility,
         \Magento\Framework\App\Request\Http $request,
         ScopeConfigInterface $scopeConfig,
-        \Magento\Customer\Model\Session $customerSession
+        \Magento\Customer\Model\Session $customerSession,
+        \Magento\Framework\Escaper $escaper
     ) {
         $this->oauthUtility = $oauthUtility;
         $this->scopeConfig = $scopeConfig;
         $this->request = $request;
         $this->customerSession = $customerSession;
-        $this->escaper = $context->getObjectManager()->get(\Magento\Framework\Escaper::class);
+        $this->escaper = $escaper;
         parent::__construct($context);
     }
 
