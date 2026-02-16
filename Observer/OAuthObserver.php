@@ -4,7 +4,7 @@ namespace MiniOrange\OAuth\Observer;
 use Magento\Framework\App\Request\Http;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Message\ManagerInterface;
-use Magento\Framework\App\ResponseInterface;
+use Magento\Framework\App\Response\Http as HttpResponse;
 use MiniOrange\OAuth\Helper\TestResults;
 use MiniOrange\OAuth\Helper\OAuthMessages;
 use Magento\Framework\Event\Observer;
@@ -35,7 +35,7 @@ class OAuthObserver implements ObserverInterface
     private $messageManager;
 
     /**
-     * @var \Magento\Framework\App\ResponseInterface
+     * @var HttpResponse
      */
     private $response;
 
@@ -87,22 +87,20 @@ class OAuthObserver implements ObserverInterface
      */
     public function __construct(
         ManagerInterface $messageManager,
-        LoggerInterface $logger,
-        ReadAuthorizationResponse $readAuthorizationResponse,
-        OAuthUtility $oauthUtility,
         Http $request,
+        HttpResponse $response,  // <-- geändert
+        OAuthUtility $oauthUtility,
+        ReadAuthorizationResponse $readAuthorizationResponse,
         TestResults $testResults,
-        ResponseInterface $response
+        LoggerInterface $logger
     ) {
         $this->messageManager = $messageManager;
-        $this->logger = $logger;
-        $this->readAuthorizationResponse = $readAuthorizationResponse;
-        $this->oauthUtility = $oauthUtility;
-        $this->currentControllerName = $request->getControllerName();
-        $this->currentActionName = $request->getActionName();
         $this->request = $request;
-        $this->testResults = $testResults;
         $this->response = $response;
+        $this->oauthUtility = $oauthUtility;
+        $this->readAuthorizationResponse = $readAuthorizationResponse;
+        $this->testResults = $testResults;
+        $this->logger = $logger;
     }
 
     /**
