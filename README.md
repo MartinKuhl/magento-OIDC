@@ -123,5 +123,4 @@ vendor/bin/psalm --no-cache --config=github/miniorange-oauth-sso/psalm.xml
 
 vendor/bin/phpcs --standard=Magento2 ./github/miniorange-oauth-sso/
 
- WARNING | Line exceeds 120 characters
- Missing PHP DocBlock for class property
+vendor/bin/phpcs --standard=PHPCompatibility  ./github/miniorange-oauth-sso/

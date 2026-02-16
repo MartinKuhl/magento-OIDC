@@ -181,8 +181,8 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         $mo_oauth_well_known_config_url = isset($params['endpoint_url']) ? trim($params['endpoint_url']) : '';
         $mo_oauth_issuer = isset($params['mo_oauth_issuer']) ? trim($params['mo_oauth_issuer']) : '';
         $mo_oauth_grant_type = OAuthConstants::GRANT_TYPE;
-        $send_header = isset($params['send_header']) ? 1 : 0;
-        $send_body = isset($params['send_body']) ? 1 : 0;
+        $send_header = isset($params['send_header']);
+        $send_body = isset($params['send_body']);
 
         $clientDetails = $this->oauthUtility->getClientDetailsByAppName($mo_oauth_app_name);
 
