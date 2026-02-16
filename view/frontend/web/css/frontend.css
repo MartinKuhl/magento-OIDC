@@ -3,17 +3,27 @@
     margin-top: 2%;
     width: 100%;
     gap: 10px;
+    align-items: center;
+    justify-content: center;
+}
+
+.sso-line {
+    display: block;
+    /* Flex-grow is handled inline or inherited, but we can enforce it here if preferred, 
+       though inline style 'flex: 1' in phtml ensures it works strictly on the item. 
+       Let's keep the stroke styling here. */
 }
 
 .sso-line line {
     stroke: #969393;
     stroke-width: 3;
+    width: 100%;
 }
 
 .sso-or-text {
     white-space: nowrap;
     font-weight: bold;
-    margin-top: -0.5%;
+    color: #444; /* Added for better contrast matching the design */
 }
 
 /* SSO Button Styling */

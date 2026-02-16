@@ -69,16 +69,23 @@ Write for a developer who's new to this codebase but not new to coding.
 
 ####################################################################################
 
+### FIX ###:
 - fix style OIDC login button admin maybe customer to (horizontal line)
+
+- Time to change your password warning
+
+- Password verifcation plugin is not working anymore
+
+- clean up debug log: miniorange_oauth.DEBUG: User data reloaded for ID: 4 [] []
+
+### NEW ###:
 - deaktiviate OIDC login button if
     - no valid OIDC config
     - no OIDC user exists
     - no autocreate option is activated
     - for customer and admin
-    
-- Time to change your password warning
-- Password verifcation plugin is not working anymore
 
+### LATER - complex ###:
 - Storage of settings in 2 different tables why -> merging?
 - whats needs to be adjusted to be future-proof and support multiple OIDC providers?
 
