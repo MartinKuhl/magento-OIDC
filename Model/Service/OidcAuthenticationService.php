@@ -35,7 +35,7 @@ class OidcAuthenticationService
     /**
      * Validate user info data from OAuth provider.
      *
-     * @param mixed $userInfoResponse
+     * @param  mixed $userInfoResponse
      * @throws IncorrectUserInfoDataException
      */
     public function validateUserInfo($userInfoResponse): void
@@ -56,10 +56,10 @@ class OidcAuthenticationService
     /**
      * Flatten a nested OAuth response into dot-notation keyed array.
      *
-     * @param string $keyPrefix Current key prefix for recursion
-     * @param array|object $arr The nested data structure
-     * @param array $result Accumulator for flattened key-value pairs
-     * @param int $depth Current recursion depth
+     * @param  string       $keyPrefix Current key prefix for recursion
+     * @param  array|object $arr       The nested data structure
+     * @param  array        $result    Accumulator for flattened key-value pairs
+     * @param  int          $depth     Current recursion depth
      * @return array Flattened associative array
      */
     public function flattenAttributes(string $keyPrefix, $arr, array &$result, int $depth = 0): array
@@ -83,8 +83,8 @@ class OidcAuthenticationService
     /**
      * Extract email from OAuth response using configured attribute and recursive fallback.
      *
-     * @param array $flattenedResponse Flattened attributes
-     * @param array|object $rawResponse Raw OAuth response for recursive search
+     * @param  array        $flattenedResponse Flattened attributes
+     * @param  array|object $rawResponse       Raw OAuth response for recursive search
      * @return string Email address or empty string if not found
      */
     public function extractEmail(array $flattenedResponse, $rawResponse): string
@@ -95,8 +95,7 @@ class OidcAuthenticationService
             $emailAttribute = OAuthConstants::DEFAULT_MAP_EMAIL;
         }
 
-        if (
-            isset($flattenedResponse[$emailAttribute])
+        if (isset($flattenedResponse[$emailAttribute])
             && filter_var($flattenedResponse[$emailAttribute], FILTER_VALIDATE_EMAIL)
         ) {
             $this->oauthUtility->customlog(
@@ -118,7 +117,7 @@ class OidcAuthenticationService
     /**
      * Extract login type from user info response.
      *
-     * @param array|object $userInfoResponse
+     * @param  array|object $userInfoResponse
      * @return string Login type constant
      */
     public function extractLoginType($userInfoResponse): string
@@ -135,8 +134,8 @@ class OidcAuthenticationService
     /**
      * Recursively search for an email address in the user info data.
      *
-     * @param array|object $arr
-     * @param int $depth
+     * @param  array|object $arr
+     * @param  int          $depth
      * @return string
      */
     private function findEmailRecursive($arr, int $depth = 0): string

@@ -63,10 +63,10 @@ class OidcCredentialAdapter implements StorageInterface
     protected $userCollectionFactory;
 
     /**
-     * @param UserFactory $userFactory
-     * @param ManagerInterface $eventManager
-     * @param OAuthUtility $oauthUtility
-     * @param UserResourceModel $userResource
+     * @param UserFactory           $userFactory
+     * @param ManagerInterface      $eventManager
+     * @param OAuthUtility          $oauthUtility
+     * @param UserResourceModel     $userResource
      * @param UserCollectionFactory $userCollectionFactory
      */
     public function __construct(
@@ -112,7 +112,7 @@ class OidcCredentialAdapter implements StorageInterface
      * After deserialization, dependencies may be null. This method safely logs
      * only when the oauthUtility dependency is available.
      *
-     * @param string $message
+     * @param  string $message
      * @return void
      */
     protected function log($message)
@@ -128,8 +128,8 @@ class OidcCredentialAdapter implements StorageInterface
      * Validates that the user was authenticated via OIDC provider and exists in Magento.
      * Does NOT verify password - authentication already happened at OIDC provider.
      *
-     * @param string $username User email from OIDC provider
-     * @param string $password OIDC token marker (should be OIDC_TOKEN_MARKER)
+     * @param  string $username User email from OIDC provider
+     * @param  string $password OIDC token marker (should be OIDC_TOKEN_MARKER)
      * @return bool
      * @throws AuthenticationException
      */
@@ -143,11 +143,13 @@ class OidcCredentialAdapter implements StorageInterface
             throw new AuthenticationException(__('Invalid authentication method'));
         }
 
-        $this->eventManager->dispatch('admin_user_authenticate_before', [
+        $this->eventManager->dispatch(
+            'admin_user_authenticate_before', [
             'username' => $username,
             'user' => null,
             'oidc_auth' => true
-        ]);
+            ]
+        );
 
         $userCollection = $this->userCollectionFactory->create()
             ->addFieldToFilter('email', $username);
@@ -181,13 +183,15 @@ class OidcCredentialAdapter implements StorageInterface
             );
         }
 
-        $this->eventManager->dispatch('admin_user_authenticate_after', [
+        $this->eventManager->dispatch(
+            'admin_user_authenticate_after', [
             'username' => $username,
             'password' => '',
             'user' => $this->user,
             'result' => true,
             'oidc_auth' => true
-        ]);
+            ]
+        );
 
         $this->log("Authentication successful for: " . $username);
         return true;
@@ -199,8 +203,8 @@ class OidcCredentialAdapter implements StorageInterface
      * Performs the login after successful authentication.
      * Records login in database and reloads user data.
      *
-     * @param string $username
-     * @param string $password
+     * @param  string $username
+     * @param  string $password
      * @return $this
      * @throws AuthenticationException
      */
@@ -251,7 +255,7 @@ class OidcCredentialAdapter implements StorageInterface
     /**
      * Set if user has available resources
      *
-     * @param bool $hasResources
+     * @param  bool $hasResources
      * @return $this
      */
     public function setHasAvailableResources($hasResources)
@@ -322,8 +326,8 @@ class OidcCredentialAdapter implements StorageInterface
     /**
      * Magic method to proxy unknown method calls to the User object
      *
-     * @param string $method
-     * @param array $args
+     * @param  string $method
+     * @param  array  $args
      * @return mixed
      * @throws \BadMethodCallException
      */

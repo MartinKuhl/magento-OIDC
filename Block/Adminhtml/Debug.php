@@ -33,12 +33,12 @@ class Debug extends Template
     protected $curlClient;
 
     /**
-     * @param Context $context
-     * @param OAuthUtility $oauthUtility
-     * @param DirectoryList $directoryList
+     * @param Context                                        $context
+     * @param OAuthUtility                                   $oauthUtility
+     * @param DirectoryList                                  $directoryList
      * @param \Magento\Framework\Filesystem\Driver\File|null $fileDriver
-     * @param \Magento\Framework\HTTP\Client\Curl|null $curlClient
-     * @param array $data
+     * @param \Magento\Framework\HTTP\Client\Curl|null       $curlClient
+     * @param array                                          $data
      */
     public function __construct(
         Context $context,
@@ -179,7 +179,7 @@ class Debug extends Template
     /**
      * Test URL connectivity
      *
-     * @param string $url
+     * @param  string $url
      * @return array
      */
     protected function testUrl($url)
@@ -215,7 +215,7 @@ class Debug extends Template
     /**
      * Mask sensitive data
      *
-     * @param string $secret
+     * @param  string $secret
      * @return string
      */
     protected function maskSecret($secret)
@@ -235,7 +235,7 @@ class Debug extends Template
     /**
      * Format JSON for display
      *
-     * @param mixed $data
+     * @param  mixed $data
      * @return string
      */
     public function formatJson($data): string

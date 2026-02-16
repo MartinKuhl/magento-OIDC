@@ -9,9 +9,9 @@ use MiniOrange\OAuth\Helper\OAuthMessages;
  */
 class RequiredFieldsException extends \Exception
 {
-/**
- * Exception thrown when required fields are missing in the OAuth configuration.
- */
+    /**
+     * Exception thrown when required fields are missing in the OAuth configuration.
+     */
     public function __construct()
     {
         $message     = OAuthMessages::parse('REQUIRED_FIELDS');
@@ -22,8 +22,8 @@ class RequiredFieldsException extends \Exception
     /**
      * Initialize exception with a descriptive message.
      *
-     * @param string $message
-     * @param int $code
+     * @param string          $message
+     * @param int             $code
      * @param \Throwable|null $previous
      */
     public function __toString(): string

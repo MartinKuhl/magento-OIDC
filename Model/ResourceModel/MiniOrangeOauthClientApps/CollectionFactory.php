@@ -23,7 +23,7 @@ class CollectionFactory
     /**
      * Create collection instance
      *
-     * @param array $data
+     * @param  array $data
      * @return Collection
      */
     public function create(array $data = []) : Collection

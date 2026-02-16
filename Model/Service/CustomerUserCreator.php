@@ -65,19 +65,33 @@ class CustomerUserCreator
     private $directoryData;
 
     // Attribute mapping keys
-    /** @var string|null OIDC claim name for date of birth */
+    /**
+     * @var string|null OIDC claim name for date of birth 
+     */
     private $dobAttribute;
-    /** @var string|null OIDC claim name for gender */
+    /**
+     * @var string|null OIDC claim name for gender 
+     */
     private $genderAttribute;
-    /** @var string|null OIDC claim name for phone number */
+    /**
+     * @var string|null OIDC claim name for phone number 
+     */
     private $phoneAttribute;
-    /** @var string|null OIDC claim name for street address */
+    /**
+     * @var string|null OIDC claim name for street address 
+     */
     private $streetAttribute;
-    /** @var string|null OIDC claim name for postal/zip code */
+    /**
+     * @var string|null OIDC claim name for postal/zip code 
+     */
     private $zipAttribute;
-    /** @var string|null OIDC claim name for city/locality */
+    /**
+     * @var string|null OIDC claim name for city/locality 
+     */
     private $cityAttribute;
-    /** @var string|null OIDC claim name for country */
+    /**
+     * @var string|null OIDC claim name for country 
+     */
     private $countryAttribute;
 
     /**
@@ -88,8 +102,8 @@ class CustomerUserCreator
     /**
      * Initialize customer user creator service.
      *
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
-     * @param \Magento\Store\Model\StoreManagerInterface $storeManager
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility             $oauthUtility
+     * @param \Magento\Store\Model\StoreManagerInterface        $storeManager
      * @param \Magento\Customer\Api\CustomerRepositoryInterface $customerRepository
      */
     public function __construct(
@@ -121,10 +135,10 @@ class CustomerUserCreator
     /**
      * Create or update a customer from OIDC attributes.
      *
-     * @param string $email
-     * @param string $firstName
-     * @param string $lastName
-     * @param string $userName
+     * @param  string $email
+     * @param  string $firstName
+     * @param  string $lastName
+     * @param  string $userName
      * @return void
      */
     private function initializeAttributeMapping(): void
@@ -161,12 +175,12 @@ class CustomerUserCreator
     /**
      * Create a customer from OIDC attributes.
      *
-     * @param string $email
-     * @param string $userName
-     * @param string $firstName
-     * @param string $lastName
-     * @param array $flattenedAttrs
-     * @param array $rawAttrs
+     * @param  string $email
+     * @param  string $userName
+     * @param  string $firstName
+     * @param  string $lastName
+     * @param  array  $flattenedAttrs
+     * @param  array  $rawAttrs
      * @return CustomerInterface|null
      */
     public function createCustomer(
@@ -247,11 +261,11 @@ class CustomerUserCreator
     /**
      * Create customer address with mapped OIDC attributes
      *
-     * @param CustomerInterface $customer
-     * @param string $firstName
-     * @param string $lastName
-     * @param array $flattenedAttrs
-     * @param array $rawAttrs
+     * @param  CustomerInterface $customer
+     * @param  string            $firstName
+     * @param  string            $lastName
+     * @param  array             $flattenedAttrs
+     * @param  array             $rawAttrs
      * @return void
      */
     private function createCustomerAddress(
@@ -301,9 +315,9 @@ class CustomerUserCreator
     /**
      * Extract attribute value from flattened attributes with support for nested paths
      *
-     * @param string $key Attribute key or dotted path (e.g., "address.locality")
-     * @param array|null $flattenedAttrs Flattened key/value map
-     * @param array|object|null $rawAttrs Original attributes structure
+     * @param  string            $key            Attribute key or dotted path (e.g., "address.locality")
+     * @param  array|null        $flattenedAttrs Flattened key/value map
+     * @param  array|object|null $rawAttrs       Original attributes structure
      * @return string|null
      */
     private function extractAttributeValue($key, $flattenedAttrs, $rawAttrs)
@@ -358,7 +372,7 @@ class CustomerUserCreator
     /**
      * Format date of birth to Y-m-d format
      *
-     * @param string $dob Raw date string
+     * @param  string $dob Raw date string
      * @return string|null Formatted date `Y-m-d` or null on parse failure
      */
     private function formatDateOfBirth($dob)

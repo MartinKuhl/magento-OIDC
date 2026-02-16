@@ -23,22 +23,26 @@ use Psr\Log\LoggerInterface;
 class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetActionInterface
 {
 
-    /** @var \Magento\Authorization\Model\ResourceModel\Role\Collection */
+    /**
+     * @var \Magento\Authorization\Model\ResourceModel\Role\Collection 
+     */
     private $adminRoleModel;
 
-    /** @var \Magento\Customer\Model\ResourceModel\Group\Collection */
+    /**
+     * @var \Magento\Customer\Model\ResourceModel\Group\Collection 
+     */
     private $userGroupModel;
 
     /**
      * Initialize attribute settings controller.
      *
-     * @param \Magento\Backend\App\Action\Context $context
-     * @param PageFactory $resultPageFactory
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
-     * @param ManagerInterface $messageManager
-     * @param LoggerInterface $logger
+     * @param \Magento\Backend\App\Action\Context                        $context
+     * @param PageFactory                                                $resultPageFactory
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility                      $oauthUtility
+     * @param ManagerInterface                                           $messageManager
+     * @param LoggerInterface                                            $logger
      * @param \Magento\Authorization\Model\ResourceModel\Role\Collection $adminRoleModel
-     * @param Collection $userGroupModel
+     * @param Collection                                                 $userGroupModel
      */
     public function __construct(
         Context $context,
@@ -91,7 +95,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
     /**
      * Process Values being submitted and save data in the database.
      *
-     * @param array $params
+     * @param  array $params
      * @return void
      */
     private function processValuesAndSaveData(array $params)
@@ -129,9 +133,11 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
 
         // Save admin role mappings as JSON (filter out empty mappings)
         if (isset($params['oauth_role_mapping'])) {
-            $roleMappings = array_filter($params['oauth_role_mapping'], function ($mapping) {
-                return !empty($mapping['group']) && !empty($mapping['role']);
-            });
+            $roleMappings = array_filter(
+                $params['oauth_role_mapping'], function ($mapping) {
+                    return !empty($mapping['group']) && !empty($mapping['role']);
+                }
+            );
             $roleMappingsJson = json_encode(array_values($roleMappings));
             $this->oauthUtility->setStoreConfig('adminRoleMapping', $roleMappingsJson, true);
             $logMsg = 'Saved admin role mappings: ' . $roleMappingsJson;

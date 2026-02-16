@@ -14,10 +14,14 @@ use MiniOrange\OAuth\Helper\Exception\RequiredFieldsException;
 abstract class BaseAction extends \Magento\Framework\App\Action\Action
 {
 
-    /** @var \MiniOrange\OAuth\Helper\OAuthUtility */
+    /**
+     * @var \MiniOrange\OAuth\Helper\OAuthUtility 
+     */
     protected $oauthUtility;
 
-    /** @var \Magento\Framework\App\Action\Context */
+    /**
+     * @var \Magento\Framework\App\Action\Context 
+     */
     protected $context;
 
     /**
@@ -42,8 +46,8 @@ abstract class BaseAction extends \Magento\Framework\App\Action\Action
      *   1. checkIfRequiredFieldsEmpty(['key1' => $params, ...]) — legacy associative style
      *   2. checkIfRequiredFieldsEmpty(['key1', 'key2'], $params) — key list + params array
      *
-     * @param array $array Required keys (or legacy associative array)
-     * @param array|null $params Source data array (for the two-parameter form)
+     * @param  array      $array  Required keys (or legacy associative array)
+     * @param  array|null $params Source data array (for the two-parameter form)
      * @throws RequiredFieldsException
      */
     protected function checkIfRequiredFieldsEmpty($array, $params = null)
@@ -60,8 +64,7 @@ abstract class BaseAction extends \Magento\Framework\App\Action\Action
 
         // Legacy single-parameter form
         foreach ($array as $key => $value) {
-            if (
-                (is_array($value) && (!isset($value[$key]) || $this->oauthUtility->isBlank($value[$key])))
+            if ((is_array($value) && (!isset($value[$key]) || $this->oauthUtility->isBlank($value[$key])))
                 || $this->oauthUtility->isBlank($value)
             ) {
                 throw new RequiredFieldsException();
@@ -79,8 +82,8 @@ abstract class BaseAction extends \Magento\Framework\App\Action\Action
      *
      * @param string $oauthRequest Full authorize URL or query string
      * @param string $authorizeUrl Base authorize URL to prepend
-     * @param string $relayState Optional relay state to include
-     * @param array $params Additional parameters (unused)
+     * @param string $relayState   Optional relay state to include
+     * @param array  $params       Additional parameters (unused)
      */
     protected function sendHTTPRedirectRequest($oauthRequest, $authorizeUrl, $relayState = '', $params = [])
     {
@@ -96,6 +99,8 @@ abstract class BaseAction extends \Magento\Framework\App\Action\Action
     }
 
 
-    /** This function is abstract that needs to be implemented by each Action Class */
+    /**
+     * This function is abstract that needs to be implemented by each Action Class 
+     */
     abstract public function execute();
 }

@@ -17,10 +17,14 @@ class OAuthSecurityHelper
     private const NONCE_TTL = 120;     // 2 minutes
     private const STATE_TTL = 600;     // 10 minutes
 
-    /** @var CacheInterface */
+    /**
+     * @var CacheInterface 
+     */
     private CacheInterface $cache;
 
-    /** @var OAuthUtility */
+    /**
+     * @var OAuthUtility 
+     */
     private OAuthUtility $oauthUtility;
 
     /**
@@ -41,7 +45,7 @@ class OAuthSecurityHelper
      * Create a one-time nonce that maps to an admin email address.
      * Used to prevent direct URL-based admin login (C1 fix).
      *
-     * @param string $email The admin user's email
+     * @param  string $email The admin user's email
      * @return string The generated nonce (32-char hex)
      */
     public function createAdminLoginNonce(string $email): string
@@ -56,7 +60,7 @@ class OAuthSecurityHelper
      * Redeem (validate and consume) an admin login nonce.
      * Returns the associated email and deletes the nonce so it cannot be reused.
      *
-     * @param string $nonce The nonce to redeem
+     * @param  string $nonce The nonce to redeem
      * @return string|null The email if valid, null if expired/invalid
      */
     public function redeemAdminLoginNonce(string $nonce): ?string
@@ -80,7 +84,7 @@ class OAuthSecurityHelper
     /**
      * Create a CSRF state token for the OAuth authorization flow.
      *
-     * @param string $sessionId The current PHP session ID
+     * @param  string $sessionId The current PHP session ID
      * @return string The generated state token (32-char hex)
      */
     public function createStateToken(string $sessionId): string
@@ -94,8 +98,8 @@ class OAuthSecurityHelper
     /**
      * Validate and consume a CSRF state token.
      *
-     * @param string $sessionId The session ID used when the token was created
-     * @param string $stateToken The state token to validate
+     * @param  string $sessionId  The session ID used when the token was created
+     * @param  string $stateToken The state token to validate
      * @return bool True if valid, false if expired/invalid
      */
     public function validateStateToken(string $sessionId, string $stateToken): bool
@@ -123,11 +127,11 @@ class OAuthSecurityHelper
     /**
      * Encode relay state data as a URL-safe JSON+Base64 string for the OAuth state parameter.
      *
-     * @param string $relayState The original relay state URL
-     * @param string $sessionId The current PHP session ID
-     * @param string $appName The OAuth app name
-     * @param string $loginType Login type (admin or customer)
-     * @param string $stateToken CSRF state token
+     * @param  string $relayState The original relay state URL
+     * @param  string $sessionId  The current PHP session ID
+     * @param  string $appName    The OAuth app name
+     * @param  string $loginType  Login type (admin or customer)
+     * @param  string $stateToken CSRF state token
      * @return string URL-safe base64-encoded JSON string
      */
     public function encodeRelayState(
@@ -150,7 +154,7 @@ class OAuthSecurityHelper
     /**
      * Decode a URL-safe JSON+Base64 relay state string.
      *
-     * @param string $encoded The encoded state string
+     * @param  string $encoded The encoded state string
      * @return array|null Associative array with keys: relayState, sessionId, appName,
      *                    loginType, stateToken; or null on failure
      */
@@ -178,8 +182,8 @@ class OAuthSecurityHelper
      * Validate a redirect URL to prevent open redirects.
      * Only allows relative paths or URLs on the same host as the Magento base URL.
      *
-     * @param string $url The URL to validate
-     * @param string $fallback The fallback URL if validation fails (default: '/')
+     * @param  string $url      The URL to validate
+     * @param  string $fallback The fallback URL if validation fails (default: '/')
      * @return string The validated URL or the fallback
      */
     public function validateRedirectUrl(string $url, string $fallback = '/'): string

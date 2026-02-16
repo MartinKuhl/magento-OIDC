@@ -28,7 +28,7 @@ class OAuthLogoutObserver implements ObserverInterface
     /**
      * Initialize OAuth logout observer.
      *
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility    $oauthUtility
      * @param \Magento\Framework\App\ResponseInterface $response
      */
     public function __construct(
@@ -42,7 +42,7 @@ class OAuthLogoutObserver implements ObserverInterface
     /**
      * Handle logout event and redirect to OAuth provider logout URL if configured.
      *
-     * @param Observer $observer
+     * @param  Observer $observer
      * @return void
      */
     public function execute(Observer $observer): void

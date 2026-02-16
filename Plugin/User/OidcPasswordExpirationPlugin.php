@@ -20,7 +20,7 @@ class OidcPasswordExpirationPlugin
     /**
      * Initialize OIDC password expiration plugin.
      *
-     * @param AuthSession $authSession
+     * @param AuthSession  $authSession
      * @param OAuthUtility $oauthUtility
      */
     public function __construct(
@@ -35,9 +35,9 @@ class OidcPasswordExpirationPlugin
      * Skips password expiration check entirely for OIDC users.
      * Event: backend_auth_user_login_success
      *
-     * @param AuthObserver $subject
-     * @param callable $proceed
-     * @param EventObserver $observer
+     * @param  AuthObserver  $subject
+     * @param  callable      $proceed
+     * @param  EventObserver $observer
      * @return void
      */
     public function aroundExecute(

@@ -20,7 +20,7 @@ class OidcForcePasswordChangePlugin
     /**
      * Initialize OIDC force password change plugin.
      *
-     * @param AuthSession $authSession
+     * @param AuthSession  $authSession
      * @param OAuthUtility $oauthUtility
      */
     public function __construct(
@@ -35,9 +35,9 @@ class OidcForcePasswordChangePlugin
      * Skips forced password change redirect for OIDC users.
      * Event: controller_action_predispatch
      *
-     * @param ForceAdminPasswordChangeObserver $subject
-     * @param callable $proceed
-     * @param EventObserver $observer
+     * @param  ForceAdminPasswordChangeObserver $subject
+     * @param  callable                         $proceed
+     * @param  EventObserver                    $observer
      * @return void
      */
     public function aroundExecute(

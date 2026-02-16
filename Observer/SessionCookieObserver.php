@@ -23,7 +23,7 @@ class SessionCookieObserver implements ObserverInterface
 
     /**
      * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
-     * @param SessionHelper $sessionHelper
+     * @param SessionHelper                         $sessionHelper
      */
     public function __construct(
         \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
@@ -36,7 +36,7 @@ class SessionCookieObserver implements ObserverInterface
     /**
      * Observer-Methode, die vor dem Senden der Response aufgerufen wird
      *
-     * @param \Magento\Framework\Event\Observer $observer
+     * @param  \Magento\Framework\Event\Observer $observer
      * @return void
      */
     public function execute(\Magento\Framework\Event\Observer $observer)

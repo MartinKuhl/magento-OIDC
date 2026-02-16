@@ -10,7 +10,9 @@ namespace MiniOrange\OAuth\Helper;
  */
 class Curl
 {
-    /** @var OAuthUtility */
+    /**
+     * @var OAuthUtility 
+     */
     private OAuthUtility $oauthUtility;
 
     /**
@@ -27,12 +29,12 @@ class Curl
     /**
      * Send an access token request to the OAuth provider.
      *
-     * @param array $postData Token request body parameters
-     * @param string $url Token endpoint URL
-     * @param string $clientID OAuth client ID
-     * @param string $clientSecret OAuth client secret
-     * @param int $header Whether to send credentials in header (1) or not (0)
-     * @param int $body Whether to send credentials in body (1) or not (0)
+     * @param  array  $postData     Token request body parameters
+     * @param  string $url          Token endpoint URL
+     * @param  string $clientID     OAuth client ID
+     * @param  string $clientSecret OAuth client secret
+     * @param  int    $header       Whether to send credentials in header (1) or not (0)
+     * @param  int    $body         Whether to send credentials in body (1) or not (0)
      * @return string JSON response
      */
     public function sendAccessTokenRequest($postData, $url, $clientID, $clientSecret, $header, $body): string
@@ -55,8 +57,8 @@ class Curl
     /**
      * Send a user info request to the OAuth provider.
      *
-     * @param string $url User info endpoint URL
-     * @param array $headers HTTP headers (including Authorization)
+     * @param  string $url     User info endpoint URL
+     * @param  array  $headers HTTP headers (including Authorization)
      * @return string JSON response
      */
     public function sendUserInfoRequest($url, $headers): string
@@ -67,9 +69,9 @@ class Curl
     /**
      * Internal HTTP request method.
      *
-     * @param string $url Request URL
-     * @param array $jsonData Request body data
-     * @param array $headers HTTP headers
+     * @param  string $url      Request URL
+     * @param  array  $jsonData Request body data
+     * @param  array  $headers  HTTP headers
      * @return string Response body
      */
     private function callAPI($url, $jsonData = [], $headers = ["Content-Type: application/json"]): string

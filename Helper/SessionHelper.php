@@ -83,7 +83,9 @@ class SessionHelper
             // Handle the frontend session cookie (/ path)
             $cookieValue = $this->cookieManager->getCookie($sessionName);
             if ($cookieValue !== null) {
-                /** @var PublicCookieMetadata $metadata */
+                /**
+ * @var PublicCookieMetadata $metadata 
+*/
                 $metadata = $this->cookieMetadataFactory->createPublicCookieMetadata()
                     ->setPath('/')
                     ->setSecure(true)
@@ -112,7 +114,9 @@ class SessionHelper
 
                 $path = (strpos($candidateName, $adminFrontName) !== false) ? '/' . $adminFrontName : '/';
 
-                /** @var PublicCookieMetadata $metadata */
+                /**
+ * @var PublicCookieMetadata $metadata 
+*/
                 $metadata = $this->cookieMetadataFactory->createPublicCookieMetadata()
                     ->setPath($path)
                     ->setSecure(true)
@@ -141,7 +145,9 @@ class SessionHelper
                 return;
             }
 
-            /** @var PublicCookieMetadata $metadata */
+            /**
+ * @var PublicCookieMetadata $metadata 
+*/
             $metadata = $this->cookieMetadataFactory->createPublicCookieMetadata()
                 ->setPath('/')
                 ->setSecure(true)

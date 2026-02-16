@@ -51,13 +51,13 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
     /**
      * Initialize customer login action.
      *
-     * @param Context $context
-     * @param OAuthUtility $oauthUtility
-     * @param Session $customerSession
-     * @param ResponseFactory $responseFactory
-     * @param OAuthSecurityHelper $securityHelper
+     * @param Context                     $context
+     * @param OAuthUtility                $oauthUtility
+     * @param Session                     $customerSession
+     * @param ResponseFactory             $responseFactory
+     * @param OAuthSecurityHelper         $securityHelper
      * @param CustomerRepositoryInterface $customerRepository
-     * @param CustomerFactory $customerFactory
+     * @param CustomerFactory             $customerFactory
      */
     public function __construct(
         Context $context,
@@ -123,7 +123,7 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
     /**
      * Setter for the user parameter.
      *
-     * @param \Magento\Customer\Model\Data\Customer|null $user
+     * @param  \Magento\Customer\Model\Data\Customer|null $user
      * @return CustomerLoginAction
      */
     public function setUser($user)
@@ -137,7 +137,7 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
     /**
      * Setter for the relayState parameter.
      *
-     * @param string|null $relayState
+     * @param  string|null $relayState
      * @return CustomerLoginAction
      */
     public function setRelayState($relayState)

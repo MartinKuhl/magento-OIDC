@@ -85,8 +85,8 @@ class OAuthMessages
      * necessary values. The dynamic values needs to be passed in
      * the key value pair. Key is usually of the form {{key}}.
      *
-     * @param string $message
-     * @param array $data
+     * @param  string $message
+     * @param  array  $data
      * @return string
      */
     public static function parse(string $message, array $data = []): string

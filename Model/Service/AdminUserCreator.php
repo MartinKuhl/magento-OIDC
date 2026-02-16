@@ -45,12 +45,12 @@ class AdminUserCreator
     private $userCollectionFactory;
 
     /**
-     * @param UserFactory $userFactory
-     * @param RoleCollection $roleCollection
-     * @param OAuthUtility $oauthUtility
-     * @param Random $randomUtility
+     * @param UserFactory                            $userFactory
+     * @param RoleCollection                         $roleCollection
+     * @param OAuthUtility                           $oauthUtility
+     * @param Random                                 $randomUtility
      * @param \Magento\User\Model\ResourceModel\User $userResource
-     * @param UserCollectionFactory $userCollectionFactory
+     * @param UserCollectionFactory                  $userCollectionFactory
      */
     public function __construct(
         UserFactory $userFactory,
@@ -71,11 +71,11 @@ class AdminUserCreator
     /**
      * Create an admin user based on OIDC attributes
      *
-     * @param string $email
-     * @param string $userName
-     * @param string|null $firstName
-     * @param string|null $lastName
-     * @param array $userGroups
+     * @param  string      $email
+     * @param  string      $userName
+     * @param  string|null $firstName
+     * @param  string|null $lastName
+     * @param  array       $userGroups
      * @return \Magento\User\Model\User|null
      */
     public function createAdminUser($email, $userName, $firstName, $lastName, array $userGroups)
@@ -99,11 +99,11 @@ class AdminUserCreator
     /**
      * Save the admin user to database
      *
-     * @param string $userName
-     * @param string $email
-     * @param string $firstName
-     * @param string $lastName
-     * @param int $roleId
+     * @param  string $userName
+     * @param  string $email
+     * @param  string $firstName
+     * @param  string $lastName
+     * @param  int    $roleId
      * @return \Magento\User\Model\User|null
      */
     private function saveAdminUser($userName, $email, $firstName, $lastName, $roleId)
@@ -149,9 +149,9 @@ class AdminUserCreator
     /**
      * Apply name fallbacks from email when firstName/lastName are empty
      *
-     * @param string|null $firstName
-     * @param string|null $lastName
-     * @param string $email
+     * @param  string|null $firstName
+     * @param  string|null $lastName
+     * @param  string      $email
      * @return array [firstName, lastName]
      */
     private function applyNameFallbacks($firstName, $lastName, $email)
@@ -172,7 +172,7 @@ class AdminUserCreator
     /**
      * Get admin role ID from OIDC groups using configured mappings
      *
-     * @param array $userGroups Groups from OIDC response
+     * @param  array $userGroups Groups from OIDC response
      * @return int|null Admin role ID or null if denied
      */
     private function getAdminRoleFromGroups($userGroups)
@@ -223,7 +223,7 @@ class AdminUserCreator
     /**
      * Check if the email/username belongs to an existing admin user
      *
-     * @param string $email
+     * @param  string $email
      * @return bool
      */
     public function isAdminUser($email)

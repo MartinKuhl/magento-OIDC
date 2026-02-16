@@ -34,7 +34,7 @@ class OidcIdentityFieldPlugin
      * Constructor
      *
      * @param CookieManagerInterface $cookieManager
-     * @param OAuthUtility $oauthUtility
+     * @param OAuthUtility           $oauthUtility
      */
     public function __construct(
         CookieManagerInterface $cookieManager,
@@ -50,8 +50,8 @@ class OidcIdentityFieldPlugin
      * Removes the required attribute and required-entry CSS class from the
      * identity verification password field when the user is OIDC-authenticated.
      *
-     * @param mixed $subject The form block
-     * @param mixed $result The result of setForm
+     * @param  mixed $subject The form block
+     * @param  mixed $result  The result of setForm
      * @return mixed
      */
     public function afterSetForm($subject, $result)

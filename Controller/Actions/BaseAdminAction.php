@@ -19,29 +19,41 @@ use MiniOrange\OAuth\Helper\Exception\SupportQueryRequiredFieldsException;
 abstract class BaseAdminAction extends \Magento\Backend\App\Action
 {
 
-    /** @var \MiniOrange\OAuth\Helper\OAuthUtility */
+    /**
+     * @var \MiniOrange\OAuth\Helper\OAuthUtility 
+     */
     protected $oauthUtility;
 
-    /** @var \Magento\Backend\App\Action\Context */
+    /**
+     * @var \Magento\Backend\App\Action\Context 
+     */
     protected $context;
 
-    /** @var \Magento\Framework\View\Result\PageFactory */
+    /**
+     * @var \Magento\Framework\View\Result\PageFactory 
+     */
     protected $resultPageFactory;
 
-    /** @var \Magento\Framework\Message\ManagerInterface */
+    /**
+     * @var \Magento\Framework\Message\ManagerInterface 
+     */
     protected $messageManager;
 
-    /** @var \Psr\Log\LoggerInterface */
+    /**
+     * @var \Psr\Log\LoggerInterface 
+     */
     protected $logger;
 
-    /** @var \Magento\Framework\Auth\AuthorizationInterface */
+    /**
+     * @var \Magento\Framework\Auth\AuthorizationInterface 
+     */
     protected $_authorization;
 
     /**
      * Initialize base admin action.
      *
      * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
-     * @param \Magento\Backend\App\Action\Context $context
+     * @param \Magento\Backend\App\Action\Context   $context
      */
     public function __construct(
         \Magento\Backend\App\Action\Context $context,
@@ -63,7 +75,7 @@ abstract class BaseAdminAction extends \Magento\Backend\App\Action
      * Determine whether the incoming request is attempting to save a form option.
      * Checks for the presence of an `option` key in the request data.
      *
-     * @param array $params Request parameters
+     * @param  array $params Request parameters
      * @return bool
      */
     protected function isFormOptionBeingSaved(array $params)
@@ -78,7 +90,7 @@ abstract class BaseAdminAction extends \Magento\Backend\App\Action
      * required keys paired with the source array. Throws {@see RequiredFieldsException}
      * when a required value is missing or blank.
      *
-     * @param array $array Required keys or legacy associative mapping
+     * @param  array $array Required keys or legacy associative mapping
      * @throws RequiredFieldsException
      */
     protected function checkIfRequiredFieldsEmpty(array $array)
@@ -96,7 +108,7 @@ abstract class BaseAdminAction extends \Magento\Backend\App\Action
     /**
      * Validate support query specific fields and translate the exception type.
      *
-     * @param array $array Required fields mapping
+     * @param  array $array Required fields mapping
      * @throws SupportQueryRequiredFieldsException
      */
     public function checkIfSupportQueryFieldsEmpty(array $array)
@@ -109,6 +121,8 @@ abstract class BaseAdminAction extends \Magento\Backend\App\Action
         }
     }
 
-    /** This function is abstract that needs to be implemented by each Action Class */
+    /**
+     * This function is abstract that needs to be implemented by each Action Class 
+     */
     abstract public function execute();
 }

@@ -12,13 +12,19 @@ use Magento\Framework\App\CacheInterface;
  */
 class JwtVerifier
 {
-    /** @var OAuthUtility */
+    /**
+     * @var OAuthUtility 
+     */
     private OAuthUtility $oauthUtility;
 
-    /** @var CacheInterface */
+    /**
+     * @var CacheInterface 
+     */
     private CacheInterface $cache;
 
-    /** @var \Magento\Framework\HTTP\Adapter\CurlFactory */
+    /**
+     * @var \Magento\Framework\HTTP\Adapter\CurlFactory 
+     */
     private \Magento\Framework\HTTP\Adapter\CurlFactory $curlFactory;
 
     /**
@@ -26,7 +32,7 @@ class JwtVerifier
      *
      * @param \Magento\Framework\App\Helper\Context $context
      * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
-     * @param \MiniOrange\OAuth\Helper\Curl $curl
+     * @param \MiniOrange\OAuth\Helper\Curl         $curl
      */
     public function __construct(
         OAuthUtility $oauthUtility,
@@ -41,10 +47,10 @@ class JwtVerifier
     /**
      * Verify and decode a JWT id_token using the provider's JWKS endpoint.
      *
-     * @param string $idToken The raw JWT string
-     * @param string $jwksUrl The JWKS endpoint URL
-     * @param string|null $issuer Expected issuer (iss claim), null to skip
-     * @param string|null $audience Expected audience (aud claim), null to skip
+     * @param  string      $idToken  The raw JWT string
+     * @param  string      $jwksUrl  The JWKS endpoint URL
+     * @param  string|null $issuer   Expected issuer (iss claim), null to skip
+     * @param  string|null $audience Expected audience (aud claim), null to skip
      * @return array|null Decoded payload array, or null on failure
      */
     public function verifyAndDecode(string $idToken, string $jwksUrl, ?string $issuer, ?string $audience): ?array
@@ -137,7 +143,7 @@ class JwtVerifier
      * Decode a JWT without verifying the signature.
      * Used as fallback when no JWKS endpoint is configured.
      *
-     * @param string $idToken The raw JWT string
+     * @param  string $idToken The raw JWT string
      * @return array|null Decoded payload array, or null on failure
      */
     public function decodeWithoutVerification(string $idToken): ?array
@@ -154,7 +160,7 @@ class JwtVerifier
     /**
      * Fetch and parse JWKS from the given URL.
      *
-     * @param string $jwksUrl
+     * @param  string $jwksUrl
      * @return array|null The JWKS keys array, or null on failure
      */
     private function fetchJwks(string $jwksUrl): ?array
@@ -169,12 +175,14 @@ class JwtVerifier
         }
 
         $curl = $this->curlFactory->create();
-        $curl->setConfig([
+        $curl->setConfig(
+            [
             'header' => false,
             'CURLOPT_TIMEOUT' => 30,
             'CURLOPT_FOLLOWLOCATION' => true,
             'CURLOPT_RETURNTRANSFER' => true,
-        ]);
+            ]
+        );
         $curl->write('GET', $jwksUrl, '1.1', ['Accept: application/json']);
         $response = $curl->read();
         $curl->close();
@@ -198,9 +206,9 @@ class JwtVerifier
     /**
      * Find the matching RSA public key from JWKS and convert to PEM.
      *
-     * @param array $keys The JWKS keys array
-     * @param string|null $kid Key ID from the JWT header
-     * @param string $alg Algorithm from the JWT header
+     * @param  array       $keys The JWKS keys array
+     * @param  string|null $kid  Key ID from the JWT header
+     * @param  string      $alg  Algorithm from the JWT header
      * @return string|null PEM-encoded public key, or null if not found
      */
     private function findPublicKey(array $keys, ?string $kid, string $alg): ?string
@@ -239,8 +247,8 @@ class JwtVerifier
      * Convert JWK RSA modulus (n) and exponent (e) to PEM format.
      * Uses ASN.1 DER encoding — no external dependencies.
      *
-     * @param string $n Base64url-encoded modulus
-     * @param string $e Base64url-encoded exponent
+     * @param  string $n Base64url-encoded modulus
+     * @param  string $e Base64url-encoded exponent
      * @return string|null PEM-encoded public key
      */
     private function jwkToPem(string $n, string $e): ?string
@@ -298,7 +306,7 @@ class JwtVerifier
     /**
      * Encode ASN.1 DER length bytes.
      *
-     * @param int $length
+     * @param  int $length
      * @return string
      */
     private function asn1Length(int $length): string
@@ -314,7 +322,7 @@ class JwtVerifier
     /**
      * Base64url decode (RFC 7515).
      *
-     * @param string $input
+     * @param  string $input
      * @return string
      */
     private function base64UrlDecode(string $input): string

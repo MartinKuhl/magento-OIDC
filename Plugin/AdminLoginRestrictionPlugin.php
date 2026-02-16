@@ -31,9 +31,9 @@ class AdminLoginRestrictionPlugin
     /**
      * Block non-OIDC authentication attempts when the restriction is enabled
      *
-     * @param Auth $subject
-     * @param string $username
-     * @param string $password
+     * @param  Auth   $subject
+     * @param  string $username
+     * @param  string $password
      * @throws AuthenticationException
      */
     public function beforeLogin(Auth $subject, $username, $password)

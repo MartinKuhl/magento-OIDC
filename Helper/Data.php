@@ -140,11 +140,10 @@ class Data extends AbstractHelper
      * @param string $mo_oauth_getuserinfo_url
      * @param string $mo_oauth_well_known_config_url
      * @param string $mo_oauth_grant_type
-     * @param bool $send_header
-     * @param bool $send_body
+     * @param bool   $send_header
+     * @param bool   $send_body
      * @param string $mo_oauth_issuer
      */
-
     public function setOAuthClientApps(
         $mo_oauth_app_name,
         $mo_oauth_client_id,
@@ -160,7 +159,8 @@ class Data extends AbstractHelper
         $mo_oauth_issuer = ''
     ) {
         $model = $this->_miniorangeOauthClientAppsFactory->create();
-        $model->addData([
+        $model->addData(
+            [
             "app_name" => $this->sanitize($mo_oauth_app_name),
             "callback_uri" => '',
             "clientID" => $this->sanitize($mo_oauth_client_id),
@@ -176,7 +176,8 @@ class Data extends AbstractHelper
             "grant_type" => $this->sanitize($mo_oauth_grant_type),
             "values_in_header" => $send_header,
             "values_in_body" => $send_body
-        ]);
+            ]
+        );
         $this->appResource->save($model);
     }
 
@@ -203,7 +204,7 @@ class Data extends AbstractHelper
     /**
      * Get client details by app name using collection filtering.
      *
-     * @param string $appName
+     * @param  string $appName
      * @return array|null Client details array or null if not found
      */
     public function getClientDetailsByAppName($appName)
@@ -225,7 +226,7 @@ class Data extends AbstractHelper
     /**
      * Function to extract data stored in the store config table.
      *
-     * @param string $config
+     * @param  string $config
      * @return mixed
      */
     public function getStoreConfig($config)
@@ -239,8 +240,8 @@ class Data extends AbstractHelper
      * Function to store data stored in the store config table.
      *
      * @param string $config
-     * @param mixed $value
-     * @param bool $skipSanitize
+     * @param mixed  $value
+     * @param bool   $skipSanitize
      */
     public function setStoreConfig($config, $value, $skipSanitize = false)
     {
@@ -248,8 +249,7 @@ class Data extends AbstractHelper
         $this->configWriter->save('miniorange/oauth/' . $config, $finalValue);
 
         // If this is an admin or customer link setting, also update the OAuth client app table
-        if (
-            $config === OAuthConstants::SHOW_ADMIN_LINK
+        if ($config === OAuthConstants::SHOW_ADMIN_LINK
             || $config === OAuthConstants::SHOW_CUSTOMER_LINK
         ) {
             try {
@@ -274,10 +274,10 @@ class Data extends AbstractHelper
      * database and save it. Mostly used in the SSO flow to
      * update user attributes. Decides which user to update.
      *
-     * @param string $url
-     * @param mixed $value
-     * @param int|string $id
-     * @param bool $admin
+     * @param  string     $url
+     * @param  mixed      $value
+     * @param  int|string $id
+     * @param  bool       $admin
      * @throws \Exception
      */
     public function saveConfig($url, $value, $id, $admin)
@@ -289,8 +289,8 @@ class Data extends AbstractHelper
     /**
      * Function to extract information stored in the admin user table.
      *
-     * @param string $config
-     * @param int|string $id
+     * @param  string     $config
+     * @param  int|string $id
      * @return mixed
      */
     public function getAdminStoreConfig($config, $id)
@@ -306,9 +306,9 @@ class Data extends AbstractHelper
      * database and save it. Mostly used in the SSO flow to
      * update user attributes.
      *
-     * @param $url
-     * @param $value
-     * @param $id
+     * @param  $url
+     * @param  $value
+     * @param  $id
      * @throws \Exception
      */
     private function saveAdminStoreConfig($url, $value, $id)
@@ -325,8 +325,8 @@ class Data extends AbstractHelper
     /**
      * Function to extract information stored in the customer user table.
      *
-     * @param string $config
-     * @param int|string $id
+     * @param  string     $config
+     * @param  int|string $id
      * @return mixed
      */
     public function getCustomerStoreConfig($config, $id)
@@ -342,9 +342,9 @@ class Data extends AbstractHelper
      * database and save it. Mostly used in the SSO flow to
      * update user attributes.
      *
-     * @param $url
-     * @param $value
-     * @param $id
+     * @param  $url
+     * @param  $value
+     * @param  $id
      * @throws \Exception
      */
     private function saveCustomerStoreConfig($url, $value, $id)
@@ -497,7 +497,7 @@ class Data extends AbstractHelper
     /**
      * Sanitize input data to prevent XSS and other injection attacks.
      *
-     * @param mixed $value
+     * @param  mixed $value
      * @return mixed
      */
     public function sanitize($value)

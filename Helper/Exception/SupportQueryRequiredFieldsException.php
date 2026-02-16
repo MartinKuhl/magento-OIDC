@@ -10,9 +10,9 @@ use MiniOrange\OAuth\Helper\OAuthMessages;
  */
 class SupportQueryRequiredFieldsException extends \Exception
 {
-/**
- * Exception thrown when required fields for a support query are missing.
- */
+    /**
+     * Exception thrown when required fields for a support query are missing.
+     */
     public function __construct()
     {
         $message     = OAuthMessages::parse('REQUIRED_QUERY_FIELDS');
@@ -23,8 +23,8 @@ class SupportQueryRequiredFieldsException extends \Exception
     /**
      * Initialize exception with a descriptive message.
      *
-     * @param string $message
-     * @param int $code
+     * @param string          $message
+     * @param int             $code
      * @param \Throwable|null $previous
      */
     public function __toString(): string

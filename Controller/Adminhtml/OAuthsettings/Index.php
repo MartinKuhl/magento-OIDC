@@ -19,13 +19,15 @@ use MiniOrange\OAuth\Helper\Curl;
  */
 class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetActionInterface
 {
-    /** @var Curl */
+    /**
+     * @var Curl 
+     */
     private Curl $curl;
 
     /**
      * Initialize OAuth settings controller.
      *
-     * @param \Magento\Backend\App\Action\Context $context
+     * @param \Magento\Backend\App\Action\Context   $context
      * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
      */
     public function __construct(
@@ -68,12 +70,14 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
                         $file = $this->curl->sendUserInfoRequest($url, []);
 
                         $obj = json_decode($file);
-                        $this->checkIfRequiredFieldsEmpty([
+                        $this->checkIfRequiredFieldsEmpty(
+                            [
                             'mo_oauth_app_name' => $params,
                             'mo_oauth_client_id' => $params,
                             'mo_oauth_client_secret' => $params,
                             'mo_oauth_scope' => $params
-                        ]);
+                            ]
+                        );
                         //check if url has any information or not.
                         if ($obj != null) { /**
                               * Fetch endpoints from data obtained from URL
@@ -92,14 +96,16 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
                             $params['mo_oauth_getuserinfo_url'] = trim($mo_oauth_getuserinfo_url);
                             $params['mo_oauth_issuer'] = trim($mo_oauth_issuer);
 
-                            $this->checkIfRequiredFieldsEmpty([
+                            $this->checkIfRequiredFieldsEmpty(
+                                [
                                 'mo_oauth_app_name' => $params,
                                 'mo_oauth_client_id' => $params,
                                 'mo_oauth_client_secret' => $params,
                                 'mo_oauth_scope' => $params,
                                 'mo_oauth_authorize_url' => $params,
                                 'mo_oauth_accesstoken_url' => $params,
-                            ]);
+                                ]
+                            );
                             $this->processValuesAndSaveData($params);
                             $this->oauthUtility->flushCache();
                             $this->messageManager->addSuccessMessage(OAuthMessages::SETTINGS_SAVED);
@@ -125,14 +131,16 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
 
                     if ($radiostate == 'bymanual') {
 
-                        $this->checkIfRequiredFieldsEmpty([
+                        $this->checkIfRequiredFieldsEmpty(
+                            [
                             'mo_oauth_app_name' => $params,
                             'mo_oauth_client_id' => $params,
                             'mo_oauth_client_secret' => $params,
                             'mo_oauth_scope' => $params,
                             'mo_oauth_authorize_url' => $params,
                             'mo_oauth_accesstoken_url' => $params,
-                        ]);
+                            ]
+                        );
                         $this->processValuesAndSaveData($params);
                         $this->oauthUtility->flushCache();
                         $this->messageManager->addSuccessMessage(OAuthMessages::SETTINGS_SAVED);
@@ -166,7 +174,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
     /**
      * Process Values being submitted and save data in the database.
      *
-     * @param array $params
+     * @param  array $params
      * @return void
      */
     private function processValuesAndSaveData(array $params)

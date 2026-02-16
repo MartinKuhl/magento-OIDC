@@ -17,65 +17,99 @@ use Magento\Framework\Controller\ResultFactory;
  */
 class ShowTestResults extends Action
 {
-    /** @var array|null Attributes received from OIDC provider */
+    /**
+     * @var array|null Attributes received from OIDC provider 
+     */
     private $attrs;
 
-    /** @var string|null User email */
+    /**
+     * @var string|null User email 
+     */
     private $userEmail;
 
-    /** @var string|null Greeting name derived from attributes */
+    /**
+     * @var string|null Greeting name derived from attributes 
+     */
     private $greetingName;
 
-    /** @var string|null Status of the test (TEST SUCCESSFUL / TEST FAILED) */
+    /**
+     * @var string|null Status of the test (TEST SUCCESSFUL / TEST FAILED) 
+     */
     protected $status;
 
-    /** @var bool */
+    /**
+     * @var bool 
+     */
     private $hasExceptionOccurred;
 
-    /** @var \Exception|null */
+    /**
+     * @var \Exception|null 
+     */
     private $oauthException;
 
-    /** @var OAuthUtility */
+    /**
+     * @var OAuthUtility 
+     */
     private OAuthUtility $oauthUtility;
 
-    /** @var \Magento\Framework\App\Request\Http */
+    /**
+     * @var \Magento\Framework\App\Request\Http 
+     */
     protected $request;
 
-    /** @var ScopeConfigInterface */
+    /**
+     * @var ScopeConfigInterface 
+     */
     protected $scopeConfig;
 
-    /** @var \Magento\Framework\Escaper */
+    /**
+     * @var \Magento\Framework\Escaper 
+     */
     private \Magento\Framework\Escaper $escaper;
 
-    /** @var \Magento\Customer\Model\Session */
+    /**
+     * @var \Magento\Customer\Model\Session 
+     */
     private $customerSession;
 
-    /** @var string HTML template for the test results page */
+    /**
+     * @var string HTML template for the test results page 
+     */
     private $template = '<div style="font-family:Calibri;padding:0 3%;">{{header}}{{commonbody}}{{footer}}</div>';
 
-    /** @var string HTML header for successful test */
+    /**
+     * @var string HTML header for successful test 
+     */
     private $successHeader = '<div style="color: #3c763d;background-color: #dff0d8; padding:2%;'
         . 'margin-bottom:20px;text-align:center; border:1px solid #AEDB9A; '
         . 'font-size:18pt;">TEST SUCCESSFUL</div>'
         . '<div style="display:block;text-align:center;margin-bottom:4%;">'
         . '<img style="width:15%;" src="{{right}}"></div>';
-    /** @var string HTML header for failed test */
+    /**
+     * @var string HTML header for failed test 
+     */
     private $errorHeader = '<div style="color: #a94442;background-color: #f2dede;padding: 15px;'
         . 'margin-bottom: 20px;text-align:center; border:1px solid #E6B3B2;font-size:18pt;">TEST FAILED</div>'
         . '<div style="display:block;text-align:center;margin-bottom:4%;">'
         . '<img style="width:15%;"src="{{wrong}}"></div>';
-    /** @var string HTML header for unsuccessful test */
+    /**
+     * @var string HTML header for unsuccessful test 
+     */
     private $unsuccessfulHeader = '<div style="color: #a94442;background-color: #f2dede;padding: 15px;'
         . 'margin-bottom: 20px;text-align:center; border:1px solid #E6B3B2;font-size:18pt;">'
         . 'TEST UNSUCCESSFUL</div>'
         . '<div style="display:block;text-align:center;margin-bottom:4%;">'
         . '<img style="width:15%;"src="{{wrong}}"></div>';
-    /** @var string HTML template for error message display */
+    /**
+     * @var string HTML template for error message display 
+     */
     private $errorBody = '<div style="font-size:14pt;padding:15px;background-color:#fff3cd;'
         . 'border:1px solid #ffc107;border-radius:4px;margin-bottom:20px;">'
         . '<p style="font-weight:bold;color:#856404;margin:0 0 10px 0;">Error Message:</p>'
         . '<p style="color:#856404;margin:0;">{{error_message}}</p></div>';
-    /** @var string HTML template for common body with attributes table */
+    /**
+     * @var string HTML template for common body with attributes table 
+     */
     private $commonBody = '<span style="font-size:14pt;"><b>Hello {{greeting_name}},</b></span><br/>'
         . '<p style="font-weight:bold;font-size:14pt;margin-left:1%;">ATTRIBUTES RECEIVED:</p>'
         . '<table style="border-collapse:collapse;border-spacing:0; display:table;width:100%;'
@@ -85,7 +119,9 @@ class ShowTestResults extends Action
         . '<td style="font-weight:bold;padding:2%;border:2px solid #949090; '
         . 'word-wrap:break-word;">ATTRIBUTE VALUE</td>'
         . '</tr>{{tablecontent}}</table>';
-    /** @var string HTML template for footer with Done button */
+    /**
+     * @var string HTML template for footer with Done button 
+     */
     private $footer = '<div style="margin:3%;display:block;text-align:center;">'
         . '<input style="padding:1%;width:100px;background: #0091CD none repeat scroll 0% 0%;cursor: pointer;'
         . 'font-size:15px;border-width: 1px;border-style: solid;border-radius: 3px;white-space: nowrap;'
@@ -93,19 +129,21 @@ class ShowTestResults extends Action
         . 'box-shadow: 0px 1px 0px rgba(120, 200, 230, 0.6) inset;'
         . 'color: #FFF;" type="button" value="Done" onClick="window.close();"></div>';
 
-    /** @var string HTML template for table row content */
+    /**
+     * @var string HTML template for table row content 
+     */
     private $tableContent = "<tr><td style='font-weight:bold;border:2px solid #949090;padding:2%;'>{{key}}</td>"
         . "<td style='padding:2%;border:2px solid #949090; word-wrap:break-word;'>{{value}}</td></tr>";
 
     /**
      * Initialize ShowTestResults action.
      *
-     * @param \Magento\Framework\App\Action\Context $context
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
-     * @param \Magento\Framework\App\Request\Http $request
+     * @param \Magento\Framework\App\Action\Context              $context
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility              $oauthUtility
+     * @param \Magento\Framework\App\Request\Http                $request
      * @param \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
-     * @param \Magento\Customer\Model\Session $customerSession
-     * @param \Magento\Framework\Escaper $escaper
+     * @param \Magento\Customer\Model\Session                    $customerSession
+     * @param \Magento\Framework\Escaper                         $escaper
      */
     public function __construct(
         Context $context,
@@ -205,7 +243,9 @@ class ShowTestResults extends Action
         $this->oauthUtility->setStoreConfig(OAuthConstants::SEND_EMAIL_CORE_CONFIG_DATA, 1);
         $this->oauthUtility->flushCache();
 
-        /** @var RawResult $result */
+        /**
+ * @var RawResult $result 
+*/
         $result = $this->resultFactory->create(ResultFactory::TYPE_RAW);
         $result->setContents($data);
         return $result;
@@ -214,7 +254,7 @@ class ShowTestResults extends Action
     /**
      * Handle OIDC error and display TEST UNSUCCESSFUL page
      *
-     * @param string $encodedError
+     * @param  string $encodedError
      * @return \Magento\Framework\Controller\ResultInterface
      */
     private function handleOidcError(string $encodedError): \Magento\Framework\Controller\ResultInterface
@@ -241,7 +281,9 @@ class ShowTestResults extends Action
         // Add footer
         $this->template = str_replace("{{footer}}", $this->footer ?? '', $this->template);
 
-        /** @var RawResult $result */
+        /**
+ * @var RawResult $result 
+*/
         $result = $this->resultFactory->create(ResultFactory::TYPE_RAW);
         $result->setContents($this->template);
         return $result;
@@ -298,11 +340,13 @@ class ShowTestResults extends Action
                         },
                         $value
                     );
-                    $tableContent .= str_replace("{{key}}", $escapedKey, str_replace(
-                        "{{value}}",
-                        implode("<br/>", $escapedValues),
-                        $this->tableContent
-                    ));
+                    $tableContent .= str_replace(
+                        "{{key}}", $escapedKey, str_replace(
+                            "{{value}}",
+                            implode("<br/>", $escapedValues),
+                            $this->tableContent
+                        )
+                    );
                 }
             }
         }
@@ -322,7 +366,7 @@ class ShowTestResults extends Action
     /**
      * Set the user attributes for display.
      *
-     * @param array $attrs
+     * @param  array $attrs
      * @return void
      */
     public function setAttrs($attrs)
@@ -333,7 +377,7 @@ class ShowTestResults extends Action
     /**
      * Set the OAuth utility instance.
      *
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     * @param  \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
      * @return void
      */
     public function setOAuthException($exception)
@@ -344,7 +388,7 @@ class ShowTestResults extends Action
     /**
      * Set the user email address.
      *
-     * @param string|null $userEmail
+     * @param  string|null $userEmail
      * @return void
      */
     public function setUserEmail($userEmail)
@@ -355,7 +399,7 @@ class ShowTestResults extends Action
     /**
      * Set the error message.
      *
-     * @param string|null $errorMessage
+     * @param  string|null $errorMessage
      * @return void
      */
     public function setHasExceptionOccurred($hasExceptionOccurred)
@@ -433,8 +477,8 @@ class ShowTestResults extends Action
     /**
      * Extract all claim keys from OIDC response, including nested paths (e.g., address.locality)
      *
-     * @param array $attrs The OIDC attributes array
-     * @param string $prefix The prefix for nested keys
+     * @param  array  $attrs  The OIDC attributes array
+     * @param  string $prefix The prefix for nested keys
      * @return array Array of claim keys
      */
     private function extractClaimKeys($attrs, $prefix = '')

@@ -10,9 +10,9 @@ use MiniOrange\OAuth\Helper\OAuthMessages;
  */
 class MissingAttributesException extends \Exception
 {
-/**
- * Exception thrown when required OIDC attributes are missing.
- */
+    /**
+     * Exception thrown when required OIDC attributes are missing.
+     */
     public function __construct()
     {
         $message     = OAuthMessages::parse('MISSING_ATTRIBUTES_EXCEPTION');
@@ -23,8 +23,8 @@ class MissingAttributesException extends \Exception
     /**
      * Initialize exception with a descriptive message.
      *
-     * @param string $message
-     * @param int $code
+     * @param string          $message
+     * @param int             $code
      * @param \Throwable|null $previous
      */
     public function __toString(): string

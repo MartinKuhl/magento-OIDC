@@ -11,7 +11,7 @@ use MiniOrange\OAuth\Helper\OAuthConstants;
  *             and `CheckAttributeMappingAction`.
  *             Use `\MiniOrange\OAuth\Model\Service\OidcAuthenticationService`
  *             together with `CheckAttributeMappingAction` instead.
- * @see \MiniOrange\OAuth\Model\Service\OidcAuthenticationService
+ * @see        \MiniOrange\OAuth\Model\Service\OidcAuthenticationService
  */
 class ProcessResponseAction extends BaseAction
 {
@@ -25,7 +25,9 @@ class ProcessResponseAction extends BaseAction
      */
     private $processUserAction;
 
-    /** @var CheckAttributeMappingAction */
+    /**
+     * @var CheckAttributeMappingAction 
+     */
     private $attrMappingAction;
 
     /**
@@ -46,6 +48,7 @@ class ProcessResponseAction extends BaseAction
 
     /**
      * Execute function to execute the classes function.
+     *
      * @throws IncorrectUserInfoDataException
      */
     public function execute()
@@ -77,8 +80,7 @@ class ProcessResponseAction extends BaseAction
         }
 
         $userEmail = '';
-        if (
-            isset($flattenedUserInfoResponse[$emailAttribute])
+        if (isset($flattenedUserInfoResponse[$emailAttribute])
             && filter_var($flattenedUserInfoResponse[$emailAttribute], FILTER_VALIDATE_EMAIL)
         ) {
             $userEmail = $flattenedUserInfoResponse[$emailAttribute];
@@ -115,8 +117,10 @@ class ProcessResponseAction extends BaseAction
             ->execute();
 
         // Debug: Check what is returned
-        $this->oauthUtility->customlog("ProcessResponseAction: attrMappingAction returned: " .
-            ($result ? get_class($result) : 'NULL'));
+        $this->oauthUtility->customlog(
+            "ProcessResponseAction: attrMappingAction returned: " .
+            ($result ? get_class($result) : 'NULL')
+        );
 
         return $result;
     }
@@ -126,8 +130,8 @@ class ProcessResponseAction extends BaseAction
     /**
      * Recursively search for an email address in the user info array
      *
-     * @param array|object $arr
-     * @param int $depth
+     * @param  array|object $arr
+     * @param  int          $depth
      * @return string
      */
     private function findUserEmail($arr, $depth = 0)
@@ -163,10 +167,10 @@ class ProcessResponseAction extends BaseAction
     /**
      * Flatten a multidimensional array with dot notation keys
      *
-     * @param string $keyprefix
-     * @param array|object $arr
-     * @param array $flattenedattributesarray
-     * @param int $depth
+     * @param  string       $keyprefix
+     * @param  array|object $arr
+     * @param  array        $flattenedattributesarray
+     * @param  int          $depth
      * @return array
      */
     private function getflattenedArray($keyprefix, $arr, &$flattenedattributesarray, $depth = 0)
@@ -189,6 +193,7 @@ class ProcessResponseAction extends BaseAction
 
     /**
      * Function checks if the
+     *
      * @throws IncorrectUserInfoDataException
      */
     private function validateUserInfoData()
@@ -207,7 +212,9 @@ class ProcessResponseAction extends BaseAction
         }
     }
 
-    /** Setter for the UserInfo Parameter */
+    /**
+     * Setter for the UserInfo Parameter 
+     */
     public function setUserInfoResponse($userInfoResponse)
     {
         $this->oauthUtility->customlog("processResponseAction: setUserInfoResponse");

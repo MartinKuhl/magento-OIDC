@@ -16,25 +16,35 @@ use MiniOrange\OAuth\Helper\OAuthConstants;
  */
 class AccessTokenRequest
 {
-    /** @var string */
+    /**
+     * @var string 
+     */
     private $clientID;
 
-    /** @var string */
+    /**
+     * @var string 
+     */
     private $clientSecret;
 
-    /** @var string */
+    /**
+     * @var string 
+     */
     private $grantType;
 
-    /** @var string */
+    /**
+     * @var string 
+     */
     private $redirectURL;
 
-    /** @var string */
+    /**
+     * @var string 
+     */
     private $code;
 
     /**
      * Initialize access token request.
      *
-     * @param string $tokenEndpoint
+     * @param string                                                $tokenEndpoint
      * @param \MiniOrange\OAuth\Helper\OAuth\AccessTokenRequestBody $body
      */
     public function __construct($clientID, $clientSecret, $grantType, $redirectURL, $code)

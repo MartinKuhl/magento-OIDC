@@ -144,10 +144,10 @@ class ProcessUserAction
     /**
      * Initialize ProcessUserAction.
      *
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
-     * @param \Magento\Customer\Model\Customer $customerModel
-     * @param \Magento\Store\Model\StoreManagerInterface $storeManager
-     * @param \Magento\Framework\App\ResponseFactory $responseFactory
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility                    $oauthUtility
+     * @param \Magento\Customer\Model\Customer                         $customerModel
+     * @param \Magento\Store\Model\StoreManagerInterface               $storeManager
+     * @param \Magento\Framework\App\ResponseFactory                   $responseFactory
      * @param \MiniOrange\OAuth\Controller\Actions\CustomerLoginAction $customerLoginAction
      */
     public function __construct(
@@ -234,11 +234,11 @@ class ProcessUserAction
     }
 
     /**
-     * @param string $userEmail
-     * @param string|null $firstName
-     * @param string|null $lastName
-     * @param string|null $userName
-     * @param string $defaultRole
+     * @param  string      $userEmail
+     * @param  string|null $firstName
+     * @param  string|null $lastName
+     * @param  string|null $userName
+     * @param  string      $defaultRole
      * @return \Magento\Framework\Controller\Result\Redirect
      */
     private function processUserAction(
@@ -268,7 +268,9 @@ class ProcessUserAction
             $user = $this->createNewUser($userEmail, $firstName, $lastName, $userName);
         }
 
-        /** @var \Magento\Store\Model\Store $store */
+        /**
+ * @var \Magento\Store\Model\Store $store 
+*/
         $store = $this->storeManager->getStore();
         $store_url = $store->getBaseUrl(\Magento\Framework\UrlInterface::URL_TYPE_WEB);
         $store_url = rtrim($store_url, '/\\');
@@ -302,10 +304,10 @@ class ProcessUserAction
     /**
      * Create a new customer user from OIDC attributes.
      *
-     * @param string $userEmail
-     * @param string|null $firstName
-     * @param string|null $lastName
-     * @param string|null $userName
+     * @param  string      $userEmail
+     * @param  string|null $firstName
+     * @param  string|null $lastName
+     * @param  string|null $userName
      * @return \Magento\Customer\Api\Data\CustomerInterface
      * @throws \RuntimeException If customer creation fails
      */
@@ -350,7 +352,7 @@ class ProcessUserAction
     /**
      * Load customer by email from the current website.
      *
-     * @param string $userEmail
+     * @param  string $userEmail
      * @return \Magento\Customer\Api\Data\CustomerInterface|false
      */
     private function getCustomerFromAttributes(string $userEmail)
@@ -366,7 +368,7 @@ class ProcessUserAction
     /**
      * Set raw attribute array received from OIDC provider.
      *
-     * @param array $attrs
+     * @param  array $attrs
      * @return $this
      */
     public function setAttrs($attrs)
@@ -378,7 +380,7 @@ class ProcessUserAction
     /**
      * Set flattened attribute map (simple key => value mapping).
      *
-     * @param array $flattenedattrs
+     * @param  array $flattenedattrs
      * @return $this
      */
     public function setFlattenedAttrs($flattenedattrs)
@@ -390,7 +392,7 @@ class ProcessUserAction
     /**
      * Set the user's email address resolved from attributes.
      *
-     * @param string $userEmail
+     * @param  string $userEmail
      * @return $this
      */
     public function setUserEmail($userEmail)

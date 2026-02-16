@@ -47,10 +47,10 @@ class SendAuthorizationRequest extends BaseAction
     /**
      * Initialize admin send authorization request action.
      *
-     * @param \Magento\Backend\App\Action\Context $context
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
-     * @param SessionHelper $sessionHelper
-     * @param OAuthSecurityHelper $securityHelper
+     * @param \Magento\Backend\App\Action\Context                $context
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility              $oauthUtility
+     * @param SessionHelper                                      $sessionHelper
+     * @param OAuthSecurityHelper                                $securityHelper
      * @param \Magento\Framework\Session\SessionManagerInterface $sessionManager
      */
     public function __construct(
@@ -82,8 +82,7 @@ class SendAuthorizationRequest extends BaseAction
         $islogEnable = $this->oauthUtility->getStoreConfig(OAuthConstants::ENABLE_DEBUG_LOG);
         $log_file_exist = $this->oauthUtility->isCustomLogExist();
 
-        if (
-            (($Log_file_time != null && ($current_time - $Log_file_time) >= 60 * 60 * 24 * 7) && $islogEnable)
+        if ((($Log_file_time != null && ($current_time - $Log_file_time) >= 60 * 60 * 24 * 7) && $islogEnable)
             || ($islogEnable == 0 && $log_file_exist)
         ) {
             $this->oauthUtility->setStoreConfig(OAuthConstants::ENABLE_DEBUG_LOG, 0);

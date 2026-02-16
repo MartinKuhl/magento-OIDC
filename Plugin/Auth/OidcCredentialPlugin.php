@@ -44,7 +44,7 @@ class OidcCredentialPlugin
 
     /**
      * @param OidcCredentialAdapter $oidcCredentialAdapter
-     * @param OAuthUtility $oauthUtility
+     * @param OAuthUtility          $oauthUtility
      */
     public function __construct(
         OidcCredentialAdapter $oidcCredentialAdapter,
@@ -59,9 +59,9 @@ class OidcCredentialPlugin
      *
      * Detects OIDC authentication by checking for OIDC token marker.
      *
-     * @param Auth $subject
-     * @param string $username
-     * @param string $password
+     * @param  Auth   $subject
+     * @param  string $username
+     * @param  string $password
      * @return array{0: string, 1: string}
      */
     public function beforeLogin(
@@ -92,8 +92,8 @@ class OidcCredentialPlugin
      * (by Auth::login(), observers, session initialization, etc.).
      * The log guard ensures we only emit one log entry per login flow.
      *
-     * @param Auth $subject
-     * @param callable $proceed
+     * @param  Auth     $subject
+     * @param  callable $proceed
      * @return StorageInterface
      */
     public function aroundGetCredentialStorage(
@@ -119,8 +119,8 @@ class OidcCredentialPlugin
      *
      * Cleans up OIDC authentication flag after login completes.
      *
-     * @param Auth $subject
-     * @param null $result Result is always null (Auth::login() returns void)
+     * @param  Auth $subject
+     * @param  null $result  Result is always null (Auth::login() returns void)
      * @return void
      */
     public function afterLogin(

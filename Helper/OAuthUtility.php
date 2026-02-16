@@ -27,48 +27,72 @@ use Magento\Framework\Stdlib\DateTime\DateTime;
  */
 class OAuthUtility extends Data
 {
-    /** @var \Magento\Backend\Model\Session */
+    /**
+     * @var \Magento\Backend\Model\Session 
+     */
     protected $adminSession;
 
-    /** @var \Magento\Customer\Model\Session */
+    /**
+     * @var \Magento\Customer\Model\Session 
+     */
     protected $customerSession;
 
-    /** @var \Magento\Backend\Model\Auth\Session */
+    /**
+     * @var \Magento\Backend\Model\Auth\Session 
+     */
     protected $authSession;
 
-    /** @var \Magento\Framework\App\Cache\TypeListInterface */
+    /**
+     * @var \Magento\Framework\App\Cache\TypeListInterface 
+     */
     protected $cacheTypeList;
 
-    /** @var \Magento\Framework\App\Cache\Frontend\Pool */
+    /**
+     * @var \Magento\Framework\App\Cache\Frontend\Pool 
+     */
     protected $cacheFrontendPool;
 
-    /** @var \Magento\Framework\Filesystem\Driver\File */
+    /**
+     * @var \Magento\Framework\Filesystem\Driver\File 
+     */
     protected $fileSystem;
 
-    /** @var \Psr\Log\LoggerInterface */
+    /**
+     * @var \Psr\Log\LoggerInterface 
+     */
     protected $logger;
 
-    /** @var \Magento\Framework\App\Config\ReinitableConfigInterface */
+    /**
+     * @var \Magento\Framework\App\Config\ReinitableConfigInterface 
+     */
     protected $reinitableConfig;
 
-    /** @var \MiniOrange\OAuth\Logger\Logger */
+    /**
+     * @var \MiniOrange\OAuth\Logger\Logger 
+     */
     protected $_logger;
 
-    /** @var \Magento\Framework\App\ProductMetadataInterface */
+    /**
+     * @var \Magento\Framework\App\ProductMetadataInterface 
+     */
     protected $productMetadata;
 
-    /** @var \Magento\Framework\Stdlib\DateTime\DateTime */
+    /**
+     * @var \Magento\Framework\Stdlib\DateTime\DateTime 
+     */
     protected $dateTime;
 
-    /** @var \Magento\Framework\App\Filesystem\DirectoryList */
+    /**
+     * @var \Magento\Framework\App\Filesystem\DirectoryList 
+     */
     protected $directoryList;
 
 
     /**
      * Initialize OAuthUtility helper.
      *
-     * @param \Magento\Framework\App\Helper\Context $context
-     * @param \Magento\Store\Model\StoreManagerInterface $storeManager
+     * @param \Magento\Framework\App\Helper\Context              $context
+     * @param \Magento\Store\Model\StoreManagerInterface         $storeManager
      * @param \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
      */
     public function __construct(
@@ -135,7 +159,7 @@ class OAuthUtility extends Data
      * This function returns phone number as a obfuscated
      * string which can be used to show as a message to the user.
      *
-     * @param string $phone references the phone number.
+     * @param  string $phone references the phone number.
      * @return string
      */
     public function getHiddenPhone($phone)
@@ -189,7 +213,7 @@ class OAuthUtility extends Data
     /**
      * Check if a value is empty or not set.
      *
-     * @param mixed $value
+     * @param  mixed $value
      * @return bool
      */
     public function isBlank(mixed $value): bool
@@ -210,12 +234,12 @@ class OAuthUtility extends Data
     {
         return function_exists('curl_init') ? 1 : 0;
     }    /**
-         * This function is used to obfuscate and return
-         * the email in question.
-         *
-         * @param string $email //refers to the email id to be obfuscated
-         * @return string obfuscated email id.
-         */
+          * This function is used to obfuscate and return
+          * the email in question.
+          *
+          * @param  string $email //refers to the email id to be obfuscated
+          * @return string obfuscated email id.
+          */
     public function getHiddenEmail($email)
     {
         if (trim($email) === '') {
@@ -245,8 +269,8 @@ class OAuthUtility extends Data
     /**
      * set Admin Session Data
      *
-     * @param string $key
-     * @param mixed $value
+     * @param  string $key
+     * @param  mixed  $value
      * @return mixed
      */
     public function setAdminSessionData($key, $value)
@@ -258,8 +282,8 @@ class OAuthUtility extends Data
     /**
      * get Admin Session data based of on the key
      *
-     * @param string $key
-     * @param bool $remove
+     * @param  string $key
+     * @param  bool   $remove
      * @return mixed
      */
     public function getAdminSessionData($key, $remove = false)
@@ -271,8 +295,8 @@ class OAuthUtility extends Data
     /**
      * set customer Session Data
      *
-     * @param string $key
-     * @param mixed $value
+     * @param  string $key
+     * @param  mixed  $value
      * @return mixed
      */
     public function setSessionData($key, $value)
@@ -284,8 +308,8 @@ class OAuthUtility extends Data
     /**
      * Get customer Session data based off on the key
      *
-     * @param string $key
-     * @param bool $remove
+     * @param  string $key
+     * @param  bool   $remove
      * @return mixed
      */
     public function getSessionData($key, $remove = false)
@@ -299,8 +323,8 @@ class OAuthUtility extends Data
      * is in the backend of frontend. Call this function only if
      * you are not sure where the user is logged in at.
      *
-     * @param string $key
-     * @param mixed $value
+     * @param  string $key
+     * @param  mixed  $value
      * @return void
      */
     public function setSessionDataForCurrentUser($key, $value)
@@ -379,7 +403,8 @@ class OAuthUtility extends Data
 
     /**
      * Get is Test Configuration clicked
-     * @return bool
+     *
+     * @return         bool
      * @psalm-suppress PossiblyUnusedMethod – Called from templates
      */
     public function getIsTestConfigurationClicked()
@@ -410,8 +435,8 @@ class OAuthUtility extends Data
     /**
      * Get data in the file specified by the path
      *
-     * @param string $file
-     * @return string
+     * @param          string $file
+     * @return         string
      * @psalm-suppress PossiblyUnusedMethod – Called dynamically
      */
     public function getFileContents($file)
@@ -422,9 +447,9 @@ class OAuthUtility extends Data
     /**
      * Put data in the file specified by the path
      *
-     * @param string $file
-     * @param string $data
-     * @return void
+     * @param          string $file
+     * @param          string $data
+     * @return         void
      * @psalm-suppress PossiblyUnusedMethod – Called dynamically
      */
     public function putFileContents($file, $data)
@@ -436,7 +461,7 @@ class OAuthUtility extends Data
     /**
      * Get the Current User's logout url
      *
-     * @return string
+     * @return         string
      * @psalm-suppress PossiblyUnusedMethod – Called from templates
      */
     public function getLogoutUrl()
@@ -453,7 +478,7 @@ class OAuthUtility extends Data
     /**
      * Get/Create Callback URL of the site
      *
-     * @return string
+     * @return         string
      * @psalm-suppress PossiblyUnusedMethod – Called from templates
      */
     public function getCallBackUrl()
@@ -464,7 +489,7 @@ class OAuthUtility extends Data
     /**
      * Remove sign-in settings
      *
-     * @return void
+     * @return         void
      * @psalm-suppress PossiblyUnusedMethod – Called dynamically
      */
     public function removeSignInSettings()
@@ -476,7 +501,7 @@ class OAuthUtility extends Data
     /**
      * Reinitialize config
      *
-     * @return void
+     * @return         void
      * @psalm-suppress PossiblyUnusedMethod – Called from admin actions
      */
     public function reinitConfig()
@@ -490,7 +515,6 @@ class OAuthUtility extends Data
      * Retrieve the current admin user session.
      *
      * @return mixed
-     *
      */
     public function isLogEnable()
     {
@@ -500,6 +524,7 @@ class OAuthUtility extends Data
 
     /**
      * Common Log Method .. Accessible in all classes through
+     *
      * @psalm-suppress PossiblyUnusedMethod – Called dynamically
      **/
     public function log_debug($msg = "", $obj = null)
@@ -522,6 +547,7 @@ class OAuthUtility extends Data
     /**
      * Get client details
      * used in ShowTestResultsAction.php
+     *
      * @psalm-suppress PossiblyUnusedMethod – Called dynamically
      */
     public function getClientDetails()
@@ -605,7 +631,7 @@ class OAuthUtility extends Data
      * Decode a base64 encoded string safely.
      * Returns empty string on invalid input.
      *
-     * @param string|null $input
+     * @param  string|null $input
      * @return string
      */
     public function decodeBase64(?string $input): string
@@ -621,7 +647,7 @@ class OAuthUtility extends Data
      * Extract the path component from a URL in a safe manner.
      * Returns empty string on failure.
      *
-     * @param string $url
+     * @param  string $url
      * @return string
      */
     public function extractPathFromUrl(string $url): string
@@ -637,7 +663,7 @@ class OAuthUtility extends Data
      * Parse a URL and return components in a safe manner.
      * Returns empty array on failure.
      *
-     * @param string $url
+     * @param  string $url
      * @return array
      */
     public function parseUrlComponents(string $url): array

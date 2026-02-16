@@ -15,32 +15,46 @@ use MiniOrange\OAuth\Model\Service\OidcAuthenticationService;
 
 class ReadAuthorizationResponse extends BaseAction
 {
-    /** @var \Magento\Framework\UrlInterface */
+    /**
+     * @var \Magento\Framework\UrlInterface 
+     */
     protected $_url;
 
-    /** @var \Magento\Customer\Model\Session */
+    /**
+     * @var \Magento\Customer\Model\Session 
+     */
     private $customerSession;
 
-    /** @var OAuthSecurityHelper */
+    /**
+     * @var OAuthSecurityHelper 
+     */
     private $securityHelper;
 
-    /** @var JwtVerifier */
+    /**
+     * @var JwtVerifier 
+     */
     private $jwtVerifier;
 
-    /** @var Curl */
+    /**
+     * @var Curl 
+     */
     private $curl;
 
-    /** @var OidcAuthenticationService */
+    /**
+     * @var OidcAuthenticationService 
+     */
     private $oidcAuthService;
 
-    /** @var CheckAttributeMappingAction */
+    /**
+     * @var CheckAttributeMappingAction 
+     */
     private $attrMappingAction;
 
     /**
      * Initialize read authorization response action.
      *
      * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
-     * @param \MiniOrange\OAuth\Helper\Curl $curl
+     * @param \MiniOrange\OAuth\Helper\Curl         $curl
      */
     public function __construct(
         Context $context,
@@ -150,8 +164,7 @@ class ReadAuthorizationResponse extends BaseAction
         }
 
         // Validate CSRF state token
-        if (
-            empty($stateToken)
+        if (empty($stateToken)
             || !$this->securityHelper->validateStateToken($originalSessionId, $stateToken)
         ) {
             $this->oauthUtility->customlog("ERROR: State token validation failed (CSRF protection)");

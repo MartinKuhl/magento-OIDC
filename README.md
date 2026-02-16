@@ -121,6 +121,7 @@ vendor/bin/phpstan analyse --memory-limit=1G --configuration=github/miniorange-o
 
 vendor/bin/psalm --no-cache --config=github/miniorange-oauth-sso/psalm.xml
 
-vendor/bin/phpcs --standard=Magento2 ./github/miniorange-oauth-sso/
+vendor/bin/phpcs ./github/miniorange-oauth-sso/
+vendor/bin/phpcbf ./github/miniorange-oauth-sso/
 
 vendor/bin/phpcs --standard=PHPCompatibility  ./github/miniorange-oauth-sso/

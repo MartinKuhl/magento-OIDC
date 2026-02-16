@@ -49,6 +49,7 @@ class SendAuthorizationRequest extends BaseAction
 
     /**
      * Execute function to execute the classes function.
+     *
      * @throws \Exception
      */
     public function execute()

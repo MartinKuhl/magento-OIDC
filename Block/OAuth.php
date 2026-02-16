@@ -46,14 +46,14 @@ class OAuth extends \Magento\Framework\View\Element\Template
     /**
      * Initialize OAuth block.
      *
-     * @param \Magento\Framework\View\Element\Template\Context $context
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     * @param \Magento\Framework\View\Element\Template\Context           $context
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility                      $oauthUtility
      * @param \Magento\Authorization\Model\ResourceModel\Role\Collection $adminRoleModel
-     * @param \Magento\Customer\Model\ResourceModel\Group\Collection $userGroupModel
-     * @param Session $customerSession
-     * @param Escaper $escaper
-     * @param \Magento\Framework\Data\Form\FormKey $formKey
-     * @param array $data
+     * @param \Magento\Customer\Model\ResourceModel\Group\Collection     $userGroupModel
+     * @param Session                                                    $customerSession
+     * @param Escaper                                                    $escaper
+     * @param \Magento\Framework\Data\Form\FormKey                       $formKey
+     * @param array                                                      $data
      */
     public function __construct(
         \Magento\Framework\View\Element\Template\Context $context,
@@ -99,8 +99,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
     /**
      * Escape HTML to prevent XSS
      *
-     * @param array<array-key, mixed>|string $data Data to escape
-     * @param array<array-key, mixed>|null|string $allowedTags Allowed HTML tags
+     * @param  array<array-key, mixed>|string      $data        Data to escape
+     * @param  array<array-key, mixed>|null|string $allowedTags Allowed HTML tags
      * @return array<array-key, mixed>|string
      */
     public function escapeHtml($data, $allowedTags = null)
@@ -120,8 +120,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
     /**
      * Escape string for HTML attribute
      *
-     * @param string $string
-     * @param bool $escapeSingleQuote
+     * @param  string $string
+     * @param  bool   $escapeSingleQuote
      * @return string
      */
     public function escapeHtmlAttr($string, $escapeSingleQuote = true)
@@ -132,7 +132,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     /**
      * Escape URL
      *
-     * @param string $string
+     * @param  string $string
      * @return string
      */
     public function escapeUrl($string)
@@ -143,7 +143,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     /**
      * Escape JavaScript string
      *
-     * @param string $string
+     * @param  string $string
      * @return string
      */
     public function escapeJs($string)
@@ -325,9 +325,13 @@ class OAuth extends \Magento\Framework\View\Element\Template
             $claims = json_decode($storedClaims, true);
             if (is_array($claims) && !empty($claims)) {
                 // Filter out technical claims
-                return array_values(array_filter($claims, function ($claim) use ($excludedClaims) {
-                    return !in_array($claim, $excludedClaims);
-                }));
+                return array_values(
+                    array_filter(
+                        $claims, function ($claim) use ($excludedClaims) {
+                            return !in_array($claim, $excludedClaims);
+                        }
+                    )
+                );
             }
         }
         // Return empty array if no test was run yet
@@ -487,7 +491,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     /**
      * Create the URL for one of the SAML SP plugin sections to be shown as link on any of the template files.
      *
-     * @param string $page
+     * @param  string $page
      * @return string
      */
     public function getExtensionPageUrl($page)
@@ -566,8 +570,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
     /**
      * Create/Get the SP initiated URL for the site (frontend/customer login).
      *
-     * @param string|null $relayState
-     * @param string|null $app_name
+     * @param  string|null $relayState
+     * @param  string|null $app_name
      * @return string
      */
     public function getSPInitiatedUrl($relayState = null, $app_name = null)
@@ -580,8 +584,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
      *
      * Uses the admin controller which sets loginType=admin.
      *
-     * @param string|null $relayState
-     * @param string|null $app_name
+     * @param  string|null $relayState
+     * @param  string|null $app_name
      * @return string
      */
     public function getAdminSPInitiatedUrl($relayState = null, $app_name = null)

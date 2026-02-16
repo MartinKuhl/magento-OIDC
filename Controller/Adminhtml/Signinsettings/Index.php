@@ -37,13 +37,19 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
      *
      * @return \Magento\Backend\Model\View\Result\Page
      */
-    /** @var \Magento\Customer\Model\ResourceModel\Group\Collection */
+    /**
+     * @var \Magento\Customer\Model\ResourceModel\Group\Collection 
+     */
     private $userGroupModel;
 
-    /** @var \Magento\Framework\App\Response\Http\FileFactory */
+    /**
+     * @var \Magento\Framework\App\Response\Http\FileFactory 
+     */
     protected $fileFactory;
 
-    /** @var \Magento\Store\Model\StoreManagerInterface */
+    /**
+     * @var \Magento\Store\Model\StoreManagerInterface 
+     */
     protected $_storeManager;
     /**
      * @var \Magento\Framework\App\ProductMetadataInterface
@@ -53,7 +59,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
     /**
      * Initialize sign-in settings controller.
      *
-     * @param \Magento\Backend\App\Action\Context $context
+     * @param \Magento\Backend\App\Action\Context   $context
      * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
      */
     public function __construct(
@@ -201,7 +207,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
     /**
      * Process Values being submitted and save data in the database.
      *
-     * @param array $params
+     * @param  array $params
      * @return void
      */
     private function processValuesAndSaveData(array $params)

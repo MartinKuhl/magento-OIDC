@@ -30,92 +30,138 @@ class CheckAttributeMappingAction extends BaseAction
      */
     private const TEST_VALIDATE_RELAYSTATE = OAuthConstants::TEST_RELAYSTATE;
 
-    /** @var array|null Raw userinfo response from provider */
+    /**
+     * @var array|null Raw userinfo response from provider 
+     */
     private $userInfoResponse;
 
-    /** @var array|null Flattened userinfo attributes */
+    /**
+     * @var array|null Flattened userinfo attributes 
+     */
     private $flattenedUserInfoResponse;
 
-    /** @var string|null Relay state */
+    /**
+     * @var string|null Relay state 
+     */
     private $relayState;
 
-    /** @var string|null User email extracted from attributes */
+    /**
+     * @var string|null User email extracted from attributes 
+     */
     private $userEmail;
 
-    /** @var string|null Login type (admin|customer) */
+    /**
+     * @var string|null Login type (admin|customer) 
+     */
     private $loginType;
 
-    /** @var string Email attribute mapping key */
+    /**
+     * @var string Email attribute mapping key 
+     */
     private $emailAttribute;
 
-    /** @var string Username attribute mapping key */
+    /**
+     * @var string Username attribute mapping key 
+     */
     private $usernameAttribute;
 
-    /** @var string First name attribute mapping key */
+    /**
+     * @var string First name attribute mapping key 
+     */
     private $firstName;
 
-    /** @var string Last name attribute mapping key */
+    /**
+     * @var string Last name attribute mapping key 
+     */
     private $lastName;
 
-    /** @var string Match by setting */
+    /**
+     * @var string Match by setting 
+     */
     private $checkIfMatchBy;
 
-    /** @var string Group attribute mapping key */
+    /**
+     * @var string Group attribute mapping key 
+     */
     private $groupName;
 
-    /** @var \MiniOrange\OAuth\Helper\TestResults */
+    /**
+     * @var \MiniOrange\OAuth\Helper\TestResults 
+     */
     private $testResults;
 
-    /** @var \MiniOrange\OAuth\Controller\Actions\ShowTestResults */
+    /**
+     * @var \MiniOrange\OAuth\Controller\Actions\ShowTestResults 
+     */
     private $testAction;
 
-    /** @var \MiniOrange\OAuth\Controller\Actions\ProcessUserAction */
+    /**
+     * @var \MiniOrange\OAuth\Controller\Actions\ProcessUserAction 
+     */
     private $processUserAction;
 
-    /** @var \Magento\User\Model\UserFactory */
+    /**
+     * @var \Magento\User\Model\UserFactory 
+     */
     protected $userFactory;
 
-    /** @var \Magento\Backend\Model\UrlInterface */
+    /**
+     * @var \Magento\Backend\Model\UrlInterface 
+     */
     protected $backendUrl;
 
-    /** @var \Magento\Authorization\Model\ResourceModel\Role\Collection */
+    /**
+     * @var \Magento\Authorization\Model\ResourceModel\Role\Collection 
+     */
     protected $roleCollection;
 
-    /** @var \Magento\Framework\Math\Random */
+    /**
+     * @var \Magento\Framework\Math\Random 
+     */
     protected $randomUtility;
 
-    /** @var AdminUserCreator */
+    /**
+     * @var AdminUserCreator 
+     */
     protected $adminUserCreator;
 
-    /** @var \Magento\Customer\Model\Session */
+    /**
+     * @var \Magento\Customer\Model\Session 
+     */
     protected $customerSession;
 
-    /** @var CookieManagerInterface */
+    /**
+     * @var CookieManagerInterface 
+     */
     protected $cookieManager;
 
-    /** @var CookieMetadataFactory */
+    /**
+     * @var CookieMetadataFactory 
+     */
     protected $cookieMetadataFactory;
 
-    /** @var OAuthSecurityHelper */
+    /**
+     * @var OAuthSecurityHelper 
+     */
     private $securityHelper;
 
     /**
      * Constructor with dependency injection
      *
-     * @param \Magento\Framework\App\Action\Context $context
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
-     * @param \MiniOrange\OAuth\Helper\TestResults $testResults
-     * @param \MiniOrange\OAuth\Controller\Actions\ProcessUserAction $processUserAction
-     * @param \Magento\User\Model\UserFactory $userFactory
-     * @param \Magento\Backend\Model\UrlInterface $backendUrl
+     * @param \Magento\Framework\App\Action\Context                      $context
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility                      $oauthUtility
+     * @param \MiniOrange\OAuth\Helper\TestResults                       $testResults
+     * @param \MiniOrange\OAuth\Controller\Actions\ProcessUserAction     $processUserAction
+     * @param \Magento\User\Model\UserFactory                            $userFactory
+     * @param \Magento\Backend\Model\UrlInterface                        $backendUrl
      * @param \Magento\Authorization\Model\ResourceModel\Role\Collection $roleCollection
-     * @param \Magento\Framework\Math\Random $randomUtility
-     * @param AdminUserCreator $adminUserCreator
-     * @param \Magento\Customer\Model\Session $customerSession
-     * @param \MiniOrange\OAuth\Controller\Actions\ShowTestResults $testAction
-     * @param OAuthSecurityHelper $securityHelper
-     * @param CookieManagerInterface $cookieManager
-     * @param CookieMetadataFactory $cookieMetadataFactory
+     * @param \Magento\Framework\Math\Random                             $randomUtility
+     * @param AdminUserCreator                                           $adminUserCreator
+     * @param \Magento\Customer\Model\Session                            $customerSession
+     * @param \MiniOrange\OAuth\Controller\Actions\ShowTestResults       $testAction
+     * @param OAuthSecurityHelper                                        $securityHelper
+     * @param CookieManagerInterface                                     $cookieManager
+     * @param CookieMetadataFactory                                      $cookieMetadataFactory
      */
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
@@ -343,9 +389,9 @@ class CheckAttributeMappingAction extends BaseAction
      * Maps OAuth attributes to Magento customer fields based on
      * the configuration set in the admin panel.
      *
-     * @param array $attrs Raw OAuth response attributes
-     * @param array $flattenedAttrs Flattened attribute array
-     * @param string $userEmail User email from OAuth response
+     * @param  array  $attrs          Raw OAuth response attributes
+     * @param  array  $flattenedAttrs Flattened attribute array
+     * @param  string $userEmail      User email from OAuth response
      * @return \Magento\Framework\Controller\ResultInterface
      * @throws MissingAttributesException
      */
@@ -378,9 +424,9 @@ class CheckAttributeMappingAction extends BaseAction
     /**
      * Process the result - either show test screen or login/create user
      *
-     * @param array $attrs Raw attributes
-     * @param array $flattenedattrs Flattened attributes
-     * @param string $email User email
+     * @param  array  $attrs          Raw attributes
+     * @param  array  $flattenedattrs Flattened attributes
+     * @param  string $email          User email
      * @return \Magento\Framework\Controller\ResultInterface
      */
     private function processResult(
@@ -397,12 +443,16 @@ class CheckAttributeMappingAction extends BaseAction
             $this->oauthUtility->flushCache();
 
             // Note: The data is passed to the helper
-            $output = $this->testResults->output(null, false, [
+            $output = $this->testResults->output(
+                null, false, [
                 'mail' => $email,
                 'userinfo' => $flattenedattrs
-            ]);
+                ]
+            );
 
-            /** @var RawResult $result */
+            /**
+ * @var RawResult $result 
+*/
             $result = $this->resultFactory->create(ResultFactory::TYPE_RAW);
             $result->setContents($output);
             return $result;
@@ -504,7 +554,7 @@ class CheckAttributeMappingAction extends BaseAction
     /**
      * Set user info response
      *
-     * @param array $userInfoResponse
+     * @param  array $userInfoResponse
      * @return $this
      */
     public function setUserInfoResponse($userInfoResponse)
@@ -516,7 +566,7 @@ class CheckAttributeMappingAction extends BaseAction
     /**
      * Set flattened user info response
      *
-     * @param array $flattenedUserInfoResponse
+     * @param  array $flattenedUserInfoResponse
      * @return $this
      */
     public function setFlattenedUserInfoResponse($flattenedUserInfoResponse)
@@ -528,7 +578,7 @@ class CheckAttributeMappingAction extends BaseAction
     /**
      * Set user email
      *
-     * @param string $userEmail
+     * @param  string $userEmail
      * @return $this
      */
     public function setUserEmail($userEmail)
@@ -540,7 +590,7 @@ class CheckAttributeMappingAction extends BaseAction
     /**
      * Set relay state
      *
-     * @param string $relayState
+     * @param  string $relayState
      * @return $this
      */
     public function setRelayState($relayState)
@@ -552,7 +602,7 @@ class CheckAttributeMappingAction extends BaseAction
     /**
      * Set login type (admin or customer)
      *
-     * @param string $loginType
+     * @param  string $loginType
      * @return $this
      */
     public function setLoginType($loginType)

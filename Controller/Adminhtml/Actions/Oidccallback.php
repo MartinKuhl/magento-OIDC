@@ -26,61 +26,87 @@ use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
  */
 class Oidccallback implements ActionInterface, HttpGetActionInterface
 {
-    /** @var \Magento\User\Model\UserFactory */
+    /**
+     * @var \Magento\User\Model\UserFactory 
+     */
     protected $userFactory;
 
-    /** @var \Magento\Backend\Model\Auth */
+    /**
+     * @var \Magento\Backend\Model\Auth 
+     */
     protected $auth;
 
-    /** @var ResultFactory */
+    /**
+     * @var ResultFactory 
+     */
     protected $resultFactory;
 
-    /** @var RequestInterface */
+    /**
+     * @var RequestInterface 
+     */
     protected $request;
 
-    /** @var \MiniOrange\OAuth\Helper\OAuthUtility */
+    /**
+     * @var \MiniOrange\OAuth\Helper\OAuthUtility 
+     */
     protected $oauthUtility;
 
-    /** @var ManagerInterface */
+    /**
+     * @var ManagerInterface 
+     */
     protected $messageManager;
 
-    /** @var UrlInterface */
+    /**
+     * @var UrlInterface 
+     */
     protected $url;
 
-    /** @var CookieManagerInterface */
+    /**
+     * @var CookieManagerInterface 
+     */
     protected $cookieManager;
 
-    /** @var CookieMetadataFactory */
+    /**
+     * @var CookieMetadataFactory 
+     */
     protected $cookieMetadataFactory;
 
-    /** @var BackendUrlInterface */
+    /**
+     * @var BackendUrlInterface 
+     */
     protected $backendUrl;
 
-    /** @var OAuthSecurityHelper */
+    /**
+     * @var OAuthSecurityHelper 
+     */
     private $securityHelper;
 
-    /** @var \Magento\Framework\App\Config\ScopeConfigInterface */
+    /**
+     * @var \Magento\Framework\App\Config\ScopeConfigInterface 
+     */
     private $scopeConfig;
 
-    /** @var \Magento\User\Model\ResourceModel\User\CollectionFactory */
+    /**
+     * @var \Magento\User\Model\ResourceModel\User\CollectionFactory 
+     */
     protected $userCollectionFactory;
 
     /**
      * Initialize OIDC callback action.
      *
-     * @param \Magento\User\Model\UserFactory $userFactory
-     * @param \Magento\Backend\Model\Auth $auth
-     * @param ResultFactory $resultFactory
-     * @param RequestInterface $request
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
-     * @param ManagerInterface $messageManager
-     * @param UrlInterface $url
-     * @param CookieManagerInterface $cookieManager
-     * @param CookieMetadataFactory $cookieMetadataFactory
-     * @param BackendUrlInterface $backendUrl
-     * @param OAuthSecurityHelper $securityHelper
+     * @param \Magento\User\Model\UserFactory                          $userFactory
+     * @param \Magento\Backend\Model\Auth                              $auth
+     * @param ResultFactory                                            $resultFactory
+     * @param RequestInterface                                         $request
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility                    $oauthUtility
+     * @param ManagerInterface                                         $messageManager
+     * @param UrlInterface                                             $url
+     * @param CookieManagerInterface                                   $cookieManager
+     * @param CookieMetadataFactory                                    $cookieMetadataFactory
+     * @param BackendUrlInterface                                      $backendUrl
+     * @param OAuthSecurityHelper                                      $securityHelper
      * @param \Magento\User\Model\ResourceModel\User\CollectionFactory $userCollectionFactory
-     * @param \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
+     * @param \Magento\Framework\App\Config\ScopeConfigInterface       $scopeConfig
      */
     public function __construct(
         \Magento\User\Model\UserFactory $userFactory,
@@ -226,7 +252,9 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
             }
 
             // Redirect to admin dashboard
-            /** @var \Magento\Framework\Controller\Result\Redirect $resultRedirect */
+            /**
+ * @var \Magento\Framework\Controller\Result\Redirect $resultRedirect 
+*/
             $resultRedirect = $this->resultFactory->create(ResultFactory::TYPE_REDIRECT);
             $resultRedirect->setPath('admin/dashboard');
             return $resultRedirect;
@@ -251,12 +279,14 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
      *
      * Messages in URL are displayed on the login page via JavaScript or template
      *
-     * @param \Magento\Framework\Phrase $message
+     * @param  \Magento\Framework\Phrase $message
      * @return \Magento\Framework\Controller\Result\Redirect
      */
     private function redirectToLoginWithError($message)
     {
-        /** @var \Magento\Framework\Controller\Result\Redirect $resultRedirect */
+        /**
+ * @var \Magento\Framework\Controller\Result\Redirect $resultRedirect 
+*/
         $resultRedirect = $this->resultFactory->create(ResultFactory::TYPE_REDIRECT);
 
         // Create admin login URL with error parameter

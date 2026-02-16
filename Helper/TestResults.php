@@ -5,8 +5,12 @@ use Magento\Framework\Escaper;
 
 class TestResults
 {
-    /** @var Escaper */
-    /** @var Escaper */
+    /**
+     * @var Escaper 
+     */
+    /**
+     * @var Escaper 
+     */
     private Escaper $escaper;
 
     /**

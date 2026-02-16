@@ -77,13 +77,13 @@ class OAuthObserver implements ObserverInterface
     /**
      * Initialize OAuth observer.
      *
-     * @param \Magento\Framework\Message\ManagerInterface $messageManager
-     * @param \Psr\Log\LoggerInterface $logger
+     * @param \Magento\Framework\Message\ManagerInterface                    $messageManager
+     * @param \Psr\Log\LoggerInterface                                       $logger
      * @param \MiniOrange\OAuth\Controller\Actions\ReadAuthorizationResponse $readAuthorizationResponse
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
-     * @param \Magento\Framework\App\Request\Http $request
-     * @param \MiniOrange\OAuth\Helper\TestResults $testResults
-     * @param \Magento\Framework\App\ResponseInterface $response
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility                          $oauthUtility
+     * @param \Magento\Framework\App\Request\Http                            $request
+     * @param \MiniOrange\OAuth\Helper\TestResults                           $testResults
+     * @param \Magento\Framework\App\ResponseInterface                       $response
      */
     public function __construct(
         ManagerInterface $messageManager,
@@ -155,37 +155,37 @@ class OAuthObserver implements ObserverInterface
      * Check for any kind of Exception that may occur during processing
      * of form post data. Call the appropriate action.
      *
-     * @param string $op Operation to perform
+     * @param string   $op       Operation to perform
      * @param Observer $observer
-     * @param array $params
-     * @param array $postData
+     * @param array    $params
+     * @param array    $postData
      */
     private function _route_data($op, $observer, $params, $postData)
     {
         switch ($op) {
-            case $this->requestParams[0]: // 'option'
-                if ($params['option'] == OAuthConstants::TEST_CONFIG_OPT) {
-                    // Test flow: output via helper
-                    $output = $this->testResults->output(
-                        null,  // no exception
-                        false, // no error case
-                        [
-                            'mail' => $params['mail'] ?? '',
-                            'userinfo' => $params['userinfo'] ?? [],
-                            'debug' => $params // <-- full array for debugging
-                        ]
-                    );
-                    // Output via Response object
-                    // $this->getResponse()->setBody($output);
-                    // Need to inject ResponseInterface to do this properly.
-                    // For now, removing echo.
-                    // Implementation Plan Step 2 says: "Use Magento\Framework\App\ResponseInterface..."
-                    // I will add ResponseInterface to constructor in next step if I missed it.
-                    // Wait, I am in the middle of editing.
-                    // I will leave the logic to use $this->response (which I will add)
-                    $this->response->setBody($output);
-                }
-                break;
+        case $this->requestParams[0]: // 'option'
+            if ($params['option'] == OAuthConstants::TEST_CONFIG_OPT) {
+                // Test flow: output via helper
+                $output = $this->testResults->output(
+                    null,  // no exception
+                    false, // no error case
+                    [
+                        'mail' => $params['mail'] ?? '',
+                        'userinfo' => $params['userinfo'] ?? [],
+                        'debug' => $params // <-- full array for debugging
+                    ]
+                );
+                // Output via Response object
+                // $this->getResponse()->setBody($output);
+                // Need to inject ResponseInterface to do this properly.
+                // For now, removing echo.
+                // Implementation Plan Step 2 says: "Use Magento\Framework\App\ResponseInterface..."
+                // I will add ResponseInterface to constructor in next step if I missed it.
+                // Wait, I am in the middle of editing.
+                // I will leave the logic to use $this->response (which I will add)
+                $this->response->setBody($output);
+            }
+            break;
         }
     }
 }

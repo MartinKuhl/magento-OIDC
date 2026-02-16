@@ -37,7 +37,7 @@ class OidcIdentityVerificationPlugin
      * Constructor
      *
      * @param CookieManagerInterface $cookieManager
-     * @param OAuthUtility $oauthUtility
+     * @param OAuthUtility           $oauthUtility
      */
     public function __construct(
         CookieManagerInterface $cookieManager,
@@ -50,9 +50,9 @@ class OidcIdentityVerificationPlugin
     /**
      * Bypass performIdentityCheck for OIDC-authenticated users
      *
-     * @param User $subject The user performing the identity check
-     * @param callable $proceed Original method
-     * @param string $passwordString The password entered
+     * @param  User     $subject        The user performing the identity check
+     * @param  callable $proceed        Original method
+     * @param  string   $passwordString The password entered
      * @return User
      * @throws AuthenticationException
      */

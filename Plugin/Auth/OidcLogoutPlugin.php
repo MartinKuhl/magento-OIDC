@@ -34,8 +34,8 @@ class OidcLogoutPlugin
 
     /**
      * @param CookieManagerInterface $cookieManager
-     * @param CookieMetadataFactory $cookieMetadataFactory
-     * @param OAuthUtility $oauthUtility
+     * @param CookieMetadataFactory  $cookieMetadataFactory
+     * @param OAuthUtility           $oauthUtility
      */
     public function __construct(
         CookieManagerInterface $cookieManager,
@@ -50,8 +50,8 @@ class OidcLogoutPlugin
     /**
      * Delete OIDC cookie after logout
      *
-     * @param Auth $subject
-     * @param mixed $result
+     * @param  Auth  $subject
+     * @param  mixed $result
      * @return mixed
      */
     public function afterLogout(Auth $subject, $result)
