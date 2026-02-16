@@ -233,8 +233,6 @@ class OidcCredentialAdapter implements StorageInterface
             $userId = $this->user->getId();
             $this->user = $this->userFactory->create();
             $this->userResource->load($this->user, $userId);
-
-            $this->log("User data reloaded for ID: " . $userId);
         }
 
         return $this;
