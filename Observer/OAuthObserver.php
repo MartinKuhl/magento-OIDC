@@ -1,191 +1,116 @@
 <?php
+
+declare(strict_types=1);
+
 namespace MiniOrange\OAuth\Observer;
 
-use Magento\Framework\App\Request\Http;
+use Magento\Framework\App\RequestInterface;
+use Magento\Framework\App\ResponseInterface;
+use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Message\ManagerInterface;
-use Magento\Framework\App\Response\Http as HttpResponse;
-use MiniOrange\OAuth\Helper\TestResults;
-use MiniOrange\OAuth\Helper\OAuthMessages;
-use Magento\Framework\Event\Observer;
 use MiniOrange\OAuth\Controller\Actions\ReadAuthorizationResponse;
 use MiniOrange\OAuth\Helper\OAuthConstants;
 use MiniOrange\OAuth\Helper\OAuthUtility;
+use MiniOrange\OAuth\Helper\TestResults;
 use Psr\Log\LoggerInterface;
 
 /**
- * This is our main Observer class. Observer class are used as a callback
- * function for all of our events and hooks. This particular observer
- * class is being used to check if a SAML request or response was made
- * to the website. If so then read and process it. Every Observer class
- * needs to implement ObserverInterface.
+ * Main OAuth observer — listens to `controller_action_predispatch`.
+ *
+ * Checks every incoming request for the `option` query parameter and,
+ * when present, routes the request to the appropriate OAuth action
+ * (e.g. authorization-code callback, test-config display).
  */
 class OAuthObserver implements ObserverInterface
 {
     /**
-     * @var array
+     * Query-parameter keys this observer reacts to.
      */
-    private $requestParams = [
-        'option'
-    ];
+    private const REQUEST_PARAMS = ['option'];
 
     /**
-     * @var \Magento\Framework\Message\ManagerInterface
-     */
-    private $messageManager;
-
-    /**
-     * @var HttpResponse
-     */
-    private $response;
-
-    /**
-     * @var \Psr\Log\LoggerInterface
-     */
-    private $logger;
-
-    /**
-     * @var \MiniOrange\OAuth\Controller\Actions\ReadAuthorizationResponse
-     */
-    private $readAuthorizationResponse;
-
-    /**
-     * @var \MiniOrange\OAuth\Helper\OAuthUtility
-     */
-    private $oauthUtility;
-
-    /**
-     * @var TestResults
-     */
-    private TestResults $testResults;
-
-    /**
-     * @var string
-     */
-    private $currentControllerName;
-
-    /**
-     * @var string
-     */
-    private $currentActionName;
-
-    /**
-     * @var \Magento\Framework\App\Request\Http
-     */
-    private $request;
-
-    /**
-     * Initialize OAuth observer.
-     *
-     * @param \Magento\Framework\Message\ManagerInterface                    $messageManager
-     * @param \Psr\Log\LoggerInterface                                       $logger
-     * @param \MiniOrange\OAuth\Controller\Actions\ReadAuthorizationResponse $readAuthorizationResponse
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility                          $oauthUtility
-     * @param \Magento\Framework\App\Request\Http                            $request
-     * @param \MiniOrange\OAuth\Helper\TestResults                           $testResults
-     * @param \Magento\Framework\App\ResponseInterface                       $response
+     * @param ManagerInterface          $messageManager
+     * @param RequestInterface          $request
+     * @param ResponseInterface         $response
+     * @param OAuthUtility              $oauthUtility
+     * @param ReadAuthorizationResponse $readAuthorizationResponse
+     * @param TestResults               $testResults
+     * @param LoggerInterface           $logger
      */
     public function __construct(
-        ManagerInterface $messageManager,
-        Http $request,
-        HttpResponse $response,  // <-- geändert
-        OAuthUtility $oauthUtility,
-        ReadAuthorizationResponse $readAuthorizationResponse,
-        TestResults $testResults,
-        LoggerInterface $logger
+        private readonly ManagerInterface $messageManager,
+        private readonly RequestInterface $request,
+        private readonly ResponseInterface $response,
+        private readonly OAuthUtility $oauthUtility,
+        private readonly ReadAuthorizationResponse $readAuthorizationResponse,
+        private readonly TestResults $testResults,
+        private readonly LoggerInterface $logger
     ) {
-        $this->messageManager = $messageManager;
-        $this->request = $request;
-        $this->response = $response;
-        $this->oauthUtility = $oauthUtility;
-        $this->readAuthorizationResponse = $readAuthorizationResponse;
-        $this->testResults = $testResults;
-        $this->logger = $logger;
     }
 
     /**
-     * This function is called as soon as the observer class is initialized.
-     * Checks if the request parameter has any of the configured request
-     * parameters and handles any exception that the system might throw.
+     * Handle the `controller_action_predispatch` event.
      *
      * @param Observer $observer
+     * @return void
      */
-    public function execute(Observer $observer)
+    public function execute(Observer $observer): void
     {
-        $keys = array_keys($this->request->getParams());
-        $operation = array_intersect($keys, $this->requestParams);
+        $keys      = array_keys($this->request->getParams());
+        $operation = array_intersect($keys, self::REQUEST_PARAMS);
+
+        if (count($operation) === 0) {
+            return;
+        }
 
         $isTest = false;
 
         try {
-            $params = $this->request->getParams(); // get params
-            $postData = $this->request->getPost(); // get only post params
-            $isTest = $this->oauthUtility->getStoreConfig(OAuthConstants::IS_TEST);
+            $params   = $this->request->getParams();
+            $postData = $this->request->getPost();
+            $isTest   = (bool) $this->oauthUtility->getStoreConfig(OAuthConstants::IS_TEST);
 
-            // request has values then it takes priority over others
-            if (count($operation) > 0) {
-                $this->_route_data(array_values($operation)[0], $observer, $params, $postData);
-            }
+            $this->routeData(array_values($operation)[0], $observer, $params, $postData);
         } catch (\Exception $e) {
-            if ($isTest) { // show a failed validation screen
+            if ($isTest) {
                 $output = $this->testResults->output($e, true);
-                // ECHO REMOVED: Response should be handled via Response object if possible,
-                // but checking context. For now, avoiding direct echo if possible,
-                // or ensure we are safe.
-                // In Observer context, echo is bad.
-                // However, without a Response object in context (Observer receives Event),
-                // we might need to use the Response injected via dependency or get it from Observer?
-                // The Observer event is `controller_action_predispatch`.
-                // We can get response from controller action?
-                // For now, let's comment it out or log it, as per plan "Use ResponseInterface->setBody".
-                // We don't have ResponseInterface injected. We should inject it?
-                // BaseAction has it. Observer does not.
-                // Let's rely on logging for now or proper error handling.
-                // But wait, the plan said: "Use Magento\Framework\App\ResponseInterface to set body content instead of echo."
-                // I need to inject ResponseInterface.
+                $this->response->setBody($output);
             }
+
             $this->messageManager->addErrorMessage($e->getMessage());
-            $this->oauthUtility->customlog($e->getMessage());
+            $this->logger->error('OAuthObserver: ' . $e->getMessage(), ['exception' => $e]);
         }
     }
 
     /**
-     * Route the request data to appropriate functions for processing.
+     * Route the request to the appropriate action based on the `option` parameter.
      *
-     * Check for any kind of Exception that may occur during processing
-     * of form post data. Call the appropriate action.
-     *
-     * @param string   $op       Operation to perform
+     * @param string   $op
      * @param Observer $observer
      * @param array    $params
-     * @param array    $postData
+     * @param mixed    $postData
+     * @return void
      */
-    private function _route_data($op, $observer, $params, $postData)
+    private function routeData(string $op, Observer $observer, array $params, mixed $postData): void
     {
-        switch ($op) {
-        case $this->requestParams[0]: // 'option'
-            if ($params['option'] == OAuthConstants::TEST_CONFIG_OPT) {
-                // Test flow: output via helper
-                $output = $this->testResults->output(
-                    null,  // no exception
-                    false, // no error case
-                    [
-                        'mail' => $params['mail'] ?? '',
-                        'userinfo' => $params['userinfo'] ?? [],
-                        'debug' => $params // <-- full array for debugging
-                    ]
-                );
-                // Output via Response object
-                // $this->getResponse()->setBody($output);
-                // Need to inject ResponseInterface to do this properly.
-                // For now, removing echo.
-                // Implementation Plan Step 2 says: "Use Magento\Framework\App\ResponseInterface..."
-                // I will add ResponseInterface to constructor in next step if I missed it.
-                // Wait, I am in the middle of editing.
-                // I will leave the logic to use $this->response (which I will add)
-                $this->response->setBody($output);
-            }
-            break;
+        if ($op !== self::REQUEST_PARAMS[0]) {
+            return;
+        }
+
+        $option = $params['option'] ?? '';
+
+        if ($option === OAuthConstants::TEST_CONFIG_OPT) {
+            $output = $this->testResults->output(
+                null,
+                false,
+                [
+                    'mail'     => $params['mail'] ?? '',
+                    'userinfo' => $params['userinfo'] ?? [],
+                    'debug'    => $params,
+                ]
+            );
+            $this->response->setBody($output);
         }
     }
 }
