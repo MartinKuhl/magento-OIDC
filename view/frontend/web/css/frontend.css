@@ -1,31 +1,30 @@
+/* SSO Divider */
 .sso-divider {
-    display: flex;
-    flex-wrap: nowrap;
-    margin-top: 2%;
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
     width: 100%;
+    margin-top: 15px;
     gap: 10px;
-    align-items: center;
-    justify-content: center;
 }
 
-.sso-line {
-    flex: 1 1 0;
-    height: 0;
-    border-top: 2px solid #969393;
+.sso-divider .sso-line {
+    display: block !important;
+    flex: 1 1 0% !important;
+    height: 1px;
+    background-color: #969393;
     min-width: 0;
+    border: none;
 }
 
-.sso-or-text {
+.sso-divider .sso-or-text {
+    display: inline-block !important;
+    flex: 0 0 auto !important;
     white-space: nowrap;
-    flex-shrink: 0;
     font-weight: bold;
     color: #444;
-}
-
-.sso-line line {
-    stroke: #969393;
-    stroke-width: 3;
-    width: 100%;
+    line-height: 1;
 }
 
 /* SSO Button Styling */
@@ -40,7 +39,7 @@
     align-items: center;
     justify-content: center;
     width: 470px;
-    height: 45px; /* Adjust for proper vertical alignment */
+    height: 45px;
     font-weight: bold;
     text-align: center;
     background-color: #2055e8;
@@ -50,7 +49,7 @@
     transition: background-color 0.3s ease-in-out;
 }
 
-.sso-button-container a:visited{
+.sso-button-container a:visited {
     color: white;
 }
 
