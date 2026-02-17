@@ -11,11 +11,13 @@ $oidcVisibility = $block->getData('oidc_visibility');
 <?php if ($oidcVisibility && $oidcVisibility->isAdminButtonVisible()): ?>
 
 <div id="mo-sso-login-wrapper" style="display:none; text-align:center; width:100%; box-sizing:border-box; margin-top:15px;">
+    <?php if (!$block->isNonOidcAdminLoginDisabled()): ?>
     <div style="display:flex; flex-direction:row; flex-wrap:nowrap; align-items:center; width:100%; gap:10px; margin-bottom:10px;">
         <span style="flex:1 1 0%; height:1px; background-color:#969393;"></span>
         <span style="flex:0 0 auto; white-space:nowrap; font-weight:bold; color:#444;">OR</span>
         <span style="flex:1 1 0%; height:1px; background-color:#969393;"></span>
     </div>
+    <?php endif; ?>
     <button
         type="button"
         class="action-login action-primary"
@@ -31,7 +33,6 @@ $oidcVisibility = $block->getData('oidc_visibility');
         var ssoWrapper = document.getElementById('mo-sso-login-wrapper');
         var fieldset = document.querySelector('#login-form .admin__fieldset');
         if (ssoWrapper && fieldset) {
-            // Ans Ende des Fieldsets verschieben (nach .form-actions)
             fieldset.appendChild(ssoWrapper);
             ssoWrapper.style.display = 'block';
         }
