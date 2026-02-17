@@ -245,17 +245,15 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         );
 
         // ── Lockout-Prevention: OIDC-only requires Show-OIDC ──
-        // If "Show OIDC on Admin Login" is unchecked, force-disable "OIDC-only Admin Login"
-        if ($mo_oauth_show_admin_link !== 'checked' && $mo_disable_non_oidc_admin_login === 'checked') {
-            $mo_disable_non_oidc_admin_login = '';
+        if ($mo_oauth_show_admin_link === 0 && $mo_disable_non_oidc_admin_login === 1) {
+            $mo_disable_non_oidc_admin_login = 0;
             $this->messageManager->addWarningMessage(
                 __('Admin OIDC-only login was automatically disabled because the OIDC login button is not shown on the admin login page.')
             );
         }
 
-        // If "Show OIDC on Customer Login" is unchecked, force-disable "OIDC-only Customer Login"
-        if ($mo_oauth_show_customer_link !== 'checked' && $mo_disable_non_oidc_customer_login === 'checked') {
-            $mo_disable_non_oidc_customer_login = '';
+        if ($mo_oauth_show_customer_link === 0 && $mo_disable_non_oidc_customer_login === 1) {
+            $mo_disable_non_oidc_customer_login = 0;
             $this->messageManager->addWarningMessage(
                 __('Customer OIDC-only login was automatically disabled because the OIDC login button is not shown on the customer login page.')
             );
