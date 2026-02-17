@@ -475,7 +475,7 @@ class CheckAttributeMappingAction extends BaseAction
      *
      * @param array $attrs Attribute array
      */
-    private function processFirstName(&$attrs)
+    private function processFirstName(&$attrs): void
     {
         if (!isset($attrs[$this->firstName])) {
             $parts = explode("@", $this->userEmail);
@@ -491,7 +491,7 @@ class CheckAttributeMappingAction extends BaseAction
      *
      * @param array $attrs Attribute array
      */
-    private function processLastName(&$attrs)
+    private function processLastName(&$attrs): void
     {
         if (!isset($attrs[$this->lastName])) {
             $parts = explode("@", $this->userEmail);
@@ -509,7 +509,7 @@ class CheckAttributeMappingAction extends BaseAction
      *
      * @param array $attrs Attribute array
      */
-    private function processUserName(&$attrs)
+    private function processUserName(&$attrs): void
     {
         if (!isset($attrs[$this->usernameAttribute])) {
             $attrs[$this->usernameAttribute] = $this->userEmail;
@@ -524,7 +524,7 @@ class CheckAttributeMappingAction extends BaseAction
      *
      * @param array $attrs Attribute array
      */
-    private function processEmail(&$attrs)
+    private function processEmail(&$attrs): void
     {
         if (!isset($attrs[$this->emailAttribute])) {
             $attrs[$this->emailAttribute] = $this->userEmail;
@@ -541,7 +541,7 @@ class CheckAttributeMappingAction extends BaseAction
      *
      * @param array $attrs Attribute array
      */
-    private function processGroupName(&$attrs)
+    private function processGroupName(&$attrs): void
     {
         if (!isset($attrs[$this->groupName])) {
             $attrs[$this->groupName] = [];
@@ -615,6 +615,8 @@ class CheckAttributeMappingAction extends BaseAction
      * Save OAuth response for debugging
      *
      * @param array $attrs
+     *
+     * @return void
      */
     protected function saveDebugData($attrs)
     {

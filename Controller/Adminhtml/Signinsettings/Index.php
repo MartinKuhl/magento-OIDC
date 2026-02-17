@@ -254,8 +254,12 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
      * Save the sign-in settings configuration.
      *
      * @return void
+     *
+     * @param (false|mixed|string)[] $values
+     *
+     * @psalm-param list{string, mixed, mixed, mixed, mixed, mixed, mixed, mixed, mixed, mixed, mixed, mixed, 'v4.2.0', string, false|string} $values
      */
-    private function customerConfigurationSettings($values)
+    private function customerConfigurationSettings(array $values)
     {
         $this->oauthUtility->customlog("......................................................................");
         $this->oauthUtility->customlog("Plugin: OAuth Free : " . $values[12]);

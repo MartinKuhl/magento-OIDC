@@ -124,5 +124,7 @@ vendor/bin/phpcbf ./github/miniorange-oauth-sso/
 vendor/bin/phpstan analyse --memory-limit=1G --configuration=github/OIDC/phpstan.neon
 vendor/bin/psalm --no-cache --config=github/OIDC/psalm.xml
 
+vendor/bin/psalm --no-cache --config=github/OIDC/psalm.xml --alter --issues=MissingReturnType,MissingParamType
+
 vendor/bin/phpcs ./github/OIDC/
 vendor/bin/phpcbf ./github/OIDC/

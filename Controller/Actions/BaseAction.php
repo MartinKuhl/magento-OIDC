@@ -43,12 +43,15 @@ abstract class BaseAction extends \Magento\Framework\App\Action\Action
      * Check if any of the required fields are empty. Throws RequiredFieldsException if so.
      *
      * Supports two calling conventions:
-     *   1. checkIfRequiredFieldsEmpty(['key1' => $params, ...]) — legacy associative style
-     *   2. checkIfRequiredFieldsEmpty(['key1', 'key2'], $params) — key list + params array
+     * 1. checkIfRequiredFieldsEmpty(['key1' => $params, ...]) — legacy associative style
+     * 2. checkIfRequiredFieldsEmpty(['key1', 'key2'], $params) — key list + params array
      *
-     * @param  array      $array  Required keys (or legacy associative array)
-     * @param  array|null $params Source data array (for the two-parameter form)
+     * @param array      $array  Required keys (or legacy associative array)
+     * @param array|null $params Source data array (for the two-parameter form)
+     *
      * @throws RequiredFieldsException
+     *
+     * @return void
      */
     protected function checkIfRequiredFieldsEmpty($array, $params = null)
     {
@@ -85,7 +88,7 @@ abstract class BaseAction extends \Magento\Framework\App\Action\Action
      * @param string $relayState   Optional relay state to include
      * @param array  $params       Additional parameters (unused)
      */
-    protected function sendHTTPRedirectRequest($oauthRequest, $authorizeUrl, $relayState = '', $params = [])
+    protected function sendHTTPRedirectRequest($oauthRequest, $authorizeUrl, $relayState = '', $params = []): \Magento\Framework\Controller\Result\Redirect
     {
         $this->oauthUtility->customlog(
             "BaseAction: sendHTTPRedirectRequest - Ensuring PHP session is properly saved before redirect"

@@ -25,8 +25,11 @@ class TestResults
      * Initialize test results with attributes.
      *
      * @param array $attrs
+     * @param (array|mixed|string)[] $data
+     *
+     * @psalm-param array{mail?: mixed|string, userinfo?: array|mixed, debug?: array} $data
      */
-    public function output($exception = null, $hasException = false, $data = [])
+    public function output(\Exception|null $exception = null, bool $hasException = false, array $data = []): string
     {
         $html = '';
         if ($hasException && $exception) {

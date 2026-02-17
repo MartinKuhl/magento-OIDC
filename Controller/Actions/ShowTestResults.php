@@ -410,6 +410,8 @@ class ShowTestResults extends Action
     /**
      * Set greeting name with fallback logic: firstName -> username -> email
      * Uses configured attribute mappings with fallback to common OIDC claim names
+     *
+     * @return void
      */
     private function setGreetingName($attrs)
     {
@@ -451,8 +453,13 @@ class ShowTestResults extends Action
 
     /**
      * Get attribute value using configured mapping with fallback to common claim names
+     *
+     * @param string[] $fallbackKeys
+     *
+     * @psalm-param 'amEmail'|'amFirstName'|'amUsername' $configKey
+     * @psalm-param list{0: 'email'|'firstName'|'username', 1: 'given_name'|'mail'|'preferred_username', 2: 'emailAddress'|'first_name'|'name', 3?: 'email'|'username'} $fallbackKeys
      */
-    private function getAttributeValue($attrs, $configKey, $fallbackKeys)
+    private function getAttributeValue(array $attrs, string $configKey, array $fallbackKeys)
     {
         // First try configured attribute name
         $configuredAttr = $this->oauthUtility->getStoreConfig($configKey);

@@ -390,8 +390,10 @@ class CustomerUserCreator
 
     /**
      * Map OIDC gender value to Magento gender ID
+     *
+     * @psalm-return 1|2|3|null
      */
-    private function mapGender($genderValue)
+    private function mapGender(string $genderValue): int|null
     {
         if (empty($genderValue)) {
             return null;
@@ -411,8 +413,10 @@ class CustomerUserCreator
 
     /**
      * Resolve country name or code to Magento country ID
+     *
+     * @param null|string $country
      */
-    private function resolveCountryId($country)
+    private function resolveCountryId(string|null $country)
     {
         if (empty($country)) {
             return null;

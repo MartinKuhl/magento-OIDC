@@ -163,8 +163,10 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * Test function to check if the template is being loaded properly in the frontend without any issues.
+     *
+     * @psalm-return 'Hello world!'
      */
-    public function getHelloWorldTxt()
+    public function getHelloWorldTxt(): string
     {
         return 'Hello world!';
     }
@@ -191,8 +193,10 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * Plugin is always enabled (MiniOrange registration removed)
+     *
+     * @return true
      */
-    public function isEnabled()
+    public function isEnabled(): bool
     {
         return true;
     }
@@ -216,8 +220,10 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * Get table mapping configuration (placeholder)
+     *
+     * @psalm-return ''
      */
-    public function getTable()
+    public function getTable(): string
     {
         return '';
     }
@@ -298,8 +304,10 @@ class OAuth extends \Magento\Framework\View\Element\Template
      * Get OIDC claims for dropdown selection
      *
      * Returns claims received from last test configuration, filtered to remove technical claims
+     *
+     * @psalm-return list<mixed>
      */
-    public function getOidcStandardClaims()
+    public function getOidcStandardClaims(): array
     {
         // Technical claims to exclude from dropdown (tokens, timestamps, identifiers)
         $excludedClaims = [
@@ -340,8 +348,10 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * Get company attribute mapping
+     *
+     * @psalm-return ''
      */
-    public function getCompanyMapping()
+    public function getCompanyMapping(): string
     {
         return '';
     }
@@ -349,7 +359,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     /**
      * This function checks if OAuth has been configured or not.
      */
-    public function isOAuthConfigured()
+    public function isOAuthConfigured(): bool
     {
         return $this->oauthUtility->isOAuthConfigured();
     }
@@ -433,15 +443,17 @@ class OAuth extends \Magento\Framework\View\Element\Template
     /**
      * Get the admin CSS URL to be appended to the admin dashboard screen.
      */
-    public function getAdminCssURL()
+    public function getAdminCssURL(): string
     {
         return $this->oauthUtility->getAdminCssUrl('adminSettings.css');
     }
 
     /**
      * Get the current version of the plugin admin dashboard screen.
+     *
+     * @psalm-return 'v4.2.0'
      */
-    public function getCurrentVersion()
+    public function getCurrentVersion(): string
     {
         return OAuthConstants::VERSION;
     }
@@ -449,7 +461,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     /**
      * Get the admin JS URL to be appended to the admin dashboard pages for plugin functionality
      */
-    public function getAdminJSURL()
+    public function getAdminJSURL(): string
     {
         return $this->oauthUtility->getAdminJSUrl('adminSettings.js');
     }
@@ -457,7 +469,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     /**
      * Get the IntelTelInput JS URL to be appended to admin pages to show country code dropdown on phone number fields.
      */
-    public function getIntlTelInputJs()
+    public function getIntlTelInputJs(): string
     {
         return $this->oauthUtility->getAdminJSUrl('intlTelInput.min.js');
     }
@@ -483,7 +495,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     /**
      * Get/Create Base URL of the site
      */
-    public function getCallBackUrl()
+    public function getCallBackUrl(): string
     {
         return $this->oauthUtility->getBaseUrl() . OAuthConstants::CALLBACK_URL;
     }
@@ -502,7 +514,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     /**
      * Read the Tab and retrieve the current active tab if any.
      */
-    public function getCurrentActiveTab()
+    public function getCurrentActiveTab(): string
     {
         $page = $this->getUrl('*/*/*', ['_current' => true, '_use_rewrite' => false]);
         $start = strpos($page, '/mooauth') + 9;
@@ -596,7 +608,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     /**
      * Get the configuration of OAuth Server.
      */
-    public function getAllIdpConfiguration()
+    public function getAllIdpConfiguration(): \MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps\Collection
     {
         return $this->oauthUtility->getOAuthClientApps();
     }
@@ -697,7 +709,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     /**
      * Get all admin roles set by the admin on his site.
      */
-    public function getAllRoles()
+    public function getAllRoles(): array
     {
         //Apply a filter to only include roles of a certain type ('G' in this case)
         $rolesCollection = $this->adminRoleModel->addFieldToFilter('role_type', 'G');
@@ -709,7 +721,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     /**
      * Get all customer groups set by the admin on his site.
      */
-    public function getAllGroups()
+    public function getAllGroups(): array
     {
         return $this->userGroupModel->toOptionArray();
     }
@@ -744,7 +756,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     /**
      * Get Admin Logout URL for the site
      */
-    public function getAdminLogoutUrl()
+    public function getAdminLogoutUrl(): string
     {
         return $this->oauthUtility->getLogoutUrl();
     }
@@ -752,7 +764,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     /**
      * Is Test Configuration clicked?
      */
-    public function getIsTestConfigurationClicked()
+    public function getIsTestConfigurationClicked(): bool
     {
         return $this->oauthUtility->getIsTestConfigurationClicked();
     }

@@ -195,6 +195,8 @@ class ProcessResponseAction extends BaseAction
      * Function checks if the
      *
      * @throws IncorrectUserInfoDataException
+     *
+     * @return void
      */
     private function validateUserInfoData()
     {
@@ -213,9 +215,9 @@ class ProcessResponseAction extends BaseAction
     }
 
     /**
-     * Setter for the UserInfo Parameter 
+     * Setter for the UserInfo Parameter
      */
-    public function setUserInfoResponse($userInfoResponse)
+    public function setUserInfoResponse($userInfoResponse): static
     {
         $this->oauthUtility->customlog("processResponseAction: setUserInfoResponse");
 

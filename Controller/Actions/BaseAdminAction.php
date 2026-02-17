@@ -90,8 +90,11 @@ abstract class BaseAdminAction extends \Magento\Backend\App\Action
      * required keys paired with the source array. Throws {@see RequiredFieldsException}
      * when a required value is missing or blank.
      *
-     * @param  array $array Required keys or legacy associative mapping
+     * @param array $array Required keys or legacy associative mapping
+     *
      * @throws RequiredFieldsException
+     *
+     * @return void
      */
     protected function checkIfRequiredFieldsEmpty(array $array)
     {
@@ -108,8 +111,11 @@ abstract class BaseAdminAction extends \Magento\Backend\App\Action
     /**
      * Validate support query specific fields and translate the exception type.
      *
-     * @param  array $array Required fields mapping
+     * @param array $array Required fields mapping
+     *
      * @throws SupportQueryRequiredFieldsException
+     *
+     * @return void
      */
     public function checkIfSupportQueryFieldsEmpty(array $array)
     {

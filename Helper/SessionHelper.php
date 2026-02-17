@@ -61,7 +61,7 @@ class SessionHelper
     /**
      * Configures the PHP session for SSO
      */
-    public function configureSSOSession()
+    public function configureSSOSession(): void
     {
         // Manual session management removed to comply with Magento standards.
         // We rely on CookieManager to set SameSite attributes via updateSessionCookies.
@@ -74,7 +74,7 @@ class SessionHelper
      *
      * Uses Magento's CookieManager for 2.4.7+ compatibility
      */
-    public function updateSessionCookies()
+    public function updateSessionCookies(): void
     {
         try {
             // Obtain configured session name without using session_* functions
@@ -133,6 +133,8 @@ class SessionHelper
     /**
      * Set SameSite=None on the PHP session cookie only.
      * Only updates the session cookie - does not modify other cookies.
+     *
+     * @return void
      */
     public function forceSameSiteNone()
     {

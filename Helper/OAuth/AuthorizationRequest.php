@@ -76,7 +76,7 @@ class AuthorizationRequest
      *
      * @todo - Have to convert this so that it's not a string value but an XML document
      */
-    private function generateRequest()
+    private function generateRequest(): string
     {
         $requestStr = "";
 

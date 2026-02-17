@@ -176,14 +176,16 @@ class OAuthUtility extends Data
     /**
      * This function print custom log in var/log/mo_oauth.log file.
      */
-    public function customlog($txt)
+    public function customlog(string $txt): void
     {
         $this->isLogEnable() ? $this->_logger->debug($txt) : null;
     }
     /**
      * This function check whether any custom log file exist or not.
+     *
+     * @psalm-return 0|1
      */
-    public function isCustomLogExist()
+    public function isCustomLogExist(): int
     {
         try {
             $logPath = $this->directoryList->getPath(DirectoryList::VAR_DIR)
@@ -265,7 +267,7 @@ class OAuthUtility extends Data
     /***
      * @return \Magento\Backend\Model\Session
      */
-    public function getAdminSession()
+    public function getAdminSession(): \Magento\Backend\Model\Session
     {
         return $this->adminSession;
     }
@@ -369,7 +371,7 @@ class OAuthUtility extends Data
      * for the frontend or the backend. Returns TRUE
      * or FALSE
      */
-    public function isUserLoggedIn()
+    public function isUserLoggedIn(): bool
     {
         return $this->customerSession->isLoggedIn()
             || $this->authSession->isLoggedIn();
@@ -378,7 +380,7 @@ class OAuthUtility extends Data
     /**
      * Get the Current Admin User who is logged in
      */
-    public function getCurrentAdminUser()
+    public function getCurrentAdminUser(): \Magento\User\Model\User|null
     {
         return $this->authSession->getUser();
     }
@@ -387,7 +389,7 @@ class OAuthUtility extends Data
     /**
      * Get the Current Admin User who is logged in
      */
-    public function getCurrentUser()
+    public function getCurrentUser(): \Magento\Customer\Model\Customer
     {
         return $this->customerSession->getCustomer();
     }
@@ -396,7 +398,7 @@ class OAuthUtility extends Data
     /**
      * Get the admin login url
      */
-    public function getAdminLoginUrl()
+    public function getAdminLoginUrl(): string
     {
         return $this->getAdminUrl('adminhtml/auth/login');
     }
@@ -404,7 +406,7 @@ class OAuthUtility extends Data
     /**
      * Get the admin page url
      */
-    public function getAdminPageUrl()
+    public function getAdminPageUrl(): string
     {
         return $this->getAdminBaseUrl();
     }
@@ -412,7 +414,7 @@ class OAuthUtility extends Data
     /**
      * Get the customer login url
      */
-    public function getCustomerLoginUrl()
+    public function getCustomerLoginUrl(): string
     {
         return $this->getUrl('customer/account/login');
     }
@@ -542,8 +544,8 @@ class OAuthUtility extends Data
      * Common Log Method .. Accessible in all classes through
      *
      * @psalm-suppress PossiblyUnusedMethod – Called dynamically
-     **/
-    public function log_debug($msg = "", $obj = null)
+     */
+    public function log_debug($msg = "", $obj = null): void
     {
 
         if (is_object($msg)) {
@@ -565,8 +567,12 @@ class OAuthUtility extends Data
      * used in ShowTestResultsAction.php
      *
      * @psalm-suppress PossiblyUnusedMethod – Called dynamically
+     *
+     * @return (mixed|null|string)[]
+     *
+     * @psalm-return list{string, mixed|null, mixed|null, mixed|null, mixed|null, mixed|null, mixed|null, mixed|null, mixed|null, mixed|null, mixed, mixed, mixed, mixed}
      */
-    public function getClientDetails()
+    public function getClientDetails(): array
     {
         $appName = $this->getStoreConfig(OAuthConstants::APP_NAME);
         $clientDetails = $this->getClientDetailsByAppName($appName);

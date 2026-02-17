@@ -83,7 +83,7 @@ class AccessTokenRequest
     /**
      * This function is used to build our AccessToken request
      */
-    public function build()
+    public function build(): array
     {
         $accessTokenRequestPostData = $this->generateRequest();
         return $accessTokenRequestPostData;
