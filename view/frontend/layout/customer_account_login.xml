@@ -7,6 +7,11 @@
                     name="miniorange.oauth.customer.link" 
                     ifconfig="miniorange/oauth/showcustomerlink"
                     template="customerssobutton.phtml" />
+                    <arguments>
+                        <argument name="oidc_visibility" xsi:type="object">
+                            MiniOrange\OAuth\ViewModel\OidcLoginVisibility
+                        </argument>
+                </arguments>
         </referenceContainer>
     </body>
 </page>

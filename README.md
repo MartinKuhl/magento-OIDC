@@ -74,8 +74,7 @@ Write for a developer who's new to this codebase but not new to coding.
 ### NEW ###:
 - deaktiviate OIDC login button if
     - no valid OIDC config
-    - no OIDC user exists
-    - no autocreate option is activated
+    - no OIDC user exists and no autocreate option is activated
     - for customer and admin
 
 ### LATER - complex ###:
@@ -104,9 +103,8 @@ vendor/bin/phpcs
 vendor/bin/phpcbf
 
 # Den Magento2-Standard in phpcs registrieren
-vendor/bin/phpcs --config-set installed_paths vendor/magento/magento-coding-standard/,vendor/phpcompatibility/php-compatibility/
-
-vendor/bin/phpcs --config-set installed_paths "$COMPOSER_HOME/vendor/magento/magento-coding-standard,/vendor/magento/php-compatibility-fork"
+#vendor/bin/phpcs --config-set installed_paths vendor/magento/magento-coding-standard/,vendor/phpcompatibility/php-compatibility/
+#vendor/bin/phpcs --config-set installed_paths "$COMPOSER_HOME/vendor/magento/magento-coding-standard,/vendor/magento/php-compatibility-fork"
 
 
 # Verfügbare Standards anzeigen
@@ -115,8 +113,14 @@ vendor/bin/phpcs -i
 
 vendor/bin/phpstan clear-result-cache
 vendor/bin/phpstan analyse --memory-limit=1G --configuration=github/miniorange-oauth-sso/phpstan.neon
-
 vendor/bin/psalm --no-cache --config=github/miniorange-oauth-sso/psalm.xml
 
 vendor/bin/phpcs ./github/miniorange-oauth-sso/
 vendor/bin/phpcbf ./github/miniorange-oauth-sso/
+
+
+vendor/bin/phpstan analyse --memory-limit=1G --configuration=github/OIDC/phpstan.neon
+vendor/bin/psalm --no-cache --config=github/OIDC/psalm.xml
+
+vendor/bin/phpcs ./github/OIDC/
+vendor/bin/phpcbf ./github/OIDC/
