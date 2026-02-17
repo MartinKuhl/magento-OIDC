@@ -10,6 +10,8 @@ $autoCreateAdmin = $block->autoCreateAdmin() ? 'checked' : '';
 $autoCreateCustomer = $block->autoCreateCustomer() ? 'checked' : '';
 $enableLoginRedirect = $block->isLoginRedirectEnabled() ? 'checked' : '';
 $disableNonOidcAdminLogin = $block->isNonOidcAdminLoginDisabled() ? 'checked' : '';
+$disableNonOidcCustomerLogin = $block->isNonOidcCustomerLoginDisabled()
+    ? 'checked' : '';
 $isOAuthConfigured = $block->isOAuthConfigured() && $block->isEnabled();
 $disabled = $isOAuthConfigured ? '' : 'disabled title="Disabled. Configure your Service Provider"';
 $logoutUrl = $block->getAdminLogoutUrl();
@@ -59,6 +61,15 @@ $enableDebugLog = $block->isDebugLogEnable() ? 'checked' : '';
                                        <?= $escaper->escapeHtmlAttr($disabled) ?>
                                        value="true">
                                 Disable non-OIDC Login for Admins (OIDC login only)
+                                <br><br>
+                                <input type="checkbox"
+                                       name="mo_disable_non_oidc_customer_login"
+                                       id="mo_disable_non_oidc_customer_login"
+                                       <?= $escaper->escapeHtmlAttr($disableNonOidcCustomerLogin) ?>
+                                       <?= $escaper->escapeHtmlAttr($disabled) ?>
+                                       value="true">
+                                Disable non-OIDC Login for Customers
+                                (OIDC login only)
                             </div>
                         </td>
                     </tr>

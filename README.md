@@ -71,11 +71,7 @@ Write for a developer who's new to this codebase but not new to coding.
 
 ### FIX ###:
 
-### NEW ###:
-- deaktiviate OIDC login button if
-    - no valid OIDC config
-    - no OIDC user exists and no autocreate option is activated
-    - for customer and admin
+- icon
 
 ### LATER - complex ###:
 - Storage of settings in 2 different tables why -> merging?

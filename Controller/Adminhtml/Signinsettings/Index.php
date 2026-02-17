@@ -220,6 +220,9 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         $mo_oauth_logout_redirect_url = isset($params['mo_oauth_logout_redirect_url'])
             ? $params['mo_oauth_logout_redirect_url'] : '';
         $mo_disable_non_oidc_admin_login = isset($params['mo_disable_non_oidc_admin_login']) ? 1 : 0;
+        $mo_disable_non_oidc_customer_login = isset(
+            $params['mo_disable_non_oidc_customer_login']
+        ) ? 1 : 0;
 
         $this->oauthUtility->customlog("SignInSettings: Saving customer link setting: " . $mo_oauth_show_customer_link);
         $this->oauthUtility->customlog("SignInSettings: Saving admin link setting: " . $mo_oauth_show_admin_link);
@@ -236,6 +239,10 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         $this->oauthUtility->customlog(
             "SignInSettings: Saving disable non-OIDC admin login: " . $mo_disable_non_oidc_admin_login
         );
+        $this->oauthUtility->customlog(
+            "SignInSettings: Saving disable non-OIDC customer login: "
+            . $mo_disable_non_oidc_customer_login
+        );
 
 
         $this->oauthUtility->setStoreConfig(OAuthConstants::SHOW_CUSTOMER_LINK, $mo_oauth_show_customer_link);
@@ -247,6 +254,10 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         $this->oauthUtility->setStoreConfig(
             OAuthConstants::DISABLE_NON_OIDC_ADMIN_LOGIN,
             $mo_disable_non_oidc_admin_login
+        );
+        $this->oauthUtility->setStoreConfig(
+            OAuthConstants::DISABLE_NON_OIDC_CUSTOMER_LOGIN,
+            $mo_disable_non_oidc_customer_login
         );
     }
 

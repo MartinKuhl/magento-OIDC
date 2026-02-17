@@ -164,6 +164,12 @@ class ReadAuthorizationResponse extends BaseAction
         }
 
         // Validate CSRF state token
+        $this->oauthUtility->customlog(
+            "ReadAuthResponse: Validating state token. "
+            . "Original Session ID: " . $originalSessionId
+            . ", State Token: " . substr($stateToken, 0, 8) . "..."
+        );
+
         if (empty($stateToken)
             || !$this->securityHelper->validateStateToken($originalSessionId, $stateToken)
         ) {
@@ -177,6 +183,10 @@ class ReadAuthorizationResponse extends BaseAction
             }
             return $this->_redirect($loginUrl);
         }
+
+        $this->oauthUtility->customlog(
+            "ReadAuthResponse: State token validation PASSED"
+        );
 
         // Look up OAuth client details by app name
         $clientDetails = $this->oauthUtility->getClientDetailsByAppName($app_name);

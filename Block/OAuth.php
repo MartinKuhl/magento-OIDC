@@ -858,4 +858,20 @@ class OAuth extends \Magento\Framework\View\Element\Template
     {
         return $this->getOidcErrorMessage() !== null;
     }
+
+    /**
+     * Check if non-OIDC customer login is disabled.
+     *
+     * Returns true if the configuration setting
+     * DISABLE_NON_OIDC_CUSTOMER_LOGIN is enabled, meaning customers
+     * can only log in via OIDC and password-based login is blocked.
+     *
+     * @return bool True if non-OIDC customer login is disabled
+     */
+    public function isNonOidcCustomerLoginDisabled(): bool
+    {
+        return (bool) $this->oauthUtility->getStoreConfig(
+            OAuthConstants::DISABLE_NON_OIDC_CUSTOMER_LOGIN
+        );
+    }
 }

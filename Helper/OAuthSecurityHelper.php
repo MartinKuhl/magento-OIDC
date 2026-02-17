@@ -13,6 +13,10 @@ use Magento\Framework\App\CacheInterface;
 class OAuthSecurityHelper
 {
     private const NONCE_CACHE_PREFIX = 'mooauth_nonce_';
+    /**
+     * Cache prefix for customer OIDC login nonces
+     */
+    private const CUSTOMER_NONCE_CACHE_PREFIX = 'mooauth_custnonce_';
     private const STATE_CACHE_PREFIX = 'mooauth_state_';
     private const NONCE_TTL = 120;     // 2 minutes
     private const STATE_TTL = 600;     // 10 minutes
@@ -79,6 +83,87 @@ class OAuthSecurityHelper
         // One-time use: delete immediately
         $this->cache->remove($cacheKey);
         return $email;
+    }
+
+    /**
+     * Create a one-time nonce for customer OIDC login handoff.
+     *
+     * Generates a secure 32-character hex nonce and stores the
+     * customer email and relay state in cache for session-safe
+     * redirect handling.
+     *
+     * @param string $email Customer email address
+     * @param string $relayState Target URL for post-login redirect
+     * @return string 32-character hex nonce
+     */
+    public function createCustomerLoginNonce(
+        string $email,
+        string $relayState
+    ): string {
+        $nonce = bin2hex(random_bytes(16));
+        $cacheKey = self::CUSTOMER_NONCE_CACHE_PREFIX . $nonce;
+        $data = json_encode(
+            ['email' => $email, 'relayState' => $relayState],
+            JSON_THROW_ON_ERROR
+        );
+        $this->cache->save($data, $cacheKey, [], self::NONCE_TTL);
+        return $nonce;
+    }
+
+    /**
+     * Redeem (validate and consume) a customer login nonce.
+     *
+     * Validates the nonce format, retrieves the stored data from
+     * cache, and immediately deletes it (one-time use). Returns
+     * null if the nonce is invalid, expired, or already used.
+     *
+     * @param string $nonce The nonce to redeem
+     * @return array{email: string, relayState: string}|null
+     *         Array with email and relayState on success, null on
+     *         failure
+     */
+    public function redeemCustomerLoginNonce(string $nonce): ?array
+    {
+        if (empty($nonce)
+            || !preg_match('/^[a-f0-9]{32}$/', $nonce)
+        ) {
+            return null;
+        }
+
+        $cacheKey = self::CUSTOMER_NONCE_CACHE_PREFIX . $nonce;
+        $data = $this->cache->load($cacheKey);
+
+        if ($data === false || empty($data)) {
+            return null;
+        }
+
+        // One-time use: delete immediately
+        $this->cache->remove($cacheKey);
+
+        try {
+            $decoded = json_decode(
+                $data,
+                true,
+                512,
+                JSON_THROW_ON_ERROR
+            );
+        } catch (\JsonException $e) {
+            return null;
+        }
+
+        if (!is_array($decoded)
+            || empty($decoded['email'])
+            || !isset($decoded['relayState'])
+            || !is_string($decoded['email'])
+            || !is_string($decoded['relayState'])
+        ) {
+            return null;
+        }
+
+        return [
+            'email' => $decoded['email'],
+            'relayState' => $decoded['relayState']
+        ];
     }
 
     /**

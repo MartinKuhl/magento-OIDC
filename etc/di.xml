@@ -201,4 +201,87 @@
         </arguments>
     </type>
 
+    <!-- Customer OIDC Callback Controller Dependencies -->
+    <type name="MiniOrange\OAuth\Controller\Actions\CustomerOidcCallback">
+        <arguments>
+            <argument name="customerFactory" xsi:type="object">
+                Magento\Customer\Model\CustomerFactory
+            </argument>
+            <argument name="customerSession" xsi:type="object">
+                Magento\Customer\Model\Session
+            </argument>
+            <argument name="storeManager" xsi:type="object">
+                Magento\Store\Model\StoreManagerInterface
+            </argument>
+            <argument name="cookieManager" xsi:type="object">
+                Magento\Framework\Stdlib\CookieManagerInterface
+            </argument>
+            <argument name="cookieMetadataFactory" xsi:type="object">
+                Magento\Framework\Stdlib\Cookie\CookieMetadataFactory
+            </argument>
+            <argument name="securityHelper" xsi:type="object">
+                MiniOrange\OAuth\Helper\OAuthSecurityHelper
+            </argument>
+            <argument name="customerRepository" xsi:type="object">
+                Magento\Customer\Api\CustomerRepositoryInterface
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- Customer Login Action Updated Dependencies -->
+    <type name="MiniOrange\OAuth\Controller\Actions\CustomerLoginAction">
+        <arguments>
+            <argument name="cookieManager" xsi:type="object">
+                Magento\Framework\Stdlib\CookieManagerInterface
+            </argument>
+            <argument name="cookieMetadataFactory" xsi:type="object">
+                Magento\Framework\Stdlib\Cookie\CookieMetadataFactory
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- Customer Login Restriction Plugin Configuration -->
+    <type name="MiniOrange\OAuth\Plugin\CustomerLoginRestrictionPlugin">
+        <arguments>
+            <argument name="oauthUtility" xsi:type="object">
+                MiniOrange\OAuth\Helper\OAuthUtility
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- Plugin to restrict non-OIDC customer logins -->
+    <type name="Magento\Customer\Api\AccountManagementInterface">
+        <plugin name="customer_login_restriction"
+                type="MiniOrange\OAuth\Plugin\CustomerLoginRestrictionPlugin"
+                sortOrder="5"/>
+    </type>
+
+    <!-- Customer CAPTCHA Bypass Plugin Configuration -->
+    <type name="MiniOrange\OAuth\Plugin\Captcha\CustomerCaptchaBypassPlugin">
+        <arguments>
+            <argument name="oauthUtility" xsi:type="object">
+                MiniOrange\OAuth\Helper\OAuthUtility
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- Plugin to bypass CAPTCHA validation for customers -->
+    <type name="Magento\Captcha\Observer\CheckUserLoginObserver">
+        <plugin name="oidc_customer_captcha_bypass"
+                type="MiniOrange\OAuth\Plugin\Captcha\CustomerCaptchaBypassPlugin"
+                sortOrder="10"/>
+    </type>
+
+    <!-- OAuthLogoutObserver Dependencies (for cookie cleanup) -->
+    <type name="MiniOrange\OAuth\Observer\OAuthLogoutObserver">
+        <arguments>
+            <argument name="cookieManager" xsi:type="object">
+                Magento\Framework\Stdlib\CookieManagerInterface
+            </argument>
+            <argument name="cookieMetadataFactory" xsi:type="object">
+                Magento\Framework\Stdlib\Cookie\CookieMetadataFactory
+            </argument>
+        </arguments>
+    </type>
+
 </config>

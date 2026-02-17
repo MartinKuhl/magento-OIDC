@@ -8,6 +8,8 @@ use Magento\Customer\Model\Session;
 use Magento\Framework\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
 use Magento\Framework\App\ResponseFactory;
+use Magento\Framework\Stdlib\CookieManagerInterface;
+use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
 use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
 use MiniOrange\OAuth\Helper\OAuthUtility;
 
@@ -49,15 +51,29 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
     private $customerFactory;
 
     /**
+     * @var CookieManagerInterface
+     */
+    private CookieManagerInterface $cookieManager;
+
+    /**
+     * @var CookieMetadataFactory
+     */
+    private CookieMetadataFactory $cookieMetadataFactory;
+
+    /**
      * Initialize customer login action.
      *
-     * @param Context                     $context
-     * @param OAuthUtility                $oauthUtility
-     * @param Session                     $customerSession
-     * @param ResponseFactory             $responseFactory
-     * @param OAuthSecurityHelper         $securityHelper
+     * @param Context $context Magento application context
+     * @param OAuthUtility $oauthUtility OAuth utility helper
+     * @param Session $customerSession Customer session (for setters)
+     * @param ResponseFactory $responseFactory Response factory
+     * @param OAuthSecurityHelper $securityHelper Security helper
      * @param CustomerRepositoryInterface $customerRepository
-     * @param CustomerFactory             $customerFactory
+     *        Customer repository
+     * @param CustomerFactory $customerFactory Customer factory
+     * @param CookieManagerInterface $cookieManager Cookie manager
+     * @param CookieMetadataFactory $cookieMetadataFactory Cookie
+     *        metadata factory
      */
     public function __construct(
         Context $context,
@@ -66,58 +82,101 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
         ResponseFactory $responseFactory,
         OAuthSecurityHelper $securityHelper,
         CustomerRepositoryInterface $customerRepository,
-        CustomerFactory $customerFactory
+        CustomerFactory $customerFactory,
+        CookieManagerInterface $cookieManager,
+        CookieMetadataFactory $cookieMetadataFactory
     ) {
         $this->customerSession = $customerSession;
         $this->responseFactory = $responseFactory;
         $this->securityHelper = $securityHelper;
         $this->customerRepository = $customerRepository;
         $this->customerFactory = $customerFactory;
+        $this->cookieManager = $cookieManager;
+        $this->cookieMetadataFactory = $cookieMetadataFactory;
         parent::__construct($context, $oauthUtility);
     }
 
     /**
-     * Execute function to execute the classes function.
+     * Execute function - creates nonce and redirects to callback.
+     *
+     * Creates a one-time nonce containing the customer email and
+     * relay state, stores it in a cookie, and redirects to the
+     * callback controller which performs login in a clean HTTP
+     * context.
      *
      * @return \Magento\Framework\Controller\Result\Redirect
      */
-    public function execute()
+    public function execute(): \Magento\Framework\Controller\Result\Redirect
     {
         if (!isset($this->relayState)) {
-            $this->relayState = $this->oauthUtility->getBaseUrl() . "customer/account";
+            $this->relayState = $this->oauthUtility->getBaseUrl()
+                . "customer/account";
         }
         $this->oauthUtility->customlog("CustomerLoginAction: execute");
 
         if ($this->user === null) {
-            $this->oauthUtility->customlog("CustomerLoginAction: ERROR - user is null, cannot log in");
-            $this->messageManager->addErrorMessage(__('Authentication failed. Please try again.'));
+            $this->oauthUtility->customlog(
+                "CustomerLoginAction: ERROR - user is null"
+            );
+            $this->messageManager->addErrorMessage(__(
+                'Authentication failed. Please try again.'
+            ));
             return $this->resultRedirectFactory->create()->setUrl(
-                $this->oauthUtility->getBaseUrl() . 'customer/account/login'
+                $this->oauthUtility->getBaseUrl()
+                . 'customer/account/login'
             );
         }
 
-        // If relayState points to the login page, redirect to account dashboard instead.
-        // This happens when SSO is initiated from the login page itself.
-        $relayPath = $this->oauthUtility->extractPathFromUrl($this->relayState) ?? '';
-        if (str_starts_with(rtrim($relayPath, '/'), '/customer/account/login')) {
-            $this->relayState = $this->oauthUtility->getBaseUrl() . 'customer/account';
+        // If relayState points to login page, use dashboard instead
+        $relayPath = $this->oauthUtility
+            ->extractPathFromUrl($this->relayState) ?? '';
+        $loginPath = '/customer/account/login';
+        if (str_starts_with(rtrim($relayPath, '/'), $loginPath)) {
+            $this->relayState = $this->oauthUtility->getBaseUrl()
+                . 'customer/account';
         }
 
-        // Service Contract: Customer über Repository laden (Data-Model → Entity-Model)
-        $customerModel = $this->customerFactory->create();
-        $customerModel->updateData($this->user);
-        $this->customerSession->setCustomerAsLoggedIn($customerModel);
-
-        $safeRelayState = $this->securityHelper->validateRedirectUrl(
-            $this->relayState,
-            $this->oauthUtility->getBaseUrl() . 'customer/account'
+        // Create nonce with email + relayState
+        $nonce = $this->securityHelper->createCustomerLoginNonce(
+            $this->user->getEmail(),
+            $this->relayState
         );
-        // Convert relative paths to full URLs
-        if (str_starts_with($safeRelayState, '/')) {
-            $safeRelayState = rtrim($this->oauthUtility->getBaseUrl(), '/') . $safeRelayState;
+
+        // Set nonce as HttpOnly cookie (120s TTL matches cache)
+        try {
+            $cookieMetadata = $this->cookieMetadataFactory
+                ->createPublicCookieMetadata()
+                ->setDuration(120)
+                ->setPath('/')
+                ->setHttpOnly(true)
+                ->setSecure(true)
+                ->setSameSite('Lax');
+            $this->cookieManager->setPublicCookie(
+                'oidc_customer_nonce',
+                $nonce,
+                $cookieMetadata
+            );
+        } catch (\Exception $e) {
+            $this->oauthUtility->customlog(
+                "CustomerLoginAction: Error setting nonce cookie: "
+                . $e->getMessage()
+            );
+            $this->messageManager->addErrorMessage(__(
+                'Authentication failed. Please try again.'
+            ));
+            return $this->resultRedirectFactory->create()
+                ->setPath('customer/account/login');
         }
-        $this->oauthUtility->customlog("CustomerLoginAction: Redirecting to: " . $safeRelayState);
-        return $this->resultRedirectFactory->create()->setUrl($safeRelayState);
+
+        // Redirect to customer callback endpoint
+        $callbackUrl = $this->oauthUtility->getBaseUrl()
+            . 'mooauth/actions/CustomerOidcCallback';
+        $this->oauthUtility->customlog(
+            "CustomerLoginAction: Redirecting to callback: "
+            . $callbackUrl
+        );
+        return $this->resultRedirectFactory->create()
+            ->setUrl($callbackUrl);
     }
 
     /**

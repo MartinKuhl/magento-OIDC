@@ -5,33 +5,10 @@
  * Positioning matches Magento core menu items exactly.
  */
 
-/* Icon (pseudo-element) */
+/* Icon (pseudo-element) - matches Magento default menu icon styling */
 .admin__menu .item-oauth.parent.level-0 > a:before,
 .admin__menu .item-oauth.level-0 > a:before {
     content: '\e61b'; /* Lock icon from Admin Icons font */
-    font-family: 'Admin Icons';
-    font-size: 2.2rem;
-    font-style: normal;
-    font-weight: normal;
-    line-height: 1;
-    speak: none;
-    display: block;
-    width: 100%;
-    height: auto;
-    margin: 0 0 5px 0;
-    text-align: center;
-    color: #b5b9bc;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-}
-
-/* Menu link text */
-.admin__menu .item-oauth.level-0 > a {
-    color: #b5b9bc;
-    font-weight: 600;
-    text-transform: none;
-    text-align: center;
-    padding: 14px 5px 10px;
 }
 
 /* Hover states */

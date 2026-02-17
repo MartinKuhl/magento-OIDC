@@ -173,4 +173,19 @@ class OidcLoginVisibility implements ArgumentInterface
         $collection->setPageSize(1);
         return $collection->getSize() > 0;
     }
+
+    /**
+     * Check if non-OIDC customer login is disabled.
+     *
+     * Returns true if password-based customer login is disabled
+     * in configuration, meaning only OIDC authentication is allowed.
+     *
+     * @return bool True if non-OIDC customer login is disabled
+     */
+    public function isNonOidcCustomerLoginDisabled(): bool
+    {
+        return (bool) $this->oauthUtility->getStoreConfig(
+            OAuthConstants::DISABLE_NON_OIDC_CUSTOMER_LOGIN
+        );
+    }
 }
