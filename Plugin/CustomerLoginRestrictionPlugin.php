@@ -1,11 +1,13 @@
 <?php
+
+declare(strict_types=1);
+
 /**
  * Customer Login Restriction Plugin
  *
  * Restricts password-based customer logins when OIDC-only mode is
- * enabled. Mirrors AdminLoginRestrictionPlugin for customers.
- *
- * @package MiniOrange\OAuth\Plugin
+ * enabled. Includes safety net to prevent lockout when OIDC button
+ * is hidden.
  */
 namespace MiniOrange\OAuth\Plugin;
 
@@ -13,67 +15,65 @@ use Magento\Customer\Api\AccountManagementInterface;
 use Magento\Framework\Exception\LocalizedException;
 use MiniOrange\OAuth\Helper\OAuthUtility;
 use MiniOrange\OAuth\Helper\OAuthConstants;
+use Psr\Log\LoggerInterface;
 
-/**
- * Plugin to restrict non-OIDC customer logins.
- *
- * Hooks into the authenticate() method of AccountManagementInterface
- * to block password-based login attempts when configured.
- */
 class CustomerLoginRestrictionPlugin
 {
-    /**
-     * @var OAuthUtility
-     */
     private OAuthUtility $oauthUtility;
+    private LoggerInterface $logger;
 
-    /**
-     * Initialize customer login restriction plugin.
-     *
-     * @param OAuthUtility $oauthUtility OAuth utility helper
-     */
     public function __construct(
-        OAuthUtility $oauthUtility
+        OAuthUtility $oauthUtility,
+        LoggerInterface $logger
     ) {
         $this->oauthUtility = $oauthUtility;
+        $this->logger = $logger;
     }
 
     /**
      * Block non-OIDC authentication attempts when enabled.
      *
-     * Checks if non-OIDC customer login is disabled in configuration.
-     * If disabled, throws LocalizedException to prevent password-based
-     * login. OIDC logins bypass this check by using
-     * setCustomerAsLoggedIn() directly.
+     * Safety net: if OIDC button is hidden, allow normal login.
      *
-     * @param AccountManagementInterface $subject Account management
-     * @param string $email Customer email address
-     * @param string $password Customer password
-     * @return null Always returns null (plugin pattern requirement)
-     * @throws LocalizedException If non-OIDC login is disabled
+     * @param AccountManagementInterface $subject
+     * @param string $email
+     * @param string $password
+     * @return null
+     * @throws LocalizedException
      */
     public function beforeAuthenticate(
         AccountManagementInterface $subject,
         $email,
         $password
     ) {
-        // Check if non-OIDC customer login is disabled
         $isDisabled = $this->oauthUtility->getStoreConfig(
             OAuthConstants::DISABLE_NON_OIDC_CUSTOMER_LOGIN
         );
 
         if (!$isDisabled) {
-            return null; // Allow normal authentication
+            return null;
         }
 
-        // Block all password-based login attempts
-        $this->oauthUtility->customlog(
-            "CustomerLoginRestriction: Blocked non-OIDC login for: "
-            . $email
+        // Safety net: if OIDC button is hidden, do NOT block normal login
+        $showCustomerLink = $this->oauthUtility->getStoreConfig(
+            OAuthConstants::SHOW_CUSTOMER_LINK
         );
-        throw new LocalizedException(__(
-            'Password login is disabled. '
-            . 'Please use OIDC authentication.'
-        ));
+
+        if (!$showCustomerLink) {
+            $this->logger->warning(
+                'MiniOrange OIDC: OIDC-only customer login is enabled but the '
+                . 'OIDC button is hidden. Allowing normal login to prevent '
+                . 'lockout. Email: ' . $email
+            );
+            return null;
+        }
+
+        $this->oauthUtility->customlog(
+            'CustomerLoginRestriction: Blocked non-OIDC login attempt for: ' . $email
+        );
+
+        throw new LocalizedException(
+            __('Password-based login is disabled. Please use OIDC authentication.')
+        );
     }
 }

@@ -292,6 +292,42 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
     }
 
     /**
+     * Validate OIDC-only settings: prevent enabling OIDC-only mode
+     * when the corresponding OIDC login button is not shown.
+     *
+     * @param array $params POST parameters
+     * @throws \Magento\Framework\Exception\LocalizedException
+     */
+    private function validateOidcOnlyDependencies(array $params): void
+    {
+        $showAdminLink = !empty($params['mo_oauth_show_admin_link']);
+        $disableNonOidcAdmin = !empty($params['mo_disable_non_oidc_admin_login']);
+
+        if ($disableNonOidcAdmin && !$showAdminLink) {
+            throw new \Magento\Framework\Exception\LocalizedException(
+                __(
+                    'Cannot enable "OIDC login only" for admins while the OIDC button '
+                    . 'is not shown on the admin login page. '
+                    . 'Enable "Show OIDC-Login Option on admin login page" first.'
+                )
+            );
+        }
+
+        $showCustomerLink = !empty($params['mo_oauth_show_customer_link']);
+        $disableNonOidcCustomer = !empty($params['mo_disable_non_oidc_customer_login']);
+
+        if ($disableNonOidcCustomer && !$showCustomerLink) {
+            throw new \Magento\Framework\Exception\LocalizedException(
+                __(
+                    'Cannot enable "OIDC login only" for customers while the OIDC button '
+                    . 'is not shown on the customer login page. '
+                    . 'Enable "Show OIDC-Login Option on customer login page" first.'
+                )
+            );
+        }
+    }
+
+    /**
      * Is the user allowed to view the Sign in Settings.
      * This is based on the ACL set by the admin in the backend.
      * Works in conjugation with acl.xml

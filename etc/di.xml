@@ -92,6 +92,7 @@
     <type name="MiniOrange\OAuth\Plugin\AdminLoginRestrictionPlugin">
         <arguments>
             <argument name="oauthUtility" xsi:type="object">MiniOrange\OAuth\Helper\OAuthUtility</argument>
+            <argument name="logger" xsi:type="object">Psr\Log\LoggerInterface</argument>
         </arguments>
     </type>
 
@@ -243,9 +244,8 @@
     <!-- Customer Login Restriction Plugin Configuration -->
     <type name="MiniOrange\OAuth\Plugin\CustomerLoginRestrictionPlugin">
         <arguments>
-            <argument name="oauthUtility" xsi:type="object">
-                MiniOrange\OAuth\Helper\OAuthUtility
-            </argument>
+            <argument name="oauthUtility" xsi:type="object">MiniOrange\OAuth\Helper\OAuthUtility</argument>
+            <argument name="logger" xsi:type="object">Psr\Log\LoggerInterface</argument>
         </arguments>
     </type>
 

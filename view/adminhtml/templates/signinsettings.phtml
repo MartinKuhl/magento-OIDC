@@ -197,6 +197,60 @@ $enableDebugLog = $block->isDebugLogEnable() ? 'checked' : '';
 </div>
 
 <script>
+<!-- OIDC-only checkbox dependency: disable "OIDC only" when button is hidden -->
+require(['jquery', 'domReady!'], function ($) {
+    'use strict';
+
+    var adminShowCheckbox    = $('#mo_oauth_show_admin_link'),
+        adminOnlyCheckbox    = $('#mo_disable_non_oidc_admin_login'),
+        customerShowCheckbox = $('#mo_oauth_show_customer_link'),
+        customerOnlyCheckbox = $('#mo_disable_non_oidc_customer_login');
+
+    /**
+     * Disables/enables the "OIDC only" checkbox based on the
+     * corresponding "Show OIDC button" checkbox state.
+     *
+     * Prevents lockout: if no OIDC button is shown, the user
+     * must not be able to enable OIDC-only mode.
+     */
+    function toggleDependency(showCheckbox, onlyCheckbox) {
+        if (!showCheckbox.is(':checked')) {
+            onlyCheckbox.prop('checked', false).prop('disabled', true);
+            onlyCheckbox.closest('label, div').css('opacity', '0.5');
+        } else {
+            // Only re-enable if OAuth is configured (respect existing $disabled logic)
+            var isOAuthConfigured = <?= $isOAuthConfigured ? 'true' : 'false' ?>;
+            if (isOAuthConfigured) {
+                onlyCheckbox.prop('disabled', false);
+                onlyCheckbox.closest('label, div').css('opacity', '1');
+            }
+        }
+    }
+
+    // Set initial state on page load
+    toggleDependency(adminShowCheckbox, adminOnlyCheckbox);
+    toggleDependency(customerShowCheckbox, customerOnlyCheckbox);
+
+    // React to changes
+    adminShowCheckbox.on('change', function () {
+        toggleDependency(adminShowCheckbox, adminOnlyCheckbox);
+    });
+
+    customerShowCheckbox.on('change', function () {
+        toggleDependency(customerShowCheckbox, customerOnlyCheckbox);
+    });
+
+    // Form submit safety: ensure disabled checkboxes send "false"
+    $('#signInSettings').on('submit', function () {
+        if (adminOnlyCheckbox.prop('disabled')) {
+            adminOnlyCheckbox.prop('disabled', false).prop('checked', false);
+        }
+        if (customerOnlyCheckbox.prop('disabled')) {
+            customerOnlyCheckbox.prop('disabled', false).prop('checked', false);
+        }
+    });
+});
+
 function togglePostLogoutUrl() {
     var checkbox = document.getElementById('mo_oauth_enable_login_redirect');
     var urlInput = document.getElementById('mo_oauth_logout_redirect_url');
