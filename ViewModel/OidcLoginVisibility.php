@@ -85,21 +85,28 @@ class OidcLoginVisibility implements ArgumentInterface
      */
     private function hasValidOidcConfiguration(): bool
     {
-        // Delegate to existing check first
+        // Nutze die bewährte Prüfung aus OAuthUtility
         if (!$this->oauthUtility->isOAuthConfigured()) {
             return false;
         }
 
-        // Additional validation: ensure critical endpoints are set
-        $requiredFields = [
-            OAuthConstants::CLIENT_ID,
-            OAuthConstants::AUTHORIZE_URL,
-            OAuthConstants::ACCESSTOKEN_URL,
-        ];
+        // Zusätzliche Validierung über die tatsächlichen DB-Werte
+        $appName = $this->oauthUtility->getStoreConfig(OAuthConstants::APP_NAME);
+        if ($this->oauthUtility->isBlank($appName)) {
+            return false;
+        }
+
+        try {
+            $clientDetails = $this->oauthUtility->getClientDetailsByAppName($appName);
+        } catch (\Exception $e) {
+            return false;
+        }
+
+        // Prüfe die tatsächlichen DB-Spaltennamen
+        $requiredFields = ['clientID', 'authorize_endpoint', 'access_token_endpoint'];
 
         foreach ($requiredFields as $field) {
-            $value = $this->oauthUtility->getStoreConfig($field);
-            if ($this->oauthUtility->isBlank($value)) {
+            if (empty($clientDetails[$field] ?? null)) {
                 return false;
             }
         }
@@ -107,12 +114,22 @@ class OidcLoginVisibility implements ArgumentInterface
         return true;
     }
 
+
     /**
      * Check if auto-create admin is enabled in configuration.
      */
     private function isAutoCreateAdminEnabled(): bool
     {
-        return (bool) $this->oauthUtility->getStoreConfig(OAuthConstants::AUTO_CREATE_ADMIN);
+        $appName = $this->oauthUtility->getStoreConfig(OAuthConstants::APP_NAME);
+        if ($this->oauthUtility->isBlank($appName)) {
+            return false;
+        }
+        try {
+            $clientDetails = $this->oauthUtility->getClientDetailsByAppName($appName);
+            return !empty($clientDetails['mo_oauth_auto_create_admin'] ?? false);
+        } catch (\Exception $e) {
+            return false;
+        }
     }
 
     /**
@@ -120,7 +137,16 @@ class OidcLoginVisibility implements ArgumentInterface
      */
     private function isAutoCreateCustomerEnabled(): bool
     {
-        return (bool) $this->oauthUtility->getStoreConfig(OAuthConstants::AUTO_CREATE_CUSTOMER);
+        $appName = $this->oauthUtility->getStoreConfig(OAuthConstants::APP_NAME);
+        if ($this->oauthUtility->isBlank($appName)) {
+            return false;
+        }
+        try {
+            $clientDetails = $this->oauthUtility->getClientDetailsByAppName($appName);
+            return !empty($clientDetails['mo_oauth_auto_create_customer'] ?? false);
+        } catch (\Exception $e) {
+            return false;
+        }
     }
 
     /**
