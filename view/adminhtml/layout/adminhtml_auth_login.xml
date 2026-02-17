@@ -2,8 +2,7 @@
 <page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
     <update handle="admin_login" />
     <body>
-        <!-- ToDO find correct version and remove the others -->
-        <!-- OIDC Error Message - Versuch 1: content container -->
+        <!-- OIDC Error Messages -->
         <referenceContainer name="content">
             <block class="MiniOrange\OAuth\Block\Adminhtml\OidcErrorMessage" 
                    name="oidc_error_message_content" 
@@ -11,7 +10,6 @@
                    after="-"/>
         </referenceContainer>
         
-        <!-- OIDC Error Message - Versuch 2: root container -->
         <referenceContainer name="root">
             <block class="MiniOrange\OAuth\Block\Adminhtml\OidcErrorMessage" 
                    name="oidc_error_message_root" 
@@ -19,7 +17,6 @@
                    before="-"/>
         </referenceContainer>
         
-        <!-- OIDC Error Message - Versuch 3: messages container (falls vorhanden) -->
         <referenceBlock name="messages" ifconfig="">
             <block class="MiniOrange\OAuth\Block\Adminhtml\OidcErrorMessage" 
                    name="oidc_error_message_messages" 
@@ -27,12 +24,12 @@
                    after="-"/>
         </referenceBlock>
         
-        <!-- SSO Login Button -->
-        <referenceContainer name="form.buttons">
+        <!-- SSO Login Button — jetzt in form.additional.info statt form.buttons -->
+        <referenceContainer name="form.additional.info">
             <block class="MiniOrange\OAuth\Block\OAuth" 
                 name="miniorange.oauth.admin.link" 
-                ifconfig="miniorange/oauth/showadminlink"
-                template="adminssobutton.phtml">
+                template="adminssobutton.phtml"
+                after="-">
                 <arguments>
                     <argument name="oidc_visibility" xsi:type="object">
                         MiniOrange\OAuth\ViewModel\OidcLoginVisibility
