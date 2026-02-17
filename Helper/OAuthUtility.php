@@ -341,13 +341,25 @@ class OAuthUtility extends Data
 
 
     /**
-     * Check if the admin has configured the plugin with
-     * the Identity Provier. Returns true or false
+     * Check if OAuth/OIDC is configured by verifying
+     * that a valid app with required endpoints exists.
      */
-    public function isOAuthConfigured()
+    public function isOAuthConfigured(): bool
     {
-        $loginUrl = $this->getStoreConfig(OAuthConstants::AUTHORIZE_URL);
-        return $this->isBlank($loginUrl) ? false : true;
+        $appName = $this->getStoreConfig(OAuthConstants::APP_NAME);
+        if ($this->isBlank($appName)) {
+            return false;
+        }
+
+        try {
+            $clientDetails = $this->getClientDetailsByAppName($appName);
+        } catch (\Exception $e) {
+            return false;
+        }
+
+        return !empty($clientDetails['clientID'])
+            && !empty($clientDetails['authorize_endpoint'])
+            && !empty($clientDetails['access_token_endpoint']);
     }
 
 
