@@ -126,18 +126,6 @@ class OAuthUtility extends Data
         \Magento\Framework\Encryption\EncryptorInterface $encryptor,
         \Magento\Framework\Escaper $escaper
     ) {
-        $this->adminSession = $adminSession;
-        $this->customerSession = $customerSession;
-        $this->authSession = $authSession;
-        $this->cacheTypeList = $cacheTypeList;
-        $this->cacheFrontendPool = $cacheFrontendPool;
-        $this->fileSystem = $fileSystem;
-        $this->logger = $logger;
-        $this->reinitableConfig = $reinitableConfig;
-        $this->_logger = $logger2;
-        $this->productMetadata = $productMetadata;
-        $this->dateTime = $dateTime;
-        $this->directoryList = $directoryList;
         parent::__construct(
             $context,
             $adminFactory,
@@ -156,6 +144,19 @@ class OAuthUtility extends Data
             $escaper,
             $logger  
         );
+        
+        $this->adminSession = $adminSession;
+        $this->customerSession = $customerSession;
+        $this->authSession = $authSession;
+        $this->cacheTypeList = $cacheTypeList;
+        $this->cacheFrontendPool = $cacheFrontendPool;
+        $this->fileSystem = $fileSystem;
+        $this->logger = $logger;
+        $this->reinitableConfig = $reinitableConfig;
+        $this->_logger = $logger2;
+        $this->productMetadata = $productMetadata;
+        $this->dateTime = $dateTime;
+        $this->directoryList = $directoryList;
     }
 
     /**
