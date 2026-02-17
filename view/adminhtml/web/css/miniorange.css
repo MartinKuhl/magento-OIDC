@@ -9,6 +9,7 @@
 .admin__menu .item-oauth.parent.level-0 > a:before,
 .admin__menu .item-oauth.level-0 > a:before {
     content: '\e61b'; /* Lock icon from Admin Icons font */
+    padding-left: 5px; /* +5px kompensiert die asymmetrische Glyph-Box des Lock-Icons */
 }
 
 /* Hover states */

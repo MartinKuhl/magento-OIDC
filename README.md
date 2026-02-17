@@ -71,7 +71,6 @@ Write for a developer who's new to this codebase but not new to coding.
 
 ### FIX ###:
 
-- icon
 -  Show the Login Link on the default customer login page. if not active --> Disable non-OIDC Login for Customers (OIDC login only)  not enabled
 -  Show the Login Link on the default admin login page. --> if not active -->Disable non-OIDC Login for Admins (OIDC login only)  not enabled
 
