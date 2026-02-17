@@ -25,7 +25,7 @@ $enableDebugLog = $block->isDebugLogEnable() ? 'checked' : '';
                 <h3>LOGIN / LOGOUT OPTIONS</h3>
                 <hr>
                 <p style="font-style: italic; color: #666; margin-top: 10px;">
-                    Configure login link visibility, user auto-creation, and redirect settings.
+                    Configure OIDC login visibility, user auto-creation, and redirect settings.
                 </p>
             </div>
 
@@ -35,24 +35,24 @@ $enableDebugLog = $block->isDebugLogEnable() ? 'checked' : '';
                 <input type="hidden" name="option" value="saveSignInSettings">
 
                 <table>
-                    <!-- Show Link on Default Login Page -->
+                    <!-- Show OIDC Login on Default Login Page -->
                     <tr>
                         <td>
-                            <label><strong>Show Link on Default Login Page:</strong></label>
+                            <label><strong>Show OIDC Login Option on Default Login Page:</strong></label>
                             <div style="margin-left:17px; margin-top:2%;">
-                                <input type="checkbox"
-                                       name="mo_oauth_show_customer_link"
-                                       id="mo_oauth_show_customer_link"
-                                       <?= $escaper->escapeHtmlAttr($customerLink) ?>
-                                       value="true">
-                                Show the Login Link on the default customer login page.
-                                <br><br>
                                 <input type="checkbox"
                                        name="mo_oauth_show_admin_link"
                                        id="mo_oauth_show_admin_link"
                                        <?= $escaper->escapeHtmlAttr($adminLink) ?>
                                        value="true">
-                                Show the Login Link on the default admin login page.
+                                Show the OIDC-Login Option on the default admin login page.
+                                <br><br>
+                                <input type="checkbox"
+                                       name="mo_oauth_show_customer_link"
+                                       id="mo_oauth_show_customer_link"
+                                       <?= $escaper->escapeHtmlAttr($customerLink) ?>
+                                       value="true">
+                                Show the OIDC-Login Option on the default customer login page.
                                 <br><br>
                                 <input type="checkbox"
                                        name="mo_disable_non_oidc_admin_login"
