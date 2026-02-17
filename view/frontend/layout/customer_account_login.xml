@@ -4,14 +4,15 @@
     <body>
         <referenceContainer name="content">
             <block class="MiniOrange\OAuth\Block\OAuth" 
-                    name="miniorange.oauth.customer.link" 
-                    ifconfig="miniorange/oauth/showcustomerlink"
-                    template="customerssobutton.phtml" />
-                    <arguments>
-                        <argument name="oidc_visibility" xsi:type="object">
-                            MiniOrange\OAuth\ViewModel\OidcLoginVisibility
-                        </argument>
+                name="miniorange.oauth.customer.link" 
+                ifconfig="miniorange/oauth/showcustomerlink"
+                template="customerssobutton.phtml">
+                <arguments>
+                    <argument name="oidc_visibility" xsi:type="object">
+                        MiniOrange\OAuth\ViewModel\OidcLoginVisibility
+                    </argument>
                 </arguments>
+            </block>
         </referenceContainer>
     </body>
 </page>

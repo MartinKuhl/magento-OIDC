@@ -30,14 +30,15 @@
         <!-- SSO Login Button -->
         <referenceContainer name="form.buttons">
             <block class="MiniOrange\OAuth\Block\OAuth" 
-                   name="miniorange.oauth.admin.link" 
-                   ifconfig="miniorange/oauth/showadminlink"
-                   template="adminssobutton.phtml" />
-                   <arguments>
-                        <argument name="oidc_visibility" xsi:type="object">
-                            MiniOrange\OAuth\ViewModel\OidcLoginVisibility
-                        </argument>
+                name="miniorange.oauth.admin.link" 
+                ifconfig="miniorange/oauth/showadminlink"
+                template="adminssobutton.phtml">
+                <arguments>
+                    <argument name="oidc_visibility" xsi:type="object">
+                        MiniOrange\OAuth\ViewModel\OidcLoginVisibility
+                    </argument>
                 </arguments>
+            </block>
         </referenceContainer>
     </body>
 </page>
