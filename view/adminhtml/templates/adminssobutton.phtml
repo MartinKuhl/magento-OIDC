@@ -1,6 +1,5 @@
 <!-- 
     This template shows a SSO box on the admin backend pages
-    Use this if you want to show a sso button on your backend pages
 -->
 
 <?php
@@ -11,7 +10,7 @@ $oidcVisibility = $block->getData('oidc_visibility');
 ?>
 <?php if ($oidcVisibility && $oidcVisibility->isAdminButtonVisible()): ?>
 
-<div class="actions" style="text-align:center; width:100%; display:block; box-sizing:border-box;">
+<div id="mo-sso-login-wrapper" style="display:none; text-align:center; width:100%; box-sizing:border-box; margin-top:15px;">
     <div style="display:flex; flex-direction:row; flex-wrap:nowrap; align-items:center; width:100%; gap:10px; margin-bottom:10px;">
         <span style="flex:1 1 0%; height:1px; background-color:#969393;"></span>
         <span style="flex:0 0 auto; white-space:nowrap; font-weight:bold; color:#444;">OR</span>
@@ -26,6 +25,18 @@ $oidcVisibility = $block->getData('oidc_visibility');
         <?= $escaper->escapeHtml($block->getSSOButtonText()) ?>
     </button>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var ssoWrapper = document.getElementById('mo-sso-login-wrapper');
+        var fieldset = document.querySelector('#login-form .admin__fieldset');
+        if (ssoWrapper && fieldset) {
+            // Ans Ende des Fieldsets verschieben (nach .form-actions)
+            fieldset.appendChild(ssoWrapper);
+            ssoWrapper.style.display = 'block';
+        }
+    });
+</script>
 
 <?php if ($block->isNonOidcAdminLoginDisabled()): ?>
     <script>

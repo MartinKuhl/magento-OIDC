@@ -81,6 +81,8 @@ Write for a developer who's new to this codebase but not new to coding.
 - Storage of settings in 2 different tables why -> merging?
 - whats needs to be adjusted to be future-proof and support multiple OIDC providers?
 
+Die core_config_data-Felder authorizeURL, clientID, accessTokenURL entweder komplett entfernen (und überall aus der App-Tabelle lesen) oder beim Speichern der App-Konfiguration automatisch synchronisieren (was Helper/Data.php::setStoreConfig() teilweise schon tut, aber offensichtlich nicht für alle Felder)
+
 - Rename: --> Authelia OIDC (in Code)
 
 Nächster Schritt (nach Stabilisierung):
