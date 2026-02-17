@@ -114,6 +114,7 @@ vendor/bin/phpstan analyse --memory-limit=1G --configuration=github/miniorange-o
 vendor/bin/psalm --no-cache --config=github/miniorange-oauth-sso/psalm.xml
 
 vendor/bin/phpcs ./github/miniorange-oauth-sso/
+vendor/bin/phpcs ./github/miniorange-oauth-sso/ > ./github/miniorange-oauth-sso/phpcd-report.txt
 vendor/bin/phpcbf ./github/miniorange-oauth-sso/
 
 
