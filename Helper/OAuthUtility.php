@@ -109,8 +109,9 @@ class OAuthUtility extends Data
      * @param \MiniOrange\OAuth\Logger\Logger                                                    $logger2
      * @param File                                                                               $fileSystem
      * @param \Magento\Framework\App\ProductMetadataInterface                                    $productMetadata
-     * @param \MiniOrange\OAuth\Model\MiniorangeOauthClientAppsFactory                           $miniorangeOauthClientAppsFactory
-     * @param \MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps\CollectionFactory  $clientCollectionFactory
+     * @param \MiniOrange\OAuth\Model\MiniorangeOauthClientAppsFactory   $miniorangeOauthClientAppsFactory
+     * @param \MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps\CollectionFactory
+     *        $clientCollectionFactory
      * @param \MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps                    $appResource
      * @param \Magento\User\Model\ResourceModel\User                                             $userResource
      * @param \Magento\Customer\Model\ResourceModel\Customer                                     $customerResource
