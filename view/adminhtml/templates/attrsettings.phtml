@@ -87,7 +87,6 @@ $oauth_am_admin_role_mappings = $block->getAdminRoleMappings();
                         </td>
                     </tr>
 
-
                     <!-- Login/Create Account By -->
                     <tr class="mo_premium_option">
                         <td style="width: 200px;">
@@ -552,7 +551,6 @@ function addRoleMapping() {
 function removeRoleMapping(button) {
     var row = button.parentElement;
     var container = document.getElementById('admin-role-mappings');
-
     // Keep at least one row
     if (container.getElementsByClassName('mapping-row').length > 1) {
         row.remove();
