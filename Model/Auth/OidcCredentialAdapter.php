@@ -319,8 +319,9 @@ class OidcCredentialAdapter implements StorageInterface
      */
     public function __wakeup()
     {
-        // Dependencies will be restored lazily by restoreDependencies()
-        // No explicit action required here
+        // Intentionally empty: Dependencies will be restored lazily by restoreDependencies()
+        // when any method requiring them is called. This prevents issues with closures
+        // in DI-injected dependencies that cannot be serialized.
     }
 
     /**
