@@ -91,34 +91,33 @@ class OAuthUtility extends Data
     /**
      * Initialize OAuthUtility helper.
      *
-     * @param Context                                                                            $context
-     * @param UserFactory                                                                        $adminFactory
-     * @param CustomerFactory                                                                    $customerFactory
-     * @param UrlInterface                                                                       $urlInterface
-     * @param WriterInterface                                                                    $configWriter
-     * @param Repository                                                                         $assetRepo
-     * @param \Magento\Backend\Helper\Data                                                       $helperBackend
-     * @param Url                                                                                $frontendUrl
-     * @param \Magento\Backend\Model\Session                                                     $adminSession
-     * @param Session                                                                            $customerSession
-     * @param \Magento\Backend\Model\Auth\Session                                                $authSession
-     * @param \Magento\Framework\App\Config\ReinitableConfigInterface                            $reinitableConfig
-     * @param TypeListInterface                                                                  $cacheTypeList
-     * @param Pool                                                                               $cacheFrontendPool
-     * @param \Psr\Log\LoggerInterface                                                           $logger
-     * @param \MiniOrange\OAuth\Logger\Logger                                                    $logger2
-     * @param File                                                                               $fileSystem
-     * @param \Magento\Framework\App\ProductMetadataInterface                                    $productMetadata
-     * @param \MiniOrange\OAuth\Model\MiniorangeOauthClientAppsFactory   $miniorangeOauthClientAppsFactory
-     * @param \MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps\CollectionFactory
-     *        $clientCollectionFactory
-     * @param \MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps                    $appResource
-     * @param \Magento\User\Model\ResourceModel\User                                             $userResource
-     * @param \Magento\Customer\Model\ResourceModel\Customer                                     $customerResource
-     * @param DateTime                                                                           $dateTime
-     * @param DirectoryList                                                                      $directoryList
-     * @param \Magento\Framework\Encryption\EncryptorInterface                                   $encryptor
-     * @param \Magento\Framework\Escaper                                                         $escaper
+     * @param Context $context
+     * @param UserFactory $adminFactory
+     * @param CustomerFactory $customerFactory
+     * @param UrlInterface $urlInterface
+     * @param WriterInterface $configWriter
+     * @param Repository $assetRepo
+     * @param \Magento\Backend\Helper\Data $helperBackend
+     * @param Url $frontendUrl
+     * @param \Magento\Backend\Model\Session $adminSession
+     * @param Session $customerSession
+     * @param \Magento\Backend\Model\Auth\Session $authSession
+     * @param \Magento\Framework\App\Config\ReinitableConfigInterface $reinitableConfig
+     * @param TypeListInterface $cacheTypeList
+     * @param Pool $cacheFrontendPool
+     * @param \Psr\Log\LoggerInterface $logger
+     * @param \MiniOrange\OAuth\Logger\Logger $logger2
+     * @param File $fileSystem
+     * @param \Magento\Framework\App\ProductMetadataInterface $productMetadata
+     * @param \MiniOrange\OAuth\Model\MiniorangeOauthClientAppsFactory $miniorangeOauthClientAppsFactory
+     * @param \MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps\CollectionFactory $clientCollectionFactory
+     * @param \MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps $appResource
+     * @param \Magento\User\Model\ResourceModel\User $userResource
+     * @param \Magento\Customer\Model\ResourceModel\Customer $customerResource
+     * @param DateTime $dateTime
+     * @param DirectoryList $directoryList
+     * @param \Magento\Framework\Encryption\EncryptorInterface $encryptor
+     * @param \Magento\Framework\Escaper $escaper
      */
     public function __construct(
         Context $context, 
