@@ -27,7 +27,7 @@ $oidcVisibility = $block->getData('oidc_visibility');
         style="padding:10px 14px; width:100%; text-align:center; box-sizing:border-box;"
         onclick="window.location.href='<?= $escaper->escapeUrl(
             $block->getAdminSPInitiatedUrl(null, $block->getAppName())
-                                       ) ?>';"
+            ) ?>';"
     >
         <?= $escaper->escapeHtml($block->getSSOButtonText()) ?>
     </button>

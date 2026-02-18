@@ -316,9 +316,11 @@ class OidcCredentialAdapter implements StorageInterface
 
     /**
      * Handle deserialization – dependencies remain null until restoreDependencies() is called.
+     *
+     * @phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedFunction
      */
     public function __wakeup()
-    { // phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedFunction
+    {
         // Intentionally empty: Dependencies will be restored lazily by restoreDependencies()
         // when any method requiring them is called. This prevents issues with closures
         // in DI-injected dependencies that cannot be serialized.
