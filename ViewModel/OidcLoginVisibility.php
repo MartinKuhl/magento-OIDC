@@ -32,9 +32,9 @@ class OidcLoginVisibility implements ArgumentInterface
     /**
      * Constructor
      *
-     * @param OAuthUtility              $oauthUtility
+     * @param OAuthUtility $oauthUtility
      * @param AdminUserCollectionFactory $adminUserCollectionFactory
-     * @param CustomerCollectionFactory  $customerCollectionFactory
+     * @param CustomerCollectionFactory $customerCollectionFactory
      */
     public function __construct(
         OAuthUtility $oauthUtility,

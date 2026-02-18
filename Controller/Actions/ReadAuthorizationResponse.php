@@ -16,52 +16,52 @@ use MiniOrange\OAuth\Model\Service\OidcAuthenticationService;
 class ReadAuthorizationResponse extends BaseAction
 {
     /**
-     * @var \Magento\Framework\UrlInterface 
+     * @var \Magento\Framework\UrlInterface
      */
     protected $_url;
 
     /**
-     * @var \Magento\Customer\Model\Session 
+     * @var \Magento\Customer\Model\Session
      */
     private $customerSession;
 
     /**
-     * @var OAuthSecurityHelper 
+     * @var OAuthSecurityHelper
      */
     private $securityHelper;
 
     /**
-     * @var JwtVerifier 
+     * @var JwtVerifier
      */
     private $jwtVerifier;
 
     /**
-     * @var Curl 
+     * @var Curl
      */
     private $curl;
 
     /**
-     * @var OidcAuthenticationService 
+     * @var OidcAuthenticationService
      */
     private $oidcAuthService;
 
     /**
-     * @var CheckAttributeMappingAction 
+     * @var CheckAttributeMappingAction
      */
     private $attrMappingAction;
 
     /**
      * Initialize read authorization response action.
      *
-     * @param \Magento\Framework\App\Action\Context              $context
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility              $oauthUtility
-     * @param \Magento\Framework\UrlInterface                    $url
-     * @param \Magento\Customer\Model\Session                    $customerSession
-     * @param \MiniOrange\OAuth\Helper\OAuthSecurityHelper       $securityHelper
-     * @param \MiniOrange\OAuth\Helper\JwtVerifier               $jwtVerifier
-     * @param \MiniOrange\OAuth\Helper\Curl                      $curl
-     * @param \MiniOrange\OAuth\Model\Service\OidcAuthenticationService $oidcAuthService
-     * @param CheckAttributeMappingAction                        $attrMappingAction
+     * @param \Magento\Framework\App\Action\Context                            $context
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility                            $oauthUtility
+     * @param \Magento\Framework\UrlInterface                                  $url
+     * @param \Magento\Customer\Model\Session                                  $customerSession
+     * @param \MiniOrange\OAuth\Helper\OAuthSecurityHelper                     $securityHelper
+     * @param \MiniOrange\OAuth\Helper\JwtVerifier                             $jwtVerifier
+     * @param \MiniOrange\OAuth\Helper\Curl                                    $curl
+     * @param \MiniOrange\OAuth\Model\Service\OidcAuthenticationService        $oidcAuthService
+     * @param CheckAttributeMappingAction                                      $attrMappingAction
      */
     public function __construct(
         Context $context,

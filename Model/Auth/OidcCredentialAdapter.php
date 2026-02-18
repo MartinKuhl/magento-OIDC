@@ -321,7 +321,6 @@ class OidcCredentialAdapter implements StorageInterface
     {
         // Dependencies will be restored lazily by restoreDependencies()
         // No explicit action required here
-        return;
     }
 
     /**

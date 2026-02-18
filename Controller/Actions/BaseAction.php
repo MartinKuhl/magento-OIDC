@@ -15,12 +15,12 @@ abstract class BaseAction extends \Magento\Framework\App\Action\Action
 {
 
     /**
-     * @var \MiniOrange\OAuth\Helper\OAuthUtility 
+     * @var \MiniOrange\OAuth\Helper\OAuthUtility
      */
     protected $oauthUtility;
 
     /**
-     * @var \Magento\Framework\App\Action\Context 
+     * @var \Magento\Framework\App\Action\Context
      */
     protected $context;
 
@@ -28,7 +28,7 @@ abstract class BaseAction extends \Magento\Framework\App\Action\Action
      * Initialize base action with OAuth utility.
      *
      * @param \Magento\Framework\App\Action\Context  $context
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility  $oauthUtility
      */
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
@@ -92,8 +92,7 @@ abstract class BaseAction extends \Magento\Framework\App\Action\Action
         $authorizeUrl,
         $relayState = '',
         $params = []
-    ): \Magento\Framework\Controller\Result\Redirect
-    {
+    ): \Magento\Framework\Controller\Result\Redirect {
         $this->oauthUtility->customlog(
             "BaseAction: sendHTTPRedirectRequest - Ensuring PHP session is properly saved before redirect"
         );
@@ -106,7 +105,7 @@ abstract class BaseAction extends \Magento\Framework\App\Action\Action
     }
 
     /**
-     * This function is abstract that needs to be implemented by each Action Class 
+     * This function is abstract that needs to be implemented by each Action Class
      */
     abstract public function execute();
 }

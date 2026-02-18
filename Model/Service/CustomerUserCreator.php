@@ -398,7 +398,7 @@ class CustomerUserCreator
     /**
      * Map OIDC gender value to Magento gender ID
      *
-     * @param  string $genderValue
+     * @param        string $genderValue
      * @psalm-return 1|2|3|null
      */
     private function mapGender(string $genderValue): int|null

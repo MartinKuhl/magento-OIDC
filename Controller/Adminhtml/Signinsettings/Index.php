@@ -62,12 +62,12 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
      * @param \Magento\Backend\App\Action\Context                    $context
      * @param \Magento\Framework\View\Result\PageFactory             $resultPageFactory
      * @param \MiniOrange\OAuth\Helper\OAuthUtility                  $oauthUtility
-     * @param \Magento\Framework\Message\ManagerInterface             $messageManager
-     * @param \Psr\Log\LoggerInterface                                $logger
+     * @param \Magento\Framework\Message\ManagerInterface            $messageManager
+     * @param \Psr\Log\LoggerInterface                               $logger
      * @param \Magento\Customer\Model\ResourceModel\Group\Collection $userGroupModel
-     * @param \Magento\Framework\App\Response\Http\FileFactory        $fileFactory
-     * @param \Magento\Store\Model\StoreManagerInterface              $storeManager
-     * @param \Magento\Framework\App\ProductMetadataInterface         $productMetadata
+     * @param \Magento\Framework\App\Response\Http\FileFactory       $fileFactory
+     * @param \Magento\Store\Model\StoreManagerInterface             $storeManager
+     * @param \Magento\Framework\App\ProductMetadataInterface        $productMetadata
      */
     public function __construct(
         Context $context,
@@ -279,14 +279,20 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         if ($mo_oauth_show_admin_link === 0 && $mo_disable_non_oidc_admin_login === 1) {
             $mo_disable_non_oidc_admin_login = 0;
             $this->messageManager->addWarningMessage(
-                __('Admin OIDC-only login was automatically disabled because the OIDC login button is not shown on the admin login page.')
+                __(
+                    'Admin OIDC-only login was automatically disabled because the OIDC login button '
+                    . 'is not shown on the admin login page.'
+                )
             );
         }
 
         if ($mo_oauth_show_customer_link === 0 && $mo_disable_non_oidc_customer_login === 1) {
             $mo_disable_non_oidc_customer_login = 0;
             $this->messageManager->addWarningMessage(
-                __('Customer OIDC-only login was automatically disabled because the OIDC login button is not shown on the customer login page.')
+                __(
+                    'Customer OIDC-only login was automatically disabled because the OIDC login button '
+                    . 'is not shown on the customer login page.'
+                )
             );
         }
 
@@ -313,7 +319,8 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
      *
      * @param (false|mixed|string)[] $values
      *
-     * @psalm-param list{string, mixed, mixed, mixed, mixed, mixed, mixed, mixed, mixed, mixed, mixed, mixed, 'v4.2.0', string, false|string} $values
+     * @psalm-param list{string, mixed, mixed, mixed, mixed, mixed, mixed, mixed, mixed, mixed, mixed, mixed,
+     *                    'v4.2.0', string, false|string} $values
      */
     private function customerConfigurationSettings(array $values)
     {
@@ -337,8 +344,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
     }
 
     /**
-     * Validate OIDC-only settings: prevent enabling OIDC-only mode
-     * when the corresponding OIDC login button is not shown.
+     * Validate OIDC-only settings: prevent enabling OIDC-only mode when the corresponding OIDC login button is hidden.
      *
      * @param array $params POST parameters
      * @throws \Magento\Framework\Exception\LocalizedException

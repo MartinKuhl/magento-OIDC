@@ -231,35 +231,35 @@ class ProcessUserAction
      */
     public function execute(): \Magento\Framework\Controller\Result\Redirect
     {
-
-        try {
-            $this->oauthUtility->customlog("ProcessUserAction: execute");
-            if (empty($this->attrs)) {
-                $this->oauthUtility->customlog("No Attributes Received");
-                throw new MissingAttributesException;
-            }
-
-            $firstName = $this->flattenedattrs[$this->firstNameKey] ?? null;
-            $lastName = $this->flattenedattrs[$this->lastNameKey] ?? null;
-            $userName = $this->flattenedattrs[$this->usernameAttribute] ?? null;
-
-            if ($this->oauthUtility->isBlank($this->defaultRole)) {
-                $this->defaultRole = OAuthConstants::DEFAULT_ROLE;
-            }
-
-            return $this->processUserAction($this->userEmail, $firstName, $lastName, $userName, $this->defaultRole);
-
-        // phpcs:ignore Magento2.Exceptions.ThrowInFinally
-        } catch (MissingAttributesException $e) {
-            $this->oauthUtility->customlog("ERROR: Missing required attributes from OAuth provider");
-            $this->messageManager->addErrorMessage(
-                __('Authentication failed: Required user information not received from identity provider.')
-            );
-            return $this->resultRedirectFactory->create()->setPath('customer/account/login');
-        } catch (\Exception $e) {
-            $this->oauthUtility->customlog("CRITICAL ERROR in execute: " . $e->getMessage());
-            throw $e;
+        $this->oauthUtility->customlog("ProcessUserAction: execute");
+        if (empty($this->attrs)) {
+            $this->oauthUtility->customlog("No Attributes Received");
+            return $this->handleMissingAttributes();
         }
+
+        $firstName = $this->flattenedattrs[$this->firstNameKey] ?? null;
+        $lastName = $this->flattenedattrs[$this->lastNameKey] ?? null;
+        $userName = $this->flattenedattrs[$this->usernameAttribute] ?? null;
+
+        if ($this->oauthUtility->isBlank($this->defaultRole)) {
+            $this->defaultRole = OAuthConstants::DEFAULT_ROLE;
+        }
+
+        return $this->processUserAction($this->userEmail, $firstName, $lastName, $userName, $this->defaultRole);
+    }
+
+    /**
+     * Handle missing attributes by logging and redirecting to login.
+     *
+     * @return \Magento\Framework\Controller\Result\Redirect
+     */
+    private function handleMissingAttributes(): \Magento\Framework\Controller\Result\Redirect
+    {
+        $this->oauthUtility->customlog("ERROR: Missing required attributes from OAuth provider");
+        $this->messageManager->addErrorMessage(
+            __('Authentication failed: Required user information not received from identity provider.')
+        );
+        return $this->resultRedirectFactory->create()->setPath('customer/account/login');
     }
 
     /**
@@ -300,7 +300,7 @@ class ProcessUserAction
         }
 
         /**
- * @var \Magento\Store\Model\Store $store 
+ * @var \Magento\Store\Model\Store $store
 */
         $store = $this->storeManager->getStore();
         $store_url = $store->getBaseUrl(\Magento\Framework\UrlInterface::URL_TYPE_WEB);
