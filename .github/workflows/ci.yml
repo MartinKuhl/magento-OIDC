@@ -14,7 +14,7 @@ permissions:
 jobs:
 
   # -----------------------------------------------------
-  # PHP QUALITY JOB (PHPCS + Auto-Fix via PHPCBF)
+  # PHP QUALITY JOB (PHPCS + PHPCompatibility)
   # -----------------------------------------------------
   php:
     name: PHP QA (PHP ${{ matrix.php-version }})
@@ -68,41 +68,6 @@ jobs:
                 --report=full \
                 --report-file=reports/phpcompat-php${{ matrix.php-version }}.txt \
                 . || true
-
-      - name: Auto-fix with PHPCBF
-        id: phpcbf
-        run: |
-          phpcbf . 2>&1 | tee reports/phpcbf-php${{ matrix.php-version }}.txt || PHPCBF_EXIT=$?
-          PHPCBF_EXIT=${PHPCBF_EXIT:-0}
-
-          if [ "$PHPCBF_EXIT" -eq 1 ] || [ "$PHPCBF_EXIT" -eq 2 ]; then
-            echo "has_fixes=true" >> $GITHUB_OUTPUT
-            echo "::notice::PHPCBF hat automatische Korrekturen angewendet."
-          else
-            echo "has_fixes=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Create Pull Request with PHPCBF fixes
-        if: steps.phpcbf.outputs.has_fixes == 'true' && matrix.php-version == '8.2'
-        uses: peter-evans/create-pull-request@v6
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          branch: autofix/phpcbf-${{ github.ref_name }}
-          commit-message: "style: auto-fix PHPCS violations via PHPCBF (Magento2 Standard)"
-          title: "Auto-Fix: PHPCS violations on `${{ github.ref_name }}`"
-          body: |
-            ## Automatische Code-Style-Korrekturen
-
-            Dieser PR wurde automatisch vom CI erstellt.
-
-            **Was wurde gemacht:**
-            - PHPCBF hat alle automatisch korrigierbaren PHPCS-Violations behoben
-            - Standard: **Magento2** (via `phpcs.xml`)
-
-            **Trigger:** Push auf `${{ github.ref_name }}` (Commit ${{ github.sha }})
-
-            > ⚠️ Bitte prüfe die Änderungen vor dem Merge.
-          delete-branch: true
 
       - name: Magento2 Standard (blocking)
         run: |

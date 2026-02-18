@@ -258,8 +258,7 @@ $oauth_am_admin_role_mappings = $block->getAdminRoleMappings();
                                                 <option value="">-- Select Role --</option>
                                                 <?php foreach ($roles as $role): ?>
                                                     <option value="<?= $escaper->escapeHtmlAttr($role['value']) ?>"
-                                                        <?php $isSelected = isset($mapping['role']) && $mapping['role'] == $role['value']; ?>
-                                                        <?php if ($isSelected): ?>selected="selected"<?php endif; ?>
+                                                        <?php if (isset($mapping['role']) && $mapping['role'] == $role['value']): ?>selected="selected"<?php endif; ?>>
                                                         <?= $escaper->escapeHtml($role['label']) ?>
                                                     </option>
                                                 <?php endforeach; ?>
