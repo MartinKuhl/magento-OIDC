@@ -144,7 +144,8 @@ class OidcCredentialAdapter implements StorageInterface
         }
 
         $this->eventManager->dispatch(
-            'admin_user_authenticate_before', [
+            'admin_user_authenticate_before',
+            [
             'username' => $username,
             'user' => null,
             'oidc_auth' => true
@@ -184,7 +185,8 @@ class OidcCredentialAdapter implements StorageInterface
         }
 
         $this->eventManager->dispatch(
-            'admin_user_authenticate_after', [
+            'admin_user_authenticate_after',
+            [
             'username' => $username,
             'password' => '',
             'user' => $this->user,
@@ -319,11 +321,11 @@ class OidcCredentialAdapter implements StorageInterface
      *
      * Intentionally empty: dependencies are restored lazily by restoreDependencies().
      */
-    public function __wakeup() // phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedFunction
+    public function __wakeup()
     {
-        // Intentionally empty: Dependencies will be restored lazily by restoreDependencies()
-        // when any method requiring them is called. This prevents issues with closures
-        // in DI-injected dependencies that cannot be serialized.
+        // Dependencies will be restored lazily by restoreDependencies()
+        // when any method requiring them is called.
+        return;
     }
 
     /**
