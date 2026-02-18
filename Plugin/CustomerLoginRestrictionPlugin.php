@@ -19,17 +19,12 @@ use Psr\Log\LoggerInterface;
 
 class CustomerLoginRestrictionPlugin
 {
-    /** @var OAuthUtility */
     private OAuthUtility $oauthUtility;
 
-    /** @var LoggerInterface */
     private LoggerInterface $logger;
 
     /**
      * Constructor
-     *
-     * @param OAuthUtility    $oauthUtility
-     * @param LoggerInterface $logger
      */
     public function __construct(
         OAuthUtility $oauthUtility,
@@ -44,15 +39,12 @@ class CustomerLoginRestrictionPlugin
      *
      * Safety net: if OIDC button is hidden, allow normal login.
      *
-     * @param AccountManagementInterface $subject
-     * @param string $email
      * @param string $password
-     * @return null
      * @throws LocalizedException
      */
     public function beforeAuthenticate(
         AccountManagementInterface $subject,
-        $email,
+        string $email,
         $password
     ) {
         $isDisabled = $this->oauthUtility->getStoreConfig(

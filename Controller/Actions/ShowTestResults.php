@@ -42,45 +42,25 @@ class ShowTestResults extends Action
      */
     private $hasExceptionOccurred;
 
-    /**
-     * @var \Exception|null
-     */
-    private $oauthException;
-
-    /**
-     * @var OAuthUtility
-     */
     private OAuthUtility $oauthUtility;
 
-    /**
-     * @var \Magento\Framework\App\Request\Http
-     */
-    protected $request;
+    protected \Magento\Framework\App\Request\Http $request;
 
-    /**
-     * @var ScopeConfigInterface
-     */
-    protected $scopeConfig;
+    protected \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig;
 
-    /**
-     * @var \Magento\Framework\Escaper
-     */
     private \Magento\Framework\Escaper $escaper;
 
-    /**
-     * @var \Magento\Customer\Model\Session
-     */
-    private $customerSession;
+    private \Magento\Customer\Model\Session $customerSession;
 
     /**
      * @var string HTML template for the test results page
      */
-    private $template = '<div style="font-family:Calibri;padding:0 3%;">{{header}}{{commonbody}}{{footer}}</div>';
+    private string|array $template = '<div style="font-family:Calibri;padding:0 3%;">{{header}}{{commonbody}}{{footer}}</div>';
 
     /**
      * @var string HTML header for successful test
      */
-    private $successHeader = '<div style="color: #3c763d;background-color: #dff0d8; padding:2%;'
+    private string $successHeader = '<div style="color: #3c763d;background-color: #dff0d8; padding:2%;'
         . 'margin-bottom:20px;text-align:center; border:1px solid #AEDB9A; '
         . 'font-size:18pt;">TEST SUCCESSFUL</div>'
         . '<div style="display:block;text-align:center;margin-bottom:4%;">'
@@ -88,14 +68,14 @@ class ShowTestResults extends Action
     /**
      * @var string HTML header for failed test
      */
-    private $errorHeader = '<div style="color: #a94442;background-color: #f2dede;padding: 15px;'
+    private string $errorHeader = '<div style="color: #a94442;background-color: #f2dede;padding: 15px;'
         . 'margin-bottom: 20px;text-align:center; border:1px solid #E6B3B2;font-size:18pt;">TEST FAILED</div>'
         . '<div style="display:block;text-align:center;margin-bottom:4%;">'
         . '<img style="width:15%;"src="{{wrong}}"></div>';
     /**
      * @var string HTML header for unsuccessful test
      */
-    private $unsuccessfulHeader = '<div style="color: #a94442;background-color: #f2dede;padding: 15px;'
+    private string $unsuccessfulHeader = '<div style="color: #a94442;background-color: #f2dede;padding: 15px;'
         . 'margin-bottom: 20px;text-align:center; border:1px solid #E6B3B2;font-size:18pt;">'
         . 'TEST UNSUCCESSFUL</div>'
         . '<div style="display:block;text-align:center;margin-bottom:4%;">'
@@ -103,14 +83,14 @@ class ShowTestResults extends Action
     /**
      * @var string HTML template for error message display
      */
-    private $errorBody = '<div style="font-size:14pt;padding:15px;background-color:#fff3cd;'
+    private string $errorBody = '<div style="font-size:14pt;padding:15px;background-color:#fff3cd;'
         . 'border:1px solid #ffc107;border-radius:4px;margin-bottom:20px;">'
         . '<p style="font-weight:bold;color:#856404;margin:0 0 10px 0;">Error Message:</p>'
         . '<p style="color:#856404;margin:0;">{{error_message}}</p></div>';
     /**
      * @var string HTML template for common body with attributes table
      */
-    private $commonBody = '<span style="font-size:14pt;"><b>Hello {{greeting_name}},</b></span><br/>'
+    private string|array $commonBody = '<span style="font-size:14pt;"><b>Hello {{greeting_name}},</b></span><br/>'
         . '<p style="font-weight:bold;font-size:14pt;margin-left:1%;">ATTRIBUTES RECEIVED:</p>'
         . '<table style="border-collapse:collapse;border-spacing:0; display:table;width:100%;'
         . 'font-size:14pt;background-color:#EDEDED;">'
@@ -122,7 +102,7 @@ class ShowTestResults extends Action
     /**
      * @var string HTML template for footer with Done button
      */
-    private $footer = '<div style="margin:3%;display:block;text-align:center;">'
+    private string $footer = '<div style="margin:3%;display:block;text-align:center;">'
         . '<input style="padding:1%;width:100px;background: #0091CD none repeat scroll 0% 0%;cursor: pointer;'
         . 'font-size:15px;border-width: 1px;border-style: solid;border-radius: 3px;white-space: nowrap;'
         . 'box-sizing: border-box;border-color: #0073AA;'
@@ -132,18 +112,11 @@ class ShowTestResults extends Action
     /**
      * @var string HTML template for table row content
      */
-    private $tableContent = "<tr><td style='font-weight:bold;border:2px solid #949090;padding:2%;'>{{key}}</td>"
+    private string $tableContent = "<tr><td style='font-weight:bold;border:2px solid #949090;padding:2%;'>{{key}}</td>"
         . "<td style='padding:2%;border:2px solid #949090; word-wrap:break-word;'>{{value}}</td></tr>";
 
     /**
      * Initialize ShowTestResults action.
-     *
-     * @param \Magento\Framework\App\Action\Context              $context
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility              $oauthUtility
-     * @param \Magento\Framework\App\Request\Http                $request
-     * @param \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
-     * @param \Magento\Customer\Model\Session                    $customerSession
-     * @param \Magento\Framework\Escaper                         $escaper
      */
     public function __construct(
         Context $context,
@@ -163,8 +136,6 @@ class ShowTestResults extends Action
 
     /**
      * Hauptfunktion: Daten aus der Session holen (mit Key), anzeigen und Body ausgeben.
-     *
-     * @return \Magento\Framework\Controller\ResultInterface
      */
     public function execute(): \Magento\Framework\Controller\ResultInterface
     {
@@ -222,14 +193,12 @@ class ShowTestResults extends Action
 
             $this->oauthUtility->flushCache();
         }
-        $adminEmail = $userEmail;
-        $domain = $this->oauthUtility->getBaseUrl();
-        $miniorangeAccountEmail = $this->oauthUtility->getStoreConfig(OAuthConstants::CUSTOMER_EMAIL);
-        $pluginFirstPageVisit = '';
-        $environmentName = $this->oauthUtility->getEdition();
-        $environmentVersion = $this->oauthUtility->getProductVersion();
-        $freeInstalledDate = $this->oauthUtility->getCurrentDate();
-        $identityProvider = $this->oauthUtility->getStoreConfig(OAuthConstants::APP_NAME);
+        $this->oauthUtility->getBaseUrl();
+        $this->oauthUtility->getStoreConfig(OAuthConstants::CUSTOMER_EMAIL);
+        $this->oauthUtility->getEdition();
+        $this->oauthUtility->getProductVersion();
+        $this->oauthUtility->getCurrentDate();
+        $this->oauthUtility->getStoreConfig(OAuthConstants::APP_NAME);
 
         if ($this->status == "TEST FAILED") {
             $testFailed = json_encode($this->attrs);
@@ -238,7 +207,6 @@ class ShowTestResults extends Action
             $testSuccessful = json_encode($this->attrs);
             $testFailed = '';
         }
-        $autoCreateLimit = '';
 
         $this->oauthUtility->setStoreConfig(OAuthConstants::SEND_EMAIL_CORE_CONFIG_DATA, 1);
         $this->oauthUtility->flushCache();
@@ -253,9 +221,6 @@ class ShowTestResults extends Action
 
     /**
      * Handle OIDC error and display TEST UNSUCCESSFUL page
-     *
-     * @param  string $encodedError
-     * @return \Magento\Framework\Controller\ResultInterface
      */
     private function handleOidcError(string $encodedError): \Magento\Framework\Controller\ResultInterface
     {
@@ -291,10 +256,8 @@ class ShowTestResults extends Action
 
     /**
      * Process the template header based on test result status.
-     *
-     * @return void
      */
-    private function processTemplateHeader()
+    private function processTemplateHeader(): void
     {
         $header = $this->oauthUtility->isBlank($this->userEmail) ? $this->errorHeader : $this->successHeader;
         $this->status = $this->oauthUtility->isBlank($this->userEmail) ? "TEST FAILED" : "TEST SUCCESSFUL";
@@ -305,15 +268,13 @@ class ShowTestResults extends Action
 
     /**
      * Process the template content with user greeting and attributes.
-     *
-     * @return void
      */
-    private function processTemplateContent()
+    private function processTemplateContent(): void
     {
         $greet = $this->greetingName ?? '';
         $greetEscaped = $this->escaper->escapeHtml($greet);
         $this->commonBody = str_replace("{{greeting_name}}", $greetEscaped, $this->commonBody);
-        $tableContent = !array_filter($this->attrs ?? []) ? "No Attributes Received." : $this->getTableContent();
+        $tableContent = array_filter($this->attrs ?? []) ? $this->getTableContent() : "No Attributes Received.";
         //$this->oauthUtility->customlog("ShowTestResultsAction: attribute" . json_encode($this->attrs));
         $this->commonBody = str_replace("{{tablecontent}}", $tableContent, $this->commonBody);
         $this->template = str_replace("{{commonbody}}", $this->commonBody ?? '', $this->template);
@@ -335,7 +296,7 @@ class ShowTestResults extends Action
                 if (!in_array(null, $value)) {
                     $escapedKey = $this->escaper->escapeHtml((string) $key);
                     $escapedValues = array_map(
-                        function ($v) {
+                        function ($v): string {
                             return (string) $this->escaper->escapeHtml((string) $v);
                         },
                         $value
@@ -357,10 +318,8 @@ class ShowTestResults extends Action
 
     /**
      * Process the template footer section.
-     *
-     * @return void
      */
-    private function processTemplateFooter()
+    private function processTemplateFooter(): void
     {
         $this->template = str_replace("{{footer}}", $this->footer ?? '', $this->template);
     }
@@ -369,9 +328,8 @@ class ShowTestResults extends Action
      * Set the user attributes for display.
      *
      * @param  array $attrs
-     * @return void
      */
-    public function setAttrs($attrs)
+    public function setAttrs($attrs): void
     {
         $this->attrs = $attrs;
     }
@@ -384,16 +342,14 @@ class ShowTestResults extends Action
      */
     public function setOAuthException($exception)
     {
-        $this->oauthException = $exception;
     }
 
     /**
      * Set the user email address.
      *
      * @param  string|null $userEmail
-     * @return void
      */
-    public function setUserEmail($userEmail)
+    public function setUserEmail($userEmail): void
     {
         $this->userEmail = $userEmail;
     }
@@ -402,9 +358,8 @@ class ShowTestResults extends Action
      * Set whether an exception has occurred.
      *
      * @param  bool $hasExceptionOccurred
-     * @return void
      */
-    public function setHasExceptionOccurred($hasExceptionOccurred)
+    public function setHasExceptionOccurred($hasExceptionOccurred): void
     {
         $this->hasExceptionOccurred = $hasExceptionOccurred;
     }
@@ -415,9 +370,8 @@ class ShowTestResults extends Action
      * Uses configured attribute mappings with fallback to common OIDC claim names.
      *
      * @param  array|null $attrs
-     * @return void
      */
-    private function setGreetingName($attrs)
+    private function setGreetingName($attrs): void
     {
         if (empty($attrs) || !is_array($attrs)) {
             $this->greetingName = '';
@@ -496,7 +450,7 @@ class ShowTestResults extends Action
      * @param  string $prefix The prefix for nested keys
      * @return array Array of claim keys
      */
-    private function extractClaimKeys($attrs, $prefix = '')
+    private function extractClaimKeys($attrs, int|string $prefix = ''): array
     {
         $keys = [];
         if (!is_array($attrs)) {
@@ -509,7 +463,7 @@ class ShowTestResults extends Action
 
             // If value is an array/object (associative array), recurse to get nested keys
             // Skip indexed arrays (like arrays of values)
-            if (is_array($value) && !empty($value) && !isset($value[0])) {
+            if (is_array($value) && $value !== [] && !isset($value[0])) {
                 $nestedKeys = $this->extractClaimKeys($value, $fullKey);
                 foreach ($nestedKeys as $nk) {
                     $keys[] = $nk;

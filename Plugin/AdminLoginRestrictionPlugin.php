@@ -18,17 +18,12 @@ use Psr\Log\LoggerInterface;
  */
 class AdminLoginRestrictionPlugin
 {
-    /** @var OAuthUtility */
     private OAuthUtility $oauthUtility;
 
-    /** @var LoggerInterface */
     private LoggerInterface $logger;
 
     /**
      * Constructor
-     *
-     * @param OAuthUtility    $oauthUtility
-     * @param LoggerInterface $logger
      */
     public function __construct(
         OAuthUtility $oauthUtility,
@@ -44,12 +39,10 @@ class AdminLoginRestrictionPlugin
      * Safety net: if OIDC-only is enabled but the OIDC button is NOT shown,
      * allow normal login to prevent complete lockout.
      *
-     * @param  Auth   $subject
-     * @param  string $username
      * @param  string $password
      * @throws AuthenticationException
      */
-    public function beforeLogin(Auth $subject, $username, $password)
+    public function beforeLogin(Auth $subject, string $username, $password)
     {
         $isDisabled = $this->oauthUtility->getStoreConfig(
             OAuthConstants::DISABLE_NON_OIDC_ADMIN_LOGIN

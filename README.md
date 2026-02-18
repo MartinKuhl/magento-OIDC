@@ -104,21 +104,21 @@ vendor/bin/phpcbf
 
 
 # Verfügbare Standards anzeigen
-vendor/bin/phpcs -i
+/var/www/html/vendor/bin/phpcs -i
 # Ausgabe sollte enthalten: Magento2, PSR1, PSR2, PSR12, ...
 
 
 # PHPSTan
-vendor/bin/phpstan clear-result-cache
-vendor/bin/phpstan analyse --memory-limit=1G --configuration=github/OIDC/phpstan.neon
-vendor/bin/phpstan analyse --memory-limit=1G --configuration=github/miniorange-oauth-sso/phpstan.neon
+/var/www/html/vendor/bin/phpstan clear-result-cache
+/var/www/html/vendor/bin/phpstan analyse --memory-limit=1G --configuration=github/OIDC/phpstan.neon
+/var/www/html/vendor/bin/phpstan analyse --memory-limit=1G --configuration=github/miniorange-oauth-sso/phpstan.neon
 
 # Psalm
-vendor/bin/psalm --no-cache --config=github/miniorange-oauth-sso/psalm.xml
-vendor/bin/psalm --no-cache --config=github/miniorange-oauth-sso/psalm.xml --alter --issues=MissingReturnType,MissingParamType
+/var/www/html/vendor/bin/psalm --no-cache --config=github/miniorange-oauth-sso/psalm.xml
+/var/www/html/vendor/bin/psalm --no-cache --config=github/miniorange-oauth-sso/psalm.xml --alter --issues=MissingReturnType,MissingParamType
 
-vendor/bin/psalm --no-cache --config=github/OIDC/psalm.xml
-vendor/bin/psalm --no-cache --config=github/OIDC/psalm.xml --alter --issues=MissingReturnType,MissingParamType
+/var/www/html/vendor/bin/psalm --no-cache --config=github/OIDC/psalm.xml
+/var/www/html/vendor/bin/psalm --no-cache --config=github/OIDC/psalm.xml --alter --issues=MissingReturnType,MissingParamType
 
 # PHPCS Variante mit Berücksichtigung der phpcs.xml (wie auch im CI-Workflow)
 /var/www/html/vendor/bin/phpcs  --extensions=php,phtml /var/www/html/github/OIDC/
@@ -129,8 +129,8 @@ vendor/bin/psalm --no-cache --config=github/OIDC/psalm.xml --alter --issues=Miss
 
 /var/www/html/vendor/bin/phpcs --extensions=php,phtml --standard=phpcs.xml .
 
-phpcbf --standard=phpcs.xml  --extensions=php,phtml view/frontend/templates/customerssobutton.phtml
-phpcbf --standard=phpcs.xml  --extensions=php,phtml view/adminhtml/templates/attrsettings.phtml
+/var/www/html/vendor/bin/phpcbf --standard=phpcs.xml  --extensions=php,phtml view/frontend/templates/customerssobutton.phtml
+/var/www/html/vendor/bin/phpcbf --standard=phpcs.xml  --extensions=php,phtml view/adminhtml/templates/attrsettings.phtml
 
 /var/www/html/vendor/bin/phpcs  --extensions=php,phtml /var/www/html/github/OIDC/Model/Auth/OidcCredentialAdapter.php
 /var/www/html/vendor/bin/phpcbf  --extensions=php,phtml /var/www/html/github/OIDC/Model/Auth/OidcCredentialAdapter.php

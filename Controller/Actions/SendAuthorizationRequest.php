@@ -5,7 +5,6 @@ namespace MiniOrange\OAuth\Controller\Actions;
 use MiniOrange\OAuth\Helper\OAuth\AuthorizationRequest;
 use MiniOrange\OAuth\Helper\OAuthConstants;
 use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
-use MiniOrange\OAuth\Helper\SessionHelper;
 
 /**
  * Handles generation and sending of AuthnRequest to the IDP
@@ -14,38 +13,19 @@ use MiniOrange\OAuth\Helper\SessionHelper;
  */
 class SendAuthorizationRequest extends BaseAction
 {
-    /**
-     * @var SessionHelper
-     */
-    private $sessionHelper;
+    private \MiniOrange\OAuth\Helper\OAuthSecurityHelper $securityHelper;
 
-    /**
-     * @var OAuthSecurityHelper
-     */
-    private $securityHelper;
-
-    /**
-     * @var \Magento\Framework\Session\SessionManagerInterface
-     */
-    private $sessionManager;
+    private \Magento\Framework\Session\SessionManagerInterface $sessionManager;
 
     /**
      * Initialize send authorization request action.
-     *
-     * @param \Magento\Framework\App\Action\Context                $context
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility                $oauthUtility
-     * @param SessionHelper                                        $sessionHelper
-     * @param OAuthSecurityHelper                                  $securityHelper
-     * @param \Magento\Framework\Session\SessionManagerInterface   $sessionManager
      */
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
         \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
-        SessionHelper $sessionHelper,
         OAuthSecurityHelper $securityHelper,
         \Magento\Framework\Session\SessionManagerInterface $sessionManager
     ) {
-        $this->sessionHelper = $sessionHelper;
         $this->securityHelper = $securityHelper;
         $this->sessionManager = $sessionManager;
         parent::__construct($context, $oauthUtility);
@@ -78,12 +58,16 @@ class SendAuthorizationRequest extends BaseAction
             $this->oauthUtility->deleteCustomLogFile();
             //$this->oauthUtility->flushCache(); // REMOVED for performance
         }
-        $chk_enable_log ? $this->oauthUtility->customlog("SendAuthorizationRequest: execute") : null;
+        if ($chk_enable_log) {
+            $this->oauthUtility->customlog("SendAuthorizationRequest: execute");
+        }
 
-        $params = $this->getRequest()->getParams();  //get params
-        $chk_enable_log ? $this->oauthUtility->customlog(
-            "SendAuthorizationRequest: Request prarms: " . implode(" ", $params)
-        ) : null;
+        $params = $this->getRequest()->getParams();
+        if ($chk_enable_log) {
+            $this->oauthUtility->customlog(
+                "SendAuthorizationRequest: Request prarms: " . implode(" ", $params)
+            );
+        }
         $isFromPopup = isset($params['from_popup']) && $params['from_popup'] == '1';
 
         // Set relayState based on popup context, with redirect validation
@@ -163,9 +147,11 @@ class SendAuthorizationRequest extends BaseAction
             $relayState,
             $params
         ))->build();
-        $chk_enable_log ? $this->oauthUtility->customlog(
-            "SendAuthorizationRequest:  Authorization Request: " . $authorizationRequest
-        ) : null;
+        if ($chk_enable_log) {
+            $this->oauthUtility->customlog(
+                "SendAuthorizationRequest:  Authorization Request: " . $authorizationRequest
+            );
+        }
         // send oauth request over
         return $this->sendHTTPRedirectRequest($authorizationRequest, $authorizeURL, $relayState, $params);
     }

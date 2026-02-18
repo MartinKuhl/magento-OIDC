@@ -23,21 +23,12 @@ use MiniOrange\OAuth\Helper\OAuthUtility;
 
 class OidcIdentityVerificationPlugin
 {
-    /**
-     * @var CookieManagerInterface
-     */
-    protected $cookieManager;
+    protected \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager;
 
-    /**
-     * @var OAuthUtility
-     */
-    protected $oauthUtility;
+    protected \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
 
     /**
      * Constructor
-     *
-     * @param CookieManagerInterface $cookieManager
-     * @param OAuthUtility           $oauthUtility
      */
     public function __construct(
         CookieManagerInterface $cookieManager,

@@ -6,7 +6,7 @@ class MiniOrangeOauthClientApps extends \Magento\Framework\Model\ResourceModel\D
     /**
      * Resource model for MiniOrange OAuth client apps.
      */
-    public function _construct()
+    public function _construct(): void
     {
         $this->_init("miniorange_oauth_client_apps", "id");
     }

@@ -62,13 +62,6 @@ class OidcCredentialAdapter implements StorageInterface
      */
     protected $userCollectionFactory;
 
-    /**
-     * @param UserFactory           $userFactory
-     * @param ManagerInterface      $eventManager
-     * @param OAuthUtility          $oauthUtility
-     * @param UserResourceModel     $userResource
-     * @param UserCollectionFactory $userCollectionFactory
-     */
     public function __construct(
         UserFactory $userFactory,
         ManagerInterface $eventManager,
@@ -112,10 +105,9 @@ class OidcCredentialAdapter implements StorageInterface
      * After deserialization, dependencies may be null. This method safely logs
      * only when the oauthUtility dependency is available.
      *
-     * @param  string $message
      * @return void
      */
-    protected function log($message)
+    protected function log(string $message)
     {
         if ($this->oauthUtility) {
             $this->oauthUtility->customlog($message);
@@ -162,6 +154,7 @@ class OidcCredentialAdapter implements StorageInterface
             );
         }
 
+        /** @var \Magento\User\Model\User $user */
         $user = $userCollection->getFirstItem();
         $this->user = $user;
 
@@ -294,12 +287,10 @@ class OidcCredentialAdapter implements StorageInterface
      * Check if user is active
      *
      * This method is not part of StorageInterface but may be called by Auth class.
-     *
-     * @return bool
      */
-    public function getIsActive()
+    public function getIsActive(): bool
     {
-        return $this->user ? (bool)$this->user->getIsActive() : false;
+        return $this->user && (bool)$this->user->getIsActive();
     }
 
     /**

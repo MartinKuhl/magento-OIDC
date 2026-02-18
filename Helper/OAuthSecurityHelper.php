@@ -20,22 +20,12 @@ class OAuthSecurityHelper
     private const STATE_CACHE_PREFIX = 'mooauth_state_';
     private const NONCE_TTL = 120;     // 2 minutes
     private const STATE_TTL = 600;     // 10 minutes
-
-    /**
-     * @var CacheInterface
-     */
     private CacheInterface $cache;
 
-    /**
-     * @var OAuthUtility
-     */
     private OAuthUtility $oauthUtility;
 
     /**
      * Initialize OAuth security helper.
-     *
-     * @param \Magento\Framework\App\CacheInterface  $cache
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility  $oauthUtility
      */
     public function __construct(
         CacheInterface $cache,
@@ -71,7 +61,7 @@ class OAuthSecurityHelper
      */
     public function redeemAdminLoginNonce(string $nonce): ?string
     {
-        if (empty($nonce) || !preg_match('/^[a-f0-9]{32}$/', $nonce)) {
+        if ($nonce === '' || $nonce === '0' || !preg_match('/^[a-f0-9]{32}$/', $nonce)) {
             return null;
         }
 
@@ -126,7 +116,7 @@ class OAuthSecurityHelper
      */
     public function redeemCustomerLoginNonce(string $nonce): ?array
     {
-        if (empty($nonce)
+        if ($nonce === '' || $nonce === '0'
             || !preg_match('/^[a-f0-9]{32}$/', $nonce)
         ) {
             return null;
@@ -191,7 +181,7 @@ class OAuthSecurityHelper
      */
     public function validateStateToken(string $sessionId, string $stateToken): bool
     {
-        if (empty($sessionId) || empty($stateToken)) {
+        if ($sessionId === '' || $sessionId === '0' || ($stateToken === '' || $stateToken === '0')) {
             return false;
         }
 
@@ -278,7 +268,7 @@ class OAuthSecurityHelper
     {
         $url = trim($url);
 
-        if (empty($url)) {
+        if ($url === '' || $url === '0') {
             return $fallback;
         }
 

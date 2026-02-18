@@ -12,33 +12,17 @@ use MiniOrange\OAuth\Helper\OAuthConstants;
  */
 class Debug extends Template
 {
-    /**
-     * @var OAuthUtility
-     */
-    protected $oauthUtility;
+    protected \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
+
+    protected \Magento\Framework\App\Filesystem\DirectoryList $directoryList;
+
+    protected ?\Magento\Framework\Filesystem\Driver\File $fileDriver;
+
+    protected ?\Magento\Framework\HTTP\Client\Curl $curlClient;
 
     /**
-     * @var DirectoryList
-     */
-    protected $directoryList;
-
-    /**
-     * @var \Magento\Framework\Filesystem\Driver\File
-     */
-    protected $fileDriver;
-
-    /**
-     * @var \Magento\Framework\HTTP\Client\Curl
-     */
-    protected $curlClient;
-
-    /**
-     * @param Context                                        $context
-     * @param OAuthUtility                                   $oauthUtility
-     * @param DirectoryList                                  $directoryList
      * @param \Magento\Framework\Filesystem\Driver\File|null $fileDriver
      * @param \Magento\Framework\HTTP\Client\Curl|null       $curlClient
-     * @param array                                          $data
      */
     public function __construct(
         Context $context,
@@ -51,12 +35,12 @@ class Debug extends Template
         $this->oauthUtility = $oauthUtility;
         $this->directoryList = $directoryList;
         // optional DI for environments where driver/client are not configured
-        if ($fileDriver === null || $curlClient === null) {
+        if (!$fileDriver instanceof \Magento\Framework\Filesystem\Driver\File || !$curlClient instanceof \Magento\Framework\HTTP\Client\Curl) {
             $om = \Magento\Framework\App\ObjectManager::getInstance();
-            if ($fileDriver === null) {
+            if (!$fileDriver instanceof \Magento\Framework\Filesystem\Driver\File) {
                 $fileDriver = $om->get(\Magento\Framework\Filesystem\Driver\File::class);
             }
-            if ($curlClient === null) {
+            if (!$curlClient instanceof \Magento\Framework\HTTP\Client\Curl) {
                 $curlClient = $om->get(\Magento\Framework\HTTP\Client\Curl::class);
             }
         }
@@ -69,10 +53,8 @@ class Debug extends Template
 
     /**
      * Get OIDC Configuration
-     *
-     * @return array
      */
-    public function getOidcConfiguration()
+    public function getOidcConfiguration(): array
     {
         $clientId = $this->oauthUtility->getStoreConfig(OAuthConstants::CLIENT_ID);
         $clientSecret = $this->maskSecret($this->oauthUtility->getStoreConfig(OAuthConstants::CLIENT_SECRET));
@@ -125,10 +107,8 @@ class Debug extends Template
 
     /**
      * Get Recent Log Entries
-     *
-     * @return array
      */
-    public function getRecentLogEntries()
+    public function getRecentLogEntries(): array
     {
         $logFile = $this->directoryList->getPath(DirectoryList::VAR_DIR) . '/log/mo_oauth.log';
         $entries = [];
@@ -151,10 +131,8 @@ class Debug extends Template
 
     /**
      * Test Authelia Connection
-     *
-     * @return array
      */
-    public function testAutheliaConnection()
+    public function testAutheliaConnection(): array
     {
         $results = [];
 
@@ -180,9 +158,8 @@ class Debug extends Template
      * Test URL connectivity
      *
      * @param  string $url
-     * @return array
      */
-    protected function testUrl($url)
+    protected function testUrl($url): array
     {
         $curl = $this->curlClient;
         $responseTime = null;
@@ -216,9 +193,8 @@ class Debug extends Template
      * Mask sensitive data
      *
      * @param  string $secret
-     * @return string
      */
-    protected function maskSecret($secret)
+    protected function maskSecret($secret): string
     {
         if (empty($secret)) {
             return 'Not configured';
@@ -236,7 +212,6 @@ class Debug extends Template
      * Format JSON for display
      *
      * @param  mixed $data
-     * @return string
      */
     public function formatJson($data): string
     {
@@ -262,10 +237,8 @@ class Debug extends Template
 
     /**
      * Get System Information
-     *
-     * @return array
      */
-    public function getSystemInfo()
+    public function getSystemInfo(): array
     {
         return [
             'PHP Version' => PHP_VERSION,

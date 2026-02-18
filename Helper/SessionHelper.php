@@ -20,33 +20,19 @@ class SessionHelper
      */
     private const ADMIN_COOKIE_NAMES = ['PHPSESSID', 'admin'];
 
-    /**
-     * @var CookieManagerInterface
-     */
-    private $cookieManager;
+    private \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager;
 
-    /**
-     * @var CookieMetadataFactory
-     */
-    private $cookieMetadataFactory;
+    private \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory;
 
-    /**
-     * @var OAuthUtility
-     */
-    private $oauthUtility;
+    private \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
 
     /**
      * @var BackendUrlInterface
      */
-    private $backendUrl;
+    private BackendUrlInterface $backendUrl;
 
     /**
      * Initialize session helper.
-     *
-     * @param CookieManagerInterface $cookieManager
-     * @param CookieMetadataFactory  $cookieMetadataFactory
-     * @param OAuthUtility           $oauthUtility
-     * @param BackendUrlInterface    $backendUrl
      */
     public function __construct(
         CookieManagerInterface $cookieManager,
@@ -136,10 +122,8 @@ class SessionHelper
      * Set SameSite=None on the PHP session cookie only.
      *
      * Only updates the session cookie - does not modify other cookies.
-     *
-     * @return void
      */
-    public function forceSameSiteNone()
+    public function forceSameSiteNone(): void
     {
         try {
             // Avoid direct session_* usage — prefer CookieManager for cookie access

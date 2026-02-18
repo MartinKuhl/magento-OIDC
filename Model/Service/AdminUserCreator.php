@@ -6,7 +6,6 @@ use MiniOrange\OAuth\Helper\OAuthConstants;
 use MiniOrange\OAuth\Helper\OAuthUtility;
 use Magento\User\Model\UserFactory;
 use Magento\User\Model\ResourceModel\User\CollectionFactory as UserCollectionFactory;
-use Magento\Authorization\Model\ResourceModel\Role\Collection as RoleCollection;
 use Magento\Framework\Math\Random;
 
 /**
@@ -14,54 +13,27 @@ use Magento\Framework\Math\Random;
  */
 class AdminUserCreator
 {
-    /**
-     * @var UserFactory
-     */
-    private $userFactory;
+    private \Magento\User\Model\UserFactory $userFactory;
 
-    /**
-     * @var RoleCollection
-     */
-    private $roleCollection;
+    private \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
 
-    /**
-     * @var OAuthUtility
-     */
-    private $oauthUtility;
+    private \Magento\Framework\Math\Random $randomUtility;
 
-    /**
-     * @var Random
-     */
-    private $randomUtility;
-
-    /**
-     * @var \Magento\User\Model\ResourceModel\User
-     */
-    private $userResource;
+    private \Magento\User\Model\ResourceModel\User $userResource;
 
     /**
      * @var UserCollectionFactory
      */
-    private $userCollectionFactory;
+    private UserCollectionFactory $userCollectionFactory;
 
-    /**
-     * @param UserFactory                            $userFactory
-     * @param RoleCollection                         $roleCollection
-     * @param OAuthUtility                           $oauthUtility
-     * @param Random                                 $randomUtility
-     * @param \Magento\User\Model\ResourceModel\User $userResource
-     * @param UserCollectionFactory                  $userCollectionFactory
-     */
     public function __construct(
         UserFactory $userFactory,
-        RoleCollection $roleCollection,
         OAuthUtility $oauthUtility,
         Random $randomUtility,
         \Magento\User\Model\ResourceModel\User $userResource,
         UserCollectionFactory $userCollectionFactory
     ) {
         $this->userFactory = $userFactory;
-        $this->roleCollection = $roleCollection;
         $this->oauthUtility = $oauthUtility;
         $this->randomUtility = $randomUtility;
         $this->userResource = $userResource;
@@ -71,14 +43,12 @@ class AdminUserCreator
     /**
      * Create an admin user based on OIDC attributes
      *
-     * @param  string      $email
      * @param  string      $userName
      * @param  string|null $firstName
      * @param  string|null $lastName
-     * @param  array       $userGroups
      * @return \Magento\User\Model\User|null
      */
-    public function createAdminUser($email, $userName, $firstName, $lastName, array $userGroups)
+    public function createAdminUser(string $email, $userName, $firstName, $lastName, array $userGroups)
     {
         $this->oauthUtility->customlog("AdminUserCreator: Starting creation for " . $email);
 
@@ -100,13 +70,12 @@ class AdminUserCreator
      * Save the admin user to database
      *
      * @param  string $userName
-     * @param  string $email
      * @param  string $firstName
      * @param  string $lastName
      * @param  int    $roleId
      * @return \Magento\User\Model\User|null
      */
-    private function saveAdminUser($userName, $email, $firstName, $lastName, $roleId)
+    private function saveAdminUser($userName, string $email, $firstName, $lastName, $roleId)
     {
         // Generate secure random password (32 chars)
         $randomPassword = $this->randomUtility->getRandomString(28)
@@ -151,10 +120,9 @@ class AdminUserCreator
      *
      * @param  string|null $firstName
      * @param  string|null $lastName
-     * @param  string      $email
      * @return array [firstName, lastName]
      */
-    private function applyNameFallbacks($firstName, $lastName, $email)
+    private function applyNameFallbacks($firstName, $lastName, string $email): array
     {
         if (empty($firstName)) {
             $parts = explode("@", $email);
@@ -175,7 +143,7 @@ class AdminUserCreator
      * @param  array $userGroups Groups from OIDC response
      * @return int|null Admin role ID or null if denied
      */
-    private function getAdminRoleFromGroups($userGroups)
+    private function getAdminRoleFromGroups(array $userGroups): ?int
     {
         // Get role mappings from configuration
         $roleMappingsJson = $this->oauthUtility->getStoreConfig('adminRoleMapping');
@@ -186,7 +154,7 @@ class AdminUserCreator
         }
 
         // FIX: empty.variable – $roleMappings direkt mit count() prüfen statt empty()
-        if (!empty($userGroups) && count($roleMappings) > 0) {
+        if ($userGroups !== [] && $roleMappings !== []) {
             foreach ($roleMappings as $mapping) {
                 $mappedGroup = $mapping['group'] ?? '';
                 $mappedRole = $mapping['role'] ?? '';
@@ -222,11 +190,8 @@ class AdminUserCreator
 
     /**
      * Check if the email/username belongs to an existing admin user
-     *
-     * @param  string $email
-     * @return bool
      */
-    public function isAdminUser($email)
+    public function isAdminUser(string $email): bool
     {
         $this->oauthUtility->customlog("AdminUserCreator: Checking if user is admin: " . $email);
 

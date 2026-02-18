@@ -17,24 +17,12 @@ use MiniOrange\OAuth\Helper\OAuthConstants;
  */
 class OAuthLogoutObserver implements ObserverInterface
 {
-    /**
-     * @var \MiniOrange\OAuth\Helper\OAuthUtility
-     */
-    private $oauthUtility;
+    private \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
 
-    /**
-     * @var \Magento\Framework\App\ResponseInterface
-     */
-    protected $_response;
+    protected \Magento\Framework\App\ResponseInterface $_response;
 
-    /**
-     * @var CookieManagerInterface
-     */
     private CookieManagerInterface $cookieManager;
 
-    /**
-     * @var CookieMetadataFactory
-     */
     private CookieMetadataFactory $cookieMetadataFactory;
 
     /**
@@ -67,7 +55,6 @@ class OAuthLogoutObserver implements ObserverInterface
      * will not prevent the logout redirect if it fails.
      *
      * @param Observer $observer Event observer
-     * @return void
      */
     public function execute(Observer $observer): void
     {

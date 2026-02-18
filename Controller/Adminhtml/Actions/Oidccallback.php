@@ -26,87 +26,37 @@ use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
  */
 class Oidccallback implements ActionInterface, HttpGetActionInterface
 {
-    /**
-     * @var \Magento\User\Model\UserFactory
-     */
-    protected $userFactory;
+    protected \Magento\User\Model\UserFactory $userFactory;
 
-    /**
-     * @var \Magento\Backend\Model\Auth
-     */
-    protected $auth;
+    protected \Magento\Backend\Model\Auth $auth;
 
-    /**
-     * @var ResultFactory
-     */
-    protected $resultFactory;
+    protected \Magento\Framework\Controller\ResultFactory $resultFactory;
 
-    /**
-     * @var RequestInterface
-     */
-    protected $request;
+    protected \Magento\Framework\App\RequestInterface $request;
 
-    /**
-     * @var \MiniOrange\OAuth\Helper\OAuthUtility
-     */
-    protected $oauthUtility;
+    protected \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
 
-    /**
-     * @var ManagerInterface
-     */
-    protected $messageManager;
+    protected \Magento\Framework\Message\ManagerInterface $messageManager;
 
-    /**
-     * @var UrlInterface
-     */
-    protected $url;
+    protected \Magento\Framework\UrlInterface $url;
 
-    /**
-     * @var CookieManagerInterface
-     */
-    protected $cookieManager;
+    protected \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager;
 
-    /**
-     * @var CookieMetadataFactory
-     */
-    protected $cookieMetadataFactory;
+    protected \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory;
 
     /**
      * @var BackendUrlInterface
      */
-    protected $backendUrl;
+    protected BackendUrlInterface $backendUrl;
 
-    /**
-     * @var OAuthSecurityHelper
-     */
-    private $securityHelper;
+    private \MiniOrange\OAuth\Helper\OAuthSecurityHelper $securityHelper;
 
-    /**
-     * @var \Magento\Framework\App\Config\ScopeConfigInterface
-     */
-    private $scopeConfig;
+    private \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig;
 
-    /**
-     * @var \Magento\User\Model\ResourceModel\User\CollectionFactory
-     */
-    protected $userCollectionFactory;
+    protected \Magento\User\Model\ResourceModel\User\CollectionFactory $userCollectionFactory;
 
     /**
      * Initialize OIDC callback action.
-     *
-     * @param \Magento\User\Model\UserFactory                          $userFactory
-     * @param \Magento\Backend\Model\Auth                              $auth
-     * @param ResultFactory                                            $resultFactory
-     * @param RequestInterface                                         $request
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility                    $oauthUtility
-     * @param ManagerInterface                                         $messageManager
-     * @param UrlInterface                                             $url
-     * @param CookieManagerInterface                                   $cookieManager
-     * @param CookieMetadataFactory                                    $cookieMetadataFactory
-     * @param BackendUrlInterface                                      $backendUrl
-     * @param OAuthSecurityHelper                                      $securityHelper
-     * @param \Magento\User\Model\ResourceModel\User\CollectionFactory $userCollectionFactory
-     * @param \Magento\Framework\App\Config\ScopeConfigInterface       $scopeConfig
      */
     public function __construct(
         \Magento\User\Model\UserFactory $userFactory,

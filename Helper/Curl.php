@@ -10,15 +10,10 @@ namespace MiniOrange\OAuth\Helper;
  */
 class Curl
 {
-    /**
-     * @var OAuthUtility
-     */
     private OAuthUtility $oauthUtility;
 
     /**
      * Initialize cURL helper.
-     *
-     * @param OAuthUtility $oauthUtility
      */
     public function __construct(
         OAuthUtility $oauthUtility
@@ -37,7 +32,7 @@ class Curl
      * @param  int    $body         Whether to send credentials in body (1) or not (0)
      * @return string JSON response
      */
-    public function sendAccessTokenRequest($postData, $url, $clientID, $clientSecret, $header, $body): string
+    public function sendAccessTokenRequest($postData, $url, string $clientID, string $clientSecret, $header, $body): string
     {
         if ($header == 0 && $body == 1) {
             $authHeader = [
@@ -74,7 +69,7 @@ class Curl
      * @param  array  $headers  HTTP headers
      * @return string Response body
      */
-    private function callAPI($url, $jsonData = [], $headers = ["Content-Type: application/json"]): string
+    private function callAPI(string $url, $jsonData = [], $headers = ["Content-Type: application/json"]): string
     {
         $curl = new \Magento\Framework\HTTP\Adapter\Curl();
         $curl->setConfig(['header' => false]);
@@ -88,10 +83,10 @@ class Curl
         ];
 
         $data = in_array("Content-Type: application/x-www-form-urlencoded", $headers)
-            ? (!empty($jsonData) ? http_build_query($jsonData) : "")
-            : (!empty($jsonData) ? (string) json_encode($jsonData) : "");
+            ? (empty($jsonData) ? "" : http_build_query($jsonData))
+            : (empty($jsonData) ? "" : (string) json_encode($jsonData));
 
-        $method = !empty($data) ? 'POST' : 'GET';
+        $method = $data === '' || $data === '0' ? 'GET' : 'POST';
         $curl->setConfig($options);
         $curl->write($method, $url, '1.1', $headers, $data);
         $content = $curl->read();

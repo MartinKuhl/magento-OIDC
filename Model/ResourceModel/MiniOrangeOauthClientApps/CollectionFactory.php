@@ -5,15 +5,10 @@ use Magento\Framework\ObjectManagerInterface;
 
 class CollectionFactory
 {
-    /**
-     * @var ObjectManagerInterface
-     */
-    private $objectManager;
+    private \Magento\Framework\ObjectManagerInterface $objectManager;
 
     /**
      * Create a new collection instance.
-     *
-     * @param \Magento\Framework\ObjectManagerInterface $objectManager
      */
     public function __construct(ObjectManagerInterface $objectManager)
     {
@@ -22,9 +17,6 @@ class CollectionFactory
 
     /**
      * Create collection instance
-     *
-     * @param  array $data
-     * @return Collection
      */
     public function create(array $data = []) : Collection
     {

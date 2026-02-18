@@ -25,49 +25,13 @@ use Psr\Log\LoggerInterface;
  */
 class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetActionInterface
 {
-    /**
-     * The first function to be called when a Controller class is invoked.
-     * Usually, has all our controller logic. Returns a view/page/template
-     * to be shown to the users.
-     *
-     * This function gets and prepares all our SP config data from the
-     * database. It's called when you visis the moasaml/signinsettings/Index
-     * URL. It prepares all the values required on the SP setting
-     * page in the backend and returns the block to be displayed.
-     *
-     * @return \Magento\Backend\Model\View\Result\Page
-     */
-    /**
-     * @var \Magento\Customer\Model\ResourceModel\Group\Collection
-     */
-    private $userGroupModel;
+    protected \Magento\Framework\App\Response\Http\FileFactory $fileFactory;
 
-    /**
-     * @var \Magento\Framework\App\Response\Http\FileFactory
-     */
-    protected $fileFactory;
-
-    /**
-     * @var \Magento\Store\Model\StoreManagerInterface
-     */
-    protected $_storeManager;
-    /**
-     * @var \Magento\Framework\App\ProductMetadataInterface
-     */
-    private $productMetadata;
+    protected \Magento\Store\Model\StoreManagerInterface $_storeManager;
+    private \Magento\Framework\App\ProductMetadataInterface $productMetadata;
 
     /**
      * Initialize sign-in settings controller.
-     *
-     * @param \Magento\Backend\App\Action\Context                    $context
-     * @param \Magento\Framework\View\Result\PageFactory             $resultPageFactory
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility                  $oauthUtility
-     * @param \Magento\Framework\Message\ManagerInterface            $messageManager
-     * @param \Psr\Log\LoggerInterface                               $logger
-     * @param \Magento\Customer\Model\ResourceModel\Group\Collection $userGroupModel
-     * @param \Magento\Framework\App\Response\Http\FileFactory       $fileFactory
-     * @param \Magento\Store\Model\StoreManagerInterface             $storeManager
-     * @param \Magento\Framework\App\ProductMetadataInterface        $productMetadata
      */
     public function __construct(
         Context $context,
@@ -84,7 +48,6 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         parent::__construct($context, $resultPageFactory, $oauthUtility, $messageManager, $logger);
         $this->_storeManager = $storeManager;
         $this->fileFactory = $fileFactory;
-        $this->userGroupModel = $userGroupModel;
         $this->productMetadata = $productMetadata;
     }
 
@@ -171,10 +134,8 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
 
     /**
      * Log client configuration settings for diagnostics.
-     *
-     * @return void
      */
-    private function logClientConfigurationIfAvailable()
+    private function logClientConfigurationIfAvailable(): void
     {
         $appName = $this->oauthUtility->getStoreConfig(OAuthConstants::APP_NAME);
         $clientDetails = $this->oauthUtility->getClientDetailsByAppName($appName);
@@ -217,10 +178,8 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
 
     /**
      * Handle clearing of debug log files.
-     *
-     * @return void
      */
-    private function handleClearLogs()
+    private function handleClearLogs(): void
     {
         if ($this->oauthUtility->isCustomLogExist()) {
             $this->oauthUtility->setStoreConfig(OAuthConstants::LOG_FILE_TIME, null);
@@ -233,11 +192,8 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
 
     /**
      * Process Values being submitted and save data in the database.
-     *
-     * @param  array $params
-     * @return void
      */
-    private function processValuesAndSaveData(array $params)
+    private function processValuesAndSaveData(array $params): void
     {
         $mo_oauth_show_customer_link = isset($params['mo_oauth_show_customer_link']) ? 1 : 0;
         $mo_oauth_show_admin_link = isset($params['mo_oauth_show_admin_link']) ? 1 : 0;
@@ -315,14 +271,12 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
     /**
      * Save the sign-in settings configuration.
      *
-     * @return void
      *
      * @param (false|mixed|string)[] $values
-     *
      * @psalm-param list{string, mixed, mixed, mixed, mixed, mixed, mixed, mixed, mixed, mixed, mixed, mixed,
      *                    'v4.2.0', string, false|string} $values
      */
-    private function customerConfigurationSettings(array $values)
+    private function customerConfigurationSettings(array $values): void
     {
         $this->oauthUtility->customlog("......................................................................");
         $this->oauthUtility->customlog("Plugin: OAuth Free : " . $values[12]);
@@ -341,41 +295,6 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         $this->oauthUtility->customlog("Customer_email: " . $values[11]);
         $this->oauthUtility->customlog("Enable login redirect: " . $values[12]);
         $this->oauthUtility->customlog("......................................................................");
-    }
-
-    /**
-     * Validate OIDC-only settings: prevent enabling OIDC-only mode when the corresponding OIDC login button is hidden.
-     *
-     * @param array $params POST parameters
-     * @throws \Magento\Framework\Exception\LocalizedException
-     */
-    private function validateOidcOnlyDependencies(array $params): void
-    {
-        $showAdminLink = !empty($params['mo_oauth_show_admin_link']);
-        $disableNonOidcAdmin = !empty($params['mo_disable_non_oidc_admin_login']);
-
-        if ($disableNonOidcAdmin && !$showAdminLink) {
-            throw new \Magento\Framework\Exception\LocalizedException(
-                __(
-                    'Cannot enable "OIDC login only" for admins while the OIDC button '
-                    . 'is not shown on the admin login page. '
-                    . 'Enable "Show OIDC-Login Option on admin login page" first.'
-                )
-            );
-        }
-
-        $showCustomerLink = !empty($params['mo_oauth_show_customer_link']);
-        $disableNonOidcCustomer = !empty($params['mo_disable_non_oidc_customer_login']);
-
-        if ($disableNonOidcCustomer && !$showCustomerLink) {
-            throw new \Magento\Framework\Exception\LocalizedException(
-                __(
-                    'Cannot enable "OIDC login only" for customers while the OIDC button '
-                    . 'is not shown on the customer login page. '
-                    . 'Enable "Show OIDC-Login Option on customer login page" first.'
-                )
-            );
-        }
     }
 
     /**

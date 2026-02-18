@@ -9,10 +9,8 @@ class MiniorangeOauthClientApps extends \Magento\Framework\Model\AbstractModel
 {
     /**
      * Initialize resource model
-     *
-     * @return void
      */
-    public function _construct()
+    public function _construct(): void
     {
         $this->_init("MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps");
     }

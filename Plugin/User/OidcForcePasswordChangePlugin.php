@@ -19,13 +19,9 @@ class OidcForcePasswordChangePlugin
 {
     /**
      * Initialize OIDC force password change plugin.
-     *
-     * @param AuthSession  $authSession
-     * @param OAuthUtility $oauthUtility
      */
     public function __construct(
-        private readonly AuthSession $authSession,
-        private readonly OAuthUtility $oauthUtility
+        private readonly AuthSession $authSession
     ) {
     }
 
@@ -34,11 +30,6 @@ class OidcForcePasswordChangePlugin
      *
      * Skips forced password change redirect for OIDC users.
      * Event: controller_action_predispatch
-     *
-     * @param  ForceAdminPasswordChangeObserver $subject
-     * @param  callable                         $proceed
-     * @param  EventObserver                    $observer
-     * @return void
      */
     public function aroundExecute(
         ForceAdminPasswordChangeObserver $subject,
@@ -56,8 +47,6 @@ class OidcForcePasswordChangePlugin
 
     /**
      * Check if current session is OIDC authenticated.
-     *
-     * @return bool
      */
     private function isOidcSession(): bool
     {

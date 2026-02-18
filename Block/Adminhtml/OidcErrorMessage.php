@@ -29,10 +29,8 @@ class OidcErrorMessage extends Template
 
     /**
      * Check if there is an OIDC error
-     *
-     * @return bool
      */
-    public function hasOidcError()
+    public function hasOidcError(): bool
     {
         return $this->getOidcErrorMessage() !== null;
     }

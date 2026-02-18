@@ -20,22 +20,10 @@ class ProcessResponseAction extends BaseAction
      */
     private $userInfoResponse;
 
-    /**
-     * @var mixed Placeholder for legacy processing hook (unused)
-     */
-    private $processUserAction;
-
-    /**
-     * @var CheckAttributeMappingAction
-     */
-    private $attrMappingAction;
+    private \MiniOrange\OAuth\Controller\Actions\CheckAttributeMappingAction $attrMappingAction;
 
     /**
      * Initialize process response action.
-     *
-     * @param \Magento\Framework\App\Action\Context                            $context
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility                            $oauthUtility
-     * @param \MiniOrange\OAuth\Controller\Actions\CheckAttributeMappingAction $attrMappingAction
      */
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
@@ -135,7 +123,7 @@ class ProcessResponseAction extends BaseAction
      * @param  int          $depth
      * @return string
      */
-    private function findUserEmail($arr, $depth = 0)
+    private function findUserEmail($arr, int|float $depth = 0)
     {
         if ($depth > self::MAX_RECURSION_DEPTH) {
             return "";
@@ -170,11 +158,10 @@ class ProcessResponseAction extends BaseAction
      *
      * @param  string       $keyprefix
      * @param  array|object $arr
-     * @param  array        $flattenedattributesarray
      * @param  int          $depth
      * @return array
      */
-    private function getflattenedArray($keyprefix, $arr, &$flattenedattributesarray, $depth = 0)
+    private function getflattenedArray(?string $keyprefix, $arr, array &$flattenedattributesarray, int|float $depth = 0)
     {
         if ($depth > self::MAX_RECURSION_DEPTH) {
             return $flattenedattributesarray;
@@ -182,10 +169,10 @@ class ProcessResponseAction extends BaseAction
 
         foreach ($arr as $key => $resource) {
             if (is_array($resource) || is_object($resource)) {
-                $newPrefix = empty($keyprefix) ? $key : $keyprefix . "." . $key;
+                $newPrefix = $keyprefix === null || $keyprefix === '' || $keyprefix === '0' ? $key : $keyprefix . "." . $key;
                 $this->getflattenedArray($newPrefix, $resource, $flattenedattributesarray, $depth + 1);
             } else {
-                $newKey = empty($keyprefix) ? $key : $keyprefix . "." . $key;
+                $newKey = $keyprefix === null || $keyprefix === '' || $keyprefix === '0' ? $key : $keyprefix . "." . $key;
                 $flattenedattributesarray[$newKey] = $resource;
             }
         }
@@ -196,10 +183,8 @@ class ProcessResponseAction extends BaseAction
      * Function checks if the
      *
      * @throws IncorrectUserInfoDataException
-     *
-     * @return void
      */
-    private function validateUserInfoData()
+    private function validateUserInfoData(): void
     {
         $this->oauthUtility->customlog("processResponseAction: validateUserInfoData");
 
@@ -219,7 +204,6 @@ class ProcessResponseAction extends BaseAction
      * Setter for the UserInfo Parameter.
      *
      * @param array|object|null $userInfoResponse
-     * @return static
      */
     public function setUserInfoResponse($userInfoResponse): static
     {

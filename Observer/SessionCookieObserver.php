@@ -11,20 +11,10 @@ use MiniOrange\OAuth\Helper\SessionHelper;
  */
 class SessionCookieObserver implements ObserverInterface
 {
-    /**
-     * @var \MiniOrange\OAuth\Helper\OAuthUtility
-     */
-    protected $oauthUtility;
+    protected \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
 
-    /**
-     * @var SessionHelper
-     */
-    private $sessionHelper;
+    private \MiniOrange\OAuth\Helper\SessionHelper $sessionHelper;
 
-    /**
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
-     * @param SessionHelper                         $sessionHelper
-     */
     public function __construct(
         \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
         SessionHelper $sessionHelper
@@ -35,11 +25,8 @@ class SessionCookieObserver implements ObserverInterface
 
     /**
      * Observer-Methode, die vor dem Senden der Response aufgerufen wird
-     *
-     * @param  \Magento\Framework\Event\Observer $observer
-     * @return void
      */
-    public function execute(\Magento\Framework\Event\Observer $observer)
+    public function execute(\Magento\Framework\Event\Observer $observer): void
     {
         try {
             $this->sessionHelper->forceSameSiteNone();

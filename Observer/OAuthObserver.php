@@ -29,21 +29,11 @@ class OAuthObserver implements ObserverInterface
      */
     private const REQUEST_PARAMS = ['option'];
 
-    /**
-     * @param ManagerInterface          $messageManager
-     * @param HttpRequest               $request
-     * @param HttpResponse              $response
-     * @param OAuthUtility              $oauthUtility
-     * @param ReadAuthorizationResponse $readAuthorizationResponse
-     * @param TestResults               $testResults
-     * @param LoggerInterface           $logger
-     */
     public function __construct(
         private readonly ManagerInterface $messageManager,
         private readonly HttpRequest $request,
         private readonly HttpResponse $response,
         private readonly OAuthUtility $oauthUtility,
-        private readonly ReadAuthorizationResponse $readAuthorizationResponse,
         private readonly TestResults $testResults,
         private readonly LoggerInterface $logger
     ) {
@@ -51,16 +41,13 @@ class OAuthObserver implements ObserverInterface
 
     /**
      * Handle the `controller_action_predispatch` event.
-     *
-     * @param Observer $observer
-     * @return void
      */
     public function execute(Observer $observer): void
     {
         $keys      = array_keys($this->request->getParams());
         $operation = array_intersect($keys, self::REQUEST_PARAMS);
 
-        if (count($operation) === 0) {
+        if ($operation === []) {
             return;
         }
 
@@ -71,7 +58,7 @@ class OAuthObserver implements ObserverInterface
             $postData = $this->request->getPost();
             $isTest   = (bool) $this->oauthUtility->getStoreConfig(OAuthConstants::IS_TEST);
 
-            $this->routeData(array_values($operation)[0], $observer, $params, $postData);
+            $this->routeData(array_values($operation)[0], $params);
         } catch (\Exception $e) {
             if ($isTest) {
                 $output = $this->testResults->output($e, true);
@@ -85,14 +72,8 @@ class OAuthObserver implements ObserverInterface
 
     /**
      * Route the request to the appropriate action based on the `option` parameter.
-     *
-     * @param string   $op
-     * @param Observer $observer
-     * @param array    $params
-     * @param mixed    $postData
-     * @return void
      */
-    private function routeData(string $op, Observer $observer, array $params, mixed $postData): void
+    private function routeData(string $op, array $params): void
     {
         if ($op !== self::REQUEST_PARAMS[0]) {
             return;

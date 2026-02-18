@@ -17,15 +17,10 @@ class OidcAuthenticationService
 {
     private const MAX_RECURSION_DEPTH = 5;
 
-    /**
-     * @var \MiniOrange\OAuth\Helper\OAuthUtility
-     */
-    private $oauthUtility;
+    private \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
 
     /**
      * Initialize OIDC authentication service.
-     *
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
      */
     public function __construct(OAuthUtility $oauthUtility)
     {
@@ -70,10 +65,10 @@ class OidcAuthenticationService
 
         foreach ($arr as $key => $resource) {
             if (is_array($resource) || is_object($resource)) {
-                $newPrefix = empty($keyPrefix) ? $key : $keyPrefix . "." . $key;
+                $newPrefix = $keyPrefix === '' || $keyPrefix === '0' ? $key : $keyPrefix . "." . $key;
                 $this->flattenAttributes($newPrefix, $resource, $result, $depth + 1);
             } else {
-                $newKey = empty($keyPrefix) ? $key : $keyPrefix . "." . $key;
+                $newKey = $keyPrefix === '' || $keyPrefix === '0' ? $key : $keyPrefix . "." . $key;
                 $result[$newKey] = $resource;
             }
         }
@@ -107,7 +102,7 @@ class OidcAuthenticationService
 
         // Fallback to recursive search
         $email = $this->findEmailRecursive($rawResponse);
-        if (!empty($email)) {
+        if ($email !== '' && $email !== '0') {
             return $email;
         }
 
@@ -135,8 +130,6 @@ class OidcAuthenticationService
      * Recursively search for an email address in the user info data.
      *
      * @param  array|object $arr
-     * @param  int          $depth
-     * @return string
      */
     private function findEmailRecursive($arr, int $depth = 0): string
     {
@@ -160,7 +153,7 @@ class OidcAuthenticationService
 
             if (is_array($value) || is_object($value)) {
                 $email = $this->findEmailRecursive($value, $depth + 1);
-                if (!empty($email)) {
+                if ($email !== '' && $email !== '0') {
                     return $email;
                 }
             }

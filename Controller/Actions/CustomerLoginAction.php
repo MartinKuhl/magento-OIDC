@@ -2,12 +2,8 @@
 
 namespace MiniOrange\OAuth\Controller\Actions;
 
-use Magento\Customer\Api\CustomerRepositoryInterface;
-use Magento\Customer\Model\CustomerFactory;
-use Magento\Customer\Model\Session;
 use Magento\Framework\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
-use Magento\Framework\App\ResponseFactory;
 use Magento\Framework\Stdlib\CookieManagerInterface;
 use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
 use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
@@ -21,43 +17,14 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
     private $user;
 
     /**
-     * @var Session
-     */
-    private $customerSession;
-
-    /**
-     * @var ResponseFactory
-     */
-    private $responseFactory;
-
-    /**
      * @var string|null
      */
     private $relayState;
 
-    /**
-     * @var OAuthSecurityHelper
-     */
-    private $securityHelper;
+    private \MiniOrange\OAuth\Helper\OAuthSecurityHelper $securityHelper;
 
-    /**
-     * @var CustomerRepositoryInterface
-     */
-    private $customerRepository;
-
-    /**
-     * @var CustomerFactory
-     */
-    private $customerFactory;
-
-    /**
-     * @var CookieManagerInterface
-     */
     private CookieManagerInterface $cookieManager;
 
-    /**
-     * @var CookieMetadataFactory
-     */
     private CookieMetadataFactory $cookieMetadataFactory;
 
     /**
@@ -65,12 +32,7 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
      *
      * @param Context $context Magento application context
      * @param OAuthUtility $oauthUtility OAuth utility helper
-     * @param Session $customerSession Customer session (for setters)
-     * @param ResponseFactory $responseFactory Response factory
      * @param OAuthSecurityHelper $securityHelper Security helper
-     * @param CustomerRepositoryInterface $customerRepository
-     *        Customer repository
-     * @param CustomerFactory $customerFactory Customer factory
      * @param CookieManagerInterface $cookieManager Cookie manager
      * @param CookieMetadataFactory $cookieMetadataFactory Cookie
      *        metadata factory
@@ -78,19 +40,11 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
     public function __construct(
         Context $context,
         OAuthUtility $oauthUtility,
-        Session $customerSession,
-        ResponseFactory $responseFactory,
         OAuthSecurityHelper $securityHelper,
-        CustomerRepositoryInterface $customerRepository,
-        CustomerFactory $customerFactory,
         CookieManagerInterface $cookieManager,
         CookieMetadataFactory $cookieMetadataFactory
     ) {
-        $this->customerSession = $customerSession;
-        $this->responseFactory = $responseFactory;
         $this->securityHelper = $securityHelper;
-        $this->customerRepository = $customerRepository;
-        $this->customerFactory = $customerFactory;
         $this->cookieManager = $cookieManager;
         $this->cookieMetadataFactory = $cookieMetadataFactory;
         parent::__construct($context, $oauthUtility);
@@ -103,12 +57,10 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
      * relay state, stores it in a cookie, and redirects to the
      * callback controller which performs login in a clean HTTP
      * context.
-     *
-     * @return \Magento\Framework\Controller\Result\Redirect
      */
     public function execute(): \Magento\Framework\Controller\Result\Redirect
     {
-        if (!isset($this->relayState)) {
+        if ($this->relayState === null) {
             $this->relayState = $this->oauthUtility->getBaseUrl()
                 . "customer/account";
         }
@@ -129,7 +81,7 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
 
         // If relayState points to login page, use dashboard instead
         $relayPath = $this->oauthUtility
-            ->extractPathFromUrl($this->relayState) ?? '';
+            ->extractPathFromUrl($this->relayState);
         $loginPath = '/customer/account/login';
         if (str_starts_with(rtrim($relayPath, '/'), $loginPath)) {
             $this->relayState = $this->oauthUtility->getBaseUrl()
@@ -183,9 +135,8 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
      * Setter for the user parameter.
      *
      * @param  \Magento\Customer\Model\Data\Customer|null $user
-     * @return CustomerLoginAction
      */
-    public function setUser($user)
+    public function setUser($user): static
     {
         $this->oauthUtility->customlog("CustomerLoginAction: setUser");
 
@@ -197,9 +148,8 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
      * Setter for the relayState parameter.
      *
      * @param  string|null $relayState
-     * @return CustomerLoginAction
      */
-    public function setRelayState($relayState)
+    public function setRelayState($relayState): static
     {
         $this->oauthUtility->customlog("CustomerLoginAction: setRelayState");
         $this->relayState = $relayState;

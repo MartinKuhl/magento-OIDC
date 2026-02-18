@@ -19,20 +19,10 @@ use MiniOrange\OAuth\Helper\Curl;
  */
 class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetActionInterface
 {
-    /**
-     * @var Curl
-     */
     private Curl $curl;
 
     /**
      * Initialize OAuth settings controller.
-     *
-     * @param \Magento\Backend\App\Action\Context          $context
-     * @param \Magento\Framework\View\Result\PageFactory   $resultPageFactory
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility        $oauthUtility
-     * @param \Magento\Framework\Message\ManagerInterface  $messageManager
-     * @param \Psr\Log\LoggerInterface                     $logger
-     * @param Curl                                         $curl
      */
     public function __construct(
         \Magento\Backend\App\Action\Context $context,
@@ -63,9 +53,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
                 //check whether URL radio button is checked or manual radio button is checked.
 
                 if ($radiostate == 'byurl') {
-
                     $url = $params['endpoint_url'];
-
                     if ($url != null) {
 
                         //get URL content
@@ -127,33 +115,27 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
                         $this->messageManager->addErrorMessage('Please Enter URL');
                         $this->oauthUtility->customlog('URL is empty.Please enter valid  url');
                     }
-
+                } elseif ($radiostate == 'bymanual') {
+                    $this->checkIfRequiredFieldsEmpty(
+                        [
+                        'mo_oauth_app_name' => $params,
+                        'mo_oauth_client_id' => $params,
+                        'mo_oauth_client_secret' => $params,
+                        'mo_oauth_scope' => $params,
+                        'mo_oauth_authorize_url' => $params,
+                        'mo_oauth_accesstoken_url' => $params,
+                        ]
+                    );
+                    $this->processValuesAndSaveData($params);
+                    $this->oauthUtility->flushCache();
+                    $this->messageManager->addSuccessMessage(OAuthMessages::SETTINGS_SAVED);
+                    $this->oauthUtility->reinitConfig();
                 } else {
-
-                    if ($radiostate == 'bymanual') {
-
-                        $this->checkIfRequiredFieldsEmpty(
-                            [
-                            'mo_oauth_app_name' => $params,
-                            'mo_oauth_client_id' => $params,
-                            'mo_oauth_client_secret' => $params,
-                            'mo_oauth_scope' => $params,
-                            'mo_oauth_authorize_url' => $params,
-                            'mo_oauth_accesstoken_url' => $params,
-                            ]
-                        );
-                        $this->processValuesAndSaveData($params);
-                        $this->oauthUtility->flushCache();
-                        $this->messageManager->addSuccessMessage(OAuthMessages::SETTINGS_SAVED);
-                        $this->oauthUtility->reinitConfig();
-                    } else {
-                        $this->messageManager->addErrorMessage('Please Select Required OAuth Endpoints option');
-                        $this->oauthUtility->customlog(
-                            'Error in Controller->Adminhtml->OAuthsettings->index file...'
-                            . 'Please Select Required OAuth Endpoints option'
-                        );
-                    }
-
+                    $this->messageManager->addErrorMessage('Please Select Required OAuth Endpoints option');
+                    $this->oauthUtility->customlog(
+                        'Error in Controller->Adminhtml->OAuthsettings->index file...'
+                        . 'Please Select Required OAuth Endpoints option'
+                    );
                 }
                 // check if required values have been submitted
 
@@ -173,11 +155,8 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
 
     /**
      * Process Values being submitted and save data in the database.
-     *
-     * @param  array $params
-     * @return void
      */
-    private function processValuesAndSaveData(array $params)
+    private function processValuesAndSaveData(array $params): void
     {
         $mo_oauth_app_name = trim($params['mo_oauth_app_name']);
         $mo_oauth_client_id = trim($params['mo_oauth_client_id']);
@@ -192,7 +171,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         $send_header = isset($params['send_header']);
         $send_body = isset($params['send_body']);
 
-        $clientDetails = $this->oauthUtility->getClientDetailsByAppName($mo_oauth_app_name);
+        $this->oauthUtility->getClientDetailsByAppName($mo_oauth_app_name);
 
         // Remove all previous records so at a time only 1 app_name is shown (free version)
         $this->oauthUtility->deleteAllRecords();

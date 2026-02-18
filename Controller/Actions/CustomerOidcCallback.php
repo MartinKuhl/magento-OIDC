@@ -29,39 +29,18 @@ use Magento\Framework\Controller\Result\Redirect;
  */
 class CustomerOidcCallback extends BaseAction
 {
-    /**
-     * @var CustomerFactory
-     */
     private CustomerFactory $customerFactory;
 
-    /**
-     * @var CustomerSession
-     */
     private CustomerSession $customerSession;
 
-    /**
-     * @var StoreManagerInterface
-     */
     private StoreManagerInterface $storeManager;
 
-    /**
-     * @var CookieManagerInterface
-     */
     private CookieManagerInterface $cookieManager;
 
-    /**
-     * @var CookieMetadataFactory
-     */
     private CookieMetadataFactory $cookieMetadataFactory;
 
-    /**
-     * @var OAuthSecurityHelper
-     */
     private OAuthSecurityHelper $securityHelper;
 
-    /**
-     * @var CustomerRepositoryInterface
-     */
     private CustomerRepositoryInterface $customerRepository;
 
     /**
@@ -277,7 +256,7 @@ class CustomerOidcCallback extends BaseAction
                 ->validateRedirectUrl($relayState, $defaultRedirect);
             // Avoid redirecting back to login page
             $relayPath = $this->oauthUtility
-                ->extractPathFromUrl($safeRedirect) ?? '';
+                ->extractPathFromUrl($safeRedirect);
             $loginPath = '/customer/account/login';
             if (str_starts_with(
                 rtrim($relayPath, '/'),

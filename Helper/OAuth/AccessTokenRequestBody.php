@@ -19,21 +19,6 @@ class AccessTokenRequestBody
     /**
      * @var string
      */
-    private $clientID;
-
-    /**
-     * @var string
-     */
-    private $clientSecret;
-
-    /**
-     * @var string
-     */
-    private $grantType;
-
-    /**
-     * @var string
-     */
     private $redirectURL;
 
     /**
@@ -50,10 +35,6 @@ class AccessTokenRequestBody
      */
     public function __construct($grantType, $redirectURL, $code)
     {
-        // all values required in the authn request are set here
-        // $this->clientID = $clientID;
-        // $this->clientSecret = $clientSecret;
-        $this->grantType = $grantType;
         $this->redirectURL = $redirectURL;
         $this->code = $code;
     }
@@ -64,19 +45,15 @@ class AccessTokenRequestBody
      */
     /**
      * Build the request body as an associative array.
-     *
-     * @return array
      */
-    private function generateRequest()
+    private function generateRequest(): array
     {
 
-        $accessTokenRequestPostData = [
+        return [
             'redirect_uri' => $this->redirectURL,
             'grant_type' => OAuthConstants::GRANT_TYPE,
             'code' => $this->code
         ];
-
-        return $accessTokenRequestPostData;
     }
 
     /**
@@ -84,7 +61,6 @@ class AccessTokenRequestBody
      */
     public function build(): array
     {
-        $accessTokenRequestPostData = $this->generateRequest();
-        return $accessTokenRequestPostData;
+        return $this->generateRequest();
     }
 }

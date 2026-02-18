@@ -19,14 +19,8 @@ use MiniOrange\OAuth\Helper\OAuthUtility;
 
 class OidcCredentialPlugin
 {
-    /**
-     * @var OidcCredentialAdapter
-     */
     protected OidcCredentialAdapter $oidcCredentialAdapter;
 
-    /**
-     * @var OAuthUtility
-     */
     protected OAuthUtility $oauthUtility;
 
     /**
@@ -42,10 +36,6 @@ class OidcCredentialPlugin
      */
     private bool $adapterLogged = false;
 
-    /**
-     * @param OidcCredentialAdapter $oidcCredentialAdapter
-     * @param OAuthUtility          $oauthUtility
-     */
     public function __construct(
         OidcCredentialAdapter $oidcCredentialAdapter,
         OAuthUtility $oauthUtility
@@ -59,9 +49,6 @@ class OidcCredentialPlugin
      *
      * Detects OIDC authentication by checking for OIDC token marker.
      *
-     * @param  Auth   $subject
-     * @param  string $username
-     * @param  string $password
      * @return array{0: string, 1: string}
      */
     public function beforeLogin(
@@ -91,10 +78,6 @@ class OidcCredentialPlugin
      * Note: This method is called multiple times during a single login
      * (by Auth::login(), observers, session initialization, etc.).
      * The log guard ensures we only emit one log entry per login flow.
-     *
-     * @param  Auth     $subject
-     * @param  callable $proceed
-     * @return StorageInterface
      */
     public function aroundGetCredentialStorage(
         Auth $subject,
@@ -119,9 +102,7 @@ class OidcCredentialPlugin
      *
      * Cleans up OIDC authentication flag after login completes.
      *
-     * @param  Auth $subject
      * @param  null $result  Result is always null (Auth::login() returns void)
-     * @return void
      */
     public function afterLogin(
         Auth $subject,

@@ -96,63 +96,22 @@ class ProcessUserAction
      */
     private $countryAttribute;
 
-    /**
-     * @var CustomerLoginAction
-     */
-    private $customerLoginAction;
+    private \MiniOrange\OAuth\Controller\Actions\CustomerLoginAction $customerLoginAction;
 
-    /**
-     * @var ResponseFactory
-     */
-    private $responseFactory;
+    private \Magento\Store\Model\StoreManagerInterface $storeManager;
 
-    /**
-     * @var StoreManagerInterface
-     */
-    private $storeManager;
+    private \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
 
-    /**
-     * @var ScopeConfigInterface
-     */
-    private $scopeConfig;
+    private \MiniOrange\OAuth\Model\Service\CustomerUserCreator $customerUserCreator;
 
-    /**
-     * @var OAuthUtility
-     */
-    private $oauthUtility;
+    private \Magento\Framework\Controller\Result\RedirectFactory $resultRedirectFactory;
 
-    /**
-     * @var CustomerUserCreator
-     */
-    private $customerUserCreator;
+    private \Magento\Framework\Message\ManagerInterface $messageManager;
 
-    /**
-     * @var RedirectFactory
-     */
-    private $resultRedirectFactory;
-
-    /**
-     * @var ManagerInterface
-     */
-    private $messageManager;
-
-    /**
-     * @var CustomerRepositoryInterface
-     */
-    private $customerRepository;
+    private \Magento\Customer\Api\CustomerRepositoryInterface $customerRepository;
 
     /**
      * Initialize ProcessUserAction.
-     *
-     * @param OAuthUtility                $oauthUtility
-     * @param CustomerRepositoryInterface $customerRepository
-     * @param StoreManagerInterface       $storeManager
-     * @param ResponseFactory             $responseFactory
-     * @param CustomerLoginAction         $customerLoginAction
-     * @param ScopeConfigInterface        $scopeConfig
-     * @param CustomerUserCreator         $customerUserCreator
-     * @param RedirectFactory             $resultRedirectFactory
-     * @param ManagerInterface            $messageManager
      */
     public function __construct(
         OAuthUtility $oauthUtility,
@@ -215,9 +174,7 @@ class ProcessUserAction
 
         $this->customerRepository = $customerRepository;
         $this->storeManager = $storeManager;
-        $this->responseFactory = $responseFactory;
         $this->customerLoginAction = $customerLoginAction;
-        $this->scopeConfig = $scopeConfig;
         $this->oauthUtility = $oauthUtility;
         $this->customerUserCreator = $customerUserCreator;
         $this->resultRedirectFactory = $resultRedirectFactory;
@@ -226,8 +183,6 @@ class ProcessUserAction
 
     /**
      * Execute the user processing action.
-     *
-     * @return \Magento\Framework\Controller\Result\Redirect
      */
     public function execute(): \Magento\Framework\Controller\Result\Redirect
     {
@@ -245,13 +200,11 @@ class ProcessUserAction
             $this->defaultRole = OAuthConstants::DEFAULT_ROLE;
         }
 
-        return $this->processUserAction($this->userEmail, $firstName, $lastName, $userName, $this->defaultRole);
+        return $this->processUserAction($this->userEmail, $firstName, $lastName, $userName);
     }
 
     /**
      * Handle missing attributes by logging and redirecting to login.
-     *
-     * @return \Magento\Framework\Controller\Result\Redirect
      */
     private function handleMissingAttributes(): \Magento\Framework\Controller\Result\Redirect
     {
@@ -264,22 +217,13 @@ class ProcessUserAction
 
     /**
      * Process user action.
-     *
-     * @param  string      $userEmail
-     * @param  string|null $firstName
-     * @param  string|null $lastName
-     * @param  string|null $userName
-     * @param  string      $defaultRole
-     * @return \Magento\Framework\Controller\Result\Redirect
      */
     private function processUserAction(
         string $userEmail,
         ?string $firstName,
         ?string $lastName,
-        ?string $userName,
-        string $defaultRole
+        ?string $userName
     ): \Magento\Framework\Controller\Result\Redirect {
-        $admin = false;
         $user = $this->getCustomerFromAttributes($userEmail);
 
         if (!$user) {
@@ -338,11 +282,6 @@ class ProcessUserAction
     /**
      * Create a new customer user from OIDC attributes.
      *
-     * @param  string      $userEmail
-     * @param  string|null $firstName
-     * @param  string|null $lastName
-     * @param  string|null $userName
-     * @return \Magento\Customer\Api\Data\CustomerInterface
      * @throws \RuntimeException If customer creation fails
      */
     private function createNewUser(
@@ -351,19 +290,19 @@ class ProcessUserAction
         ?string $lastName,
         ?string $userName
     ): \Magento\Customer\Api\Data\CustomerInterface {
-        if (empty($firstName)) {
+        if ($firstName === null || $firstName === '' || $firstName === '0') {
             $parts = explode("@", $userEmail);
             $firstName = $parts[0];
         }
 
-        if (empty($lastName)) {
+        if ($lastName === null || $lastName === '' || $lastName === '0') {
             $parts = explode("@", $userEmail);
             $lastName = $parts[1] ?? $parts[0];
         }
 
-        $userName = !$this->oauthUtility->isBlank($userName) ? $userName : $userEmail;
-        $firstName = !$this->oauthUtility->isBlank($firstName) ? $firstName : $userName;
-        $lastName = !$this->oauthUtility->isBlank($lastName) ? $lastName : $userName;
+        $userName = $this->oauthUtility->isBlank($userName) ? $userEmail : $userName;
+        $firstName = $this->oauthUtility->isBlank($firstName) ? $userName : $firstName;
+        $lastName = $this->oauthUtility->isBlank($lastName) ? $userName : $lastName;
 
         $customer = $this->customerUserCreator->createCustomer(
             $userEmail,
@@ -386,7 +325,6 @@ class ProcessUserAction
     /**
      * Load customer by email from the current website.
      *
-     * @param  string $userEmail
      * @return \Magento\Customer\Api\Data\CustomerInterface|false
      */
     private function getCustomerFromAttributes(string $userEmail)
@@ -404,7 +342,7 @@ class ProcessUserAction
      * @param  array $attrs
      * @return $this
      */
-    public function setAttrs($attrs)
+    public function setAttrs($attrs): static
     {
         $this->attrs = $attrs;
         return $this;
@@ -416,7 +354,7 @@ class ProcessUserAction
      * @param  array $flattenedattrs
      * @return $this
      */
-    public function setFlattenedAttrs($flattenedattrs)
+    public function setFlattenedAttrs($flattenedattrs): static
     {
         $this->flattenedattrs = $flattenedattrs;
         return $this;
@@ -428,7 +366,7 @@ class ProcessUserAction
      * @param  string $userEmail
      * @return $this
      */
-    public function setUserEmail($userEmail)
+    public function setUserEmail($userEmail): static
     {
         $this->userEmail = $userEmail;
         return $this;

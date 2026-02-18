@@ -84,10 +84,6 @@ class OAuthMessages
      * Parse the message and replace the dynamic values with the
      * necessary values. The dynamic values needs to be passed in
      * the key value pair. Key is usually of the form {{key}}.
-     *
-     * @param  string $message
-     * @param  array  $data
-     * @return string
      */
     // phpcs:ignore Magento2.Functions.StaticFunction
     public static function parse(string $message, array $data = []): string

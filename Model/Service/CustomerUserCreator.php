@@ -19,50 +19,29 @@ use Magento\Customer\Api\Data\CustomerInterface;
  */
 class CustomerUserCreator
 {
-    /**
-     * @var CustomerFactory
-     */
-    private $customerFactory;
+    private \Magento\Customer\Model\CustomerFactory $customerFactory;
 
-    /**
-     * @var AddressInterfaceFactory
-     */
-    private $addressFactory;
+    private \Magento\Customer\Api\Data\AddressInterfaceFactory $addressFactory;
 
-    /**
-     * @var AddressRepositoryInterface
-     */
-    private $addressRepository;
+    private \Magento\Customer\Api\AddressRepositoryInterface $addressRepository;
 
-    /**
-     * @var StoreManagerInterface
-     */
-    private $storeManager;
+    private \Magento\Store\Model\StoreManagerInterface $storeManager;
 
-    /**
-     * @var Random
-     */
-    private $randomUtility;
+    private \Magento\Framework\Math\Random $randomUtility;
 
-    /**
-     * @var OAuthUtility
-     */
-    private $oauthUtility;
+    private \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
 
     /**
      * @var CountryCollectionFactory
      */
-    private $countryCollectionFactory;
+    private CountryCollectionFactory $countryCollectionFactory;
 
-    /**
-     * @var DateTime
-     */
-    private $dateTime;
+    private \Magento\Framework\Stdlib\DateTime\DateTime $dateTime;
 
     /**
      * @var DirectoryData
      */
-    private $directoryData;
+    private DirectoryData $directoryData;
 
     // Attribute mapping keys
     /**
@@ -94,24 +73,10 @@ class CustomerUserCreator
      */
     private $countryAttribute;
 
-    /**
-     * @var \Magento\Customer\Api\CustomerRepositoryInterface
-     */
-    private $customerRepository;
+    private \Magento\Customer\Api\CustomerRepositoryInterface $customerRepository;
 
     /**
      * Initialize customer user creator service.
-     *
-     * @param CustomerFactory                                       $customerFactory
-     * @param AddressInterfaceFactory                               $addressFactory
-     * @param AddressRepositoryInterface                            $addressRepository
-     * @param StoreManagerInterface                                 $storeManager
-     * @param Random                                                $randomUtility
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility                 $oauthUtility
-     * @param CountryCollectionFactory                              $countryCollectionFactory
-     * @param DateTime                                              $dateTime
-     * @param DirectoryData                                         $directoryData
-     * @param \Magento\Customer\Api\CustomerRepositoryInterface     $customerRepository
      */
     public function __construct(
         CustomerFactory $customerFactory,
@@ -140,12 +105,8 @@ class CustomerUserCreator
     }
 
     /**
-     * Create or update a customer from OIDC attributes.
+     * Initialize attribute mapping from configuration.
      *
-     * @param  string $email
-     * @param  string $firstName
-     * @param  string $lastName
-     * @param  string $userName
      * @return void
      */
     private function initializeAttributeMapping(): void
@@ -181,14 +142,6 @@ class CustomerUserCreator
 
     /**
      * Create a customer from OIDC attributes.
-     *
-     * @param  string $email
-     * @param  string $userName
-     * @param  string $firstName
-     * @param  string $lastName
-     * @param  array  $flattenedAttrs
-     * @param  array  $rawAttrs
-     * @return CustomerInterface|null
      */
     public function createCustomer(
         string $email,
@@ -202,16 +155,16 @@ class CustomerUserCreator
 
         try {
             // Name fallbacks if empty
-            if (empty($firstName)) {
+            if ($firstName === '' || $firstName === '0') {
                 $parts = explode("@", $email);
                 $firstName = $parts[0] ?? 'Customer';
             }
-            if (empty($lastName)) {
+            if ($lastName === '' || $lastName === '0') {
                 $parts = explode("@", $email);
                 $lastName = $parts[1] ?? 'User';
             }
 
-            $userName = !$this->oauthUtility->isBlank($userName) ? $userName : $email;
+            $userName = $this->oauthUtility->isBlank($userName) ? $email : $userName;
 
             // Generate secure random password (32 chars)
             $randomPassword = $this->randomUtility->getRandomString(28)
@@ -267,13 +220,6 @@ class CustomerUserCreator
 
     /**
      * Create customer address with mapped OIDC attributes
-     *
-     * @param  CustomerInterface $customer
-     * @param  string            $firstName
-     * @param  string            $lastName
-     * @param  array             $flattenedAttrs
-     * @param  array             $rawAttrs
-     * @return void
      */
     private function createCustomerAddress(
         CustomerInterface $customer,
@@ -323,11 +269,11 @@ class CustomerUserCreator
      * Extract attribute value from flattened attributes with support for nested paths
      *
      * @param  string            $key            Attribute key or dotted path (e.g., "address.locality")
-     * @param  array|null        $flattenedAttrs Flattened key/value map
-     * @param  array|object|null $rawAttrs       Original attributes structure
+     * @param  array             $flattenedAttrs Flattened key/value map
+     * @param  array             $rawAttrs       Original attributes structure
      * @return string|null
      */
-    private function extractAttributeValue($key, $flattenedAttrs, $rawAttrs)
+    private function extractAttributeValue($key, array $flattenedAttrs, array $rawAttrs)
     {
         if (empty($key)) {
             return null;
@@ -341,7 +287,7 @@ class CustomerUserCreator
         // Support nested path notation (e.g., "address.locality")
         if (strpos($key, '.') !== false) {
             // Check in flattened attrs
-            if (!empty($flattenedAttrs)) {
+            if ($flattenedAttrs !== []) {
                 $parts = explode('.', $key);
                 $value = $flattenedAttrs;
                 foreach ($parts as $part) {
@@ -357,7 +303,7 @@ class CustomerUserCreator
             }
 
             // Check in raw attrs
-            if (!empty($rawAttrs)) {
+            if ($rawAttrs !== []) {
                 $parts = explode('.', $key);
                 $value = $rawAttrs;
                 foreach ($parts as $part) {
@@ -382,7 +328,7 @@ class CustomerUserCreator
      * @param  string $dob Raw date string
      * @return string|null Formatted date `Y-m-d` or null on parse failure
      */
-    private function formatDateOfBirth($dob)
+    private function formatDateOfBirth($dob): ?string
     {
         try {
             $date = date_create($dob);
@@ -398,12 +344,11 @@ class CustomerUserCreator
     /**
      * Map OIDC gender value to Magento gender ID
      *
-     * @param        string $genderValue
      * @psalm-return 1|2|3|null
      */
     private function mapGender(string $genderValue): int|null
     {
-        if (empty($genderValue)) {
+        if ($genderValue === '' || $genderValue === '0') {
             return null;
         }
 
@@ -421,12 +366,10 @@ class CustomerUserCreator
 
     /**
      * Resolve country name or code to Magento country ID
-     *
-     * @param null|string $country
      */
     private function resolveCountryId(string|null $country)
     {
-        if (empty($country)) {
+        if ($country === null || $country === '' || $country === '0') {
             return null;
         }
 

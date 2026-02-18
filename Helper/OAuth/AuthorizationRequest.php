@@ -83,7 +83,7 @@ class AuthorizationRequest
     {
         $requestStr = "";
 
-        if (!(strpos($this->authorizeURL, '?') !== false)) {
+        if (strpos($this->authorizeURL, '?') === false) {
             $requestStr .= '?';
         }
 
@@ -110,7 +110,7 @@ class AuthorizationRequest
      * and encode the AuthnRequest string if the sso binding
      * type is empty or is of type HTTPREDIRECT.
      */
-    public function build()
+    public function build(): string
     {
         return $this->generateRequest();
     }

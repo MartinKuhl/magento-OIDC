@@ -20,38 +20,16 @@ use MiniOrange\OAuth\Controller\Actions\BaseAction;
 class SendAuthorizationRequest extends BaseAction
 {
     /**
-     * @var OAuthUtility
-     */
-    protected $oauthUtility;
-
-    /**
      * @var \Magento\Framework\UrlInterface
      */
     protected $urlBuilder;
 
-    /**
-     * @var SessionHelper
-     */
-    private $sessionHelper;
+    private \MiniOrange\OAuth\Helper\OAuthSecurityHelper $securityHelper;
 
-    /**
-     * @var OAuthSecurityHelper
-     */
-    private $securityHelper;
-
-    /**
-     * @var \Magento\Framework\Session\SessionManagerInterface
-     */
-    private $sessionManager;
+    private \Magento\Framework\Session\SessionManagerInterface $sessionManager;
 
     /**
      * Initialize admin send authorization request action.
-     *
-     * @param \Magento\Backend\App\Action\Context                $context
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility              $oauthUtility
-     * @param SessionHelper                                      $sessionHelper
-     * @param OAuthSecurityHelper                                $securityHelper
-     * @param \Magento\Framework\Session\SessionManagerInterface $sessionManager
      */
     public function __construct(
         \Magento\Backend\App\Action\Context $context,
@@ -62,7 +40,6 @@ class SendAuthorizationRequest extends BaseAction
     ) {
         parent::__construct($context, $oauthUtility);
         $this->urlBuilder = $context->getUrl();
-        $this->sessionHelper = $sessionHelper;
         $this->securityHelper = $securityHelper;
         $this->sessionManager = $sessionManager;
     }
@@ -94,13 +71,16 @@ class SendAuthorizationRequest extends BaseAction
             $this->oauthUtility->deleteCustomLogFile();
             //$this->oauthUtility->flushCache(); // REMOVED for performance
         }
-        $chk_enable_log ? $this->oauthUtility->customlog("SendAuthorizationRequest: execute") : null;
+        if ($chk_enable_log) {
+            $this->oauthUtility->customlog("SendAuthorizationRequest: execute");
+        }
 
         $params = $this->getRequest()->getParams();
-        $chk_enable_log ?
+        if ($chk_enable_log) {
             $this->oauthUtility->customlog(
                 "SendAuthorizationRequest: Full params: " . var_export($params, true)
-            ) : null;
+            );
+        }
 
         $isFromPopup = isset($params['from_popup']) && $params['from_popup'] == '1';
 
@@ -192,9 +172,11 @@ class SendAuthorizationRequest extends BaseAction
             $params
         ))->build();
 
-        $chk_enable_log ? $this->oauthUtility->customlog(
-            "SendAuthorizationRequest:  Authorization Request: " . $authorizationRequest
-        ) : null;
+        if ($chk_enable_log) {
+            $this->oauthUtility->customlog(
+                "SendAuthorizationRequest:  Authorization Request: " . $authorizationRequest
+            );
+        }
 
         return $this->sendHTTPRedirectRequest($authorizationRequest, $authorizeURL, $relayState, $params);
     }

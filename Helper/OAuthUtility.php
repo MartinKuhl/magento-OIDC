@@ -28,96 +28,35 @@ use MiniOrange\OAuth\Helper\Data;
  */
 class OAuthUtility extends Data
 {
-    /**
-     * @var \Magento\Backend\Model\Session
-     */
-    protected $adminSession;
+    protected \Magento\Backend\Model\Session $adminSession;
 
-    /**
-     * @var \Magento\Customer\Model\Session
-     */
-    protected $customerSession;
+    protected \Magento\Customer\Model\Session $customerSession;
 
-    /**
-     * @var \Magento\Backend\Model\Auth\Session
-     */
-    protected $authSession;
+    protected \Magento\Backend\Model\Auth\Session $authSession;
 
-    /**
-     * @var \Magento\Framework\App\Cache\TypeListInterface
-     */
-    protected $cacheTypeList;
+    protected \Magento\Framework\App\Cache\TypeListInterface $cacheTypeList;
 
-    /**
-     * @var \Magento\Framework\App\Cache\Frontend\Pool
-     */
-    protected $cacheFrontendPool;
+    protected \Magento\Framework\App\Cache\Frontend\Pool $cacheFrontendPool;
 
-    /**
-     * @var \Magento\Framework\Filesystem\Driver\File
-     */
-    protected $fileSystem;
+    protected \Magento\Framework\Filesystem\Driver\File $fileSystem;
 
-    /**
-     * @var \Psr\Log\LoggerInterface
-     */
-    protected $logger;
+    protected \Psr\Log\LoggerInterface $logger;
 
-    /**
-     * @var \Magento\Framework\App\Config\ReinitableConfigInterface
-     */
-    protected $reinitableConfig;
+    protected \Magento\Framework\App\Config\ReinitableConfigInterface $reinitableConfig;
 
     /**
      * @var \MiniOrange\OAuth\Logger\Logger
      */
     protected $_logger;
 
-    /**
-     * @var \Magento\Framework\App\ProductMetadataInterface
-     */
-    protected $productMetadata;
+    protected \Magento\Framework\App\ProductMetadataInterface $productMetadata;
 
-    /**
-     * @var \Magento\Framework\Stdlib\DateTime\DateTime
-     */
-    protected $dateTime;
+    protected \Magento\Framework\Stdlib\DateTime\DateTime $dateTime;
 
-    /**
-     * @var \Magento\Framework\App\Filesystem\DirectoryList
-     */
-    protected $directoryList;
+    protected \Magento\Framework\App\Filesystem\DirectoryList $directoryList;
 
     /**
      * Initialize OAuthUtility helper.
-     *
-     * @param Context $context
-     * @param UserFactory $adminFactory
-     * @param CustomerFactory $customerFactory
-     * @param UrlInterface $urlInterface
-     * @param WriterInterface $configWriter
-     * @param Repository $assetRepo
-     * @param \Magento\Backend\Helper\Data $helperBackend
-     * @param Url $frontendUrl
-     * @param \Magento\Backend\Model\Session $adminSession
-     * @param Session $customerSession
-     * @param \Magento\Backend\Model\Auth\Session $authSession
-     * @param \Magento\Framework\App\Config\ReinitableConfigInterface $reinitableConfig
-     * @param TypeListInterface $cacheTypeList
-     * @param Pool $cacheFrontendPool
-     * @param \Psr\Log\LoggerInterface $logger
-     * @param \MiniOrange\OAuth\Logger\Logger $logger2
-     * @param File $fileSystem
-     * @param \Magento\Framework\App\ProductMetadataInterface $productMetadata
-     * @param \MiniOrange\OAuth\Model\MiniorangeOauthClientAppsFactory $miniorangeOauthClientAppsFactory
-     * @param \MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps\CollectionFactory $clientCollectionFactory
-     * @param \MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps $appResource
-     * @param \Magento\User\Model\ResourceModel\User $userResource
-     * @param \Magento\Customer\Model\ResourceModel\Customer $customerResource
-     * @param DateTime $dateTime
-     * @param DirectoryList $directoryList
-     * @param \Magento\Framework\Encryption\EncryptorInterface $encryptor
-     * @param \Magento\Framework\Escaper $escaper
      */
     public function __construct(
         Context $context,
@@ -185,23 +124,21 @@ class OAuthUtility extends Data
      * This function returns phone number as an obfuscated string for display to the user.
      *
      * @param  string $phone references the phone number.
-     * @return string
      */
-    public function getHiddenPhone($phone)
+    public function getHiddenPhone($phone): string
     {
-        $hidden_phone = 'xxxxxxx' . substr($phone, strlen($phone) - 3);
-        return $hidden_phone;
+        return 'xxxxxxx' . substr($phone, strlen($phone) - 3);
     }
 
     //CUSTOM LOG FILE OPERATION
     /**
      * This function print custom log in var/log/mo_oauth.log file.
-     *
-     * @param string $txt
      */
     public function customlog(string $txt): void
     {
-        $this->isLogEnable() ? $this->_logger->debug($txt) : null;
+        if ($this->isLogEnable()) {
+            $this->_logger->debug($txt);
+        }
     }
     /**
      * This function check whether any custom log file exist or not.
@@ -224,8 +161,6 @@ class OAuthUtility extends Data
 
     /**
      * Delete the custom OAuth log file if it exists.
-     *
-     * @return void
      */
     public function deleteCustomLogFile(): void
     {
@@ -241,9 +176,6 @@ class OAuthUtility extends Data
 
     /**
      * Check if a value is empty or not set.
-     *
-     * @param  mixed $value
-     * @return bool
      */
     public function isBlank(mixed $value): bool
     {
@@ -255,10 +187,8 @@ class OAuthUtility extends Data
      *
      * Magento 2 uses \Magento\Framework\HTTP\Adapter\Curl for HTTP requests,
      * but verifying curl_init availability is a standard check for the underlying library.
-     *
-     * @return int
      */
-    public function isCurlInstalled()
+    public function isCurlInstalled(): int
     {
         return function_exists('curl_init') ? 1 : 0;
     }
@@ -269,7 +199,7 @@ class OAuthUtility extends Data
      * @param  string $email //refers to the email id to be obfuscated
      * @return string obfuscated email id.
      */
-    public function getHiddenEmail($email)
+    public function getHiddenEmail($email): string
     {
         if (trim($email) === '') {
             return "";
@@ -280,17 +210,13 @@ class OAuthUtility extends Data
         $temp = strrpos($email, "@");
         $endemail = substr($email, $temp - 1, $emailsize);
         for ($i = 1; $i < $temp; $i++) {
-            $partialemail = $partialemail . 'x';
+            $partialemail .= 'x';
         }
 
-        $hiddenemail = $partialemail . $endemail;
-
-        return $hiddenemail;
+        return $partialemail . $endemail;
     }
     /**
      * Get admin session instance.
-     *
-     * @return \Magento\Backend\Model\Session
      */
     public function getAdminSession(): \Magento\Backend\Model\Session
     {
@@ -353,9 +279,8 @@ class OAuthUtility extends Data
      *
      * @param  string $key
      * @param  mixed  $value
-     * @return void
      */
-    public function setSessionDataForCurrentUser($key, $value)
+    public function setSessionDataForCurrentUser($key, $value): void
     {
         if ($this->customerSession->isLoggedIn()) {
             $this->setSessionData($key, $value);
@@ -448,8 +373,6 @@ class OAuthUtility extends Data
     /**
      * Flush Magento Cache.
      *
-     * @param string $from
-     * @return void
      * @psalm-suppress PossiblyUnusedParam – $from used for future logging
      */
     public function flushCache(string $from = ""): void
@@ -482,10 +405,9 @@ class OAuthUtility extends Data
      *
      * @param          string $file
      * @param          string $data
-     * @return         void
      * @psalm-suppress PossiblyUnusedMethod – Called dynamically
      */
-    public function putFileContents($file, $data)
+    public function putFileContents($file, $data): void
     {
         $this->fileSystem->filePutContents($file, $data);
     }
@@ -493,10 +415,9 @@ class OAuthUtility extends Data
     /**
      * Get the Current User's logout url
      *
-     * @return         string
      * @psalm-suppress PossiblyUnusedMethod – Called from templates
      */
-    public function getLogoutUrl()
+    public function getLogoutUrl(): string
     {
         if ($this->customerSession->isLoggedIn()) {
             return $this->getUrl('customer/account/logout');
@@ -510,10 +431,9 @@ class OAuthUtility extends Data
     /**
      * Get/Create Callback URL of the site
      *
-     * @return         string
      * @psalm-suppress PossiblyUnusedMethod – Called from templates
      */
-    public function getCallBackUrl()
+    public function getCallBackUrl(): string
     {
         return $this->getBaseUrl() . OAuthConstants::CALLBACK_URL;
     }
@@ -521,10 +441,9 @@ class OAuthUtility extends Data
     /**
      * Remove sign-in settings
      *
-     * @return         void
      * @psalm-suppress PossiblyUnusedMethod – Called dynamically
      */
-    public function removeSignInSettings()
+    public function removeSignInSettings(): void
     {
         $this->setStoreConfig(OAuthConstants::SHOW_CUSTOMER_LINK, 0);
         $this->setStoreConfig(OAuthConstants::SHOW_ADMIN_LINK, 0);
@@ -533,20 +452,17 @@ class OAuthUtility extends Data
     /**
      * Reinitialize config
      *
-     * @return         void
      * @psalm-suppress PossiblyUnusedMethod – Called from admin actions
      */
-    public function reinitConfig()
+    public function reinitConfig(): void
     {
         $this->reinitableConfig->reinit();
     }
 
     /**
      * Check if debug logging is enabled.
-     *
-     * @return mixed
      */
-    public function isLogEnable()
+    public function isLogEnable(): bool
     {
         return (bool) $this->getStoreConfig(OAuthConstants::ENABLE_DEBUG_LOG);
     }
@@ -558,7 +474,7 @@ class OAuthUtility extends Data
      * @param mixed|null   $obj Optional object to dump
      * @psalm-suppress PossiblyUnusedMethod – Called dynamically
      */
-    public function logDebug($msg = "", $obj = null): void
+    public function logDebug(string|object $msg = "", $obj = null): void
     {
         if (is_object($msg)) {
             $this->customlog(var_export($msg, true));
@@ -628,10 +544,8 @@ class OAuthUtility extends Data
 
     /**
      * Retrieve the current store URL.
-     *
-     * @return string
      */
-    public function getEdition()
+    public function getEdition(): string
     {
         return $this->productMetadata->getEdition() == 'Community'
             ? 'Magento Open Source'
@@ -640,10 +554,8 @@ class OAuthUtility extends Data
 
     /**
      * Retrieve the admin base URL.
-     *
-     * @return string
      */
-    public function getCurrentDate()
+    public function getCurrentDate(): string
     {
         try {
             $timezone = $this->scopeConfig->getValue(
@@ -662,13 +574,10 @@ class OAuthUtility extends Data
      * Decode a base64 encoded string safely.
      *
      * Returns empty string on invalid input.
-     *
-     * @param  string|null $input
-     * @return string
      */
     public function decodeBase64(?string $input): string
     {
-        if (empty($input)) {
+        if ($input === null || $input === '' || $input === '0') {
             return '';
         }
         // phpcs:ignore Magento2.Functions.DiscouragedFunction
@@ -680,9 +589,6 @@ class OAuthUtility extends Data
      * Extract the path component from a URL in a safe manner.
      *
      * Returns empty string on failure.
-     *
-     * @param  string $url
-     * @return string
      */
     public function extractPathFromUrl(string $url): string
     {
@@ -698,9 +604,6 @@ class OAuthUtility extends Data
      * Parse a URL and return components in a safe manner.
      *
      * Returns empty array on failure.
-     *
-     * @param  string $url
-     * @return array
      */
     public function parseUrlComponents(string $url): array
     {

@@ -21,9 +21,6 @@ use MiniOrange\OAuth\Helper\OAuthUtility;
  */
 class CustomerCaptchaBypassPlugin
 {
-    /**
-     * @var OAuthUtility
-     */
     protected OAuthUtility $oauthUtility;
 
     /**

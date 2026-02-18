@@ -20,48 +20,20 @@ class ReadAuthorizationResponse extends BaseAction
      */
     protected $_url;
 
-    /**
-     * @var \Magento\Customer\Model\Session
-     */
-    private $customerSession;
+    private \Magento\Customer\Model\Session $customerSession;
 
-    /**
-     * @var OAuthSecurityHelper
-     */
-    private $securityHelper;
+    private \MiniOrange\OAuth\Helper\OAuthSecurityHelper $securityHelper;
 
-    /**
-     * @var JwtVerifier
-     */
-    private $jwtVerifier;
+    private \MiniOrange\OAuth\Helper\JwtVerifier $jwtVerifier;
 
-    /**
-     * @var Curl
-     */
-    private $curl;
+    private \MiniOrange\OAuth\Helper\Curl $curl;
 
-    /**
-     * @var OidcAuthenticationService
-     */
-    private $oidcAuthService;
+    private \MiniOrange\OAuth\Model\Service\OidcAuthenticationService $oidcAuthService;
 
-    /**
-     * @var CheckAttributeMappingAction
-     */
-    private $attrMappingAction;
+    private \MiniOrange\OAuth\Controller\Actions\CheckAttributeMappingAction $attrMappingAction;
 
     /**
      * Initialize read authorization response action.
-     *
-     * @param \Magento\Framework\App\Action\Context                            $context
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility                            $oauthUtility
-     * @param \Magento\Framework\UrlInterface                                  $url
-     * @param \Magento\Customer\Model\Session                                  $customerSession
-     * @param \MiniOrange\OAuth\Helper\OAuthSecurityHelper                     $securityHelper
-     * @param \MiniOrange\OAuth\Helper\JwtVerifier                             $jwtVerifier
-     * @param \MiniOrange\OAuth\Helper\Curl                                    $curl
-     * @param \MiniOrange\OAuth\Model\Service\OidcAuthenticationService        $oidcAuthService
-     * @param CheckAttributeMappingAction                                      $attrMappingAction
      */
     public function __construct(
         Context $context,
@@ -252,7 +224,7 @@ class ReadAuthorizationResponse extends BaseAction
 
         // Fetch user info
         $userInfoURL = $clientDetails['user_info_endpoint'];
-        if (!($userInfoURL == null || $userInfoURL == '') && isset($accessTokenResponseData['access_token'])) {
+        if ($userInfoURL != null && $userInfoURL != '' && isset($accessTokenResponseData['access_token'])) {
             $accessToken = $accessTokenResponseData['access_token'];
             $headerAuth = "Bearer " . $accessToken;
             $authHeader = ["Authorization: $headerAuth"];
@@ -346,7 +318,7 @@ class ReadAuthorizationResponse extends BaseAction
             // Extract test key from relayState (e.g. /key/abc123...)
             preg_match('/key\/([a-f0-9]{32,})/', $relayState, $matches);
             $testKey = $matches[1] ?? '';
-            if ($testKey) {
+            if ($testKey !== '' && $testKey !== '0') {
                 $testResults = $this->customerSession->getData('mooauth_test_results') ?: [];
                 // Filter out large token data to prevent session bloat
                 $filteredData = $userInfoResponseData;
@@ -404,13 +376,11 @@ class ReadAuthorizationResponse extends BaseAction
         $detectedLoginType = $this->oidcAuthService->extractLoginType($userInfoResponseData);
         $this->oauthUtility->customlog("ReadAuthorizationResponse: loginType = " . $detectedLoginType);
 
-        $result = $this->attrMappingAction
+        return $this->attrMappingAction
             ->setUserInfoResponse($userInfoResponseData)
             ->setFlattenedUserInfoResponse($flattenedResponse)
             ->setUserEmail($userEmail)
             ->setLoginType($detectedLoginType)
             ->execute();
-
-        return $result;
     }
 }

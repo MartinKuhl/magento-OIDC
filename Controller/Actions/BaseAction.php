@@ -14,10 +14,7 @@ use MiniOrange\OAuth\Helper\Exception\RequiredFieldsException;
 abstract class BaseAction extends \Magento\Framework\App\Action\Action
 {
 
-    /**
-     * @var \MiniOrange\OAuth\Helper\OAuthUtility
-     */
-    protected $oauthUtility;
+    protected \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
 
     /**
      * @var \Magento\Framework\App\Action\Context
@@ -26,9 +23,6 @@ abstract class BaseAction extends \Magento\Framework\App\Action\Action
 
     /**
      * Initialize base action with OAuth utility.
-     *
-     * @param \Magento\Framework\App\Action\Context  $context
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility  $oauthUtility
      */
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
@@ -89,7 +83,7 @@ abstract class BaseAction extends \Magento\Framework\App\Action\Action
      */
     protected function sendHTTPRedirectRequest(
         $oauthRequest,
-        $authorizeUrl,
+        string $authorizeUrl,
         $relayState = '',
         $params = []
     ): \Magento\Framework\Controller\Result\Redirect {

@@ -12,27 +12,14 @@ use Magento\Framework\App\CacheInterface;
  */
 class JwtVerifier
 {
-    /**
-     * @var OAuthUtility
-     */
     private OAuthUtility $oauthUtility;
 
-    /**
-     * @var CacheInterface
-     */
     private CacheInterface $cache;
 
-    /**
-     * @var \Magento\Framework\HTTP\Adapter\CurlFactory
-     */
     private \Magento\Framework\HTTP\Adapter\CurlFactory $curlFactory;
 
     /**
      * Initialize JWT verifier.
-     *
-     * @param OAuthUtility                                     $oauthUtility
-     * @param \Magento\Framework\App\CacheInterface            $cache
-     * @param \Magento\Framework\HTTP\Adapter\CurlFactory      $curlFactory
      */
     public function __construct(
         OAuthUtility $oauthUtility,
@@ -161,7 +148,6 @@ class JwtVerifier
     /**
      * Fetch and parse JWKS from the given URL.
      *
-     * @param  string $jwksUrl
      * @return array|null The JWKS keys array, or null on failure
      */
     private function fetchJwks(string $jwksUrl): ?array
@@ -258,7 +244,7 @@ class JwtVerifier
         $modulus = $this->base64UrlDecode($n);
         $exponent = $this->base64UrlDecode($e);
 
-        if (empty($modulus) || empty($exponent)) {
+        if ($modulus === '' || $modulus === '0' || ($exponent === '' || $exponent === '0')) {
             return null;
         }
 
@@ -307,9 +293,6 @@ class JwtVerifier
 
     /**
      * Encode ASN.1 DER length bytes.
-     *
-     * @param  int $length
-     * @return string
      */
     private function asn1Length(int $length): string
     {
@@ -323,14 +306,11 @@ class JwtVerifier
 
     /**
      * Base64url decode (RFC 7515).
-     *
-     * @param  string $input
-     * @return string
      */
     private function base64UrlDecode(string $input): string
     {
         $remainder = strlen($input) % 4;
-        if ($remainder) {
+        if ($remainder !== 0) {
             $input .= str_repeat('=', 4 - $remainder);
         }
         $translated = strtr($input, '-_', '+/');

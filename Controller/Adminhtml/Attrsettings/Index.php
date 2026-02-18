@@ -24,39 +24,17 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
 {
 
     /**
-     * @var \Magento\Authorization\Model\ResourceModel\Role\Collection
-     */
-    private $adminRoleModel;
-
-    /**
-     * @var \Magento\Customer\Model\ResourceModel\Group\Collection
-     */
-    private $userGroupModel;
-
-    /**
      * Initialize attribute settings controller.
-     *
-     * @param \Magento\Backend\App\Action\Context                        $context
-     * @param PageFactory                                                $resultPageFactory
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility                      $oauthUtility
-     * @param ManagerInterface                                           $messageManager
-     * @param LoggerInterface                                            $logger
-     * @param \Magento\Authorization\Model\ResourceModel\Role\Collection $adminRoleModel
-     * @param Collection                                                 $userGroupModel
      */
     public function __construct(
         Context $context,
         PageFactory $resultPageFactory,
         OAuthUtility $oauthUtility,
         ManagerInterface $messageManager,
-        LoggerInterface $logger,
-        \Magento\Authorization\Model\ResourceModel\Role\Collection $adminRoleModel,
-        Collection $userGroupModel
+        LoggerInterface $logger
     ) {
         //You can use dependency injection to get any class this observer may need.
         parent::__construct($context, $resultPageFactory, $oauthUtility, $messageManager, $logger);
-        $this->adminRoleModel = $adminRoleModel;
-        $this->userGroupModel = $userGroupModel;
     }
 
     /**
@@ -94,11 +72,8 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
     }
     /**
      * Process Values being submitted and save data in the database.
-     *
-     * @param  array $params
-     * @return void
      */
-    private function processValuesAndSaveData(array $params)
+    private function processValuesAndSaveData(array $params): void
     {
         //ToDo_MK extend for other attributes like first name, last name if needed
         $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_USERNAME, $params['oauth_am_username']);
@@ -135,7 +110,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         if (isset($params['oauth_role_mapping'])) {
             $roleMappings = array_filter(
                 $params['oauth_role_mapping'],
-                function ($mapping) {
+                function ($mapping): bool {
                     return !empty($mapping['group']) && !empty($mapping['role']);
                 }
             );

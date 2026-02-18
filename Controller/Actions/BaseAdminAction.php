@@ -19,44 +19,29 @@ use MiniOrange\OAuth\Helper\Exception\SupportQueryRequiredFieldsException;
 abstract class BaseAdminAction extends \Magento\Backend\App\Action
 {
 
-    /**
-     * @var \MiniOrange\OAuth\Helper\OAuthUtility
-     */
-    protected $oauthUtility;
+    protected \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
 
     /**
      * @var \Magento\Backend\App\Action\Context
      */
     protected $context;
 
-    /**
-     * @var \Magento\Framework\View\Result\PageFactory
-     */
-    protected $resultPageFactory;
+    protected \Magento\Framework\View\Result\PageFactory $resultPageFactory;
 
     /**
      * @var \Magento\Framework\Message\ManagerInterface
      */
     protected $messageManager;
 
-    /**
-     * @var \Psr\Log\LoggerInterface
-     */
-    protected $logger;
+    protected \Psr\Log\LoggerInterface $logger;
 
     /**
-     * @var \Magento\Framework\Auth\AuthorizationInterface
+     * @var \Magento\Framework\AuthorizationInterface
      */
     protected $_authorization;
 
     /**
      * Initialize base admin action.
-     *
-     * @param \Magento\Backend\App\Action\Context          $context
-     * @param \Magento\Framework\View\Result\PageFactory   $resultPageFactory
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility        $oauthUtility
-     * @param \Magento\Framework\Message\ManagerInterface  $messageManager
-     * @param \Psr\Log\LoggerInterface                     $logger
      */
     public function __construct(
         \Magento\Backend\App\Action\Context $context,
@@ -116,10 +101,8 @@ abstract class BaseAdminAction extends \Magento\Backend\App\Action
      * @param array $array Required fields mapping
      *
      * @throws SupportQueryRequiredFieldsException
-     *
-     * @return void
      */
-    public function checkIfSupportQueryFieldsEmpty(array $array)
+    public function checkIfSupportQueryFieldsEmpty(array $array): void
     {
         try {
             $this->checkIfRequiredFieldsEmpty($array);
