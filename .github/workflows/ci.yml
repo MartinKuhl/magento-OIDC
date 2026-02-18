@@ -72,9 +72,23 @@ jobs:
       - name: Magento2 Standard (blocking)
         run: |
           set -o pipefail
-          phpcs --report=full \
+          phpcs --standard=phpcs.xml \
+                --report=full \
                 --report-checkstyle=reports/phpcs-checkstyle-php${{ matrix.php-version }}.xml \
                 . 2>&1 | tee reports/phpcs-php${{ matrix.php-version }}.txt
+
+      - name: Debug PHPCS Config
+        run: |
+          echo "=== PHPCS version ==="
+          phpcs --version
+          echo "=== Installed standards ==="
+          phpcs -i
+          echo "=== Config ==="
+          phpcs --config-show
+          echo "=== Checking if phpcs.xml is found ==="
+          ls -la phpcs.xml || echo "phpcs.xml NOT FOUND in CWD"
+          echo "=== Dry-run with -e (explain sniffs) ==="
+          phpcs --standard=phpcs.xml -e | head -50
 
       - name: Upload PHP QA Reports
         if: always()
