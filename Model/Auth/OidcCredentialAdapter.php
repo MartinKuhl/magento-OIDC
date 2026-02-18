@@ -321,11 +321,11 @@ class OidcCredentialAdapter implements StorageInterface
      *
      * Intentionally empty: dependencies are restored lazily by restoreDependencies().
      */
+    // phpcs:ignore Magento2.CodeAnalysis.EmptyBlock.DetectedFunction
     public function __wakeup()
     {
         // Dependencies will be restored lazily by restoreDependencies()
         // when any method requiring them is called.
-        return;
     }
 
     /**

@@ -243,22 +243,28 @@ $oauth_am_admin_role_mappings = $block->getAdminRoleMappings();
                             <div id="admin-role-mappings">
                                 <?php if (!empty($oauth_am_admin_role_mappings)): ?>
                                     <?php foreach ($oauth_am_admin_role_mappings as $index => $mapping): ?>
-                                        <?php $escapedIndex = $escaper->escapeHtmlAttr($index); ?>
-                                        <?php $escapedGroup = $escaper->escapeHtmlAttr($mapping['group'] ?? ''); ?>
                                        <div class="mapping-row" style="margin-bottom: 10px;">
-                                            <input type="text"
-                                                name="oauth_role_mapping[<?= $escapedIndex ?>][group]"
+                                            <input
+                                                type="text"
+                                                name="oauth_role_mapping[<?= $escaper->escapeHtmlAttr($index) ?>][group]"<?php // phpcs:ignore ?>
                                                 placeholder="OIDC Group Name"
                                                 value="<?= $escaper->escapeHtmlAttr($mapping['group'] ?? '') ?>"
                                                 style="width: 200px;"
                                                 <?php if ($disabled): ?>disabled<?php endif; ?>>
                                             <span style="margin: 0 10px;">&rarr;</span>
-                                            <select name="oauth_role_mapping[<?= $escapedIndex ?>][role]"
-                                                    <?php if ($disabled): ?>disabled<?php endif; ?>>
+                                            <select
+                                                name="oauth_role_mapping[<?= $escaper->escapeHtmlAttr($index) ?>][role]"
+                                                <?php if ($disabled): ?>disabled<?php endif; ?>>
                                                 <option value="">-- Select Role --</option>
                                                 <?php foreach ($roles as $role): ?>
-                                                    <option value="<?= $escaper->escapeHtmlAttr($role['value']) ?>"
-                                                        <?php if (isset($mapping['role']) && $mapping['role'] == $role['value']): ?>selected="selected"<?php endif; ?>>
+                                                    <option
+                                                        value="<?= $escaper->escapeHtmlAttr($role['value']) ?>"
+                                                        <?php
+                                                        if (isset($mapping['role'])
+                                                            && $mapping['role'] == $role['value']
+                                                        ): ?>
+selected="selected"
+                                                        <?php endif; ?>>
                                                         <?= $escaper->escapeHtml($role['label']) ?>
                                                     </option>
                                                 <?php endforeach; ?>
