@@ -107,21 +107,24 @@ vendor/bin/phpcbf
 vendor/bin/phpcs -i
 # Ausgabe sollte enthalten: Magento2, PSR1, PSR2, PSR12, ...
 
+
+# PHPSTan
 vendor/bin/phpstan clear-result-cache
-vendor/bin/phpstan analyse --memory-limit=1G --configuration=github/miniorange-oauth-sso/phpstan.neon
-vendor/bin/psalm --no-cache --config=github/miniorange-oauth-sso/psalm.xml
-
-vendor/bin/phpcs ./github/miniorange-oauth-sso/
-vendor/bin/phpcs ./github/miniorange-oauth-sso/ > ./github/miniorange-oauth-sso/phpcd-report.txt
-vendor/bin/phpcbf ./github/miniorange-oauth-sso/
-
-
 vendor/bin/phpstan analyse --memory-limit=1G --configuration=github/OIDC/phpstan.neon
-vendor/bin/psalm --no-cache --config=github/OIDC/psalm.xml
+vendor/bin/phpstan analyse --memory-limit=1G --configuration=github/miniorange-oauth-sso/phpstan.neon
 
+# Psalm
+vendor/bin/psalm --no-cache --config=github/miniorange-oauth-sso/psalm.xml
+vendor/bin/psalm --no-cache --config=github/miniorange-oauth-sso/psalm.xml --alter --issues=MissingReturnType,MissingParamType
+
+vendor/bin/psalm --no-cache --config=github/OIDC/psalm.xml
 vendor/bin/psalm --no-cache --config=github/OIDC/psalm.xml --alter --issues=MissingReturnType,MissingParamType
 
-vendor/bin/phpcs ./github/OIDC/ > ./github/OIDC/phpcd-report.txt
-vendor/bin/phpcbf ./github/OIDC/
+# PHPCS Variante mit Berücksichtigung der phpcs.xml (wie auch im CI-Workflow)
+/var/www/html/vendor/bin/phpcs /var/www/html/github/OIDC/
+/var/www/html/vendor/bin/phpcbf /var/www/html/github/OIDC/
+
+/var/www/html/vendor/bin/phpcs /var/www/html/github/miniorange-oauth-sso/
+/var/www/html/vendor/bin/phpcbf /var/www/html/github/miniorange-oauth-sso/
 
 please look at @github/OIDC/Code-Review.md here you find phpcs issues mentioned for different files. Fix them all. Use sub-agents where applicable. DO not create new issue for PHPStan or PHPCS scans.

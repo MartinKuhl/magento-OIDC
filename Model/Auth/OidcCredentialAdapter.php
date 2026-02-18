@@ -319,11 +319,13 @@ class OidcCredentialAdapter implements StorageInterface
      *
      * Intentionally empty: dependencies are restored lazily by restoreDependencies().
      */
-    // phpcs:disable Generic.CodeAnalysis.EmptyStatement.DetectedFunction
+    // phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedFunction -- intentional
     public function __wakeup()
     {
+        // Intentionally empty: Dependencies will be restored lazily by restoreDependencies()
+        // when any method requiring them is called. This prevents issues with closures
+        // in DI-injected dependencies that cannot be serialized.
     }
-    // phpcs:enable Generic.CodeAnalysis.EmptyStatement.DetectedFunction
 
     /**
      * Magic method to proxy unknown method calls to the User object
