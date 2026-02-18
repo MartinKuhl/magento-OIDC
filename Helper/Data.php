@@ -106,22 +106,22 @@ class Data extends AbstractHelper
     private LoggerInterface $logger;
 
     /**
-     * @param Context                         $context
-     * @param UserFactory                     $adminFactory
-     * @param CustomerFactory                 $customerFactory
-     * @param UrlInterface                    $urlInterface
-     * @param WriterInterface                 $configWriter
-     * @param AssetRepository                 $assetRepo
-     * @param BackendHelper                   $helperBackend
-     * @param Url                             $frontendUrl
+     * @param Context $context
+     * @param UserFactory $adminFactory
+     * @param CustomerFactory $customerFactory
+     * @param UrlInterface $urlInterface
+     * @param WriterInterface $configWriter
+     * @param AssetRepository $assetRepo
+     * @param BackendHelper $helperBackend
+     * @param Url $frontendUrl
      * @param MiniorangeOauthClientAppsFactory $clientAppsFactory
-     * @param ClientCollectionFactory         $clientCollectionFactory
-     * @param AppResource                     $appResource
-     * @param UserResource                    $userResource
-     * @param CustomerResource                $customerResource
-     * @param EncryptorInterface              $encryptor
-     * @param Escaper                         $escaper
-     * @param LoggerInterface                 $logger
+     * @param ClientCollectionFactory $clientCollectionFactory
+     * @param AppResource $appResource
+     * @param UserResource $userResource
+     * @param CustomerResource $customerResource
+     * @param EncryptorInterface $encryptor
+     * @param Escaper $escaper
+     * @param LoggerInterface $logger
      */
     public function __construct(
         Context $context,

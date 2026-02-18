@@ -28,7 +28,9 @@ if (isset($appName)) {
     }
 }
 
-$isOAuthConfigured = isset($clientDetails['authorize_endpoint']) ? '' : 'disabled title="Please Configure an OAuth Provider"';
+$isOAuthConfigured = isset($clientDetails['authorize_endpoint'])
+    ? ''
+    : 'disabled title="Please Configure an OAuth Provider"';
 $clientID = isset($clientDetails['clientID']) ? $clientDetails['clientID'] : '';
 $clientSecret = isset($clientDetails['client_secret']) ? $clientDetails['client_secret'] : '';
 $isHeader = isset($clientDetails['values_in_header']) && $clientDetails['values_in_header'] == 1 ? "checked" : "";
@@ -53,15 +55,17 @@ $scope = isset($clientDetails['scope']) ? $clientDetails['scope'] : '';
                 <p style="font-style: italic; color: #666; margin-top: 10px;">
                     Configure your OAuth/OIDC provider settings for Single Sign-On authentication.
                 </p>
-                <div style="background-color: #fff3cd; color: #856404; padding: 10px; margin-top: 10px; border: 1px solid #ffeeba; border-radius: 4px;">
-                    <strong>Note:</strong> Configuration changes are cached. Please click 'Save' to apply changes and flush the cache.
+                <div style="background-color: #fff3cd; color: #856404; padding: 10px;
+                            margin-top: 10px; border: 1px solid #ffeeba; border-radius: 4px;">
+                    <strong>Note:</strong> Configuration changes are cached.
+                    Please click 'Save' to apply changes and flush the cache.
                 </div>
             </div>
 
             <!-- OAuth Settings Form -->
             <form name="f" method="post" action="">
-                <input type="hidden" name="form_key" value="<?= $escaper->escapeHtmlAttr($block->getFormKey()) ?>" />
-                <input type="hidden" name="option" value="saveOAuthSettings" />
+                <input type="hidden" name="form_key" value="<?= $escaper->escapeHtmlAttr($block->getFormKey()) ?>">
+                <input type="hidden" name="option" value="saveOAuthSettings">
 
                 <table style="width:100%;">
                     <!-- OAuth Provider Name -->
@@ -76,7 +80,7 @@ $scope = isset($clientDetails['scope']) ? $clientDetails['scope'] : '';
                                    value="<?= $escaper->escapeHtmlAttr($appName) ?>"
                                    required
                                    pattern="^\w*$"
-                                   title="Only alphabets, numbers and underscore is allowed" />
+                                   title="Only alphabets, numbers and underscore is allowed">
                         </td>
                     </tr>
 
@@ -90,7 +94,7 @@ $scope = isset($clientDetails['scope']) ? $clientDetails['scope'] : '';
                                    name="mo_oauth_client_id"
                                    style="width: 100%;"
                                    value="<?= $escaper->escapeHtmlAttr($clientID) ?>"
-                                   required />
+                                   required>
                         </td>
                     </tr>
 
@@ -104,7 +108,7 @@ $scope = isset($clientDetails['scope']) ? $clientDetails['scope'] : '';
                                    name="mo_oauth_client_secret"
                                    style="width: 100%;"
                                    value="<?= $escaper->escapeHtmlAttr($clientSecret) ?>"
-                                   required />
+                                   required>
                         </td>
                     </tr>
 
@@ -118,14 +122,14 @@ $scope = isset($clientDetails['scope']) ? $clientDetails['scope'] : '';
                                    name="mo_oauth_scope"
                                    style="width: 100%;"
                                    value="<?= $escaper->escapeHtmlAttr($scope) ?>"
-                                   required />
+                                   required>
                         </td>
                     </tr>
 
                     <input type="hidden"
                            value="<?= $escaper->escapeHtmlAttr($grantType) ?>"
                            name="mo_selected_grant"
-                           id="mo_selected_grant" />
+                           id="mo_selected_grant">
 
                     <!-- Send Client Credentials -->
                     <tr>
@@ -136,12 +140,12 @@ $scope = isset($clientDetails['scope']) ? $clientDetails['scope'] : '';
                             <input type="checkbox"
                                    name="send_header"
                                    value="Yes"
-                                   <?= $escaper->escapeHtmlAttr($isHeader) ?> /> Headers
+                                   <?= $escaper->escapeHtmlAttr($isHeader) ?>> Headers
                             &nbsp;&nbsp;&nbsp;
                             <input type="checkbox"
                                    name="send_body"
                                    value="Yes"
-                                   <?= $escaper->escapeHtmlAttr($isBody) ?> /> Body
+                                   <?= $escaper->escapeHtmlAttr($isBody) ?>> Body
                         </td>
                     </tr>
 
@@ -157,16 +161,18 @@ $scope = isset($clientDetails['scope']) ? $clientDetails['scope'] : '';
                                        name="endpoint_radio_button"
                                        value="byurl"
                                        onclick="ShowHideDiv()"
-                                       required /> Well-Known Config URL
+                                       required> Well-Known Config URL
                             </label>
                             <label style="margin-left: 60px">
                                 <input type="radio"
                                        id="chk_manual"
                                        name="endpoint_radio_button"
                                        value="bymanual"
-                                       <?php if ($authorizeURL || $accessTokenURL || $getUserInfoURL) { echo 'checked="checked"'; } ?>
+                                       <?php if ($authorizeURL || $accessTokenURL || $getUserInfoURL) {
+                                           echo 'checked="checked"';
+                                       } ?>
                                        onclick="ShowHideDiv()"
-                                       required /> Enter Endpoints
+                                       required> Enter Endpoints
                             </label>
                         </td>
                     </tr>
@@ -179,9 +185,10 @@ $scope = isset($clientDetails['scope']) ? $clientDetails['scope'] : '';
                     </label>
                     <input type="url"
                            name="endpoint_url"
-                           style="width: 59%; padding: 8px; margin-left: 23px; border: 1px solid #B7B5B5; box-shadow: 3px 2px 4px #ebebeb;"
+                           style="width: 59%; padding: 8px; margin-left: 23px;
+                                  border: 1px solid #B7B5B5; box-shadow: 3px 2px 4px #ebebeb;"
                            id="endpoint_url_input"
-                           value="<?= $escaper->escapeHtmlAttr($endpoint_url) ?>" />
+                           value="<?= $escaper->escapeHtmlAttr($endpoint_url) ?>">
                 </div>
 
                 <!-- Manual Endpoints Section -->
@@ -192,8 +199,9 @@ $scope = isset($clientDetails['scope']) ? $clientDetails['scope'] : '';
                         <label><strong>Authorization Endpoint<span style="color:red;">*</span>:</strong></label>
                         <input type="url"
                                name="mo_oauth_authorize_url"
-                               style="width: 59%; padding: 8px; margin-left: 22px; border: 1px solid #B7B5B5; box-shadow: 3px 2px 4px #ebebeb;"
-                               value="<?= $escaper->escapeHtmlAttr($authorizeURL) ?>" />
+                               style="width: 59%; padding: 8px; margin-left: 22px;
+                                      border: 1px solid #B7B5B5; box-shadow: 3px 2px 4px #ebebeb;"
+                               value="<?= $escaper->escapeHtmlAttr($authorizeURL) ?>">
                     </div>
                     <br>
 
@@ -202,8 +210,9 @@ $scope = isset($clientDetails['scope']) ? $clientDetails['scope'] : '';
                         <label><strong>AccessToken Endpoint<span style="color:red;">*</span>:</strong></label>
                         <input type="url"
                                name="mo_oauth_accesstoken_url"
-                               style="width: 59%; padding: 8px; margin-left: 31px; border: 1px solid #B7B5B5; box-shadow: 3px 2px 4px #ebebeb;"
-                               value="<?= $escaper->escapeHtmlAttr($accessTokenURL) ?>" />
+                               style="width: 59%; padding: 8px; margin-left: 31px;
+                                      border: 1px solid #B7B5B5; box-shadow: 3px 2px 4px #ebebeb;"
+                               value="<?= $escaper->escapeHtmlAttr($accessTokenURL) ?>">
                     </div>
                     <br>
 
@@ -212,8 +221,9 @@ $scope = isset($clientDetails['scope']) ? $clientDetails['scope'] : '';
                         <label><strong>Get User Info Endpoint:</strong></label>
                         <input type="url"
                                name="mo_oauth_getuserinfo_url"
-                               style="width: 59%; padding: 8px; margin-left: 33px; border: 1px solid #B7B5B5; box-shadow: 3px 2px 4px #ebebeb;"
-                               value="<?= $escaper->escapeHtmlAttr($getUserInfoURL) ?>" />
+                               style="width: 59%; padding: 8px; margin-left: 33px;
+                                      border: 1px solid #B7B5B5; box-shadow: 3px 2px 4px #ebebeb;"
+                               value="<?= $escaper->escapeHtmlAttr($getUserInfoURL) ?>">
                     </div>
                     <br>
                 </div>
@@ -224,22 +234,47 @@ $scope = isset($clientDetails['scope']) ? $clientDetails['scope'] : '';
                     <select name="mo_oauth_grant_type"
                             id="mo_oauth_grant_type"
                             style="width: 59%; padding: 6px; margin-left: 31mm;">
-                        <option value="authorization_code" <?php if ($grantType == 'authorization_code') { echo 'selected'; } ?>>Authorization Code Grant</option>
-                        <option value="implicit_grant" disabled <?php if ($grantType == 'implicit_grant') { echo 'selected'; } ?>>Implicit Grant (maybe comming later)</option>
-                        <option value="hybrid_grant" disabled <?php if ($grantType == 'hybrid_grant') { echo 'selected'; } ?>>Hybrid Grant (maybe comming later)</option>
-                        <option value="password_grant" disabled <?php if ($grantType == 'password_grant') { echo 'selected'; } ?>>Password Grant(maybe comming later)</option>
-                        <option value="client_credentials_grant" disabled <?php if ($grantType == 'client_credentials_grant') { echo 'selected'; } ?>>Client Credentials Grant (maybe comming later)</option>
+                        <option value="authorization_code"
+                            <?php if ($grantType == 'authorization_code') {
+                                echo 'selected';
+                            } ?>>
+                            Authorization Code Grant
+                        </option>
+                        <option value="implicit_grant" disabled
+                            <?php if ($grantType == 'implicit_grant') {
+                                echo 'selected';
+                            } ?>>
+                            Implicit Grant (maybe comming later)
+                        </option>
+                        <option value="hybrid_grant" disabled
+                            <?php if ($grantType == 'hybrid_grant') {
+                                echo 'selected';
+                            } ?>>
+                            Hybrid Grant (maybe comming later)
+                        </option>
+                        <option value="password_grant" disabled
+                            <?php if ($grantType == 'password_grant') {
+                                echo 'selected';
+                            } ?>>
+                            Password Grant(maybe comming later)
+                        </option>
+                        <option value="client_credentials_grant" disabled
+                            <?php if ($grantType == 'client_credentials_grant') {
+                                echo 'selected';
+                            } ?>>
+                            Client Credentials Grant (maybe comming later)
+                        </option>
                     </select>
                 </div>
 
                 <!-- Save and Test Buttons -->
                 <div style="margin-left: 210px;">
-                    <br />
+                    <br>
                     <input class="btn-round"
                            type="submit"
                            name="submit"
                            style="width: 100px;"
-                           value="Save" />
+                           value="Save">
                     &nbsp;
                     <input class="btn-round"
                            type="button"
@@ -248,14 +283,14 @@ $scope = isset($clientDetails['scope']) ? $clientDetails['scope'] : '';
                            onclick="showTestWindow();"
                            <?= $escaper->escapeHtmlAttr($isOAuthConfigured) ?>
                            value="Test configuration"
-                           style="width: 150px;" />
+                           style="width: 150px;">
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<script type="text/javascript">
+<script>
 function ShowHideDiv() {
     var chk_url = document.getElementById("chk_url");
     var endpoint_url = document.getElementById("endpoint_url");

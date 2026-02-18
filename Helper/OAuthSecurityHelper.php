@@ -34,8 +34,8 @@ class OAuthSecurityHelper
     /**
      * Initialize OAuth security helper.
      *
-     * @param \Magento\Framework\App\Helper\Context $context
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     * @param \Magento\Framework\App\CacheInterface  $cache
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility  $oauthUtility
      */
     public function __construct(
         CacheInterface $cache,
@@ -47,6 +47,7 @@ class OAuthSecurityHelper
 
     /**
      * Create a one-time nonce that maps to an admin email address.
+     *
      * Used to prevent direct URL-based admin login (C1 fix).
      *
      * @param  string $email The admin user's email
@@ -62,6 +63,7 @@ class OAuthSecurityHelper
 
     /**
      * Redeem (validate and consume) an admin login nonce.
+     *
      * Returns the associated email and deletes the nonce so it cannot be reused.
      *
      * @param  string $nonce The nonce to redeem
@@ -265,6 +267,7 @@ class OAuthSecurityHelper
 
     /**
      * Validate a redirect URL to prevent open redirects.
+     *
      * Only allows relative paths or URLs on the same host as the Magento base URL.
      *
      * @param  string $url      The URL to validate

@@ -6,15 +6,14 @@ use Magento\Framework\Escaper;
 class TestResults
 {
     /**
-     * @var Escaper 
-     */
-    /**
-     * @var Escaper 
+     * @var Escaper
      */
     private Escaper $escaper;
 
     /**
      * Data class for holding OAuth test result attributes.
+     *
+     * @param Escaper $escaper
      */
     public function __construct(Escaper $escaper)
     {
@@ -22,10 +21,11 @@ class TestResults
     }
 
     /**
-     * Initialize test results with attributes.
+     * Render test result HTML output.
      *
-     * @param array $attrs
-     * @param (array|mixed|string)[] $data
+     * @param \Exception|null $exception
+     * @param bool            $hasException
+     * @param array           $data
      *
      * @psalm-param array{mail?: mixed|string, userinfo?: array|mixed, debug?: array} $data
      */

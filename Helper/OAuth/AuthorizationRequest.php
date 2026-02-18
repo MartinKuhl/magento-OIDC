@@ -52,10 +52,13 @@ class AuthorizationRequest
     /**
      * Initialize authorization request parameters.
      *
-     * @param string $clientId
+     * @param string $clientID
      * @param string $scope
-     * @param string $redirectUri
-     * @param string $state
+     * @param string $authorizeURL
+     * @param string $responseType
+     * @param string $redirectURL
+     * @param string $relayState
+     * @param array  $params
      */
     public function __construct($clientID, $scope, $authorizeURL, $responseType, $redirectURL, $relayState, $params)
     {
@@ -101,7 +104,6 @@ class AuthorizationRequest
 
         return $requestStr;
     }
-
 
     /**
      * This function is used to build our AuthnRequest. Deflate

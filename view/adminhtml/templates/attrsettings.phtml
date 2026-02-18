@@ -56,7 +56,7 @@ $oauth_am_admin_role_mappings = $block->getAdminRoleMappings();
 
             <!-- Attribute Mapping Form -->
             <form name="f" method="post" action="">
-                <input name="form_key" type="hidden" value="<?= $escaper->escapeHtmlAttr($block->getFormKey()) ?>" />
+                <input name="form_key" type="hidden" value="<?= $escaper->escapeHtmlAttr($block->getFormKey()) ?>">
                 <input type="hidden" name="option" value="saveAttrSettings">
 
                 <table>
@@ -64,19 +64,22 @@ $oauth_am_admin_role_mappings = $block->getAdminRoleMappings();
                     <tr>
                         <td colspan="2">
                             <div class="mo_note"
-                             style="background-color: #e9e9e9; border: 1px solid #ccc; padding: 10px; border-radius: 4px;">
+                             style="background-color: #e9e9e9; border: 1px solid #ccc;
+                                    padding: 10px; border-radius: 4px;">
                                 <span class="btn-link">What is Attribute Mapping?</span>
                                 <div hidden class="show_info">
                                     <ol>
                                         <li>Attributes are user details that are stored in your Identity Provider.</li>
-                                        <li>Attribute Mapping helps you to get user attributes from your IdP and map them to
+                                        <li>Attribute Mapping helps you to get user attributes
+                                            from your IdP and map them to
                                             Magento user attributes like firstname, lastname etc.</li>
                                         <li>While auto registering the users in your Magento site these attributes
                                             will automatically get mapped to your Magento user details.</li>
                                     </ol>
                                 </div>
                             </div>
-                            <p style="background-color: #fff3cd; border: 1px solid #ffc107; padding: 10px; border-radius: 4px;
+                            <p style="background-color: #fff3cd; border: 1px solid #ffc107;
+                                      padding: 10px; border-radius: 4px;
                                       color: #856404; margin: 10px 0 0 0;">
                                 <strong>Note:</strong> Run a <strong>Test Configuration</strong> first to populate the
                                 available OIDC claims in the dropdowns below.
@@ -204,7 +207,7 @@ $oauth_am_admin_role_mappings = $block->getAdminRoleMappings();
                                    name="oauth_am_group"
                                    placeholder="e.g., groups, roles, memberOf"
                                    value="<?= $escaper->escapeHtmlAttr($oauth_am_group_name) ?>"
-                                   <?= $escaper->escapeHtmlAttr($disabled) ?> />
+                                   <?= $escaper->escapeHtmlAttr($disabled) ?>>
                             <br>
                             <small style="color: #666;">The OIDC claim that contains group/role information</small>
                         </td>
@@ -243,18 +246,25 @@ $oauth_am_admin_role_mappings = $block->getAdminRoleMappings();
                                     <?php foreach ($oauth_am_admin_role_mappings as $index => $mapping): ?>
                                         <div class="mapping-row" style="margin-bottom: 10px;">
                                             <input type="text"
-                                                   name="oauth_role_mapping[<?= $escaper->escapeHtmlAttr($index) ?>][group]"
+                                                   name="oauth_role_mapping[<?=
+                                                       $escaper->escapeHtmlAttr($index)
+                                                   ?>][group]"
                                                    placeholder="OIDC Group Name"
-                                                   value="<?= $escaper->escapeHtmlAttr($mapping['group'] ?? '') ?>"
+                                                   value="<?= $escaper->escapeHtmlAttr(
+                                                       $mapping['group'] ?? ''
+                                                   ) ?>"
                                                    style="width: 200px;"
-                                                   <?= $escaper->escapeHtmlAttr($disabled) ?> />
+                                                   <?= $escaper->escapeHtmlAttr($disabled) ?>>
                                             <span style="margin: 0 10px;">&rarr;</span>
-                                            <select name="oauth_role_mapping[<?= $escaper->escapeHtmlAttr($index) ?>][role]"
+                                            <select name="oauth_role_mapping[<?=
+                                                        $escaper->escapeHtmlAttr($index)
+                                                    ?>][role]"
                                                     <?= $escaper->escapeHtmlAttr($disabled) ?>>
                                                 <option value="">-- Select Role --</option>
                                                 <?php foreach ($roles as $role): ?>
                                                     <option value="<?= $escaper->escapeHtmlAttr($role['value']) ?>"
-                                                        <?= (isset($mapping['role']) && $mapping['role'] == $role['value'])
+                                                        <?= (isset($mapping['role'])
+                                                            && $mapping['role'] == $role['value'])
                                                             ? 'selected="selected"' : '' ?>>
                                                         <?= $escaper->escapeHtml($role['label']) ?>
                                                     </option>
@@ -272,7 +282,7 @@ $oauth_am_admin_role_mappings = $block->getAdminRoleMappings();
                                                name="oauth_role_mapping[0][group]"
                                                placeholder="OIDC Group Name"
                                                style="width: 200px;"
-                                               <?= $escaper->escapeHtmlAttr($disabled) ?> />
+                                               <?= $escaper->escapeHtmlAttr($disabled) ?>>
                                         <span style="margin: 0 10px;">&rarr;</span>
                                         <select name="oauth_role_mapping[0][role]"
                                                 <?= $escaper->escapeHtmlAttr($disabled) ?>>
@@ -505,7 +515,7 @@ $oauth_am_admin_role_mappings = $block->getAdminRoleMappings();
                                    style="width: 100px;"
                                    name="submit"
                                    value="Save"
-                                   <?= $escaper->escapeHtmlAttr($disabled) ?> />
+                                   <?= $escaper->escapeHtmlAttr($disabled) ?>>
                         </td>
                     </tr>
                 </table>
@@ -525,14 +535,14 @@ function addRoleMapping() {
         $options .= '<option value="' . $escaper->escapeHtmlAttr($role['value']) . '">' .
             $escaper->escapeHtml($role['label']) . '</option>';
     }
-        echo addslashes($options);
+        echo $escaper->escapeJs($options);
     ?>';
 
     var newRow = document.createElement('div');
     newRow.className = 'mapping-row';
     newRow.style.marginBottom = '10px';
     newRow.innerHTML = '<input type="text" name="oauth_role_mapping[' + roleMappingIndex +
-        '][group]" placeholder="OIDC Group Name" style="width: 200px;" />' +
+        '][group]" placeholder="OIDC Group Name" style="width: 200px;">' +
         '<span style="margin: 0 10px;">&rarr;</span>' +
         '<select name="oauth_role_mapping[' + roleMappingIndex + '][role]">' +
         rolesOptions + '</select>' +

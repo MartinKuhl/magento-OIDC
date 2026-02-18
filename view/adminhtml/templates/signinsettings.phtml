@@ -34,7 +34,7 @@ $disableOidcOnlyCustomer = ($customerLink !== 'checked') ? 'disabled' : '';
 
             <!-- Sign In Settings Form -->
             <form id="signInSettings" method="post" action="">
-                <input name="form_key" type="hidden" value="<?= $escaper->escapeHtmlAttr($block->getFormKey()) ?>" />
+                <input name="form_key" type="hidden" value="<?= $escaper->escapeHtmlAttr($block->getFormKey()) ?>">
                 <input type="hidden" name="option" value="saveSignInSettings">
 
                 <table>
@@ -113,9 +113,11 @@ $disableOidcOnlyCustomer = ($customerLink !== 'checked') ? 'disabled' : '';
                                        value="true"
                                        disabled="true"
                                        onchange="togglePostLogoutUrl()">
-                                Check this option to auto redirect users to IDP from admin login page (if not logged in).
+                                Check this option to auto redirect users to IDP
+                                from admin login page (if not logged in).
                                 <br><br>
-                                <div id="post_logout_url_container" style="<?= $enableLoginRedirect ? '' : 'opacity: 0.5;' ?>">
+                                <div id="post_logout_url_container"
+                                     style="<?= $enableLoginRedirect ? '' : 'opacity: 0.5;' ?>">
                                     <strong>Post-Logout URL for admin user:</strong>
                                     <span style="color: red;">*</span>
                                     <br>
@@ -160,7 +162,7 @@ $disableOidcOnlyCustomer = ($customerLink !== 'checked') ? 'disabled' : '';
 
             <!-- Enable Debug Log Form -->
             <form id="enable_debug_log" method="post" action="">
-                <input name="form_key" type="hidden" value="<?= $escaper->escapeHtmlAttr($block->getFormKey()) ?>" />
+                <input name="form_key" type="hidden" value="<?= $escaper->escapeHtmlAttr($block->getFormKey()) ?>">
                 <input type="hidden" name="option" value="enable_debug_log">
                 <br>
                 <input type="checkbox"
@@ -178,7 +180,7 @@ $disableOidcOnlyCustomer = ($customerLink !== 'checked') ? 'disabled' : '';
 
             <!-- Download/Clear Logs Form -->
             <form id="clear_download_logs" method="post" action="">
-                <input name="form_key" type="hidden" value="<?= $escaper->escapeHtmlAttr($block->getFormKey()) ?>" />
+                <input name="form_key" type="hidden" value="<?= $escaper->escapeHtmlAttr($block->getFormKey()) ?>">
                 <input type="hidden" name="option" value="clear_download_logs">
                 <p style="margin-top:20px; margin-left:10px">
                     The error logs will be cleared automatically on a weekly basis.

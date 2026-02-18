@@ -27,8 +27,12 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
     /**
      * Initialize OAuth settings controller.
      *
-     * @param \Magento\Backend\App\Action\Context   $context
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     * @param \Magento\Backend\App\Action\Context          $context
+     * @param \Magento\Framework\View\Result\PageFactory   $resultPageFactory
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility        $oauthUtility
+     * @param \Magento\Framework\Message\ManagerInterface  $messageManager
+     * @param \Psr\Log\LoggerInterface                     $logger
+     * @param Curl                                         $curl
      */
     public function __construct(
         \Magento\Backend\App\Action\Context $context,
@@ -43,6 +47,8 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
     }
 
     /**
+     * Execute OAuth settings save action.
+     *
      * @return \Magento\Framework\View\Result\Page
      */
     public function execute()
@@ -57,7 +63,6 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
                 //check whether URL radio button is checked or manual radio button is checked.
 
                 if ($radiostate == 'byurl') {
-
 
                     $url = $params['endpoint_url'];
 
@@ -117,17 +122,13 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
 
                         }
 
-
                     } else {
 
                         $this->messageManager->addErrorMessage('Please Enter URL');
                         $this->oauthUtility->customlog('URL is empty.Please enter valid  url');
                     }
 
-
-
                 } else {
-
 
                     if ($radiostate == 'bymanual') {
 
@@ -152,7 +153,6 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
                             . 'Please Select Required OAuth Endpoints option'
                         );
                     }
-
 
                 }
                 // check if required values have been submitted

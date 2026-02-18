@@ -144,11 +144,15 @@ class ProcessUserAction
     /**
      * Initialize ProcessUserAction.
      *
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility                    $oauthUtility
-     * @param \Magento\Customer\Model\Customer                         $customerModel
-     * @param \Magento\Store\Model\StoreManagerInterface               $storeManager
-     * @param \Magento\Framework\App\ResponseFactory                   $responseFactory
-     * @param \MiniOrange\OAuth\Controller\Actions\CustomerLoginAction $customerLoginAction
+     * @param OAuthUtility                $oauthUtility
+     * @param CustomerRepositoryInterface $customerRepository
+     * @param StoreManagerInterface       $storeManager
+     * @param ResponseFactory             $responseFactory
+     * @param CustomerLoginAction         $customerLoginAction
+     * @param ScopeConfigInterface        $scopeConfig
+     * @param CustomerUserCreator         $customerUserCreator
+     * @param RedirectFactory             $resultRedirectFactory
+     * @param ManagerInterface            $messageManager
      */
     public function __construct(
         OAuthUtility $oauthUtility,
@@ -162,30 +166,52 @@ class ProcessUserAction
         ManagerInterface $messageManager
     ) {
         $this->emailAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_EMAIL);
-        $this->emailAttribute = $oauthUtility->isBlank($this->emailAttribute) ? OAuthConstants::DEFAULT_MAP_EMAIL : $this->emailAttribute;
+        $this->emailAttribute = $oauthUtility->isBlank($this->emailAttribute)
+            ? OAuthConstants::DEFAULT_MAP_EMAIL
+            : $this->emailAttribute;
         $this->usernameAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_USERNAME);
-        $this->usernameAttribute = $oauthUtility->isBlank($this->usernameAttribute) ? OAuthConstants::DEFAULT_MAP_USERN : $this->usernameAttribute;
+        $this->usernameAttribute = $oauthUtility->isBlank($this->usernameAttribute)
+            ? OAuthConstants::DEFAULT_MAP_USERN
+            : $this->usernameAttribute;
         $this->firstNameKey = $oauthUtility->getStoreConfig(OAuthConstants::MAP_FIRSTNAME);
-        $this->firstNameKey = $oauthUtility->isBlank($this->firstNameKey) ? OAuthConstants::DEFAULT_MAP_FN : $this->firstNameKey;
+        $this->firstNameKey = $oauthUtility->isBlank($this->firstNameKey)
+            ? OAuthConstants::DEFAULT_MAP_FN
+            : $this->firstNameKey;
         $this->lastNameKey = $oauthUtility->getStoreConfig(OAuthConstants::MAP_LASTNAME);
-        $this->lastNameKey = $oauthUtility->isBlank($this->lastNameKey) ? OAuthConstants::DEFAULT_MAP_LN : $this->lastNameKey;
+        $this->lastNameKey = $oauthUtility->isBlank($this->lastNameKey)
+            ? OAuthConstants::DEFAULT_MAP_LN
+            : $this->lastNameKey;
         $this->defaultRole = $oauthUtility->getStoreConfig(OAuthConstants::MAP_DEFAULT_ROLE);
 
         // Initialize customer data mapping attributes
         $this->dobAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_DOB);
-        $this->dobAttribute = $oauthUtility->isBlank($this->dobAttribute) ? OAuthConstants::DEFAULT_MAP_DOB : $this->dobAttribute;
+        $this->dobAttribute = $oauthUtility->isBlank($this->dobAttribute)
+            ? OAuthConstants::DEFAULT_MAP_DOB
+            : $this->dobAttribute;
         $this->genderAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_GENDER);
-        $this->genderAttribute = $oauthUtility->isBlank($this->genderAttribute) ? OAuthConstants::DEFAULT_MAP_GENDER : $this->genderAttribute;
+        $this->genderAttribute = $oauthUtility->isBlank($this->genderAttribute)
+            ? OAuthConstants::DEFAULT_MAP_GENDER
+            : $this->genderAttribute;
         $this->phoneAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_PHONE);
-        $this->phoneAttribute = $oauthUtility->isBlank($this->phoneAttribute) ? OAuthConstants::DEFAULT_MAP_PHONE : $this->phoneAttribute;
+        $this->phoneAttribute = $oauthUtility->isBlank($this->phoneAttribute)
+            ? OAuthConstants::DEFAULT_MAP_PHONE
+            : $this->phoneAttribute;
         $this->streetAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_STREET);
-        $this->streetAttribute = $oauthUtility->isBlank($this->streetAttribute) ? OAuthConstants::DEFAULT_MAP_STREET : $this->streetAttribute;
+        $this->streetAttribute = $oauthUtility->isBlank($this->streetAttribute)
+            ? OAuthConstants::DEFAULT_MAP_STREET
+            : $this->streetAttribute;
         $this->zipAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_ZIP);
-        $this->zipAttribute = $oauthUtility->isBlank($this->zipAttribute) ? OAuthConstants::DEFAULT_MAP_ZIP : $this->zipAttribute;
+        $this->zipAttribute = $oauthUtility->isBlank($this->zipAttribute)
+            ? OAuthConstants::DEFAULT_MAP_ZIP
+            : $this->zipAttribute;
         $this->cityAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_CITY);
-        $this->cityAttribute = $oauthUtility->isBlank($this->cityAttribute) ? OAuthConstants::DEFAULT_MAP_CITY : $this->cityAttribute;
+        $this->cityAttribute = $oauthUtility->isBlank($this->cityAttribute)
+            ? OAuthConstants::DEFAULT_MAP_CITY
+            : $this->cityAttribute;
         $this->countryAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_COUNTRY);
-        $this->countryAttribute = $oauthUtility->isBlank($this->countryAttribute) ? OAuthConstants::DEFAULT_MAP_COUNTRY : $this->countryAttribute;
+        $this->countryAttribute = $oauthUtility->isBlank($this->countryAttribute)
+            ? OAuthConstants::DEFAULT_MAP_COUNTRY
+            : $this->countryAttribute;
 
         $this->customerRepository = $customerRepository;
         $this->storeManager = $storeManager;
@@ -223,9 +249,12 @@ class ProcessUserAction
 
             return $this->processUserAction($this->userEmail, $firstName, $lastName, $userName, $this->defaultRole);
 
+        // phpcs:ignore Magento2.Exceptions.ThrowInFinally
         } catch (MissingAttributesException $e) {
             $this->oauthUtility->customlog("ERROR: Missing required attributes from OAuth provider");
-            $this->messageManager->addErrorMessage(__('Authentication failed: Required user information not received from identity provider.'));
+            $this->messageManager->addErrorMessage(
+                __('Authentication failed: Required user information not received from identity provider.')
+            );
             return $this->resultRedirectFactory->create()->setPath('customer/account/login');
         } catch (\Exception $e) {
             $this->oauthUtility->customlog("CRITICAL ERROR in execute: " . $e->getMessage());
@@ -234,6 +263,8 @@ class ProcessUserAction
     }
 
     /**
+     * Process user action.
+     *
      * @param  string      $userEmail
      * @param  string|null $firstName
      * @param  string|null $lastName
@@ -275,7 +306,10 @@ class ProcessUserAction
         $store_url = $store->getBaseUrl(\Magento\Framework\UrlInterface::URL_TYPE_WEB);
         $store_url = rtrim($store_url, '/\\');
 
-        if (isset($this->attrs['relayState']) && !str_contains($this->attrs['relayState'], $store_url) && $this->attrs['relayState'] != '/') {
+        if (isset($this->attrs['relayState'])
+            && !str_contains($this->attrs['relayState'], $store_url)
+            && $this->attrs['relayState'] != '/'
+        ) {
             $this->attrs['relayState'] = $store_url;
             $this->oauthUtility->customlog("processUserAction: changing relayState with store url " . $store_url);
         }
@@ -363,7 +397,6 @@ class ProcessUserAction
             return false;
         }
     }
-
 
     /**
      * Set raw attribute array received from OIDC provider.

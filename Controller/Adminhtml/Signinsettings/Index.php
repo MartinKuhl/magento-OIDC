@@ -59,8 +59,15 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
     /**
      * Initialize sign-in settings controller.
      *
-     * @param \Magento\Backend\App\Action\Context   $context
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     * @param \Magento\Backend\App\Action\Context                    $context
+     * @param \Magento\Framework\View\Result\PageFactory             $resultPageFactory
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility                  $oauthUtility
+     * @param \Magento\Framework\Message\ManagerInterface             $messageManager
+     * @param \Psr\Log\LoggerInterface                                $logger
+     * @param \Magento\Customer\Model\ResourceModel\Group\Collection $userGroupModel
+     * @param \Magento\Framework\App\Response\Http\FileFactory        $fileFactory
+     * @param \Magento\Store\Model\StoreManagerInterface              $storeManager
+     * @param \Magento\Framework\App\ProductMetadataInterface         $productMetadata
      */
     public function __construct(
         Context $context,
@@ -80,8 +87,10 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         $this->userGroupModel = $userGroupModel;
         $this->productMetadata = $productMetadata;
     }
+
     /**
      * Main controller entry-point for Sign-in settings page.
+     *
      * Handles saving, debug log toggling, clearing and downloading logs.
      *
      * @return \Magento\Backend\Model\View\Result\Page|\Magento\Framework\App\ResponseInterface
@@ -112,83 +121,13 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
                         $this->oauthUtility->deleteCustomLogFile();
                     }
                 } elseif ($params['option'] == 'clear_download_logs') {
-
                     if (isset($params['download_logs'])) {
-
-                        $fileName = "mo_oauth.log"; // add your file name here
-                        if ($fileName) {
-                            $filePath = '../var/log/' . $fileName;
-                            $content['type'] = 'filename';// type has to be "filename"
-                            $content['value'] = $filePath; // path where file place
-                            $content['rm'] = 0; // 1 to delete from server after being download, otherwise add 0.
-                            if ($this->oauthUtility->isLogEnable()) {
-                                //Customer Configuration settings.
-                                $appName = $this->oauthUtility->getStoreConfig(OAuthConstants::APP_NAME);
-
-                                $clientDetails = null;
-                                $clientDetails = $this->oauthUtility->getClientDetailsByAppName($appName);
-                                if ($clientDetails) {
-                                    $scope = $clientDetails["scope"];
-                                    $header = $clientDetails["values_in_header"];
-                                    $body = $clientDetails["values_in_body"];
-                                    $authorize_url = $clientDetails['authorize_endpoint'];
-                                    $accesstoken_url = $clientDetails['access_token_endpoint'];
-                                    $getuserinfo_url = $clientDetails['user_info_endpoint'];
-                                    $endpoint_url = $clientDetails['well_known_config_url'];
-                                    $show_customer_link = $this->oauthUtility->getStoreConfig(
-                                        OAuthConstants::SHOW_CUSTOMER_LINK
-                                    );
-                                    $attribute_email = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_EMAIL);
-                                    $attribute_username = $this->oauthUtility->getStoreConfig(
-                                        OAuthConstants::MAP_USERNAME
-                                    );
-                                    $customer_email = $this->oauthUtility->getStoreConfig(
-                                        OAuthConstants::DEFAULT_MAP_EMAIL
-                                    );
-                                    $plugin_version = OAuthConstants::VERSION;
-                                    $magento_version = $this->productMetadata->getVersion();
-                                    $php_version = phpversion();
-                                    $values = [
-                                        $appName,
-                                        $scope,
-                                        $authorize_url,
-                                        $accesstoken_url,
-                                        $getuserinfo_url,
-                                        $header,
-                                        $body,
-                                        $endpoint_url,
-                                        $show_customer_link,
-                                        $attribute_email,
-                                        $attribute_username,
-                                        $customer_email,
-                                        $plugin_version,
-                                        $magento_version,
-                                        $php_version
-                                    ];
-                                    // save configuration
-                                    $this->customerConfigurationSettings($values);
-                                }
-
-                            }
-                            if ($this->oauthUtility->isCustomLogExist() && $this->oauthUtility->isLogEnable()) {
-                                return $this->fileFactory->create($fileName, $content, DirectoryList::VAR_DIR);
-                            } else {
-                                $this->messageManager->addErrorMessage('Please Enable Debug Log Setting First');
-
-                            }
-                        } else {
-                            $this->messageManager->addErrorMessage('Something went wrong');
-
+                        $result = $this->handleDownloadLogs();
+                        if ($result !== null) {
+                            return $result;
                         }
                     } elseif (isset($params['clear_logs'])) {
-                        if ($this->oauthUtility->isCustomLogExist()) {
-                            $this->oauthUtility->setStoreConfig(OAuthConstants::LOG_FILE_TIME, null);
-                            $this->oauthUtility->deleteCustomLogFile();
-                            $this->messageManager->addSuccessMessage('Logs Cleared Successfully');
-                        } else {
-                            $this->messageManager->addSuccessMessage('Logs Have Already Been Removed');
-                        }
-
+                        $this->handleClearLogs();
                     }
                 }
 
@@ -203,6 +142,94 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         return $resultPage;
     }
 
+    /**
+     * Handle downloading of debug log files.
+     *
+     * @return \Magento\Framework\App\ResponseInterface|null
+     */
+    private function handleDownloadLogs()
+    {
+        $fileName = "mo_oauth.log";
+        $filePath = '../var/log/' . $fileName;
+        $content = [
+            'type' => 'filename',
+            'value' => $filePath,
+            'rm' => 0,
+        ];
+
+        if ($this->oauthUtility->isLogEnable()) {
+            $this->logClientConfigurationIfAvailable();
+        }
+
+        if ($this->oauthUtility->isCustomLogExist() && $this->oauthUtility->isLogEnable()) {
+            return $this->fileFactory->create($fileName, $content, DirectoryList::VAR_DIR);
+        }
+
+        $this->messageManager->addErrorMessage('Please Enable Debug Log Setting First');
+        return null;
+    }
+
+    /**
+     * Log client configuration settings for diagnostics.
+     *
+     * @return void
+     */
+    private function logClientConfigurationIfAvailable()
+    {
+        $appName = $this->oauthUtility->getStoreConfig(OAuthConstants::APP_NAME);
+        $clientDetails = $this->oauthUtility->getClientDetailsByAppName($appName);
+
+        if (!$clientDetails) {
+            return;
+        }
+
+        $showCustomerLink = $this->oauthUtility->getStoreConfig(
+            OAuthConstants::SHOW_CUSTOMER_LINK
+        );
+        $attributeEmail = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_EMAIL);
+        $attributeUsername = $this->oauthUtility->getStoreConfig(
+            OAuthConstants::MAP_USERNAME
+        );
+        $customerEmail = $this->oauthUtility->getStoreConfig(
+            OAuthConstants::DEFAULT_MAP_EMAIL
+        );
+
+        $values = [
+            $appName,
+            $clientDetails["scope"],
+            $clientDetails['authorize_endpoint'],
+            $clientDetails['access_token_endpoint'],
+            $clientDetails['user_info_endpoint'],
+            $clientDetails["values_in_header"],
+            $clientDetails["values_in_body"],
+            $clientDetails['well_known_config_url'],
+            $showCustomerLink,
+            $attributeEmail,
+            $attributeUsername,
+            $customerEmail,
+            OAuthConstants::VERSION,
+            $this->productMetadata->getVersion(),
+            phpversion()
+        ];
+
+        $this->customerConfigurationSettings($values);
+    }
+
+    /**
+     * Handle clearing of debug log files.
+     *
+     * @return void
+     */
+    private function handleClearLogs()
+    {
+        if ($this->oauthUtility->isCustomLogExist()) {
+            $this->oauthUtility->setStoreConfig(OAuthConstants::LOG_FILE_TIME, null);
+            $this->oauthUtility->deleteCustomLogFile();
+            $this->messageManager->addSuccessMessage('Logs Cleared Successfully');
+        } else {
+            $this->messageManager->addSuccessMessage('Logs Have Already Been Removed');
+        }
+    }
 
     /**
      * Process Values being submitted and save data in the database.
@@ -224,8 +251,12 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
             $params['mo_disable_non_oidc_customer_login']
         ) ? 1 : 0;
 
-        $this->oauthUtility->customlog("SignInSettings: Saving customer link setting: " . $mo_oauth_show_customer_link);
-        $this->oauthUtility->customlog("SignInSettings: Saving admin link setting: " . $mo_oauth_show_admin_link);
+        $this->oauthUtility->customlog(
+            "SignInSettings: Saving customer link setting: " . $mo_oauth_show_customer_link
+        );
+        $this->oauthUtility->customlog(
+            "SignInSettings: Saving admin link setting: " . $mo_oauth_show_admin_link
+        );
         $this->oauthUtility->customlog(
             "SignInSettings: Saving auto create admin setting: " . $mo_sso_auto_create_admin
         );

@@ -53,8 +53,15 @@ class ReadAuthorizationResponse extends BaseAction
     /**
      * Initialize read authorization response action.
      *
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
-     * @param \MiniOrange\OAuth\Helper\Curl         $curl
+     * @param \Magento\Framework\App\Action\Context              $context
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility              $oauthUtility
+     * @param \Magento\Framework\UrlInterface                    $url
+     * @param \Magento\Customer\Model\Session                    $customerSession
+     * @param \MiniOrange\OAuth\Helper\OAuthSecurityHelper       $securityHelper
+     * @param \MiniOrange\OAuth\Helper\JwtVerifier               $jwtVerifier
+     * @param \MiniOrange\OAuth\Helper\Curl                      $curl
+     * @param \MiniOrange\OAuth\Model\Service\OidcAuthenticationService $oidcAuthService
+     * @param CheckAttributeMappingAction                        $attrMappingAction
      */
     public function __construct(
         Context $context,
@@ -76,7 +83,6 @@ class ReadAuthorizationResponse extends BaseAction
         $this->attrMappingAction = $attrMappingAction;
         parent::__construct($context, $oauthUtility);
     }
-
 
     /**
      * Process the OAuth/OIDC authorization callback.

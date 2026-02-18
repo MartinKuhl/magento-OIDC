@@ -18,9 +18,18 @@ use Psr\Log\LoggerInterface;
  */
 class AdminLoginRestrictionPlugin
 {
+    /** @var OAuthUtility */
     private OAuthUtility $oauthUtility;
+
+    /** @var LoggerInterface */
     private LoggerInterface $logger;
 
+    /**
+     * Constructor
+     *
+     * @param OAuthUtility    $oauthUtility
+     * @param LoggerInterface $logger
+     */
     public function __construct(
         OAuthUtility $oauthUtility,
         LoggerInterface $logger

@@ -102,9 +102,16 @@ class CustomerUserCreator
     /**
      * Initialize customer user creator service.
      *
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility             $oauthUtility
-     * @param \Magento\Store\Model\StoreManagerInterface        $storeManager
-     * @param \Magento\Customer\Api\CustomerRepositoryInterface $customerRepository
+     * @param CustomerFactory                                       $customerFactory
+     * @param AddressInterfaceFactory                               $addressFactory
+     * @param AddressRepositoryInterface                            $addressRepository
+     * @param StoreManagerInterface                                 $storeManager
+     * @param Random                                                $randomUtility
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility                 $oauthUtility
+     * @param CountryCollectionFactory                              $countryCollectionFactory
+     * @param DateTime                                              $dateTime
+     * @param DirectoryData                                         $directoryData
+     * @param \Magento\Customer\Api\CustomerRepositoryInterface     $customerRepository
      */
     public function __construct(
         CustomerFactory $customerFactory,
@@ -391,6 +398,7 @@ class CustomerUserCreator
     /**
      * Map OIDC gender value to Magento gender ID
      *
+     * @param  string $genderValue
      * @psalm-return 1|2|3|null
      */
     private function mapGender(string $genderValue): int|null

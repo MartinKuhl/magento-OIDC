@@ -18,7 +18,7 @@ class Curl
     /**
      * Initialize cURL helper.
      *
-     * @param \Magento\Framework\App\Helper\Context $context
+     * @param OAuthUtility $oauthUtility
      */
     public function __construct(
         OAuthUtility $oauthUtility

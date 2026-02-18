@@ -52,8 +52,11 @@ abstract class BaseAdminAction extends \Magento\Backend\App\Action
     /**
      * Initialize base admin action.
      *
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
-     * @param \Magento\Backend\App\Action\Context   $context
+     * @param \Magento\Backend\App\Action\Context          $context
+     * @param \Magento\Framework\View\Result\PageFactory   $resultPageFactory
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility        $oauthUtility
+     * @param \Magento\Framework\Message\ManagerInterface  $messageManager
+     * @param \Psr\Log\LoggerInterface                     $logger
      */
     public function __construct(
         \Magento\Backend\App\Action\Context $context,
@@ -70,9 +73,9 @@ abstract class BaseAdminAction extends \Magento\Backend\App\Action
         parent::__construct($context);
     }
 
-
     /**
      * Determine whether the incoming request is attempting to save a form option.
+     *
      * Checks for the presence of an `option` key in the request data.
      *
      * @param  array $params Request parameters
@@ -106,7 +109,6 @@ abstract class BaseAdminAction extends \Magento\Backend\App\Action
             }
         }
     }
-
 
     /**
      * Validate support query specific fields and translate the exception type.

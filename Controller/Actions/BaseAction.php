@@ -27,6 +27,7 @@ abstract class BaseAction extends \Magento\Framework\App\Action\Action
     /**
      * Initialize base action with OAuth utility.
      *
+     * @param \Magento\Framework\App\Action\Context  $context
      * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
      */
     public function __construct(
@@ -37,7 +38,6 @@ abstract class BaseAction extends \Magento\Framework\App\Action\Action
         $this->oauthUtility = $oauthUtility;
         parent::__construct($context);
     }
-
 
     /**
      * Check if any of the required fields are empty. Throws RequiredFieldsException if so.
@@ -75,7 +75,6 @@ abstract class BaseAction extends \Magento\Framework\App\Action\Action
         }
     }
 
-
     /**
      * Send an authorization request via HTTP Redirect.
      *
@@ -88,7 +87,12 @@ abstract class BaseAction extends \Magento\Framework\App\Action\Action
      * @param string $relayState   Optional relay state to include
      * @param array  $params       Additional parameters (unused)
      */
-    protected function sendHTTPRedirectRequest($oauthRequest, $authorizeUrl, $relayState = '', $params = []): \Magento\Framework\Controller\Result\Redirect
+    protected function sendHTTPRedirectRequest(
+        $oauthRequest,
+        $authorizeUrl,
+        $relayState = '',
+        $params = []
+    ): \Magento\Framework\Controller\Result\Redirect
     {
         $this->oauthUtility->customlog(
             "BaseAction: sendHTTPRedirectRequest - Ensuring PHP session is properly saved before redirect"
@@ -100,7 +104,6 @@ abstract class BaseAction extends \Magento\Framework\App\Action\Action
         $oauthRequest = $authorizeUrl . $oauthRequest;
         return $this->resultRedirectFactory->create()->setUrl($oauthRequest);
     }
-
 
     /**
      * This function is abstract that needs to be implemented by each Action Class 

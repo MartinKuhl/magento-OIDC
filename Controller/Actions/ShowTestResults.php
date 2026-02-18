@@ -375,9 +375,9 @@ class ShowTestResults extends Action
     }
 
     /**
-     * Set the OAuth utility instance.
+     * Set the OAuth exception instance.
      *
-     * @param  \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     * @param  \Exception|null $exception
      * @return void
      */
     public function setOAuthException($exception)
@@ -397,9 +397,9 @@ class ShowTestResults extends Action
     }
 
     /**
-     * Set the error message.
+     * Set whether an exception has occurred.
      *
-     * @param  string|null $errorMessage
+     * @param  bool $hasExceptionOccurred
      * @return void
      */
     public function setHasExceptionOccurred($hasExceptionOccurred)
@@ -408,9 +408,11 @@ class ShowTestResults extends Action
     }
 
     /**
-     * Set greeting name with fallback logic: firstName -> username -> email
-     * Uses configured attribute mappings with fallback to common OIDC claim names
+     * Set greeting name with fallback logic: firstName -> username -> email.
      *
+     * Uses configured attribute mappings with fallback to common OIDC claim names.
+     *
+     * @param  array|null $attrs
      * @return void
      */
     private function setGreetingName($attrs)
@@ -454,12 +456,18 @@ class ShowTestResults extends Action
     /**
      * Get attribute value using configured mapping with fallback to common claim names
      *
-     * @param string[] $fallbackKeys
+     * @param array    $attrs        User attributes from OIDC provider
+     * @param string   $configKey    Configuration key for attribute mapping
+     * @param string[] $fallbackKeys Fallback claim names to try
      *
      * @psalm-param 'amEmail'|'amFirstName'|'amUsername' $configKey
      * @psalm-param list{0: 'email'|'firstName'|'username', 1: 'given_name'|'mail'|'preferred_username', 2: 'emailAddress'|'first_name'|'name', 3?: 'email'|'username'} $fallbackKeys
      */
-    private function getAttributeValue(array $attrs, string $configKey, array $fallbackKeys)
+    private function getAttributeValue(
+        array $attrs,
+        string $configKey,
+        array $fallbackKeys
+    )
     {
         // First try configured attribute name
         $configuredAttr = $this->oauthUtility->getStoreConfig($configKey);

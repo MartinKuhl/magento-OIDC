@@ -43,8 +43,10 @@ class SessionHelper
     /**
      * Initialize session helper.
      *
-     * @param \Magento\Framework\App\Helper\Context $context
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     * @param CookieManagerInterface $cookieManager
+     * @param CookieMetadataFactory  $cookieMetadataFactory
+     * @param OAuthUtility           $oauthUtility
+     * @param BackendUrlInterface    $backendUrl
      */
     public function __construct(
         CookieManagerInterface $cookieManager,
@@ -69,10 +71,10 @@ class SessionHelper
     }
 
     /**
-     * Re-set existing session cookies with SameSite=None
-     * Handles both frontend and admin cookies
+     * Re-set existing session cookies with SameSite=None.
      *
-     * Uses Magento's CookieManager for 2.4.7+ compatibility
+     * Handles both frontend and admin cookies.
+     * Uses Magento's CookieManager for 2.4.7+ compatibility.
      */
     public function updateSessionCookies(): void
     {
@@ -132,6 +134,7 @@ class SessionHelper
 
     /**
      * Set SameSite=None on the PHP session cookie only.
+     *
      * Only updates the session cookie - does not modify other cookies.
      *
      * @return void

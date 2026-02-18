@@ -32,7 +32,11 @@ class SendAuthorizationRequest extends BaseAction
     /**
      * Initialize send authorization request action.
      *
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     * @param \Magento\Framework\App\Action\Context                $context
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility                $oauthUtility
+     * @param SessionHelper                                        $sessionHelper
+     * @param OAuthSecurityHelper                                  $securityHelper
+     * @param \Magento\Framework\Session\SessionManagerInterface   $sessionManager
      */
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
@@ -65,7 +69,9 @@ class SendAuthorizationRequest extends BaseAction
         $islogEnable = $this->oauthUtility->getStoreConfig(OAuthConstants::ENABLE_DEBUG_LOG);
         $log_file_exist = $this->oauthUtility->isCustomLogExist();
 
-        if ((($Log_file_time != null && ($current_time - $Log_file_time) >= 60 * 60 * 24 * 7) && $islogEnable) || ($islogEnable == 0 && $log_file_exist)) { //7days
+        if ((($Log_file_time != null && ($current_time - $Log_file_time) >= 60 * 60 * 24 * 7)
+            && $islogEnable) || ($islogEnable == 0 && $log_file_exist)
+        ) { //7days
             $this->oauthUtility->setStoreConfig(OAuthConstants::ENABLE_DEBUG_LOG, 0);
             $chk_enable_log = 0;
             $this->oauthUtility->setStoreConfig(OAuthConstants::LOG_FILE_TIME, null);
@@ -75,7 +81,9 @@ class SendAuthorizationRequest extends BaseAction
         $chk_enable_log ? $this->oauthUtility->customlog("SendAuthorizationRequest: execute") : null;
 
         $params = $this->getRequest()->getParams();  //get params
-        $chk_enable_log ? $this->oauthUtility->customlog("SendAuthorizationRequest: Request prarms: " . implode(" ", $params)) : null;
+        $chk_enable_log ? $this->oauthUtility->customlog(
+            "SendAuthorizationRequest: Request prarms: " . implode(" ", $params)
+        ) : null;
         $isFromPopup = isset($params['from_popup']) && $params['from_popup'] == '1';
 
         // Set relayState based on popup context, with redirect validation
@@ -89,7 +97,9 @@ class SendAuthorizationRequest extends BaseAction
         $this->oauthUtility->customlog("SendAuthorizationRequest: Current session ID: " . $currentSessionId);
 
         // Determine app name for authentication
-        $app_name = isset($params['app_name']) ? $params['app_name'] : $this->oauthUtility->getStoreConfig(OAuthConstants::APP_NAME);
+        $app_name = isset($params['app_name'])
+            ? $params['app_name']
+            : $this->oauthUtility->getStoreConfig(OAuthConstants::APP_NAME);
         $this->oauthUtility->customlog("SendAuthorizationRequest: Using app_name: " . $app_name);
 
         // Combine relayState with session ID, app name, login type, and CSRF state token
@@ -112,7 +122,9 @@ class SendAuthorizationRequest extends BaseAction
         // App name was already determined above
         if (!$app_name) {
             $errorRedirect = $this->oauthUtility->getBaseUrl() . 'customer/account/login';
-            $this->messageManager->addErrorMessage('App name not found. Please contact the administrator for assistance.');
+            $this->messageManager->addErrorMessage(
+                'App name not found. Please contact the administrator for assistance.'
+            );
             return $this->resultRedirectFactory->create()->setUrl($errorRedirect);
         }
         $this->oauthUtility->setSessionData(OAuthConstants::APP_NAME, $app_name);
@@ -120,7 +132,9 @@ class SendAuthorizationRequest extends BaseAction
         $clientDetails = $this->oauthUtility->getClientDetailsByAppName($app_name);
         if (empty($clientDetails)) {
             $errorRedirect = $this->oauthUtility->getBaseUrl() . 'customer/account/login';
-            $this->messageManager->addErrorMessage('Provided App name is not configured. Please contact the administrator for assistance.');
+            $this->messageManager->addErrorMessage(
+                'Provided App name is not configured. Please contact the administrator for assistance.'
+            );
             return $this->resultRedirectFactory->create()->setUrl($errorRedirect);
         }
         if (!$clientDetails["authorize_endpoint"]) {
@@ -132,7 +146,6 @@ class SendAuthorizationRequest extends BaseAction
             );
         }
 
-
         //get required values from the database
         $clientID = $clientDetails["clientID"];
         $scope = $clientDetails["scope"];
@@ -141,8 +154,18 @@ class SendAuthorizationRequest extends BaseAction
         $redirectURL = $this->oauthUtility->getCallBackUrl();
 
         //generate the authorization request
-        $authorizationRequest = (new AuthorizationRequest($clientID, $scope, $authorizeURL, $responseType, $redirectURL, $relayState, $params))->build();
-        $chk_enable_log ? $this->oauthUtility->customlog("SendAuthorizationRequest:  Authorization Request: " . $authorizationRequest) : null;
+        $authorizationRequest = (new AuthorizationRequest(
+            $clientID,
+            $scope,
+            $authorizeURL,
+            $responseType,
+            $redirectURL,
+            $relayState,
+            $params
+        ))->build();
+        $chk_enable_log ? $this->oauthUtility->customlog(
+            "SendAuthorizationRequest:  Authorization Request: " . $authorizationRequest
+        ) : null;
         // send oauth request over
         return $this->sendHTTPRedirectRequest($authorizationRequest, $authorizeURL, $relayState, $params);
     }

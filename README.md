@@ -123,3 +123,5 @@ vendor/bin/psalm --no-cache --config=github/OIDC/psalm.xml --alter --issues=Miss
 
 vendor/bin/phpcs ./github/OIDC/ > ./github/OIDC/phpcd-report.txt
 vendor/bin/phpcbf ./github/OIDC/
+
+please look at @github/OIDC/Code-Review.md here you find phpcs issues mentioned for different files. Fix them all. Use sub-agents where applicable. DO not create new issue for PHPStan or PHPCS scans.

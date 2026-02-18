@@ -57,7 +57,9 @@ class OidcCaptchaBypassPlugin
         // Check if this is OIDC authentication by looking for marker in event data
         if ($observer->getEvent()->getData('oidc_auth') === true) {
             $username = $observer->getEvent()->getUsername();
-            $this->oauthUtility->customlog("CAPTCHA: Bypassing CAPTCHA validation for OIDC authentication: " . $username);
+            $this->oauthUtility->customlog(
+                "CAPTCHA: Bypassing CAPTCHA validation for OIDC authentication: " . $username
+            );
 
             // Return the subject without calling proceed() - this skips CAPTCHA validation
             return $subject;

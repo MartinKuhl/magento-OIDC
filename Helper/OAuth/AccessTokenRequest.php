@@ -44,8 +44,11 @@ class AccessTokenRequest
     /**
      * Initialize access token request.
      *
-     * @param string                                                $tokenEndpoint
-     * @param \MiniOrange\OAuth\Helper\OAuth\AccessTokenRequestBody $body
+     * @param string $clientID
+     * @param string $clientSecret
+     * @param string $grantType
+     * @param string $redirectURL
+     * @param string $code
      */
     public function __construct($clientID, $clientSecret, $grantType, $redirectURL, $code)
     {
@@ -78,7 +81,6 @@ class AccessTokenRequest
         ];
         return $accessTokenRequestPostData;
     }
-
 
     /**
      * This function is used to build our AccessToken request

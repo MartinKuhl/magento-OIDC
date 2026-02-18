@@ -45,10 +45,8 @@ class AccessTokenRequestBody
      * Initialize access token request body.
      *
      * @param string $grantType
+     * @param string $redirectURL
      * @param string $code
-     * @param string $redirectUri
-     * @param string $clientId
-     * @param string $clientSecret
      */
     public function __construct($grantType, $redirectURL, $code)
     {
@@ -80,7 +78,6 @@ class AccessTokenRequestBody
 
         return $accessTokenRequestPostData;
     }
-
 
     /**
      * This function is used to build our AccessToken request

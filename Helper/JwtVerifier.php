@@ -30,9 +30,9 @@ class JwtVerifier
     /**
      * Initialize JWT verifier.
      *
-     * @param \Magento\Framework\App\Helper\Context $context
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
-     * @param \MiniOrange\OAuth\Helper\Curl         $curl
+     * @param OAuthUtility                                     $oauthUtility
+     * @param \Magento\Framework\App\CacheInterface            $cache
+     * @param \Magento\Framework\HTTP\Adapter\CurlFactory      $curlFactory
      */
     public function __construct(
         OAuthUtility $oauthUtility,
@@ -141,6 +141,7 @@ class JwtVerifier
 
     /**
      * Decode a JWT without verifying the signature.
+     *
      * Used as fallback when no JWKS endpoint is configured.
      *
      * @param  string $idToken The raw JWT string
@@ -245,6 +246,7 @@ class JwtVerifier
 
     /**
      * Convert JWK RSA modulus (n) and exponent (e) to PEM format.
+     *
      * Uses ASN.1 DER encoding — no external dependencies.
      *
      * @param  string $n Base64url-encoded modulus

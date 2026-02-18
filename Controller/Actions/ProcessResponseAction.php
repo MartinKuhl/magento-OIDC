@@ -33,7 +33,9 @@ class ProcessResponseAction extends BaseAction
     /**
      * Initialize process response action.
      *
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     * @param \Magento\Framework\App\Action\Context                        $context
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility                        $oauthUtility
+     * @param \MiniOrange\OAuth\Controller\Actions\CheckAttributeMappingAction $attrMappingAction
      */
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
@@ -44,7 +46,6 @@ class ProcessResponseAction extends BaseAction
         $this->attrMappingAction = $attrMappingAction;
         parent::__construct($context, $oauthUtility);
     }
-
 
     /**
      * Execute function to execute the classes function.
@@ -215,7 +216,10 @@ class ProcessResponseAction extends BaseAction
     }
 
     /**
-     * Setter for the UserInfo Parameter
+     * Setter for the UserInfo Parameter.
+     *
+     * @param array|object|null $userInfoResponse
+     * @return static
      */
     public function setUserInfoResponse($userInfoResponse): static
     {

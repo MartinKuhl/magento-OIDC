@@ -55,7 +55,8 @@ $isAutocompleteEnabled = $storeConfig->getStoreConfig('customer/password/autocom
                         event.preventDefault(); // Prevent immediate redirect
                         const originalHref = link.getAttribute('href');
                         if (originalHref) {
-                            const modifiedHref = originalHref.includes('?')    //adding Query Parameter to set the relaystate
+                            // adding Query Parameter to set the relaystate
+                            const modifiedHref = originalHref.includes('?')
                             ? `${originalHref}&from_popup=1`
                             : `${originalHref}?from_popup=1`;
                             window.location.href = modifiedHref;
@@ -204,7 +205,9 @@ $isAutocompleteEnabled = $storeConfig->getStoreConfig('customer/password/autocom
                     </div>
                     <div class="block-customer-login bg-container border border-container mx-4 p-4 shadow-sm">
                         <p id="authenticate-customer-login" class="text-lg leading-7 text-gray-900">
-                            <strong class="font-medium"><?= $escaper->escapeHtml(__('Checkout using your account')) ?></strong>
+                            <strong class="font-medium">
+                                <?= $escaper->escapeHtml(__('Checkout using your account')) ?>
+                            </strong>
                         </p>
 
                         <form class="form form-login"
@@ -247,9 +250,12 @@ $isAutocompleteEnabled = $storeConfig->getStoreConfig('customer/password/autocom
                                     </div>
                                 </div>
 
-                                <input name="context" type="hidden" value="checkout" />
+                                <input name="context" type="hidden" value="checkout">
                                 <div class="actions-toolbar flex justify-between pt-6 pb-2 items-center">
-                                    <button type="submit"<?php if ($loginButtonViewModel->disabled()): ?> disabled data-recaptcha-btn<?php endif; ?>
+                                    <button type="submit"
+                                        <?php if ($loginButtonViewModel->disabled()): ?>
+                                            disabled data-recaptcha-btn
+                                        <?php endif; ?>
                                             class="inline-flex btn btn-primary disabled:opacity-75"
                                     >
                                         <?= $escaper->escapeHtml(__('Sign In')) ?>
@@ -276,7 +282,9 @@ $isAutocompleteEnabled = $storeConfig->getStoreConfig('customer/password/autocom
                     </div>
                     <div class="block-new-customer bg-container border border-container mx-4 p-4 shadow-sm">
                         <p id="authenticate-new-customer" class="text-lg mb-2 leading-7 text-gray-900">
-                            <strong class="font-medium"><?= $escaper->escapeHtml(__('Checkout as a new customer')) ?></strong>
+                            <strong class="font-medium">
+                                <?= $escaper->escapeHtml(__('Checkout as a new customer')) ?>
+                            </strong>
                         </p>
 
                         <div class="block-content">

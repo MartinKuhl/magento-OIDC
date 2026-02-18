@@ -9,8 +9,20 @@ $activeTab = $block->getCurrentActiveTab();
 ?>
 <div style="padding: 0 1%;">
     <div class="topnav" id="myTopnav">
-        <a class="nav-tab <?= $escaper->escapeHtmlAttr($activeTab == 'oauthsettings' ? 'active' : ''); ?>" href="<?= $escaper->escapeUrl($oauthsettings); ?>">OAuth Settings</a>
-        <a class="nav-tab <?= $escaper->escapeHtmlAttr($activeTab == 'signinsettings' ? 'active' : ''); ?>" href="<?= $escaper->escapeUrl($signinsettings); ?>">Sign In Settings</a>
-        <a class="nav-tab <?= $escaper->escapeHtmlAttr($activeTab == 'attrsettings' ? 'active' : ''); ?>" href="<?= $escaper->escapeUrl($attrsettings); ?>">Attribute Mapping</a>
+        <a class="nav-tab <?= $escaper->escapeHtmlAttr(
+            $activeTab == 'oauthsettings' ? 'active' : ''
+        ); ?>" href="<?= $escaper->escapeUrl($oauthsettings); ?>">
+            OAuth Settings
+        </a>
+        <a class="nav-tab <?= $escaper->escapeHtmlAttr(
+            $activeTab == 'signinsettings' ? 'active' : ''
+        ); ?>" href="<?= $escaper->escapeUrl($signinsettings); ?>">
+            Sign In Settings
+        </a>
+        <a class="nav-tab <?= $escaper->escapeHtmlAttr(
+            $activeTab == 'attrsettings' ? 'active' : ''
+        ); ?>" href="<?= $escaper->escapeUrl($attrsettings); ?>">
+            Attribute Mapping
+        </a>
     </div>
 </div>

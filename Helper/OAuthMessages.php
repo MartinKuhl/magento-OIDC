@@ -89,6 +89,7 @@ class OAuthMessages
      * @param  array  $data
      * @return string
      */
+    // phpcs:ignore Magento2.Functions.StaticFunction
     public static function parse(string $message, array $data = []): string
     {
         $message = constant("self::" . $message);
