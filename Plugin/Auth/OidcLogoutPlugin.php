@@ -57,7 +57,10 @@ class OidcLogoutPlugin
     public function afterLogout(Auth $subject, $result)
     {
         $metadata = $this->cookieMetadataFactory->createPublicCookieMetadata()
-            ->setPath('/');
+            ->setPath('/')
+            ->setHttpOnly(true)
+            ->setSecure(true)
+            ->setSameSite('Lax');
 
         try {
             $this->cookieManager->deleteCookie('oidc_authenticated', $metadata);

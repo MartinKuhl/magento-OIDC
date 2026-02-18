@@ -71,8 +71,6 @@ Write for a developer who's new to this codebase but not new to coding.
 
 ### FIX ###:
 
-- cookie handling bei Customer OIDC login
-
 ### LATER - complex ###:
 - Storage of settings in 2 different tables why -> merging?
 - whats needs to be adjusted to be future-proof and support multiple OIDC providers?
@@ -123,5 +121,5 @@ vendor/bin/psalm --no-cache --config=github/OIDC/psalm.xml
 
 vendor/bin/psalm --no-cache --config=github/OIDC/psalm.xml --alter --issues=MissingReturnType,MissingParamType
 
-vendor/bin/phpcs ./github/OIDC/
+vendor/bin/phpcs ./github/OIDC/ > ./github/OIDC/phpcd-report.txt
 vendor/bin/phpcbf ./github/OIDC/

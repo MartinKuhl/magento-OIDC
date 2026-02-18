@@ -78,8 +78,10 @@ class OAuthLogoutObserver implements ObserverInterface
             );
             if ($oidcCookie !== null) {
                 $cookieMetadata = $this->cookieMetadataFactory
-                    ->createCookieMetadata()
-                    ->setPath('/');
+                    ->createPublicCookieMetadata()
+                    ->setPath('/')
+                    ->setHttpOnly(true)
+                    ->setSecure(true);
                 $this->cookieManager->deleteCookie(
                     'oidc_customer_authenticated',
                     $cookieMetadata

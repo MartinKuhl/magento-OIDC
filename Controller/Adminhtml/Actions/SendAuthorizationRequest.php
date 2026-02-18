@@ -74,7 +74,10 @@ class SendAuthorizationRequest extends BaseAction
      */
     public function execute()
     {
-        $this->sessionHelper->configureSSOSession();
+        // configureSSOSession() removed: it creates a host-only PHPSESSID cookie (no domain)
+        // that conflicts with PHP's session cookie (domain=...). The duplicate cookie prevents
+        // session_regenerate_id() from updating the browser's session ID after login.
+        // SameSite=None is unnecessary — OAuth uses top-level navigation (SameSite=Lax suffices).
 
         $Log_file_time = $this->oauthUtility->getStoreConfig(OAuthConstants::LOG_FILE_TIME);
         $current_time = time();
@@ -89,7 +92,7 @@ class SendAuthorizationRequest extends BaseAction
             $chk_enable_log = 0;
             $this->oauthUtility->setStoreConfig(OAuthConstants::LOG_FILE_TIME, null);
             $this->oauthUtility->deleteCustomLogFile();
-            $this->oauthUtility->flushCache();
+            //$this->oauthUtility->flushCache(); // REMOVED for performance
         }
         $chk_enable_log ? $this->oauthUtility->customlog("SendAuthorizationRequest: execute") : null;
 
