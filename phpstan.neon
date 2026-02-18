@@ -2,7 +2,7 @@ includes:
     - %rootDir%/../../bitexpert/phpstan-magento/extension.neon
 
 parameters:
-    level: 1
+    level: 4
     paths:
         - .
     excludePaths:

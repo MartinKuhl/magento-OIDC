@@ -129,10 +129,10 @@ vendor/bin/psalm --no-cache --config=github/OIDC/psalm.xml --alter --issues=Miss
 
 /var/www/html/vendor/bin/phpcs --extensions=php,phtml --standard=phpcs.xml .
 
-please look at @github/OIDC/Code-Review.md here you find phpcs issues mentioned for different files. Fix them all. Use sub-agents where applicable. DO not create new issue for PHPStan or PHPCS scans.
-
 phpcbf --standard=phpcs.xml  --extensions=php,phtml view/frontend/templates/customerssobutton.phtml
 phpcbf --standard=phpcs.xml  --extensions=php,phtml view/adminhtml/templates/attrsettings.phtml
 
 /var/www/html/vendor/bin/phpcs  --extensions=php,phtml /var/www/html/github/OIDC/Model/Auth/OidcCredentialAdapter.php
 /var/www/html/vendor/bin/phpcbf  --extensions=php,phtml /var/www/html/github/OIDC/Model/Auth/OidcCredentialAdapter.php
+
+please look at @github/OIDC/Code-Review.md here you find phpcs issues mentioned for different files. Fix them all. Use sub-agents where applicable. DO not create new issue for PHPStan or PHPCS scans.
