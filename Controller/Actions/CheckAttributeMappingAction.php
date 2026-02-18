@@ -31,117 +31,117 @@ class CheckAttributeMappingAction extends BaseAction
     private const TEST_VALIDATE_RELAYSTATE = OAuthConstants::TEST_RELAYSTATE;
 
     /**
-     * @var array|null Raw userinfo response from provider 
+     * @var array|null Raw userinfo response from provider
      */
     private $userInfoResponse;
 
     /**
-     * @var array|null Flattened userinfo attributes 
+     * @var array|null Flattened userinfo attributes
      */
     private $flattenedUserInfoResponse;
 
     /**
-     * @var string|null Relay state 
+     * @var string|null Relay state
      */
     private $relayState;
 
     /**
-     * @var string|null User email extracted from attributes 
+     * @var string|null User email extracted from attributes
      */
     private $userEmail;
 
     /**
-     * @var string|null Login type (admin|customer) 
+     * @var string|null Login type (admin|customer)
      */
     private $loginType;
 
     /**
-     * @var string Email attribute mapping key 
+     * @var string Email attribute mapping key
      */
     private $emailAttribute;
 
     /**
-     * @var string Username attribute mapping key 
+     * @var string Username attribute mapping key
      */
     private $usernameAttribute;
 
     /**
-     * @var string First name attribute mapping key 
+     * @var string First name attribute mapping key
      */
     private $firstName;
 
     /**
-     * @var string Last name attribute mapping key 
+     * @var string Last name attribute mapping key
      */
     private $lastName;
 
     /**
-     * @var string Match by setting 
+     * @var string Match by setting
      */
     private $checkIfMatchBy;
 
     /**
-     * @var string Group attribute mapping key 
+     * @var string Group attribute mapping key
      */
     private $groupName;
 
     /**
-     * @var \MiniOrange\OAuth\Helper\TestResults 
+     * @var \MiniOrange\OAuth\Helper\TestResults
      */
     private $testResults;
 
     /**
-     * @var \MiniOrange\OAuth\Controller\Actions\ShowTestResults 
+     * @var \MiniOrange\OAuth\Controller\Actions\ShowTestResults
      */
     private $testAction;
 
     /**
-     * @var \MiniOrange\OAuth\Controller\Actions\ProcessUserAction 
+     * @var \MiniOrange\OAuth\Controller\Actions\ProcessUserAction
      */
     private $processUserAction;
 
     /**
-     * @var \Magento\User\Model\UserFactory 
+     * @var \Magento\User\Model\UserFactory
      */
     protected $userFactory;
 
     /**
-     * @var \Magento\Backend\Model\UrlInterface 
+     * @var \Magento\Backend\Model\UrlInterface
      */
     protected $backendUrl;
 
     /**
-     * @var \Magento\Authorization\Model\ResourceModel\Role\Collection 
+     * @var \Magento\Authorization\Model\ResourceModel\Role\Collection
      */
     protected $roleCollection;
 
     /**
-     * @var \Magento\Framework\Math\Random 
+     * @var \Magento\Framework\Math\Random
      */
     protected $randomUtility;
 
     /**
-     * @var AdminUserCreator 
+     * @var AdminUserCreator
      */
     protected $adminUserCreator;
 
     /**
-     * @var \Magento\Customer\Model\Session 
+     * @var \Magento\Customer\Model\Session
      */
     protected $customerSession;
 
     /**
-     * @var CookieManagerInterface 
+     * @var CookieManagerInterface
      */
     protected $cookieManager;
 
     /**
-     * @var CookieMetadataFactory 
+     * @var CookieMetadataFactory
      */
     protected $cookieMetadataFactory;
 
     /**
-     * @var OAuthSecurityHelper 
+     * @var OAuthSecurityHelper
      */
     private $securityHelper;
 
@@ -444,14 +444,16 @@ class CheckAttributeMappingAction extends BaseAction
 
             // Note: The data is passed to the helper
             $output = $this->testResults->output(
-                null, false, [
+                null,
+                false,
+                [
                 'mail' => $email,
                 'userinfo' => $flattenedattrs
                 ]
             );
 
             /**
- * @var RawResult $result 
+ * @var RawResult $result
 */
             $result = $this->resultFactory->create(ResultFactory::TYPE_RAW);
             $result->setContents($output);

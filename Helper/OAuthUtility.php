@@ -29,62 +29,62 @@ use MiniOrange\OAuth\Helper\Data;
 class OAuthUtility extends Data
 {
     /**
-     * @var \Magento\Backend\Model\Session 
+     * @var \Magento\Backend\Model\Session
      */
     protected $adminSession;
 
     /**
-     * @var \Magento\Customer\Model\Session 
+     * @var \Magento\Customer\Model\Session
      */
     protected $customerSession;
 
     /**
-     * @var \Magento\Backend\Model\Auth\Session 
+     * @var \Magento\Backend\Model\Auth\Session
      */
     protected $authSession;
 
     /**
-     * @var \Magento\Framework\App\Cache\TypeListInterface 
+     * @var \Magento\Framework\App\Cache\TypeListInterface
      */
     protected $cacheTypeList;
 
     /**
-     * @var \Magento\Framework\App\Cache\Frontend\Pool 
+     * @var \Magento\Framework\App\Cache\Frontend\Pool
      */
     protected $cacheFrontendPool;
 
     /**
-     * @var \Magento\Framework\Filesystem\Driver\File 
+     * @var \Magento\Framework\Filesystem\Driver\File
      */
     protected $fileSystem;
 
     /**
-     * @var \Psr\Log\LoggerInterface 
+     * @var \Psr\Log\LoggerInterface
      */
     protected $logger;
 
     /**
-     * @var \Magento\Framework\App\Config\ReinitableConfigInterface 
+     * @var \Magento\Framework\App\Config\ReinitableConfigInterface
      */
     protected $reinitableConfig;
 
     /**
-     * @var \MiniOrange\OAuth\Logger\Logger 
+     * @var \MiniOrange\OAuth\Logger\Logger
      */
     protected $_logger;
 
     /**
-     * @var \Magento\Framework\App\ProductMetadataInterface 
+     * @var \Magento\Framework\App\ProductMetadataInterface
      */
     protected $productMetadata;
 
     /**
-     * @var \Magento\Framework\Stdlib\DateTime\DateTime 
+     * @var \Magento\Framework\Stdlib\DateTime\DateTime
      */
     protected $dateTime;
 
     /**
-     * @var \Magento\Framework\App\Filesystem\DirectoryList 
+     * @var \Magento\Framework\App\Filesystem\DirectoryList
      */
     protected $directoryList;
 
@@ -120,7 +120,7 @@ class OAuthUtility extends Data
      * @param \Magento\Framework\Escaper $escaper
      */
     public function __construct(
-        Context $context, 
+        Context $context,
         UserFactory $adminFactory,
         CustomerFactory $customerFactory,
         UrlInterface $urlInterface,
@@ -164,7 +164,7 @@ class OAuthUtility extends Data
             $customerResource,
             $encryptor,
             $escaper,
-            $logger  
+            $logger
         );
         
         $this->adminSession = $adminSession;

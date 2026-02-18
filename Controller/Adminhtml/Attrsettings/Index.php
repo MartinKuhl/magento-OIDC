@@ -24,12 +24,12 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
 {
 
     /**
-     * @var \Magento\Authorization\Model\ResourceModel\Role\Collection 
+     * @var \Magento\Authorization\Model\ResourceModel\Role\Collection
      */
     private $adminRoleModel;
 
     /**
-     * @var \Magento\Customer\Model\ResourceModel\Group\Collection 
+     * @var \Magento\Customer\Model\ResourceModel\Group\Collection
      */
     private $userGroupModel;
 
@@ -134,7 +134,8 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         // Save admin role mappings as JSON (filter out empty mappings)
         if (isset($params['oauth_role_mapping'])) {
             $roleMappings = array_filter(
-                $params['oauth_role_mapping'], function ($mapping) {
+                $params['oauth_role_mapping'],
+                function ($mapping) {
                     return !empty($mapping['group']) && !empty($mapping['role']);
                 }
             );

@@ -20,7 +20,7 @@ use MiniOrange\OAuth\Helper\Curl;
 class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetActionInterface
 {
     /**
-     * @var Curl 
+     * @var Curl
      */
     private Curl $curl;
 

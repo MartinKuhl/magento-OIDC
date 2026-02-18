@@ -20,32 +20,32 @@ abstract class BaseAdminAction extends \Magento\Backend\App\Action
 {
 
     /**
-     * @var \MiniOrange\OAuth\Helper\OAuthUtility 
+     * @var \MiniOrange\OAuth\Helper\OAuthUtility
      */
     protected $oauthUtility;
 
     /**
-     * @var \Magento\Backend\App\Action\Context 
+     * @var \Magento\Backend\App\Action\Context
      */
     protected $context;
 
     /**
-     * @var \Magento\Framework\View\Result\PageFactory 
+     * @var \Magento\Framework\View\Result\PageFactory
      */
     protected $resultPageFactory;
 
     /**
-     * @var \Magento\Framework\Message\ManagerInterface 
+     * @var \Magento\Framework\Message\ManagerInterface
      */
     protected $messageManager;
 
     /**
-     * @var \Psr\Log\LoggerInterface 
+     * @var \Psr\Log\LoggerInterface
      */
     protected $logger;
 
     /**
-     * @var \Magento\Framework\Auth\AuthorizationInterface 
+     * @var \Magento\Framework\Auth\AuthorizationInterface
      */
     protected $_authorization;
 
@@ -130,7 +130,7 @@ abstract class BaseAdminAction extends \Magento\Backend\App\Action
     }
 
     /**
-     * This function is abstract that needs to be implemented by each Action Class 
+     * This function is abstract that needs to be implemented by each Action Class
      */
     abstract public function execute();
 }

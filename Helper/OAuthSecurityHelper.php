@@ -22,12 +22,12 @@ class OAuthSecurityHelper
     private const STATE_TTL = 600;     // 10 minutes
 
     /**
-     * @var CacheInterface 
+     * @var CacheInterface
      */
     private CacheInterface $cache;
 
     /**
-     * @var OAuthUtility 
+     * @var OAuthUtility
      */
     private OAuthUtility $oauthUtility;
 

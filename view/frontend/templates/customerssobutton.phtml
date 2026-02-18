@@ -6,7 +6,7 @@ $oidcVisibility = $block->getData('oidc_visibility');
 ?>
 <?php if ($oidcVisibility && $oidcVisibility->isCustomerButtonVisible()): ?>
 
-<?php if ($block->hasOidcError()): ?>
+    <?php if ($block->hasOidcError()): ?>
     <div style="
         width: 470px;
         margin: 10px 0 15px 0;

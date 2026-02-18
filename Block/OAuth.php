@@ -335,7 +335,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
                 // Filter out technical claims
                 return array_values(
                     array_filter(
-                        $claims, function ($claim) use ($excludedClaims) {
+                        $claims,
+                        function ($claim) use ($excludedClaims) {
                             return !in_array($claim, $excludedClaims);
                         }
                     )

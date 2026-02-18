@@ -38,17 +38,17 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
      * @return \Magento\Backend\Model\View\Result\Page
      */
     /**
-     * @var \Magento\Customer\Model\ResourceModel\Group\Collection 
+     * @var \Magento\Customer\Model\ResourceModel\Group\Collection
      */
     private $userGroupModel;
 
     /**
-     * @var \Magento\Framework\App\Response\Http\FileFactory 
+     * @var \Magento\Framework\App\Response\Http\FileFactory
      */
     protected $fileFactory;
 
     /**
-     * @var \Magento\Store\Model\StoreManagerInterface 
+     * @var \Magento\Store\Model\StoreManagerInterface
      */
     protected $_storeManager;
     /**

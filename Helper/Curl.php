@@ -11,7 +11,7 @@ namespace MiniOrange\OAuth\Helper;
 class Curl
 {
     /**
-     * @var OAuthUtility 
+     * @var OAuthUtility
      */
     private OAuthUtility $oauthUtility;
 

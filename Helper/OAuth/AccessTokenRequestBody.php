@@ -17,27 +17,27 @@ use MiniOrange\OAuth\Helper\OAuthConstants;
 class AccessTokenRequestBody
 {
     /**
-     * @var string 
+     * @var string
      */
     private $clientID;
 
     /**
-     * @var string 
+     * @var string
      */
     private $clientSecret;
 
     /**
-     * @var string 
+     * @var string
      */
     private $grantType;
 
     /**
-     * @var string 
+     * @var string
      */
     private $redirectURL;
 
     /**
-     * @var string 
+     * @var string
      */
     private $code;
 

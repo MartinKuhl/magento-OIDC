@@ -66,31 +66,31 @@ class CustomerUserCreator
 
     // Attribute mapping keys
     /**
-     * @var string|null OIDC claim name for date of birth 
+     * @var string|null OIDC claim name for date of birth
      */
     private $dobAttribute;
     /**
-     * @var string|null OIDC claim name for gender 
+     * @var string|null OIDC claim name for gender
      */
     private $genderAttribute;
     /**
-     * @var string|null OIDC claim name for phone number 
+     * @var string|null OIDC claim name for phone number
      */
     private $phoneAttribute;
     /**
-     * @var string|null OIDC claim name for street address 
+     * @var string|null OIDC claim name for street address
      */
     private $streetAttribute;
     /**
-     * @var string|null OIDC claim name for postal/zip code 
+     * @var string|null OIDC claim name for postal/zip code
      */
     private $zipAttribute;
     /**
-     * @var string|null OIDC claim name for city/locality 
+     * @var string|null OIDC claim name for city/locality
      */
     private $cityAttribute;
     /**
-     * @var string|null OIDC claim name for country 
+     * @var string|null OIDC claim name for country
      */
     private $countryAttribute;
 

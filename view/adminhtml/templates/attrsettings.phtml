@@ -243,8 +243,8 @@ $oauth_am_admin_role_mappings = $block->getAdminRoleMappings();
                             <div id="admin-role-mappings">
                                 <?php if (!empty($oauth_am_admin_role_mappings)): ?>
                                     <?php foreach ($oauth_am_admin_role_mappings as $index => $mapping): ?>
-                                       <?php $escapedIndex = $escaper->escapeHtmlAttr($index); ?>
-                                       <?php $escapedGroup = $escaper->escapeHtmlAttr($mapping['group'] ?? ''); ?>
+                                        <?php $escapedIndex = $escaper->escapeHtmlAttr($index); ?>
+                                        <?php $escapedGroup = $escaper->escapeHtmlAttr($mapping['group'] ?? ''); ?>
                                        <div class="mapping-row" style="margin-bottom: 10px;">
                                             <input type="text"
                                                 name="oauth_role_mapping[<?= $escapedIndex ?>][group]"

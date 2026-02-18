@@ -10,9 +10,9 @@ $oidcVisibility = $block->getData('oidc_visibility');
 ?>
 <?php if ($oidcVisibility && $oidcVisibility->isAdminButtonVisible()): ?>
 
-<?php
-$ssoUrl = $block->getAdminSPInitiatedUrl(null, $block->getAppName());
-?>
+    <?php
+    $ssoUrl = $block->getAdminSPInitiatedUrl(null, $block->getAppName());
+    ?>
 
 <div id="mo-sso-login-wrapper"
      style="display:none; text-align:center; width:100%;

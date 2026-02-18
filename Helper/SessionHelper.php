@@ -86,7 +86,7 @@ class SessionHelper
             $cookieValue = $this->cookieManager->getCookie($sessionName);
             if ($cookieValue !== null) {
                 /**
- * @var PublicCookieMetadata $metadata 
+ * @var PublicCookieMetadata $metadata
 */
                 $metadata = $this->cookieMetadataFactory->createPublicCookieMetadata()
                     ->setPath('/')
@@ -117,7 +117,7 @@ class SessionHelper
                 $path = (strpos($candidateName, $adminFrontName) !== false) ? '/' . $adminFrontName : '/';
 
                 /**
- * @var PublicCookieMetadata $metadata 
+ * @var PublicCookieMetadata $metadata
 */
                 $metadata = $this->cookieMetadataFactory->createPublicCookieMetadata()
                     ->setPath($path)
@@ -151,7 +151,7 @@ class SessionHelper
             }
 
             /**
- * @var PublicCookieMetadata $metadata 
+ * @var PublicCookieMetadata $metadata
 */
             $metadata = $this->cookieMetadataFactory->createPublicCookieMetadata()
                 ->setPath('/')

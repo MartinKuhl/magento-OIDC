@@ -15,37 +15,37 @@ class AuthorizationRequest
 {
 
     /**
-     * @var string 
+     * @var string
      */
     private $clientID;
 
     /**
-     * @var string 
+     * @var string
      */
     private $scope;
 
     /**
-     * @var string 
+     * @var string
      */
     private $authorizeURL;
 
     /**
-     * @var string 
+     * @var string
      */
     private $responseType;
 
     /**
-     * @var string 
+     * @var string
      */
     private $redirectURL;
 
     /**
-     * @var array 
+     * @var array
      */
     private $params;
 
     /**
-     * @var string 
+     * @var string
      */
     private $state;
 
