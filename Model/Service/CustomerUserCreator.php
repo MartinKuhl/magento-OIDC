@@ -19,29 +19,23 @@ use Magento\Customer\Api\Data\CustomerInterface;
  */
 class CustomerUserCreator
 {
-    private \Magento\Customer\Model\CustomerFactory $customerFactory;
+    private readonly \Magento\Customer\Model\CustomerFactory $customerFactory;
 
-    private \Magento\Customer\Api\Data\AddressInterfaceFactory $addressFactory;
+    private readonly \Magento\Customer\Api\Data\AddressInterfaceFactory $addressFactory;
 
-    private \Magento\Customer\Api\AddressRepositoryInterface $addressRepository;
+    private readonly \Magento\Customer\Api\AddressRepositoryInterface $addressRepository;
 
-    private \Magento\Store\Model\StoreManagerInterface $storeManager;
+    private readonly \Magento\Store\Model\StoreManagerInterface $storeManager;
 
-    private \Magento\Framework\Math\Random $randomUtility;
+    private readonly \Magento\Framework\Math\Random $randomUtility;
 
-    private \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
+    private readonly \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
 
-    /**
-     * @var CountryCollectionFactory
-     */
-    private CountryCollectionFactory $countryCollectionFactory;
+    private readonly CountryCollectionFactory $countryCollectionFactory;
 
-    private \Magento\Framework\Stdlib\DateTime\DateTime $dateTime;
+    private readonly \Magento\Framework\Stdlib\DateTime\DateTime $dateTime;
 
-    /**
-     * @var DirectoryData
-     */
-    private DirectoryData $directoryData;
+    private readonly DirectoryData $directoryData;
 
     // Attribute mapping keys
     /**
@@ -73,7 +67,7 @@ class CustomerUserCreator
      */
     private $countryAttribute;
 
-    private \Magento\Customer\Api\CustomerRepositoryInterface $customerRepository;
+    private readonly \Magento\Customer\Api\CustomerRepositoryInterface $customerRepository;
 
     /**
      * Initialize customer user creator service.
@@ -106,8 +100,6 @@ class CustomerUserCreator
 
     /**
      * Initialize attribute mapping from configuration.
-     *
-     * @return void
      */
     private function initializeAttributeMapping(): void
     {
@@ -203,7 +195,7 @@ class CustomerUserCreator
             $savedCustomer = $this->customerRepository->save($customerDataModel, $randomPassword);
 
             $this->oauthUtility->customlog(
-                "CustomerUserCreator: Customer created with ID: " . $savedCustomer->getId()
+                "CustomerUserCreator: Customer created with ID: " . (string) $savedCustomer->getId()
             );
 
             // Create customer address
@@ -257,7 +249,7 @@ class CustomerUserCreator
 
             $this->addressRepository->save($address);
             $this->oauthUtility->customlog(
-                "CustomerUserCreator: Address created for customer ID: " . $customer->getId()
+                "CustomerUserCreator: Address created for customer ID: " . (string) $customer->getId()
             );
 
         } catch (\Exception $e) {
@@ -382,7 +374,7 @@ class CustomerUserCreator
             $countryCollection = $this->countryCollectionFactory->create();
             foreach ($countryCollection as $countryItem) {
                 $countryName = $countryItem->getName();
-                if ($countryName !== null && strcasecmp($countryName, $country) === 0) {
+                if ($countryName !== null && strcasecmp((string) $countryName, $country) === 0) {
                     return $countryItem->getId();
                 }
             }

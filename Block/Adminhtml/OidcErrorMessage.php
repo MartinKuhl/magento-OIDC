@@ -20,7 +20,7 @@ class OidcErrorMessage extends Template
     {
         $encodedMessage = $this->getRequest()->getParam('oidc_error');
         if ($encodedMessage) {
-            $decoded = urldecode($encodedMessage);
+            $decoded = urldecode((string) $encodedMessage);
             $decoded = trim($decoded);
             return $decoded === '' ? null : $decoded;
         }

@@ -18,18 +18,15 @@ class SessionHelper
      * Known admin-related cookie names to update with SameSite=None.
      * Used instead of iterating $_COOKIE directly.
      */
-    private const ADMIN_COOKIE_NAMES = ['PHPSESSID', 'admin'];
+    private const array ADMIN_COOKIE_NAMES = ['PHPSESSID', 'admin'];
 
-    private \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager;
+    private readonly \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager;
 
-    private \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory;
+    private readonly \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory;
 
-    private \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
+    private readonly \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
 
-    /**
-     * @var BackendUrlInterface
-     */
-    private BackendUrlInterface $backendUrl;
+    private readonly BackendUrlInterface $backendUrl;
 
     /**
      * Initialize session helper.

@@ -18,9 +18,9 @@ use Psr\Log\LoggerInterface;
  */
 class AdminLoginRestrictionPlugin
 {
-    private OAuthUtility $oauthUtility;
+    private readonly OAuthUtility $oauthUtility;
 
-    private LoggerInterface $logger;
+    private readonly LoggerInterface $logger;
 
     /**
      * Constructor
@@ -42,7 +42,7 @@ class AdminLoginRestrictionPlugin
      * @param  string $password
      * @throws AuthenticationException
      */
-    public function beforeLogin(Auth $subject, string $username, $password)
+    public function beforeLogin(Auth $subject, string $username, $password): null
     {
         $isDisabled = $this->oauthUtility->getStoreConfig(
             OAuthConstants::DISABLE_NON_OIDC_ADMIN_LOGIN

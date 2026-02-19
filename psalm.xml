@@ -34,5 +34,8 @@
         <!-- Magento Factory-Klassen werden zur Laufzeit generiert -->
         <UndefinedDocblockClass errorLevel="suppress" />
 
+        <!-- Magento Magic Methods (getId, setEmail, etc.) sind Framework-Level -->
+        <UndefinedMagicMethod errorLevel="suppress" />
+
     </issueHandlers>
 </psalm>

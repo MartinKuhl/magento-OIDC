@@ -101,5 +101,6 @@ abstract class BaseAction extends \Magento\Framework\App\Action\Action
     /**
      * This function is abstract that needs to be implemented by each Action Class
      */
+    #[\Override]
     abstract public function execute();
 }

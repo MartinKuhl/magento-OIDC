@@ -70,11 +70,11 @@ class CheckAttributeMappingAction extends BaseAction
      */
     private $groupName;
 
-    private \MiniOrange\OAuth\Helper\TestResults $testResults;
+    private readonly \MiniOrange\OAuth\Helper\TestResults $testResults;
 
-    private \MiniOrange\OAuth\Controller\Actions\ShowTestResults $testAction;
+    private readonly \MiniOrange\OAuth\Controller\Actions\ShowTestResults $testAction;
 
-    private \MiniOrange\OAuth\Controller\Actions\ProcessUserAction $processUserAction;
+    private readonly \MiniOrange\OAuth\Controller\Actions\ProcessUserAction $processUserAction;
 
     protected \Magento\User\Model\UserFactory $userFactory;
 
@@ -92,7 +92,7 @@ class CheckAttributeMappingAction extends BaseAction
 
     protected \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory;
 
-    private \MiniOrange\OAuth\Helper\OAuthSecurityHelper $securityHelper;
+    private readonly \MiniOrange\OAuth\Helper\OAuthSecurityHelper $securityHelper;
 
     /**
      * Constructor with dependency injection
@@ -158,6 +158,7 @@ class CheckAttributeMappingAction extends BaseAction
      * Admin users are redirected to a separate callback endpoint that handles
      * admin authentication. Regular users proceed with the normal customer login flow.
      */
+    #[\Override]
     public function execute(): \Magento\Framework\Controller\ResultInterface
     {
         $attrs = $this->userInfoResponse;
@@ -406,7 +407,7 @@ class CheckAttributeMappingAction extends BaseAction
     private function processFirstName(&$attrs): void
     {
         if (!isset($attrs[$this->firstName])) {
-            $parts = explode("@", $this->userEmail);
+            $parts = explode("@", (string) $this->userEmail);
             $attrs[$this->firstName] = $parts[0];
             $this->oauthUtility->customlog("First name not provided, using email prefix: " . $parts[0]);
         }
@@ -422,7 +423,7 @@ class CheckAttributeMappingAction extends BaseAction
     private function processLastName(&$attrs): void
     {
         if (!isset($attrs[$this->lastName])) {
-            $parts = explode("@", $this->userEmail);
+            $parts = explode("@", (string) $this->userEmail);
             $attrs[$this->lastName] = isset($parts[1]) ? $parts[1] : '';
             $this->oauthUtility->customlog(
                 "Last name not provided, using email domain: " . ($parts[1] ?? 'empty')

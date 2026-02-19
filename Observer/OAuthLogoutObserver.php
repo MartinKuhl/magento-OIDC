@@ -17,13 +17,13 @@ use MiniOrange\OAuth\Helper\OAuthConstants;
  */
 class OAuthLogoutObserver implements ObserverInterface
 {
-    private \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
+    private readonly \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
 
     protected \Magento\Framework\App\ResponseInterface $_response;
 
-    private CookieManagerInterface $cookieManager;
+    private readonly CookieManagerInterface $cookieManager;
 
-    private CookieMetadataFactory $cookieMetadataFactory;
+    private readonly CookieMetadataFactory $cookieMetadataFactory;
 
     /**
      * Initialize OAuth logout observer.
@@ -56,6 +56,7 @@ class OAuthLogoutObserver implements ObserverInterface
      *
      * @param Observer $observer Event observer
      */
+    #[\Override]
     public function execute(Observer $observer): void
     {
         // Clean up OIDC customer cookie on logout

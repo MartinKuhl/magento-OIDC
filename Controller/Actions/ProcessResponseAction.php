@@ -20,7 +20,7 @@ class ProcessResponseAction extends BaseAction
      */
     private $userInfoResponse;
 
-    private \MiniOrange\OAuth\Controller\Actions\CheckAttributeMappingAction $attrMappingAction;
+    private readonly \MiniOrange\OAuth\Controller\Actions\CheckAttributeMappingAction $attrMappingAction;
 
     /**
      * Initialize process response action.
@@ -40,6 +40,7 @@ class ProcessResponseAction extends BaseAction
      *
      * @throws IncorrectUserInfoDataException
      */
+    #[\Override]
     public function execute()
     {
         $this->oauthUtility->customlog("processResponseAction: execute");
@@ -114,7 +115,7 @@ class ProcessResponseAction extends BaseAction
         return $result;
     }
 
-    private const MAX_RECURSION_DEPTH = 5;
+    private const int MAX_RECURSION_DEPTH = 5;
 
     /**
      * Recursively search for an email address in the user info array
@@ -139,7 +140,7 @@ class ProcessResponseAction extends BaseAction
 
         foreach ($arr as $value) {
             if (is_scalar($value) && filter_var($value, FILTER_VALIDATE_EMAIL)) {
-                $this->oauthUtility->customlog("ProcessResponseAction: findUserEmail found: " . $value);
+                $this->oauthUtility->customlog("ProcessResponseAction: findUserEmail found: " . (string) $value);
                 return $value;
             }
 

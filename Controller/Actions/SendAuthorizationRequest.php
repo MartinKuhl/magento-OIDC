@@ -13,9 +13,9 @@ use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
  */
 class SendAuthorizationRequest extends BaseAction
 {
-    private \MiniOrange\OAuth\Helper\OAuthSecurityHelper $securityHelper;
+    private readonly \MiniOrange\OAuth\Helper\OAuthSecurityHelper $securityHelper;
 
-    private \Magento\Framework\Session\SessionManagerInterface $sessionManager;
+    private readonly \Magento\Framework\Session\SessionManagerInterface $sessionManager;
 
     /**
      * Initialize send authorization request action.
@@ -36,6 +36,7 @@ class SendAuthorizationRequest extends BaseAction
      *
      * @throws \Exception
      */
+    #[\Override]
     public function execute()
     {
         // configureSSOSession() removed: it creates a host-only PHPSESSID cookie (no domain)
@@ -58,12 +59,12 @@ class SendAuthorizationRequest extends BaseAction
             $this->oauthUtility->deleteCustomLogFile();
             //$this->oauthUtility->flushCache(); // REMOVED for performance
         }
-        if ($chk_enable_log) {
+        if ($chk_enable_log !== 0) {
             $this->oauthUtility->customlog("SendAuthorizationRequest: execute");
         }
 
         $params = $this->getRequest()->getParams();
-        if ($chk_enable_log) {
+        if ($chk_enable_log !== 0) {
             $this->oauthUtility->customlog(
                 "SendAuthorizationRequest: Request prarms: " . implode(" ", $params)
             );
@@ -114,7 +115,7 @@ class SendAuthorizationRequest extends BaseAction
         $this->oauthUtility->setSessionData(OAuthConstants::APP_NAME, $app_name);
 
         $clientDetails = $this->oauthUtility->getClientDetailsByAppName($app_name);
-        if (empty($clientDetails)) {
+        if ($clientDetails === null || $clientDetails === []) {
             $errorRedirect = $this->oauthUtility->getBaseUrl() . 'customer/account/login';
             $this->messageManager->addErrorMessage(
                 'Provided App name is not configured. Please contact the administrator for assistance.'
@@ -147,7 +148,7 @@ class SendAuthorizationRequest extends BaseAction
             $relayState,
             $params
         ))->build();
-        if ($chk_enable_log) {
+        if ($chk_enable_log !== 0) {
             $this->oauthUtility->customlog(
                 "SendAuthorizationRequest:  Authorization Request: " . $authorizationRequest
             );

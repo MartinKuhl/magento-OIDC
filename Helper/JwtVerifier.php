@@ -12,11 +12,11 @@ use Magento\Framework\App\CacheInterface;
  */
 class JwtVerifier
 {
-    private OAuthUtility $oauthUtility;
+    private readonly OAuthUtility $oauthUtility;
 
-    private CacheInterface $cache;
+    private readonly CacheInterface $cache;
 
-    private \Magento\Framework\HTTP\Adapter\CurlFactory $curlFactory;
+    private readonly \Magento\Framework\HTTP\Adapter\CurlFactory $curlFactory;
 
     /**
      * Initialize JWT verifier.
@@ -62,7 +62,7 @@ class JwtVerifier
             'RS512' => OPENSSL_ALGO_SHA512,
         ];
 
-        $alg = strtoupper($header['alg']);
+        $alg = strtoupper((string) $header['alg']);
         if (!isset($algMap[$alg])) {
             $this->oauthUtility->customlog("JwtVerifier: Unsupported algorithm: " . $alg);
             return null;
@@ -212,7 +212,7 @@ class JwtVerifier
             }
 
             // Match by alg if provided in JWKS
-            if (isset($key['alg']) && strtoupper($key['alg']) !== $alg) {
+            if (isset($key['alg']) && strtoupper((string) $key['alg']) !== $alg) {
                 continue;
             }
 

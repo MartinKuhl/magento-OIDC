@@ -41,11 +41,10 @@ class AccessTokenRequest
      *
      * @param string $clientID
      * @param string $clientSecret
-     * @param string $grantType
      * @param string $redirectURL
      * @param string $code
      */
-    public function __construct($clientID, $clientSecret, $grantType, $redirectURL, $code)
+    public function __construct($clientID, $clientSecret, $redirectURL, $code)
     {
         // all values required in the authn request are set here
         $this->clientID = $clientID;

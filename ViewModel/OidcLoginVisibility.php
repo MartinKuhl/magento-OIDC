@@ -20,11 +20,11 @@ use MiniOrange\OAuth\Helper\OAuthConstants;
  */
 class OidcLoginVisibility implements ArgumentInterface
 {
-    private OAuthUtility $oauthUtility;
+    private readonly OAuthUtility $oauthUtility;
 
-    private AdminUserCollectionFactory $adminUserCollectionFactory;
+    private readonly AdminUserCollectionFactory $adminUserCollectionFactory;
 
-    private CustomerCollectionFactory $customerCollectionFactory;
+    private readonly CustomerCollectionFactory $customerCollectionFactory;
 
     /**
      * Constructor

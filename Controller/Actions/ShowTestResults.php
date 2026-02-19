@@ -42,15 +42,15 @@ class ShowTestResults extends Action
      */
     private $hasExceptionOccurred;
 
-    private OAuthUtility $oauthUtility;
+    private readonly OAuthUtility $oauthUtility;
 
     protected \Magento\Framework\App\Request\Http $request;
 
     protected \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig;
 
-    private \Magento\Framework\Escaper $escaper;
+    private readonly \Magento\Framework\Escaper $escaper;
 
-    private \Magento\Customer\Model\Session $customerSession;
+    private readonly \Magento\Customer\Model\Session $customerSession;
 
     /**
      * @var string HTML template for the test results page
@@ -137,6 +137,7 @@ class ShowTestResults extends Action
     /**
      * Hauptfunktion: Daten aus der Session holen (mit Key), anzeigen und Body ausgeben.
      */
+    #[\Override]
     public function execute(): \Magento\Framework\Controller\ResultInterface
     {
         // Check for OIDC error first
@@ -181,7 +182,7 @@ class ShowTestResults extends Action
         }
 
         $data = $this->template;
-        if (empty($data)) {
+        if ($data === '' || $data === '0' || $data === []) {
             $data = "No attribute found";
         }
 

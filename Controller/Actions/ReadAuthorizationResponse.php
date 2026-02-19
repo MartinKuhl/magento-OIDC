@@ -20,17 +20,17 @@ class ReadAuthorizationResponse extends BaseAction
      */
     protected $_url;
 
-    private \Magento\Customer\Model\Session $customerSession;
+    private readonly \Magento\Customer\Model\Session $customerSession;
 
-    private \MiniOrange\OAuth\Helper\OAuthSecurityHelper $securityHelper;
+    private readonly \MiniOrange\OAuth\Helper\OAuthSecurityHelper $securityHelper;
 
-    private \MiniOrange\OAuth\Helper\JwtVerifier $jwtVerifier;
+    private readonly \MiniOrange\OAuth\Helper\JwtVerifier $jwtVerifier;
 
-    private \MiniOrange\OAuth\Helper\Curl $curl;
+    private readonly \MiniOrange\OAuth\Helper\Curl $curl;
 
-    private \MiniOrange\OAuth\Model\Service\OidcAuthenticationService $oidcAuthService;
+    private readonly \MiniOrange\OAuth\Model\Service\OidcAuthenticationService $oidcAuthService;
 
-    private \MiniOrange\OAuth\Controller\Actions\CheckAttributeMappingAction $attrMappingAction;
+    private readonly \MiniOrange\OAuth\Controller\Actions\CheckAttributeMappingAction $attrMappingAction;
 
     /**
      * Initialize read authorization response action.
@@ -64,6 +64,7 @@ class ReadAuthorizationResponse extends BaseAction
      *
      * @return \Magento\Framework\Controller\ResultInterface|\Magento\Framework\App\ResponseInterface
      */
+    #[\Override]
     public function execute()
     {
         // configureSSOSession() removed from callback handler.
@@ -86,7 +87,7 @@ class ReadAuthorizationResponse extends BaseAction
                     $relayState = $stateData['relayState'];
                 } else {
                     // Legacy pipe-delimited format (backward compatibility)
-                    $parts = explode('|', $params['state']);
+                    $parts = explode('|', (string) $params['state']);
                     $loginType = isset($parts[3]) ? $parts[3] : OAuthConstants::LOGIN_TYPE_CUSTOMER;
                     $relayState = isset($parts[0]) ? urldecode($parts[0]) : '';
                 }
@@ -94,16 +95,16 @@ class ReadAuthorizationResponse extends BaseAction
 
             if (isset($params['error'])) {
                 $errorMsg = $params['error_description'] ?? $params['error'];
-                $encodedError = base64_encode($errorMsg);
+                $encodedError = base64_encode((string) $errorMsg);
 
                 $isTest = (
                     ($this->oauthUtility->getStoreConfig(OAuthConstants::IS_TEST) == true)
-                    || (strpos($relayState, 'showTestResults') !== false)
+                    || (strpos((string) $relayState, 'showTestResults') !== false)
                 );
 
-                if ($isTest && strpos($relayState, 'showTestResults') !== false) {
+                if ($isTest && strpos((string) $relayState, 'showTestResults') !== false) {
                     // Test mode: redirect to showTestResults with error
-                    $errorUrl = $relayState . (strpos($relayState, '?') !== false ? '&' : '?')
+                    $errorUrl = $relayState . (strpos((string) $relayState, '?') !== false ? '&' : '?')
                         . 'oidc_error=' . $encodedError;
                     return $this->_redirect($errorUrl);
                 }
@@ -133,7 +134,7 @@ class ReadAuthorizationResponse extends BaseAction
             $stateToken = $stateData['stateToken'];
         } else {
             // Legacy pipe-delimited format (backward compatibility during rollout)
-            $parts = explode('|', $combinedRelayState);
+            $parts = explode('|', (string) $combinedRelayState);
             $relayState = urldecode($parts[0]);
             $originalSessionId = isset($parts[1]) ? $parts[1] : '';
             $app_name = isset($parts[2]) ? urldecode($parts[2]) : '';
@@ -145,7 +146,7 @@ class ReadAuthorizationResponse extends BaseAction
         $this->oauthUtility->customlog(
             "ReadAuthResponse: Validating state token. "
             . "Original Session ID: " . $originalSessionId
-            . ", State Token: " . substr($stateToken, 0, 8) . "..."
+            . ", State Token: " . substr((string) $stateToken, 0, 8) . "..."
         );
 
         if (empty($stateToken)
@@ -200,12 +201,11 @@ class ReadAuthorizationResponse extends BaseAction
         $grantType = isset($clientDetails['grant_type']) ? $clientDetails['grant_type'] : 'authorization_code';
 
         if ($header == 1 && $body == 0) {
-            $accessTokenRequest = (new AccessTokenRequestBody($grantType, $redirectURL, $authorizationCode))->build();
+            $accessTokenRequest = (new AccessTokenRequestBody($redirectURL, $authorizationCode))->build();
         } else {
             $accessTokenRequest = (new AccessTokenRequest(
                 $clientID,
                 $clientSecret,
-                $grantType,
                 $redirectURL,
                 $authorizationCode
             ))->build();
@@ -244,7 +244,7 @@ class ReadAuthorizationResponse extends BaseAction
                             $expectedIssuer = preg_replace(
                                 '#/\.well-known/openid-configuration$#i',
                                 '',
-                                $wellKnownUrl
+                                (string) $wellKnownUrl
                             );
                         }
                     }
@@ -311,12 +311,12 @@ class ReadAuthorizationResponse extends BaseAction
         $isTest = (
             ($this->oauthUtility->getStoreConfig(OAuthConstants::IS_TEST) == true)
             || (isset($params['option']) && $params['option'] === OAuthConstants::TEST_CONFIG_OPT)
-            || (strpos($relayState, 'showTestResults') !== false)
+            || (strpos((string) $relayState, 'showTestResults') !== false)
         );
 
         if ($isTest) {
             // Extract test key from relayState (e.g. /key/abc123...)
-            preg_match('/key\/([a-f0-9]{32,})/', $relayState, $matches);
+            preg_match('/key\/([a-f0-9]{32,})/', (string) $relayState, $matches);
             $testKey = $matches[1] ?? '';
             if ($testKey !== '' && $testKey !== '0') {
                 $testResults = $this->customerSession->getData('mooauth_test_results') ?: [];
@@ -366,7 +366,7 @@ class ReadAuthorizationResponse extends BaseAction
         $this->oidcAuthService->flattenAttributes('', $userInfoResponseData, $flattenedResponse);
 
         $userEmail = $this->oidcAuthService->extractEmail($flattenedResponse, $userInfoResponseData);
-        if (empty($userEmail)) {
+        if ($userEmail === '' || $userEmail === '0') {
             $this->messageManager->addErrorMessage(
                 __('Email address not received. Please check attribute mapping.')
             );

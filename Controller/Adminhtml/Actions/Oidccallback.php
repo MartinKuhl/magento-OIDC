@@ -44,14 +44,11 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
 
     protected \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory;
 
-    /**
-     * @var BackendUrlInterface
-     */
     protected BackendUrlInterface $backendUrl;
 
-    private \MiniOrange\OAuth\Helper\OAuthSecurityHelper $securityHelper;
+    private readonly \MiniOrange\OAuth\Helper\OAuthSecurityHelper $securityHelper;
 
-    private \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig;
+    private readonly \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig;
 
     protected \Magento\User\Model\ResourceModel\User\CollectionFactory $userCollectionFactory;
 
@@ -93,6 +90,7 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
      *
      * @return \Magento\Framework\Controller\Result\Redirect
      */
+    #[\Override]
     public function execute()
     {
         $nonce = $this->cookieManager->getCookie('oidc_admin_nonce');

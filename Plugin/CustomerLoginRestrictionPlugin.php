@@ -19,9 +19,9 @@ use Psr\Log\LoggerInterface;
 
 class CustomerLoginRestrictionPlugin
 {
-    private OAuthUtility $oauthUtility;
+    private readonly OAuthUtility $oauthUtility;
 
-    private LoggerInterface $logger;
+    private readonly LoggerInterface $logger;
 
     /**
      * Constructor
@@ -46,7 +46,7 @@ class CustomerLoginRestrictionPlugin
         AccountManagementInterface $subject,
         string $email,
         $password
-    ) {
+    ): null {
         $isDisabled = $this->oauthUtility->getStoreConfig(
             OAuthConstants::DISABLE_NON_OIDC_CUSTOMER_LOGIN
         );

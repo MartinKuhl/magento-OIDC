@@ -96,19 +96,19 @@ class ProcessUserAction
      */
     private $countryAttribute;
 
-    private \MiniOrange\OAuth\Controller\Actions\CustomerLoginAction $customerLoginAction;
+    private readonly \MiniOrange\OAuth\Controller\Actions\CustomerLoginAction $customerLoginAction;
 
-    private \Magento\Store\Model\StoreManagerInterface $storeManager;
+    private readonly \Magento\Store\Model\StoreManagerInterface $storeManager;
 
-    private \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
+    private readonly \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
 
-    private \MiniOrange\OAuth\Model\Service\CustomerUserCreator $customerUserCreator;
+    private readonly \MiniOrange\OAuth\Model\Service\CustomerUserCreator $customerUserCreator;
 
-    private \Magento\Framework\Controller\Result\RedirectFactory $resultRedirectFactory;
+    private readonly \Magento\Framework\Controller\Result\RedirectFactory $resultRedirectFactory;
 
-    private \Magento\Framework\Message\ManagerInterface $messageManager;
+    private readonly \Magento\Framework\Message\ManagerInterface $messageManager;
 
-    private \Magento\Customer\Api\CustomerRepositoryInterface $customerRepository;
+    private readonly \Magento\Customer\Api\CustomerRepositoryInterface $customerRepository;
 
     /**
      * Initialize ProcessUserAction.
@@ -117,9 +117,7 @@ class ProcessUserAction
         OAuthUtility $oauthUtility,
         CustomerRepositoryInterface $customerRepository,
         StoreManagerInterface $storeManager,
-        ResponseFactory $responseFactory,
         CustomerLoginAction $customerLoginAction,
-        ScopeConfigInterface $scopeConfig,
         CustomerUserCreator $customerUserCreator,
         RedirectFactory $resultRedirectFactory,
         ManagerInterface $messageManager
@@ -251,7 +249,7 @@ class ProcessUserAction
         $store_url = rtrim($store_url, '/\\');
 
         if (isset($this->attrs['relayState'])
-            && !str_contains($this->attrs['relayState'], $store_url)
+            && !str_contains((string) $this->attrs['relayState'], $store_url)
             && $this->attrs['relayState'] != '/'
         ) {
             $this->attrs['relayState'] = $store_url;
@@ -313,7 +311,7 @@ class ProcessUserAction
             $this->attrs
         );
 
-        if ($customer === null) {
+        if (!$customer instanceof \Magento\Customer\Api\Data\CustomerInterface) {
             throw new \RuntimeException(
                 sprintf('Failed to create customer account for email: %s', $userEmail)
             );

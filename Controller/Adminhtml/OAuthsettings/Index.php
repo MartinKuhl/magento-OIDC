@@ -19,7 +19,7 @@ use MiniOrange\OAuth\Helper\Curl;
  */
 class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetActionInterface
 {
-    private Curl $curl;
+    private readonly Curl $curl;
 
     /**
      * Initialize OAuth settings controller.
@@ -41,6 +41,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
      *
      * @return \Magento\Framework\View\Result\Page
      */
+    #[\Override]
     public function execute()
     {
         try {
@@ -158,15 +159,15 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
      */
     private function processValuesAndSaveData(array $params): void
     {
-        $mo_oauth_app_name = trim($params['mo_oauth_app_name']);
-        $mo_oauth_client_id = trim($params['mo_oauth_client_id']);
-        $mo_oauth_client_secret = trim($params['mo_oauth_client_secret']);
-        $mo_oauth_scope = trim($params['mo_oauth_scope']);
-        $mo_oauth_authorize_url = trim($params['mo_oauth_authorize_url']);
-        $mo_oauth_accesstoken_url = trim($params['mo_oauth_accesstoken_url']);
-        $mo_oauth_getuserinfo_url = trim($params['mo_oauth_getuserinfo_url']);
-        $mo_oauth_well_known_config_url = isset($params['endpoint_url']) ? trim($params['endpoint_url']) : '';
-        $mo_oauth_issuer = isset($params['mo_oauth_issuer']) ? trim($params['mo_oauth_issuer']) : '';
+        $mo_oauth_app_name = trim((string) $params['mo_oauth_app_name']);
+        $mo_oauth_client_id = trim((string) $params['mo_oauth_client_id']);
+        $mo_oauth_client_secret = trim((string) $params['mo_oauth_client_secret']);
+        $mo_oauth_scope = trim((string) $params['mo_oauth_scope']);
+        $mo_oauth_authorize_url = trim((string) $params['mo_oauth_authorize_url']);
+        $mo_oauth_accesstoken_url = trim((string) $params['mo_oauth_accesstoken_url']);
+        $mo_oauth_getuserinfo_url = trim((string) $params['mo_oauth_getuserinfo_url']);
+        $mo_oauth_well_known_config_url = isset($params['endpoint_url']) ? trim((string) $params['endpoint_url']) : '';
+        $mo_oauth_issuer = isset($params['mo_oauth_issuer']) ? trim((string) $params['mo_oauth_issuer']) : '';
         $mo_oauth_grant_type = OAuthConstants::GRANT_TYPE;
         $send_header = isset($params['send_header']);
         $send_body = isset($params['send_body']);
@@ -208,6 +209,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
      *
      * @return bool
      */
+    #[\Override]
     protected function _isAllowed()
     {
         return $this->_authorization->isAllowed(OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_OAUTHSETTINGS);

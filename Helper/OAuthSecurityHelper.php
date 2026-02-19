@@ -12,17 +12,17 @@ use Magento\Framework\App\CacheInterface;
  */
 class OAuthSecurityHelper
 {
-    private const NONCE_CACHE_PREFIX = 'mooauth_nonce_';
+    private const string NONCE_CACHE_PREFIX = 'mooauth_nonce_';
     /**
      * Cache prefix for customer OIDC login nonces
      */
-    private const CUSTOMER_NONCE_CACHE_PREFIX = 'mooauth_custnonce_';
-    private const STATE_CACHE_PREFIX = 'mooauth_state_';
-    private const NONCE_TTL = 120;     // 2 minutes
-    private const STATE_TTL = 600;     // 10 minutes
-    private CacheInterface $cache;
+    private const string CUSTOMER_NONCE_CACHE_PREFIX = 'mooauth_custnonce_';
+    private const string STATE_CACHE_PREFIX = 'mooauth_state_';
+    private const int NONCE_TTL = 120;     // 2 minutes
+    private const int STATE_TTL = 600;     // 10 minutes
+    private readonly CacheInterface $cache;
 
-    private OAuthUtility $oauthUtility;
+    private readonly OAuthUtility $oauthUtility;
 
     /**
      * Initialize OAuth security helper.
@@ -294,7 +294,7 @@ class OAuthSecurityHelper
         $baseParsed = $this->oauthUtility->parseUrlComponents($baseUrl);
         $baseHost = $baseParsed['host'] ?? '';
 
-        if (strcasecmp($parsed['host'], $baseHost) !== 0) {
+        if (strcasecmp((string) $parsed['host'], (string) $baseHost) !== 0) {
             $this->oauthUtility->customlog(
                 "OAuthSecurityHelper: Blocked redirect to external host: " . $parsed['host']
             );

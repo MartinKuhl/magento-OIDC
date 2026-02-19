@@ -125,6 +125,7 @@ class OidcCredentialAdapter implements StorageInterface
      * @return bool
      * @throws AuthenticationException
      */
+    #[\Override]
     public function authenticate($username, $password)
     {
         $this->restoreDependencies();
@@ -203,6 +204,7 @@ class OidcCredentialAdapter implements StorageInterface
      * @return $this
      * @throws AuthenticationException
      */
+    #[\Override]
     public function login($username, $password)
     {
         $this->restoreDependencies();
@@ -224,6 +226,7 @@ class OidcCredentialAdapter implements StorageInterface
      *
      * @return $this
      */
+    #[\Override]
     public function reload()
     {
         $this->restoreDependencies();
@@ -242,6 +245,7 @@ class OidcCredentialAdapter implements StorageInterface
      *
      * @return bool
      */
+    #[\Override]
     public function hasAvailableResources()
     {
         return $this->hasAvailableResources;
@@ -253,6 +257,7 @@ class OidcCredentialAdapter implements StorageInterface
      * @param  bool $hasResources
      * @return $this
      */
+    #[\Override]
     public function setHasAvailableResources($hasResources)
     {
         $this->hasAvailableResources = (bool)$hasResources;

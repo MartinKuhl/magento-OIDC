@@ -13,11 +13,11 @@ use Magento\Framework\Escaper;
  */
 class OAuth extends \Magento\Framework\View\Element\Template
 {
-    private \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
+    private readonly \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
 
-    private \Magento\Authorization\Model\ResourceModel\Role\Collection $adminRoleModel;
+    private readonly \Magento\Authorization\Model\ResourceModel\Role\Collection $adminRoleModel;
 
-    private \Magento\Customer\Model\ResourceModel\Group\Collection $userGroupModel;
+    private readonly \Magento\Customer\Model\ResourceModel\Group\Collection $userGroupModel;
 
     protected \Magento\Customer\Model\Session $customerSession;
 
@@ -61,10 +61,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * Get customer session
-     *
-     * @return Session
      */
-    public function getCustomerSession()
+    public function getCustomerSession(): \Magento\Customer\Model\Session
     {
         return $this->customerSession;
     }
@@ -76,6 +74,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
      * @param  array|null|string $allowedTags Allowed HTML tags
      * @return array|string
      */
+    #[\Override]
     public function escapeHtml($data, $allowedTags = null)
     {
         // Normalize allowed tags to array|null as expected by Escaper::escapeHtml
@@ -97,6 +96,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
      * @param  bool   $escapeSingleQuote
      * @return string
      */
+    #[\Override]
     public function escapeHtmlAttr($string, $escapeSingleQuote = true)
     {
         return $this->escaper->escapeHtmlAttr($string, $escapeSingleQuote);
@@ -108,6 +108,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
      * @param  string $string
      * @return string
      */
+    #[\Override]
     public function escapeUrl($string)
     {
         return $this->escaper->escapeUrl($string);
@@ -119,6 +120,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
      * @param  string $string
      * @return string
      */
+    #[\Override]
     public function escapeJs($string)
     {
         return $this->escaper->escapeJs($string);
@@ -303,7 +305,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
         $storedClaims = $this->oauthUtility->getStoreConfig(OAuthConstants::RECEIVED_OIDC_CLAIMS);
         if (!$this->oauthUtility->isBlank($storedClaims)) {
-            $claims = json_decode($storedClaims, true);
+            $claims = json_decode((string) $storedClaims, true);
             if (is_array($claims) && $claims !== []) {
                 // Filter out technical claims
                 return array_values(
@@ -461,6 +463,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     /**
      * Get/Create Base URL of the site
      */
+    #[\Override]
     public function getBaseUrl()
     {
         return $this->oauthUtility->getBaseUrl();
@@ -631,7 +634,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     {
         $mappings = $this->oauthUtility->getStoreConfig('adminRoleMapping');
         if (!$this->oauthUtility->isBlank($mappings)) {
-            $decoded = json_decode($mappings, true);
+            $decoded = json_decode((string) $mappings, true);
             return is_array($decoded) ? $decoded : [];
         }
         return [];
@@ -769,20 +772,16 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * Retrieve the license expiry date.
-     *
-     * @return string|null
      */
-    public function getEdition()
+    public function getEdition(): string
     {
         return $this->oauthUtility->getEdition();
     }
 
     /**
      * Retrieve the current date.
-     *
-     * @return string|null
      */
-    public function getCurrentDate()
+    public function getCurrentDate(): string
     {
         return $this->oauthUtility->getCurrentDate();
     }

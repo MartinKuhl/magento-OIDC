@@ -30,35 +30,35 @@ use Psr\Log\LoggerInterface;
  */
 class Data extends AbstractHelper
 {
-    private UserFactory $adminFactory;
+    private readonly UserFactory $adminFactory;
 
-    private CustomerFactory $customerFactory;
+    private readonly CustomerFactory $customerFactory;
 
-    private UrlInterface $urlInterface;
+    private readonly UrlInterface $urlInterface;
 
-    private WriterInterface $configWriter;
+    private readonly WriterInterface $configWriter;
 
-    private AssetRepository $assetRepo;
+    private readonly AssetRepository $assetRepo;
 
-    private BackendHelper $helperBackend;
+    private readonly BackendHelper $helperBackend;
 
-    private Url $frontendUrl;
+    private readonly Url $frontendUrl;
 
-    private MiniorangeOauthClientAppsFactory $clientAppsFactory;
+    private readonly MiniorangeOauthClientAppsFactory $clientAppsFactory;
 
-    private ClientCollectionFactory $clientCollectionFactory;
+    private readonly ClientCollectionFactory $clientCollectionFactory;
 
-    private AppResource $appResource;
+    private readonly AppResource $appResource;
 
-    private UserResource $userResource;
+    private readonly UserResource $userResource;
 
-    private CustomerResource $customerResource;
+    private readonly CustomerResource $customerResource;
 
-    private EncryptorInterface $encryptor;
+    private readonly EncryptorInterface $encryptor;
 
-    private Escaper $escaper;
+    private readonly Escaper $escaper;
 
-    private LoggerInterface $logger;
+    private readonly LoggerInterface $logger;
 
     public function __construct(
         Context $context,
@@ -175,7 +175,7 @@ class Data extends AbstractHelper
         if ($data !== null && isset($data['client_secret']) && !empty($data['client_secret'])) {
             // Magento encrypted values use format "version:key_num:base64data" (e.g. "0:2:abc...")
             // Only attempt decryption if the value matches this pattern
-            if (preg_match('/^\d+:\d+:/', $data['client_secret'])) {
+            if (preg_match('/^\d+:\d+:/', (string) $data['client_secret'])) {
                 $data['client_secret'] = $this->encryptor->decrypt($data['client_secret']);
             }
             // Otherwise keep as-is (plaintext — will be encrypted on next admin save)

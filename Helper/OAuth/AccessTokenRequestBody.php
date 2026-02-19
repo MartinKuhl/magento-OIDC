@@ -29,11 +29,10 @@ class AccessTokenRequestBody
     /**
      * Initialize access token request body.
      *
-     * @param string $grantType
      * @param string $redirectURL
      * @param string $code
      */
-    public function __construct($grantType, $redirectURL, $code)
+    public function __construct($redirectURL, $code)
     {
         $this->redirectURL = $redirectURL;
         $this->code = $code;

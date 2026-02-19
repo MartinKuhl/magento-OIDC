@@ -10,7 +10,7 @@ namespace MiniOrange\OAuth\Helper;
  */
 class Curl
 {
-    private OAuthUtility $oauthUtility;
+    private readonly OAuthUtility $oauthUtility;
 
     /**
      * Initialize cURL helper.
@@ -32,7 +32,7 @@ class Curl
      * @param  int    $body         Whether to send credentials in body (1) or not (0)
      * @return string JSON response
      */
-    public function sendAccessTokenRequest($postData, $url, string $clientID, string $clientSecret, $header, $body): string
+    public function sendAccessTokenRequest($postData, string $url, string $clientID, string $clientSecret, $header, $body): string
     {
         if ($header == 0 && $body == 1) {
             $authHeader = [
@@ -56,7 +56,7 @@ class Curl
      * @param  array  $headers HTTP headers (including Authorization)
      * @return string JSON response
      */
-    public function sendUserInfoRequest($url, $headers): string
+    public function sendUserInfoRequest(string $url, $headers): string
     {
         return $this->callAPI($url, [], $headers);
     }

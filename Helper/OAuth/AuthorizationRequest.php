@@ -98,7 +98,7 @@ class AuthorizationRequest
         $allowedExtraParams = ['nonce', 'prompt', 'login_hint', 'acr_values'];
         foreach ($this->params as $key => $value) {
             if (in_array($key, $allowedExtraParams, true)) {
-                $requestStr .= '&' . urlencode($key) . '=' . urlencode($value);
+                $requestStr .= '&' . urlencode($key) . '=' . urlencode((string) $value);
             }
         }
 

@@ -21,11 +21,11 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
      */
     private $relayState;
 
-    private \MiniOrange\OAuth\Helper\OAuthSecurityHelper $securityHelper;
+    private readonly \MiniOrange\OAuth\Helper\OAuthSecurityHelper $securityHelper;
 
-    private CookieManagerInterface $cookieManager;
+    private readonly CookieManagerInterface $cookieManager;
 
-    private CookieMetadataFactory $cookieMetadataFactory;
+    private readonly CookieMetadataFactory $cookieMetadataFactory;
 
     /**
      * Initialize customer login action.
@@ -58,6 +58,7 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
      * callback controller which performs login in a clean HTTP
      * context.
      */
+    #[\Override]
     public function execute(): \Magento\Framework\Controller\Result\Redirect
     {
         if ($this->relayState === null) {

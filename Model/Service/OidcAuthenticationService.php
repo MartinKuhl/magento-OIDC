@@ -15,9 +15,9 @@ use MiniOrange\OAuth\Helper\OAuthUtility;
  */
 class OidcAuthenticationService
 {
-    private const MAX_RECURSION_DEPTH = 5;
+    private const int MAX_RECURSION_DEPTH = 5;
 
-    private \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
+    private readonly \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
 
     /**
      * Initialize OIDC authentication service.
@@ -147,7 +147,7 @@ class OidcAuthenticationService
 
         foreach ($arr as $value) {
             if (is_scalar($value) && filter_var($value, FILTER_VALIDATE_EMAIL)) {
-                $this->oauthUtility->customlog("OidcAuthenticationService: findEmailRecursive found: " . $value);
+                $this->oauthUtility->customlog("OidcAuthenticationService: findEmailRecursive found: " . (string) $value);
                 return $value;
             }
 

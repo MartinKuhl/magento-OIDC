@@ -5,7 +5,7 @@ use Magento\Framework\Escaper;
 
 class TestResults
 {
-    private Escaper $escaper;
+    private readonly Escaper $escaper;
 
     /**
      * Data class for holding OAuth test result attributes.

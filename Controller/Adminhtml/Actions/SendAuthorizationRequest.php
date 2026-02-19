@@ -24,9 +24,9 @@ class SendAuthorizationRequest extends BaseAction
      */
     protected $urlBuilder;
 
-    private \MiniOrange\OAuth\Helper\OAuthSecurityHelper $securityHelper;
+    private readonly \MiniOrange\OAuth\Helper\OAuthSecurityHelper $securityHelper;
 
-    private \Magento\Framework\Session\SessionManagerInterface $sessionManager;
+    private readonly \Magento\Framework\Session\SessionManagerInterface $sessionManager;
 
     /**
      * Initialize admin send authorization request action.
@@ -34,7 +34,6 @@ class SendAuthorizationRequest extends BaseAction
     public function __construct(
         \Magento\Backend\App\Action\Context $context,
         \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
-        SessionHelper $sessionHelper,
         OAuthSecurityHelper $securityHelper,
         \Magento\Framework\Session\SessionManagerInterface $sessionManager
     ) {
@@ -49,6 +48,7 @@ class SendAuthorizationRequest extends BaseAction
      *
      * @return \Magento\Framework\Controller\Result\Redirect
      */
+    #[\Override]
     public function execute()
     {
         // configureSSOSession() removed: it creates a host-only PHPSESSID cookie (no domain)
@@ -71,12 +71,12 @@ class SendAuthorizationRequest extends BaseAction
             $this->oauthUtility->deleteCustomLogFile();
             //$this->oauthUtility->flushCache(); // REMOVED for performance
         }
-        if ($chk_enable_log) {
+        if ($chk_enable_log !== 0) {
             $this->oauthUtility->customlog("SendAuthorizationRequest: execute");
         }
 
         $params = $this->getRequest()->getParams();
-        if ($chk_enable_log) {
+        if ($chk_enable_log !== 0) {
             $this->oauthUtility->customlog(
                 "SendAuthorizationRequest: Full params: " . var_export($params, true)
             );
@@ -102,7 +102,7 @@ class SendAuthorizationRequest extends BaseAction
         $this->oauthUtility->setSessionData(OAuthConstants::APP_NAME, $app_name);
 
         $clientDetails = $this->oauthUtility->getClientDetailsByAppName($app_name);
-        if (empty($clientDetails)) {
+        if ($clientDetails === null || $clientDetails === []) {
             $backendLoginUrl = $this->urlBuilder->getUrl('adminhtml/auth/login');
             $msg = 'Provided App name is not configured. Please contact the administrator for assistance.';
             $this->messageManager->addErrorMessage($msg);
@@ -172,7 +172,7 @@ class SendAuthorizationRequest extends BaseAction
             $params
         ))->build();
 
-        if ($chk_enable_log) {
+        if ($chk_enable_log !== 0) {
             $this->oauthUtility->customlog(
                 "SendAuthorizationRequest:  Authorization Request: " . $authorizationRequest
             );

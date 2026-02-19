@@ -13,18 +13,15 @@ use Magento\Framework\Math\Random;
  */
 class AdminUserCreator
 {
-    private \Magento\User\Model\UserFactory $userFactory;
+    private readonly \Magento\User\Model\UserFactory $userFactory;
 
-    private \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
+    private readonly \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
 
-    private \Magento\Framework\Math\Random $randomUtility;
+    private readonly \Magento\Framework\Math\Random $randomUtility;
 
-    private \Magento\User\Model\ResourceModel\User $userResource;
+    private readonly \Magento\User\Model\ResourceModel\User $userResource;
 
-    /**
-     * @var UserCollectionFactory
-     */
-    private UserCollectionFactory $userCollectionFactory;
+    private readonly UserCollectionFactory $userCollectionFactory;
 
     public function __construct(
         UserFactory $userFactory,
@@ -72,10 +69,9 @@ class AdminUserCreator
      * @param  string $userName
      * @param  string $firstName
      * @param  string $lastName
-     * @param  int    $roleId
      * @return \Magento\User\Model\User|null
      */
-    private function saveAdminUser($userName, string $email, $firstName, $lastName, $roleId)
+    private function saveAdminUser($userName, string $email, $firstName, $lastName, int $roleId)
     {
         // Generate secure random password (32 chars)
         $randomPassword = $this->randomUtility->getRandomString(28)
@@ -149,7 +145,7 @@ class AdminUserCreator
         $roleMappingsJson = $this->oauthUtility->getStoreConfig('adminRoleMapping');
         $roleMappings = [];
         if (!$this->oauthUtility->isBlank($roleMappingsJson)) {
-            $decoded = json_decode($roleMappingsJson, true);
+            $decoded = json_decode((string) $roleMappingsJson, true);
             $roleMappings = is_array($decoded) ? $decoded : [];
         }
 
@@ -162,7 +158,7 @@ class AdminUserCreator
                 if (!empty($mappedGroup) && !empty($mappedRole)) {
                     // Check if user has this group (case-insensitive comparison)
                     foreach ($userGroups as $userGroup) {
-                        if (strcasecmp($userGroup, $mappedGroup) === 0) {
+                        if (strcasecmp((string) $userGroup, (string) $mappedGroup) === 0) {
                             $this->oauthUtility->customlog(
                                 "AdminUserCreator: Found matching role mapping: group '$userGroup' "
                                 . "-> role ID '$mappedRole'"
@@ -177,7 +173,7 @@ class AdminUserCreator
         // No mapping found, use default role
         $defaultRole = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_DEFAULT_ROLE);
         if (!empty($defaultRole) && is_numeric($defaultRole)) {
-            $this->oauthUtility->customlog("AdminUserCreator: Using configured default role ID: " . $defaultRole);
+            $this->oauthUtility->customlog("AdminUserCreator: Using configured default role ID: " . (string) $defaultRole);
             return (int) $defaultRole;
         }
 
@@ -208,7 +204,7 @@ class AdminUserCreator
 
         if ($userCollection->getSize() > 0) {
             $user = $userCollection->getFirstItem();
-            $this->oauthUtility->customlog("AdminUserCreator: Admin user found by email - ID: " . $user->getId());
+            $this->oauthUtility->customlog("AdminUserCreator: Admin user found by email - ID: " . (string) $user->getId());
             return true;
         }
 

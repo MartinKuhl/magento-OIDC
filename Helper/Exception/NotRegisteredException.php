@@ -26,6 +26,7 @@ class NotRegisteredException extends \Exception
      * @param int             $code
      * @param \Throwable|null $previous
      */
+    #[\Override]
     public function __toString(): string
     {
         return __CLASS__ . ": [{$this->code}]: {$this->message}\n";

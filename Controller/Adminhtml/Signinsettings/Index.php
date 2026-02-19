@@ -28,7 +28,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
     protected \Magento\Framework\App\Response\Http\FileFactory $fileFactory;
 
     protected \Magento\Store\Model\StoreManagerInterface $_storeManager;
-    private \Magento\Framework\App\ProductMetadataInterface $productMetadata;
+    private readonly \Magento\Framework\App\ProductMetadataInterface $productMetadata;
 
     /**
      * Initialize sign-in settings controller.
@@ -39,7 +39,6 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         OAuthUtility $oauthUtility,
         ManagerInterface $messageManager,
         LoggerInterface $logger,
-        Collection $userGroupModel,
         \Magento\Framework\App\Response\Http\FileFactory $fileFactory,
         \Magento\Store\Model\StoreManagerInterface $storeManager,
         \Magento\Framework\App\ProductMetadataInterface $productMetadata
@@ -56,8 +55,9 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
      *
      * Handles saving, debug log toggling, clearing and downloading logs.
      *
-     * @return \Magento\Backend\Model\View\Result\Page|\Magento\Framework\App\ResponseInterface
+     * @return \Magento\Framework\View\Result\Page|\Magento\Framework\App\ResponseInterface
      */
+    #[\Override]
     public function execute()
     {
         try {
@@ -181,7 +181,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
      */
     private function handleClearLogs(): void
     {
-        if ($this->oauthUtility->isCustomLogExist()) {
+        if ($this->oauthUtility->isCustomLogExist() !== 0) {
             $this->oauthUtility->setStoreConfig(OAuthConstants::LOG_FILE_TIME, null);
             $this->oauthUtility->deleteCustomLogFile();
             $this->messageManager->addSuccessMessage('Logs Cleared Successfully');
@@ -304,6 +304,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
      *
      * @return bool
      */
+    #[\Override]
     protected function _isAllowed()
     {
         return $this->_authorization->isAllowed(OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_SIGNIN);

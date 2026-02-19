@@ -47,8 +47,9 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
      * URL. It prepares all the values required on the SP setting
      * page in the backend and returns the block to be displayed.
      *
-     * @return \Magento\Backend\Model\View\Result\Page
+     * @return \Magento\Framework\View\Result\Page
      */
+    #[\Override]
     public function execute()
     {
 
@@ -157,6 +158,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
      *
      * @return bool
      */
+    #[\Override]
     protected function _isAllowed()
     {
         return $this->_authorization->isAllowed(OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_ATTR);

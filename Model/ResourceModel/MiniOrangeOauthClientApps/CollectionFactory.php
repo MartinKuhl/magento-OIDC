@@ -5,7 +5,7 @@ use Magento\Framework\ObjectManagerInterface;
 
 class CollectionFactory
 {
-    private \Magento\Framework\ObjectManagerInterface $objectManager;
+    private readonly \Magento\Framework\ObjectManagerInterface $objectManager;
 
     /**
      * Create a new collection instance.

@@ -27,7 +27,7 @@ class OAuthObserver implements ObserverInterface
     /**
      * Query-parameter keys this observer reacts to.
      */
-    private const REQUEST_PARAMS = ['option'];
+    private const array REQUEST_PARAMS = ['option'];
 
     public function __construct(
         private readonly ManagerInterface $messageManager,
@@ -42,6 +42,7 @@ class OAuthObserver implements ObserverInterface
     /**
      * Handle the `controller_action_predispatch` event.
      */
+    #[\Override]
     public function execute(Observer $observer): void
     {
         $keys      = array_keys($this->request->getParams());

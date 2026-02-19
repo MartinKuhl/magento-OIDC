@@ -96,7 +96,7 @@ class Debug extends Template
 
             $response = $customerSession->getData('mo_oauth_debug_response');
             if ($response) {
-                return json_decode($response, true);
+                return json_decode((string) $response, true);
             }
         } catch (\Exception $e) {
             $this->oauthUtility->customlog('Debug::getLastOAuthResponse exception: ' . $e->getMessage());
@@ -119,7 +119,7 @@ class Debug extends Template
                 $lines = preg_split('/\r\n|\n|\r/', $contents);
                 $recentLines = array_slice($lines, -50);
                 foreach ($recentLines as $line) {
-                    $entries[] = trim($line);
+                    $entries[] = trim((string) $line);
                 }
             }
         } catch (\Exception $e) {
@@ -176,7 +176,7 @@ class Debug extends Template
             $endTime = microtime(true);
 
             $httpCode = $curl->getStatus();
-            $responseTime = round(($endTime - $startTime) * 1000, 2);
+            $responseTime = round(((float) $endTime - (float) $startTime) * 1000.0, 2);
         } catch (\Exception $e) {
             $error = $e->getMessage();
         }
@@ -184,7 +184,7 @@ class Debug extends Template
         return [
             'status' => $httpCode ?: 'Error',
             'reachable' => !empty($httpCode),
-            'response_time' => $responseTime !== null ? $responseTime . ' ms' : null,
+            'response_time' => $responseTime !== null ? (string) $responseTime . ' ms' : null,
             'error' => $error
         ];
     }
