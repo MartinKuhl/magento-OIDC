@@ -12,5 +12,6 @@ parameters:
             - .github
         analyse:
             - psalm-stubs.stub
+            - rector.php
     scanFiles:
         - psalm-stubs.stub
