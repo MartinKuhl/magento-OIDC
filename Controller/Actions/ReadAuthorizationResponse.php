@@ -153,6 +153,7 @@ class ReadAuthorizationResponse extends BaseAction
             $stateToken = $stateData['stateToken'];
         } else {
             // Legacy pipe-delimited format (backward compatibility during rollout)
+            /** @psalm-suppress RedundantCast */
             $parts = explode('|', (string) $combinedRelayState);
             $relayState = urldecode($parts[0]);
             $originalSessionId = isset($parts[1]) ? $parts[1] : '';

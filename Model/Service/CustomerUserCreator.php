@@ -223,7 +223,7 @@ class CustomerUserCreator
             $savedCustomer = $this->customerRepository->save($customerDataModel, $randomPassword);
 
             $this->oauthUtility->customlog(
-                "CustomerUserCreator: Customer created with ID: " . $savedCustomer->getId()
+                "CustomerUserCreator: Customer created with ID: " . (string)$savedCustomer->getId()
             );
 
             // Create customer address
@@ -283,7 +283,7 @@ class CustomerUserCreator
 
             $this->addressRepository->save($address);
             $this->oauthUtility->customlog(
-                "CustomerUserCreator: Address created for customer ID: " . $customer->getId()
+                "CustomerUserCreator: Address created for customer ID: " . (string)$customer->getId()
             );
 
         } catch (\Exception $e) {

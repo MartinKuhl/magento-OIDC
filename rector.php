@@ -36,4 +36,7 @@ return RectorConfig::configure()
         // Magento2 PHPCS requires @param and @var docblocks even with native type hints
         \Rector\DeadCode\Rector\ClassMethod\RemoveUselessParamTagRector::class,
         \Rector\DeadCode\Rector\Property\RemoveUselessVarTagRector::class,
+        // Psalm requires explicit (string) casts in concatenation for type safety;
+        // removing them would break Psalm strict type analysis
+        \Rector\DeadCode\Rector\Concat\RemoveConcatAutocastRector::class,
     ]);

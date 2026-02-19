@@ -96,7 +96,7 @@ jobs:
         with:
           name: php-qa-reports-php${{ matrix.php-version }}
           path: reports/
-          retention-days: 14
+          retention-days: 7
 
 
   # -----------------------------------------------------
@@ -208,4 +208,77 @@ jobs:
         with:
           name: static-analysis-reports
           path: reports/
-          retention-days: 3
+          retention-days: 7
+
+
+  # -----------------------------------------------------
+  # RECTOR CHECK JOB (dry-run, blocking)
+  # -----------------------------------------------------
+  rector:
+    name: Rector (dry-run)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          tools: composer
+
+      - name: Cache vendor dependencies
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: rector-vendor-${{ runner.os }}-${{ hashFiles('.github/workflows/*.yml') }}
+          restore-keys: |
+            rector-vendor-${{ runner.os }}-
+
+      - name: Create temporary composer.json for Rector
+        run: |
+          if [ -f composer.json ]; then
+            cp composer.json composer.json.bak
+          fi
+          cat > composer.json <<'EOF'
+          {
+            "require": {
+              "rector/rector": "*",
+              "magento/magento-coding-standard": "*"
+            },
+            "minimum-stability": "stable",
+            "prefer-stable": true
+          }
+          EOF
+
+      - name: Allow Composer plugins
+        run: |
+          composer config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
+          composer config --no-plugins allow-plugins.magento/composer-dependency-version-audit-plugin true
+
+      - name: Install Rector + Magento Coding Standard
+        run: composer install --no-interaction --no-progress
+
+      - name: Restore original composer.json
+        run: |
+          if [ -f composer.json.bak ]; then
+            mv composer.json.bak composer.json
+          else
+            rm -f composer.json
+          fi
+
+      - name: Create reports directory
+        run: mkdir -p reports
+
+      - name: Run Rector dry-run (blocking)
+        run: |
+          set -o pipefail
+          vendor/bin/rector process --dry-run 2>&1 | tee reports/rector.txt
+
+      - name: Upload Rector Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rector-reports
+          path: reports/
+          retention-days: 7

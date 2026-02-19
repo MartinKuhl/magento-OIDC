@@ -172,7 +172,7 @@ class CustomerOidcCallback extends BaseAction
         }
 
         $this->oauthUtility->customlog(
-            "CustomerOidcCallback: Loaded customer ID: " . $customerId
+            "CustomerOidcCallback: Loaded customer ID: " . (string)$customerId
         );
 
         // Convert CustomerInterface to Model for session
@@ -187,7 +187,7 @@ class CustomerOidcCallback extends BaseAction
         if (!$customerModel->getId()) {
             $this->oauthUtility->customlog(
                 "ERROR: Failed to load customer model for ID: "
-                . $customerId
+                . (string)$customerId
             );
             $this->messageManager->addErrorMessage(__(
                 'Authentication failed. Please try again.'

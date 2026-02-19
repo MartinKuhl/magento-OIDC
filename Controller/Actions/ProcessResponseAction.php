@@ -146,7 +146,7 @@ class ProcessResponseAction extends BaseAction
 
         foreach ($arr as $value) {
             if (is_scalar($value) && filter_var($value, FILTER_VALIDATE_EMAIL)) {
-                $this->oauthUtility->customlog("ProcessResponseAction: findUserEmail found: " . $value);
+                $this->oauthUtility->customlog("ProcessResponseAction: findUserEmail found: " . (string)$value);
                 return $value;
             }
 

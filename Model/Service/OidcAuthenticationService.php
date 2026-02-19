@@ -151,7 +151,9 @@ class OidcAuthenticationService
 
         foreach ($arr as $value) {
             if (is_scalar($value) && filter_var($value, FILTER_VALIDATE_EMAIL)) {
-                $this->oauthUtility->customlog("OidcAuthenticationService: findEmailRecursive found: " . $value);
+                $this->oauthUtility->customlog(
+                    "OidcAuthenticationService: findEmailRecursive found: " . (string)$value
+                );
                 return $value;
             }
 

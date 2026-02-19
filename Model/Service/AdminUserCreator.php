@@ -192,7 +192,9 @@ class AdminUserCreator
         // No mapping found, use default role
         $defaultRole = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_DEFAULT_ROLE);
         if (!empty($defaultRole) && is_numeric($defaultRole)) {
-            $this->oauthUtility->customlog("AdminUserCreator: Using configured default role ID: " . $defaultRole);
+            $this->oauthUtility->customlog(
+                "AdminUserCreator: Using configured default role ID: " . (string)$defaultRole
+            );
             return (int) $defaultRole;
         }
 

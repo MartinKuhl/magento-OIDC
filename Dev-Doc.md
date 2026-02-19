@@ -142,10 +142,10 @@ please look at @github/OIDC/Code-Review.md here you find phpcs issues mentioned 
 ## Run PHPStan: 
 cd /var/www/html/github/OIDC && /var/www/html/vendor/bin/phpstan analyse --memory-limit=1G --configuration=phpstan.local.neon 
 
-## Run Psalm: 9
+## Run Psalm:
 cd /var/www/html/ && /var/www/html/vendor/bin/psalm --no-cache --config=/var/www/html/github/OIDC/psalm.xml --root=/var/www/html 
 
-## Run PHPCS: 9 files
+## Run PHPCS:
 cd /var/www/html/github/OIDC && /var/www/html/vendor/bin/phpcs --extensions=php,phtml --standard=phpcs.xml . 
 
 ## Run Rector:

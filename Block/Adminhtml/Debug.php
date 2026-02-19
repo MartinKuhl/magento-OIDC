@@ -196,7 +196,7 @@ class Debug extends Template
         return [
             'status' => $httpCode ?: 'Error',
             'reachable' => !empty($httpCode),
-            'response_time' => $responseTime !== null ? $responseTime . ' ms' : null,
+            'response_time' => $responseTime !== null ? (string)$responseTime . ' ms' : null,
             'error' => $error
         ];
     }
