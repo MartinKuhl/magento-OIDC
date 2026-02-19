@@ -16,13 +16,15 @@ return RectorConfig::configure()
         __DIR__ . '/Plugin',
         __DIR__ . '/ViewModel',
     ])
-    ->withPhpVersion(PhpVersion::PHP_81)
+    ->withPhpVersion(PhpVersion::PHP_83)
     ->withSets([
         // Allgemeine Code-Qualität
         SetList::CODE_QUALITY,
         SetList::TYPE_DECLARATION,
         SetList::DEAD_CODE,
-        // PHP 8.3 Features nutzen
+        // PHP 8.1+ Features nutzen
+        SetList::PHP_81,
+        SetList::PHP_82,
         SetList::PHP_83,
     ])
     ->withRules([

@@ -2,6 +2,7 @@ includes:
     - %rootDir%/../../bitexpert/phpstan-magento/extension.neon
 
 parameters:
+    phpVersion: 80300  # PHP 8.3.0
     level: 4
     paths:
         - .
