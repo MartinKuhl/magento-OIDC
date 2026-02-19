@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Magento2\Rector\Src\ReplacePregSplitNullLimit;
 use Rector\Config\RectorConfig;
 use Rector\Set\ValueObject\SetList;
 use Rector\ValueObject\PhpVersion;
@@ -28,7 +29,7 @@ return RectorConfig::configure()
     ])
     ->withRules([
         // Magento-spezifische Rector-Regel aus magento-coding-standard
-        \Magento2\Rector\Src\ReplacePregSplitNullLimit::class,
+        ReplacePregSplitNullLimit::class,
     ])
     ->withSkip([
         // Template-Dateien ausschließen

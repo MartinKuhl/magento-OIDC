@@ -243,8 +243,8 @@ jobs:
           cat > composer.json <<'EOF'
           {
             "require": {
-              "rector/rector": "*",
-              "magento/magento-coding-standard": "*"
+              "rector/rector": "^1.2",
+              "magento/magento-coding-standard": "^39.0"
             },
             "minimum-stability": "stable",
             "prefer-stable": true
