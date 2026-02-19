@@ -18,7 +18,7 @@ class SessionHelper
      * Known admin-related cookie names to update with SameSite=None.
      * Used instead of iterating $_COOKIE directly.
      */
-    private const array ADMIN_COOKIE_NAMES = ['PHPSESSID', 'admin'];
+    private const ADMIN_COOKIE_NAMES = ['PHPSESSID', 'admin'];
 
     private readonly \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager;
 

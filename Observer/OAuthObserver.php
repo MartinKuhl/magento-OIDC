@@ -27,7 +27,7 @@ class OAuthObserver implements ObserverInterface
     /**
      * Query-parameter keys this observer reacts to.
      */
-    private const array REQUEST_PARAMS = ['option'];
+    private const REQUEST_PARAMS = ['option'];
 
     public function __construct(
         private readonly ManagerInterface $messageManager,

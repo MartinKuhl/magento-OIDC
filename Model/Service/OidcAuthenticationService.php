@@ -15,7 +15,7 @@ use MiniOrange\OAuth\Helper\OAuthUtility;
  */
 class OidcAuthenticationService
 {
-    private const int MAX_RECURSION_DEPTH = 5;
+    private const MAX_RECURSION_DEPTH = 5;
 
     private readonly \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
 
