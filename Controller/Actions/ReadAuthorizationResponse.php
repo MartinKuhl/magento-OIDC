@@ -172,7 +172,7 @@ class ReadAuthorizationResponse extends BaseAction
         if (!$clientDetails) {
             // Fallback: use the first configured app
             $collection = $this->oauthUtility->getOAuthClientApps();
-            if ($collection && count($collection) > 0) {
+            if (count($collection) > 0) {
                 $clientDetails = $collection->getFirstItem()->getData();
                 $app_name = $clientDetails["app_name"];
                 $this->oauthUtility->setSessionData(OAuthConstants::APP_NAME, $app_name);

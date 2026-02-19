@@ -142,7 +142,7 @@ class CustomerOidcCallback extends BaseAction
         }
 
         $email = $nonceData['email'];
-        $relayState = $nonceData['relayState'] ?? '';
+        $relayState = $nonceData['relayState'];
         $this->oauthUtility->customlog(
             "CustomerOidcCallback: Email from nonce: " . $email
         );

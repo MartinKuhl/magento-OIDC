@@ -68,7 +68,7 @@ class OAuthSecurityHelper
         $cacheKey = self::NONCE_CACHE_PREFIX . $nonce;
         $email = $this->cache->load($cacheKey);
 
-        if ($email === false || empty($email)) {
+        if (empty($email)) {
             return null;
         }
 
@@ -125,7 +125,7 @@ class OAuthSecurityHelper
         $cacheKey = self::CUSTOMER_NONCE_CACHE_PREFIX . $nonce;
         $data = $this->cache->load($cacheKey);
 
-        if ($data === false || empty($data)) {
+        if (empty($data)) {
             return null;
         }
 
@@ -192,7 +192,7 @@ class OAuthSecurityHelper
         $cacheKey = self::STATE_CACHE_PREFIX . hash('sha256', $sessionId . $stateToken);
         $value = $this->cache->load($cacheKey);
 
-        if ($value === false) {
+        if (empty($value)) {
             return false;
         }
 

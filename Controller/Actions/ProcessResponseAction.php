@@ -109,7 +109,7 @@ class ProcessResponseAction extends BaseAction
         // Debug: Check what is returned
         $this->oauthUtility->customlog(
             "ProcessResponseAction: attrMappingAction returned: " .
-            ($result ? get_class($result) : 'NULL')
+            get_class($result)
         );
 
         return $result;

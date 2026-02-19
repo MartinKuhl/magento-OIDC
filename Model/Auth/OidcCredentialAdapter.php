@@ -109,9 +109,7 @@ class OidcCredentialAdapter implements StorageInterface
      */
     protected function log(string $message)
     {
-        if ($this->oauthUtility) {
-            $this->oauthUtility->customlog($message);
-        }
+        $this->oauthUtility->customlog($message);
     }
 
     /**

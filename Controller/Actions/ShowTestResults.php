@@ -278,7 +278,7 @@ class ShowTestResults extends Action
         $tableContent = array_filter($this->attrs ?? []) ? $this->getTableContent() : "No Attributes Received.";
         //$this->oauthUtility->customlog("ShowTestResultsAction: attribute" . json_encode($this->attrs));
         $this->commonBody = str_replace("{{tablecontent}}", $tableContent, $this->commonBody);
-        $this->template = str_replace("{{commonbody}}", $this->commonBody ?? '', $this->template);
+        $this->template = str_replace("{{commonbody}}", (string) $this->commonBody, $this->template);
     }
 
     /**
