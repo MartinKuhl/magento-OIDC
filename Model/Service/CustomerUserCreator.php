@@ -149,7 +149,7 @@ class CustomerUserCreator
             // Name fallbacks if empty
             if ($firstName === '' || $firstName === '0') {
                 $parts = explode("@", $email);
-                $firstName = $parts[0] ?? 'Customer';
+                $firstName = $parts[0];
             }
             if ($lastName === '' || $lastName === '0') {
                 $parts = explode("@", $email);

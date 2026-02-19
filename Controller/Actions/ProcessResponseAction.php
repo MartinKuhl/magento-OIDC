@@ -121,8 +121,8 @@ class ProcessResponseAction extends BaseAction
     /**
      * Recursively search for an email address in the user info array
      *
-     * @param  array|object $arr
-     * @param  int          $depth
+     * @param  mixed $arr
+     * @param  int   $depth
      * @return string
      */
     private function findUserEmail($arr, int|float $depth = 0)

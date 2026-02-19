@@ -129,7 +129,7 @@ class OidcAuthenticationService
     /**
      * Recursively search for an email address in the user info data.
      *
-     * @param  array|object $arr
+     * @param  mixed $arr
      */
     private function findEmailRecursive($arr, int $depth = 0): string
     {

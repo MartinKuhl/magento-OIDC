@@ -92,7 +92,7 @@ class ReadAuthorizationResponse extends BaseAction
                     // Legacy pipe-delimited format (backward compatibility)
                     $parts = explode('|', (string) $params['state']);
                     $loginType = isset($parts[3]) ? $parts[3] : OAuthConstants::LOGIN_TYPE_CUSTOMER;
-                    $relayState = isset($parts[0]) ? urldecode($parts[0]) : '';
+                    $relayState = urldecode($parts[0]);
                 }
             }
 

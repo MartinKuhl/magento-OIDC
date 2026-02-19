@@ -447,7 +447,7 @@ class ShowTestResults extends Action
     /**
      * Extract all claim keys from OIDC response, including nested paths (e.g., address.locality)
      *
-     * @param  array  $attrs  The OIDC attributes array
+     * @param  mixed  $attrs  The OIDC attributes array
      * @param  string $prefix The prefix for nested keys
      * @return array Array of claim keys
      */

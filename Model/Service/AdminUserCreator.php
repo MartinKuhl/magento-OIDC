@@ -122,7 +122,7 @@ class AdminUserCreator
     {
         if (empty($firstName)) {
             $parts = explode("@", $email);
-            $firstName = $parts[0] ?? '';
+            $firstName = $parts[0];
             $this->oauthUtility->customlog("AdminUserCreator: firstName fallback from email prefix: " . $firstName);
         }
         if (empty($lastName)) {

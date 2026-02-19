@@ -533,7 +533,7 @@ class CheckAttributeMappingAction extends BaseAction
     /**
      * Save OAuth response for debugging
      *
-     * @param array $attrs
+     * @param mixed $attrs
      *
      * @return void
      */
