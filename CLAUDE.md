@@ -229,3 +229,428 @@ OIDC claims are mapped to Magento user attributes via configuration stored in th
 - Configuration saved via `Attrsettings/Index.php` controller as `adminRoleMapping` config key
 
 The module configuration is accessed via: **Stores → Configuration → MiniOrange → OAuth/OIDC**
+
+## Use Cases for This Module
+
+### When You'll Work on This Module
+
+You'll interact with this module when:
+
+- **Integrating a new OIDC provider** (Okta, Azure AD, Google, custom IdP)
+  - Configure endpoints in `miniorange_oauth_client_apps` table
+  - Test with `ShowTestResults.php` controller
+
+- **Adding custom attribute mappings** (e.g., employee ID, department, custom fields)
+  - Modify `Model/Service/CustomerUserCreator.php` or `AdminUserCreator.php`
+  - Add columns to `etc/db_schema.xml` if new database fields needed
+
+- **Debugging failed logins**
+  - Enable debug logging: **Stores > Configuration > MiniOrange > OAuth/OIDC > Sign In Settings > Enable debug logging**
+  - Check `var/log/mo_oauth.log` for detailed flow logs
+  - Common issues logged: email mismatch, attribute mapping failures, role mapping failures
+
+- **Extending JIT provisioning logic** (custom default values, conditional logic)
+  - Create plugins on `CheckAttributeMappingAction::execute()` method
+  - Or observe authentication events: `admin_user_authenticate_before`, `admin_user_authenticate_after`
+
+- **Adding new security bypasses** (e.g., 2FA module integration for OIDC users)
+  - Follow pattern from `Plugin/Captcha/OidcCaptchaBypassPlugin.php`
+  - Check for `oidc_authenticated` cookie or `oidc_auth` event marker
+
+### Common Modification Scenarios
+
+#### Scenario 1: Add New OIDC Claim to Customer Profile
+
+**Goal**: Map a custom OIDC claim (e.g., `employee_id`) to a custom customer attribute.
+
+**Files to modify**:
+- [Model/Service/CustomerUserCreator.php](Model/Service/CustomerUserCreator.php) (lines 162-250)
+- [etc/db_schema.xml](etc/db_schema.xml) (add column to `customer_entity` or create EAV attribute)
+- [view/adminhtml/templates/attrsettings.phtml](view/adminhtml/templates/attrsettings.phtml) (add UI field for mapping)
+
+**Pattern to follow**:
+```php
+// In CustomerUserCreator.php, follow the DOB mapping pattern:
+$employeeId = $flattenedAttrs[$this->oauthUtility->getStoreConfig('employee_id_attribute')] ?? '';
+if (!empty($employeeId)) {
+    $customer->setCustomAttribute('employee_id', $employeeId);
+}
+```
+
+**Steps**:
+1. Add `employee_id_attribute` column to `miniorange_oauth_client_apps` table in `etc/db_schema.xml`
+2. Add mapping logic in `CustomerUserCreator::createCustomer()` method
+3. Add UI field in attribute mapping admin page
+4. Test with **Test Configuration** to verify claim name from IdP
+5. Run `bin/magento setup:upgrade && bin/magento setup:di:compile`
+
+---
+
+#### Scenario 2: Customize Admin Role Mapping Logic
+
+**Goal**: Add custom logic to admin role assignment (e.g., map based on email domain, not just groups).
+
+**Files to modify**:
+- [Model/Service/AdminUserCreator.php](Model/Service/AdminUserCreator.php) (lines 142-185)
+- Method: `getAdminRoleFromGroups(array $userGroups): ?int`
+
+**Pattern to follow**:
+```php
+// Before the existing group mapping loop, add custom logic:
+private function getAdminRoleFromGroups(array $userGroups): ?int
+{
+    // Custom logic: Check email domain first
+    $email = $this->oauthUtility->getAdminSessionData('oidc_user_email');
+    if (str_ends_with($email, '@executives.example.com')) {
+        return 1; // Administrators role
+    }
+
+    // Continue with existing group mapping logic...
+    $roleMappingsJson = $this->oauthUtility->getStoreConfig('adminRoleMapping');
+    // ... rest of method
+}
+```
+
+**Testing**:
+1. Enable debug logging
+2. Test login with users from different groups/domains
+3. Check `var/log/mo_oauth.log` for "AdminUserCreator: Role ID assigned: X" messages
+4. Verify user created with correct role in **System > Permissions > All Users**
+
+---
+
+#### Scenario 3: Add OIDC Button to Custom Theme
+
+**Goal**: Display "Login with SSO" button on custom login page.
+
+**Files to modify**:
+- Your theme's `.phtml` template (e.g., `app/design/frontend/YourVendor/YourTheme/Magento_Customer/templates/form/login.phtml`)
+
+**Code to add**:
+```php
+<?php
+// Inject OAuthUtility helper via layout XML or get from ObjectManager
+$oauthHelper = $block->getData('oauth_helper'); // Configure via layout XML
+
+// For customer login (frontend):
+$customerLoginUrl = $oauthHelper->getSPInitiatedUrl();
+
+// For admin login (backend):
+$adminLoginUrl = $oauthHelper->getAdminSPInitiatedUrl();
+?>
+
+<!-- Customer SSO Button -->
+<div class="sso-login-button">
+    <a href="<?= $escaper->escapeUrl($customerLoginUrl) ?>"
+       class="action primary"
+       title="<?= $escaper->escapeHtml(__('Login with SSO')) ?>">
+        <span><?= $escaper->escapeHtml(__('Login with SSO')) ?></span>
+    </a>
+</div>
+```
+
+**Layout XML injection** (in your theme's `Magento_Customer/layout/customer_account_login.xml`):
+```xml
+<referenceBlock name="customer_form_login">
+    <arguments>
+        <argument name="oauth_helper" xsi:type="object">MiniOrange\OAuth\Helper\OAuthUtility</argument>
+    </arguments>
+</referenceBlock>
+```
+
+---
+
+#### Scenario 4: Debug Failed Token Exchange
+
+**Goal**: Token exchange fails with "configuration error" or "invalid_grant".
+
+**Files to check**:
+- [Controller/Actions/ProcessResponseAction.php](Controller/Actions/ProcessResponseAction.php) (lines 60-120)
+- [Helper/Curl.php](Helper/Curl.php) — HTTP client for token endpoint
+
+**Debugging steps**:
+1. **Enable debug logging**: **Stores > Configuration > MiniOrange > OAuth/OIDC > Sign In Settings > Enable debug logging**
+
+2. **Trigger auth flow** and check `var/log/mo_oauth.log`:
+   ```bash
+   tail -f var/log/mo_oauth.log
+   ```
+
+3. **Look for these log entries**:
+   - "Authorization code received: [code]" — confirms callback received code
+   - "Token endpoint: [url]" — verify correct endpoint
+   - "Token exchange response: [json]" — check for error messages
+   - Common errors:
+     - `invalid_grant`: Authorization code expired or already used
+     - `invalid_client`: Client ID/Secret mismatch
+     - `redirect_uri_mismatch`: Callback URL doesn't match IdP configuration
+
+4. **Check IdP logs** for corresponding errors
+
+5. **Verify configuration**:
+   - Client ID and Secret match IdP
+   - Callback URL matches: `https://your-site.com/mooauth/actions/ReadAuthorizationResponse`
+   - Token endpoint URL correct (check for trailing slashes)
+
+6. **Common fixes**:
+   - Re-save OAuth Settings in admin panel (re-encrypts client secret)
+   - Check `values_in_header` vs `values_in_body` setting (some IdPs require credentials in header)
+   - Verify HTTPS configured correctly (HTTP will fail in production)
+
+---
+
+### Testing Checklist
+
+Before deploying OIDC changes, verify:
+
+- [ ] **Enable debug logging**: **Stores > Configuration > MiniOrange > OAuth/OIDC > Sign In Settings > Enable debug logging**
+
+- [ ] **Test customer flow**:
+  - Navigate to frontend SSO link (or add SSO button to login page)
+  - Redirected to IdP, authenticate successfully
+  - Returned to Magento, customer session established
+  - Check `var/log/mo_oauth.log` for "Customer login successful for: [email]"
+  - Verify customer created in **Customers > All Customers** (if auto-create enabled)
+
+- [ ] **Test admin flow**:
+  - Navigate to admin SSO link (`/admin/mooauth/actions/SendAuthorizationRequest`)
+  - Redirected to IdP, authenticate successfully
+  - Returned to Magento admin dashboard
+  - Check `var/log/mo_oauth.log` for "Admin login successful for: [email]"
+  - Verify admin created in **System > Permissions > All Users** (if auto-create enabled)
+
+- [ ] **Test auto-creation** (if enabled):
+  - Use a new user email not in Magento database
+  - Complete OIDC login flow
+  - Verify user created with correct role/group
+  - Check `var/log/mo_oauth.log` for "AdminUserCreator: User created successfully" or "CustomerUserCreator: Customer created"
+
+- [ ] **Test attribute mapping**:
+  - Click **Test Configuration** button in **Stores > Configuration > MiniOrange > OAuth/OIDC > OAuth Settings**
+  - Verify all expected OIDC claims displayed correctly
+  - Check claim names match your attribute mapping configuration (case-sensitive)
+  - Update mappings if claim names differ from expected
+
+- [ ] **Test logout**:
+  - Log in via OIDC, then log out
+  - Verify redirected to IdP logout URL (if `post_logout_url` configured)
+  - Verify Magento session cleared (cannot access protected pages)
+  - Check `oidc_authenticated` cookie deleted (for admin users)
+
+- [ ] **Test error scenarios**:
+  - Try login with user not in `admin_user` table (auto-create disabled) → should show "Admin account not found"
+  - Try login with inactive admin user → should show "Admin account is inactive"
+  - Try login with admin user with no role assigned → should show "Admin user has no assigned role"
+
+---
+
+## Future Improvements to Consider
+
+When asked to enhance this module, consider these common scenarios and recommended approaches:
+
+### If Asked to Add Tests
+
+**Recommendation**:
+- Use PHPUnit for Model and Helper classes
+- Use Magento's integration testing framework for Controllers
+- Create mock OIDC provider (Docker-based) for local testing
+
+**Key test scenarios**:
+```php
+// Unit test example for AdminUserCreator
+public function testCreateAdminUserWithGroupMapping()
+{
+    $userGroups = ['Engineering', 'Developers'];
+    $email = 'test@example.com';
+
+    // Mock role mapping: Engineering -> Role ID 2
+    $this->configureRoleMapping(['Engineering' => 2]);
+
+    $user = $this->adminUserCreator->createAdminUser($email, 'testuser', 'Test', 'User', $userGroups);
+
+    $this->assertNotNull($user);
+    $this->assertEquals(2, $user->getRoleId());
+}
+```
+
+**Integration test example**:
+```php
+// Test full auth flow with mock IdP
+public function testAdminOidcLoginFlow()
+{
+    $this->mockIdpResponse(['email' => 'admin@example.com', 'groups' => ['Administrators']]);
+
+    $response = $this->dispatch('/admin/mooauth/actions/SendAuthorizationRequest');
+    $this->assertRedirect(); // Redirected to IdP
+
+    // Simulate callback
+    $response = $this->dispatchCallback('/mooauth/actions/ReadAuthorizationResponse?code=mock_code&state=...');
+    $this->assertRedirect('/admin'); // Redirected to admin dashboard
+
+    $this->assertTrue($this->backendAuthSession->isLoggedIn());
+}
+```
+
+---
+
+### If Asked About Multi-Provider Support
+
+**Current limitation**: Single provider per store (one row in `miniorange_oauth_client_apps` table).
+
+**Refactoring needed**:
+1. **Database schema change**:
+   - Rename table to `miniorange_oauth_providers` (plural)
+   - Add `provider_id` column as primary key
+   - Add `provider_name` column for UI display
+   - Migrate existing configuration to new schema with `provider_id = 1`
+
+2. **Controller changes**:
+   - Modify `SendAuthorizationRequest` to accept `provider_id` parameter
+   - Store `provider_id` in OAuth state parameter
+   - Retrieve correct provider config in `ReadAuthorizationResponse` based on state
+
+3. **Admin UI changes**:
+   - Add provider management grid: **Stores > Configuration > MiniOrange > OAuth/OIDC > Manage Providers**
+   - Each provider has separate configuration page
+   - Add provider selection dropdown on SSO buttons
+
+**Example API**:
+```php
+// Generate SSO URL for specific provider
+$loginUrl = $oauthHelper->getSPInitiatedUrl($relayState, $providerId);
+```
+
+---
+
+### If Asked About Security Improvements
+
+**CSRF Token Validation**:
+- Add explicit CSRF token to `ReadAuthorizationResponse` controller
+- Generate token in `SendAuthorizationRequest`, store in session
+- Validate token in callback before processing authorization code
+```php
+// In SendAuthorizationRequest
+$csrfToken = bin2hex(random_bytes(16));
+$this->session->setCsrfToken($csrfToken);
+$state = "$relayState|$sessionId|$appName|$loginType|$csrfToken";
+
+// In ReadAuthorizationResponse
+$stateParts = explode('|', $state);
+$csrfToken = $stateParts[4] ?? '';
+if ($csrfToken !== $this->session->getCsrfToken()) {
+    throw new SecurityException('CSRF token mismatch');
+}
+```
+
+**Scope Cookie Observer to OIDC Paths Only**:
+- Modify `SessionCookieObserver::forceSameSiteNone()` to check request path
+```php
+public function forceSameSiteNone()
+{
+    $requestPath = $this->request->getRequestUri();
+
+    // Only apply to OIDC routes
+    if (strpos($requestPath, '/mooauth/') === false) {
+        return; // Skip for non-OIDC requests
+    }
+
+    // Continue with cookie rewrite...
+}
+```
+
+**Rate Limiting**:
+- Use Magento's built-in rate limiting or integrate with Cloudflare
+- Add rate limiter to `ReadAuthorizationResponse` controller
+```php
+// In ReadAuthorizationResponse::execute()
+if (!$this->rateLimiter->isAllowed($this->request->getClientIp(), 'oidc_callback')) {
+    throw new TooManyRequestsException('Rate limit exceeded');
+}
+```
+
+---
+
+### If Asked About GraphQL Support
+
+**Goal**: Headless commerce needs SSO URL generation via GraphQL.
+
+**Implementation**:
+
+1. **Add schema** in `etc/schema.graphqls`:
+```graphql
+type Query {
+    oidcLoginUrl(relayState: String): String @resolver(class: "MiniOrange\\OAuth\\Model\\Resolver\\OidcLoginUrl")
+}
+```
+
+2. **Create resolver** in `Model/Resolver/OidcLoginUrl.php`:
+```php
+namespace MiniOrange\OAuth\Model\Resolver;
+
+use Magento\Framework\GraphQl\Query\ResolverInterface;
+use MiniOrange\OAuth\Helper\OAuthUtility;
+
+class OidcLoginUrl implements ResolverInterface
+{
+    public function __construct(private OAuthUtility $oauthUtility) {}
+
+    public function resolve($field, $context, $info, $value = null, $args = null)
+    {
+        $relayState = $args['relayState'] ?? null;
+        return $this->oauthUtility->getSPInitiatedUrl($relayState);
+    }
+}
+```
+
+3. **Usage in frontend**:
+```graphql
+query {
+  oidcLoginUrl(relayState: "/checkout")
+}
+
+# Returns: "https://your-site.com/mooauth/actions/SendAuthorizationRequest?relayState=%2Fcheckout"
+```
+
+---
+
+### If Asked About Performance Optimization
+
+**Common bottlenecks**:
+
+1. **JWKS Fetching**: Currently fetches on every login
+   - Add configurable cache TTL for JWKS responses
+   - Cache in Redis or Magento cache instead of HTTP cache only
+
+2. **Global Cookie Rewrite**: Rewrites all cookies on every response
+   - Scope to OIDC paths only (see security improvements above)
+   - Or apply only to session cookies, not all cookies
+
+3. **Email Lookup Fallback**: Recursively searches entire OIDC response if email not in mapped attribute
+   - Fail fast if email not in standard location
+   - Require explicit configuration instead of fallback search
+
+**Example optimization**:
+```php
+// In JwtVerifier.php, add Redis caching:
+public function getJwks(string $jwksUrl): array
+{
+    $cacheKey = 'oidc_jwks_' . md5($jwksUrl);
+
+    // Check Redis cache first
+    if ($cachedJwks = $this->cache->load($cacheKey)) {
+        return json_decode($cachedJwks, true);
+    }
+
+    // Fetch from IdP
+    $jwks = $this->fetchJwksFromIdp($jwksUrl);
+
+    // Cache for 24 hours
+    $this->cache->save(json_encode($jwks), $cacheKey, [], 86400);
+
+    return $jwks;
+}
+```
+
+---
+
+**For detailed technical specifications, refer to** [TECHNICAL_DOCUMENTATION.md](TECHNICAL_DOCUMENTATION.md).

@@ -79,8 +79,8 @@ vendor/bin/phpcbf
 
 # PHPSTan
 /var/www/html/vendor/bin/phpstan clear-result-cache
-/var/www/html/vendor/bin/phpstan analyse --memory-limit=1G --configuration=github/OIDC/phpstan.neon
-/var/www/html/vendor/bin/phpstan analyse --memory-limit=1G --configuration=github/miniorange-oauth-sso/phpstan.neon
+cd /var/www/html/github/OIDC && /var/www/html/vendor/bin/phpstan analyse --memory-limit=1G --configuration=phpstan.local.neon
+cd /var/www/html/github/miniorange-oauth-sso && /var/www/html/vendor/bin/phpstan analyse --memory-limit=1G --configuration=phpstan.local.neon
 
 # Psalm
 /var/www/html/vendor/bin/psalm --no-cache --config=github/miniorange-oauth-sso/psalm.xml
@@ -88,6 +88,27 @@ vendor/bin/phpcbf
 
 /var/www/html/vendor/bin/psalm --no-cache --config=github/OIDC/psalm.xml
 /var/www/html/vendor/bin/psalm --no-cache --config=github/OIDC/psalm.xml --alter --issues=MissingReturnType,MissingParamType
+
+## Important: Working Directory for Static Analysis
+
+**PHPStan and Psalm require different working directories due to their configuration differences.**
+
+### PHPStan
+PHPStan's `phpstan.neon` uses `paths: - .` which analyzes the **current working directory**.
+For local development, use `phpstan.local.neon` which also specifies `magento.magentoRoot: ../..` to locate Magento type definitions.
+
+- ✅ Correct: `cd /var/www/html/github/OIDC && /var/www/html/vendor/bin/phpstan analyse --memory-limit=1G --configuration=phpstan.local.neon`
+- ❌ Wrong: `/var/www/html/vendor/bin/phpstan analyse --memory-limit=1G --configuration=github/OIDC/phpstan.neon`
+
+The wrong command analyzes the entire Magento installation (`/var/www/html/.`) instead of just the OIDC module,
+and may have incorrect Magento root detection.
+
+### Psalm
+Psalm's `psalm.xml` has `resolveFromConfigFile="true"` which resolves paths relative to the **config file location**.
+However, Psalm needs to find the Composer autoloader, so it must run from the Magento root.
+
+- ✅ Correct: `/var/www/html/vendor/bin/psalm --no-cache --config=github/OIDC/psalm.xml`
+- ❌ Wrong: `cd /var/www/html/github/OIDC && /var/www/html/vendor/bin/psalm --no-cache` (can't find autoloader)
 
 # PHPCS Variante mit Berücksichtigung der phpcs.xml (wie auch im CI-Workflow)
 /var/www/html/vendor/bin/phpcs  --extensions=php,phtml /var/www/html/github/OIDC/
