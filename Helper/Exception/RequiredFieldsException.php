@@ -20,11 +20,7 @@ class RequiredFieldsException extends \Exception
     }
 
     /**
-     * Initialize exception with a descriptive message.
-     *
-     * @param string          $message
-     * @param int             $code
-     * @param \Throwable|null $previous
+     * String representation of the exception.
      */
     #[\Override]
     public function __toString(): string

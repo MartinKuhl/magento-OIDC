@@ -193,7 +193,7 @@ class AdminUserCreator
 
         // Try username lookup first
         $user = $this->userFactory->create()->loadByUsername($email);
-        if ($user && $user->getId()) {
+        if ($user->getId()) {
             $this->oauthUtility->customlog("AdminUserCreator: Admin user found by username - ID: " . $user->getId());
             return true;
         }

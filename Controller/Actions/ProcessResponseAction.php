@@ -12,6 +12,7 @@ use MiniOrange\OAuth\Helper\OAuthConstants;
  *             Use `\MiniOrange\OAuth\Model\Service\OidcAuthenticationService`
  *             together with `CheckAttributeMappingAction` instead.
  * @see        \MiniOrange\OAuth\Model\Service\OidcAuthenticationService
+ * @psalm-suppress ImplicitToStringCast Magento's __() returns Phrase with __toString()
  */
 class ProcessResponseAction extends BaseAction
 {

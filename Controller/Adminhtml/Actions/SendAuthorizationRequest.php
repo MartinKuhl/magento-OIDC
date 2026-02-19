@@ -16,6 +16,8 @@ use MiniOrange\OAuth\Controller\Actions\BaseAction;
  * Builds an authorization URL and redirects the admin user to the
  * provider's authorization endpoint. Uses `AuthorizationRequest` helper
  * to construct the final URL.
+ *
+ * @psalm-suppress ImplicitToStringCast Magento's __() returns Phrase with __toString()
  */
 class SendAuthorizationRequest extends BaseAction
 {

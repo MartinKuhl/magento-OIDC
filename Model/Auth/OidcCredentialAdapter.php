@@ -229,7 +229,7 @@ class OidcCredentialAdapter implements StorageInterface
     {
         $this->restoreDependencies();
 
-        if ($this->user && $this->user->getId()) {
+        if ($this->user->getId()) {
             $userId = $this->user->getId();
             $this->user = $this->userFactory->create();
             $this->userResource->load($this->user, $userId);
@@ -283,7 +283,7 @@ class OidcCredentialAdapter implements StorageInterface
      */
     public function getId()
     {
-        return $this->user ? $this->user->getId() : null;
+        return $this->user->getId();
     }
 
     /**
@@ -293,7 +293,7 @@ class OidcCredentialAdapter implements StorageInterface
      */
     public function getIsActive(): bool
     {
-        return $this->user && (bool)$this->user->getIsActive();
+        return (bool)$this->user->getIsActive();
     }
 
     /**
@@ -332,20 +332,9 @@ class OidcCredentialAdapter implements StorageInterface
      */
     public function __call($method, $args)
     {
-        // If we have a user object, proxy the method call to it
+        // Proxy method call to user object
         // Don't check method_exists() because User model has magic methods (__call)
         // that handle getters/setters like getReloadAclFlag()
-        if ($this->user) {
-            return $this->user->{$method}(...$args);
-        }
-
-        // If no user, throw exception
-        throw new \BadMethodCallException(
-            sprintf(
-                'Call to undefined method %s::%s()',
-                get_class($this),
-                $method
-            )
-        );
+        return $this->user->{$method}(...$args);
     }
 }

@@ -93,8 +93,8 @@ class Curl
         $httpCode = $curl->getInfo(CURLINFO_HTTP_CODE);
         $curl->close();
 
-        // read() gibt string|false zurück – false abfangen
-        if ($content === false || $content === '') {
+        // read() gibt string zurück – empty string abfangen
+        if ($content === '') {
             return '{"error":"empty_response","error_description":"No response received from the OAuth server."}';
         }
 

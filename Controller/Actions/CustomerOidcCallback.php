@@ -26,6 +26,8 @@ use Magento\Framework\Controller\Result\Redirect;
  *
  * Validates nonce from cookie, loads customer, performs login,
  * and redirects to the stored relay state URL.
+ *
+ * @psalm-suppress ImplicitToStringCast Magento's __() returns Phrase with __toString()
  */
 class CustomerOidcCallback extends BaseAction
 {

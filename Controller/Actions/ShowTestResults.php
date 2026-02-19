@@ -182,7 +182,7 @@ class ShowTestResults extends Action
         }
 
         $data = $this->template;
-        if ($data === '' || $data === '0' || $data === []) {
+        if ($data === '' || $data === '0') {
             $data = "No attribute found";
         }
 
@@ -245,7 +245,7 @@ class ShowTestResults extends Action
         $this->template = str_replace("{{commonbody}}", $errorBodyContent, $this->template);
 
         // Add footer
-        $this->template = str_replace("{{footer}}", $this->footer ?? '', $this->template);
+        $this->template = str_replace("{{footer}}", $this->footer, $this->template);
 
         /**
  * @var RawResult $result
@@ -322,7 +322,7 @@ class ShowTestResults extends Action
      */
     private function processTemplateFooter(): void
     {
-        $this->template = str_replace("{{footer}}", $this->footer ?? '', $this->template);
+        $this->template = str_replace("{{footer}}", $this->footer, $this->template);
     }
 
     /**
@@ -374,7 +374,7 @@ class ShowTestResults extends Action
      */
     private function setGreetingName($attrs): void
     {
-        if (empty($attrs) || !is_array($attrs)) {
+        if (empty($attrs)) {
             $this->greetingName = '';
             return;
         }

@@ -213,7 +213,7 @@ class Data extends AbstractHelper
         ) {
             try {
                 $collection = $this->getOAuthClientApps();
-                if ($collection && count($collection) > 0) {
+                if (count($collection) > 0) {
                     foreach ($collection as $item) {
                         $model = $this->clientAppsFactory->create();
                         $this->appResource->load($model, $item->getId());
@@ -359,6 +359,10 @@ class Data extends AbstractHelper
      */
     public function getAdminCssUrl(string $css): string
     {
+        /**
+         * @phpstan-ignore-next-line Magento assetRepo getUrl() supports area parameter
+         * @psalm-suppress TooManyArguments
+         */
         return $this->assetRepo->getUrl(
             OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_CSS . $css,
             ['area' => 'adminhtml']
@@ -370,6 +374,10 @@ class Data extends AbstractHelper
      */
     public function getAdminJSUrl(string $js): string
     {
+        /**
+         * @phpstan-ignore-next-line Magento assetRepo getUrl() supports area parameter
+         * @psalm-suppress TooManyArguments
+         */
         return $this->assetRepo->getUrl(
             OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_JS . $js,
             ['area' => 'adminhtml']
@@ -381,6 +389,10 @@ class Data extends AbstractHelper
      */
     public function getMetadataUrl(): string
     {
+        /**
+         * @phpstan-ignore-next-line Magento assetRepo getUrl() supports area parameter
+         * @psalm-suppress TooManyArguments
+         */
         return $this->assetRepo->getUrl(
             OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_METADATA,
             ['area' => 'adminhtml']

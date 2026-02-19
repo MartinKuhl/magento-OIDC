@@ -23,6 +23,8 @@ use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
  * `var/log/mo_oauth.log` when enabled.
  *
  * Security: only authenticate users that exist in `admin_user` and are active.
+ *
+ * @psalm-suppress ImplicitToStringCast Magento's __() returns Phrase with __toString()
  */
 class Oidccallback implements ActionInterface, HttpGetActionInterface
 {

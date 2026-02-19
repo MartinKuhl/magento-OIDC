@@ -19,6 +19,8 @@ use Psr\Log\LoggerInterface;
  * Extends the \Magento\Backend\App\Action for Admin Actions which
  * inturn extends the \Magento\Framework\App\Action\Action class necessary
  * for each Controller class
+ *
+ * @psalm-suppress ImplicitToStringCast Magento's __() returns Phrase with __toString()
  */
 class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetActionInterface
 {

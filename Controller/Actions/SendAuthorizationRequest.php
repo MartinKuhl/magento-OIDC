@@ -10,6 +10,8 @@ use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
  * Handles generation and sending of AuthnRequest to the IDP
  * for authentication. AuthnRequest is generated and user is
  * redirected to the IDP for authentication.
+ *
+ * @psalm-suppress ImplicitToStringCast Magento's __() returns Phrase with __toString()
  */
 class SendAuthorizationRequest extends BaseAction
 {

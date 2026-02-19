@@ -9,6 +9,9 @@ use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
 use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
 use MiniOrange\OAuth\Helper\OAuthUtility;
 
+/**
+ * @psalm-suppress ImplicitToStringCast Magento's __() returns Phrase with __toString()
+ */
 class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
 {
     /**

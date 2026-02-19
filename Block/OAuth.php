@@ -73,6 +73,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
      * @param  array|string      $data        Data to escape
      * @param  array|null|string $allowedTags Allowed HTML tags
      * @return array|string
+     * @psalm-suppress ImplementedReturnTypeMismatch Parent only declares string, but Escaper supports array
      */
     #[\Override]
     public function escapeHtml($data, $allowedTags = null)

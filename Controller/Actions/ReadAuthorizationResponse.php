@@ -13,6 +13,9 @@ use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
 use MiniOrange\OAuth\Helper\OAuthUtility;
 use MiniOrange\OAuth\Model\Service\OidcAuthenticationService;
 
+/**
+ * @psalm-suppress ImplicitToStringCast Magento's __() returns Phrase with __toString()
+ */
 class ReadAuthorizationResponse extends BaseAction
 {
     /**
@@ -134,7 +137,7 @@ class ReadAuthorizationResponse extends BaseAction
             $stateToken = $stateData['stateToken'];
         } else {
             // Legacy pipe-delimited format (backward compatibility during rollout)
-            $parts = explode('|', (string) $combinedRelayState);
+            $parts = explode('|', $combinedRelayState);
             $relayState = urldecode($parts[0]);
             $originalSessionId = isset($parts[1]) ? $parts[1] : '';
             $app_name = isset($parts[2]) ? urldecode($parts[2]) : '';

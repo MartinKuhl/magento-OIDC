@@ -18,6 +18,8 @@ use Magento\Customer\Api\Data\CustomerInterface;
 /**
  * Handles creation or lookup of customer users from OIDC attributes
  * and performs the customer login flow.
+ *
+ * @psalm-suppress ImplicitToStringCast Magento's __() returns Phrase with __toString()
  */
 class ProcessUserAction
 {

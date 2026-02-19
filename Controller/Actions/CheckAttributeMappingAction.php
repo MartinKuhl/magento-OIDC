@@ -22,6 +22,8 @@ use Magento\Framework\Controller\ResultFactory;
  *
  * All logging respects the plugin's logging configuration and writes to
  * var/log/mo_oauth.log when enabled.
+ *
+ * @psalm-suppress ImplicitToStringCast Magento's __() returns Phrase with __toString()
  */
 class CheckAttributeMappingAction extends BaseAction
 {

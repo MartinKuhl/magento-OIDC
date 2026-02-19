@@ -16,6 +16,8 @@ use MiniOrange\OAuth\Helper\Curl;
  *
  * Handles discovery by URL or manual endpoint entry and saves OAuth/OIDC
  * client configuration provided by the administrator.
+ *
+ * @psalm-suppress ImplicitToStringCast Magento's __() returns Phrase with __toString()
  */
 class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetActionInterface
 {

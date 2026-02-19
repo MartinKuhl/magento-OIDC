@@ -470,8 +470,8 @@ class OAuthUtility extends Data
     /**
      * Common log method accessible from all classes.
      *
-     * @param string       $msg Debug message to log
-     * @param mixed|null   $obj Optional object to dump
+     * @param string|object $msg Debug message to log
+     * @param mixed|null    $obj Optional object to dump
      * @psalm-suppress PossiblyUnusedMethod – Called dynamically
      */
     public function logDebug(string|object $msg = "", $obj = null): void
