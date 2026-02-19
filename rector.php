@@ -40,4 +40,8 @@ return RectorConfig::configure()
         // Psalm requires explicit (string) casts in concatenation for type safety;
         // removing them would break Psalm strict type analysis
         \Rector\DeadCode\Rector\Concat\RemoveConcatAutocastRector::class,
+        // Properties like $scopeConfig, $messageManager, $resultRedirectFactory are
+        // inherited from Magento Framework base classes (AbstractHelper, Action, etc.)
+        // and are not dynamic. Rector cannot resolve cross-package inheritance.
+        \Rector\CodeQuality\Rector\Class_\CompleteDynamicPropertiesRector::class,
     ]);
