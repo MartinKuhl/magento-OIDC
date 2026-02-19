@@ -30,36 +30,71 @@ use Psr\Log\LoggerInterface;
  */
 class Data extends AbstractHelper
 {
+    /** @var UserFactory */
     private readonly UserFactory $adminFactory;
 
+    /** @var CustomerFactory */
     private readonly CustomerFactory $customerFactory;
 
+    /** @var UrlInterface */
     private readonly UrlInterface $urlInterface;
 
+    /** @var WriterInterface */
     private readonly WriterInterface $configWriter;
 
+    /** @var AssetRepository */
     private readonly AssetRepository $assetRepo;
 
+    /** @var BackendHelper */
     private readonly BackendHelper $helperBackend;
 
+    /** @var Url */
     private readonly Url $frontendUrl;
 
+    /** @var MiniorangeOauthClientAppsFactory */
     private readonly MiniorangeOauthClientAppsFactory $clientAppsFactory;
 
+    /** @var ClientCollectionFactory */
     private readonly ClientCollectionFactory $clientCollectionFactory;
 
+    /** @var AppResource */
     private readonly AppResource $appResource;
 
+    /** @var UserResource */
     private readonly UserResource $userResource;
 
+    /** @var CustomerResource */
     private readonly CustomerResource $customerResource;
 
+    /** @var EncryptorInterface */
     private readonly EncryptorInterface $encryptor;
 
+    /** @var Escaper */
     private readonly Escaper $escaper;
 
+    /** @var LoggerInterface */
     private readonly LoggerInterface $logger;
 
+    /**
+     * Initialize Data helper.
+     *
+     * @param Context                          $context
+     * @param UserFactory                      $adminFactory
+     * @param CustomerFactory                  $customerFactory
+     * @param UrlInterface                     $urlInterface
+     * @param WriterInterface                  $configWriter
+     * @param AssetRepository                  $assetRepo
+     * @param BackendHelper                    $helperBackend
+     * @param Url                              $frontendUrl
+     * @param MiniorangeOauthClientAppsFactory $clientAppsFactory
+     * @param ClientCollectionFactory          $clientCollectionFactory
+     * @param AppResource                      $appResource
+     * @param UserResource                     $userResource
+     * @param CustomerResource                 $customerResource
+     * @param EncryptorInterface               $encryptor
+     * @param Escaper                          $escaper
+     * @param LoggerInterface                  $logger
+     */
     public function __construct(
         Context $context,
         UserFactory $adminFactory,
@@ -99,6 +134,18 @@ class Data extends AbstractHelper
     /**
      * Set the entry in the OAuthClientApp table.
      *
+     * @param  string $appName
+     * @param  string $clientId
+     * @param  string $clientSecret
+     * @param  string $scope
+     * @param  string $authorizeUrl
+     * @param  string $accessTokenUrl
+     * @param  string $userInfoUrl
+     * @param  string $wellKnownConfigUrl
+     * @param  string $grantType
+     * @param  bool   $sendHeader
+     * @param  bool   $sendBody
+     * @param  string $issuer
      * @throws \Exception
      */
     public function setOAuthClientApps(
@@ -164,6 +211,7 @@ class Data extends AbstractHelper
     /**
      * Get client details by app name using collection filtering.
      *
+     * @param  string $appName
      * @return array|null Client details array or null if not found
      */
     public function getClientDetailsByAppName(string $appName): ?array
@@ -187,6 +235,7 @@ class Data extends AbstractHelper
     /**
      * Extract data stored in the store config table.
      *
+     * @param  string $config
      * @return mixed
      */
     public function getStoreConfig(string $config)
@@ -200,7 +249,9 @@ class Data extends AbstractHelper
     /**
      * Store data in the store config table.
      *
-     * @param mixed  $value
+     * @param  string $config
+     * @param  mixed  $value
+     * @param  bool   $skipSanitize
      */
     public function setStoreConfig(string $config, $value, bool $skipSanitize = false): void
     {
@@ -235,8 +286,10 @@ class Data extends AbstractHelper
      *
      * Decides which user type (admin or customer) to update.
      *
-     * @param mixed      $value
-     * @param int|string $id
+     * @param  string     $url
+     * @param  mixed      $value
+     * @param  int|string $id
+     * @param  bool       $admin
      * @throws \Exception
      */
     public function saveConfig(string $url, $value, $id, bool $admin): void
@@ -247,7 +300,8 @@ class Data extends AbstractHelper
     /**
      * Extract information stored in the admin user table.
      *
-     * @param int|string $id
+     * @param  string     $config
+     * @param  int|string $id
      * @return mixed
      */
     public function getAdminStoreConfig(string $config, $id)
@@ -260,8 +314,9 @@ class Data extends AbstractHelper
     /**
      * Save admin attributes to the database.
      *
-     * @param mixed      $value
-     * @param int|string $id
+     * @param  string     $url
+     * @param  mixed      $value
+     * @param  int|string $id
      * @throws \Exception
      */
     private function saveAdminStoreConfig(string $url, $value, $id): void
@@ -277,7 +332,8 @@ class Data extends AbstractHelper
     /**
      * Extract information stored in the customer user table.
      *
-     * @param int|string $id
+     * @param  string     $config
+     * @param  int|string $id
      * @return mixed
      */
     public function getCustomerStoreConfig(string $config, $id)
@@ -290,8 +346,9 @@ class Data extends AbstractHelper
     /**
      * Save customer attributes to the database.
      *
-     * @param mixed      $value
-     * @param int|string $id
+     * @param  string     $url
+     * @param  mixed      $value
+     * @param  int|string $id
      * @throws \Exception
      */
     private function saveCustomerStoreConfig(string $url, $value, $id): void
@@ -322,6 +379,9 @@ class Data extends AbstractHelper
 
     /**
      * Get a URL based on the given path and parameters.
+     *
+     * @param  string $url
+     * @param  array  $params
      */
     public function getUrl(string $url, array $params = []): string
     {
@@ -330,6 +390,9 @@ class Data extends AbstractHelper
 
     /**
      * Get a frontend URL for the given path and parameters.
+     *
+     * @param  string $url
+     * @param  array  $params
      */
     public function getFrontendUrl(string $url, array $params = []): string
     {
@@ -346,6 +409,8 @@ class Data extends AbstractHelper
 
     /**
      * Get the image URL for a module asset.
+     *
+     * @param  string $image
      */
     public function getImageUrl(string $image): string
     {
@@ -356,6 +421,8 @@ class Data extends AbstractHelper
 
     /**
      * Get admin CSS URL.
+     *
+     * @param  string $css
      */
     public function getAdminCssUrl(string $css): string
     {
@@ -371,6 +438,8 @@ class Data extends AbstractHelper
 
     /**
      * Get admin JS URL.
+     *
+     * @param  string $js
      */
     public function getAdminJSUrl(string $js): string
     {
@@ -412,6 +481,8 @@ class Data extends AbstractHelper
 
     /**
      * Get the resource as a file path instead of a URL.
+     *
+     * @param  string $key
      */
     public function getResourcePath(string $key): string
     {
@@ -434,7 +505,7 @@ class Data extends AbstractHelper
     /**
      * Sanitize input data to prevent XSS and other injection attacks.
      *
-     * @param mixed $value
+     * @param  mixed $value
      * @return mixed
      */
     public function sanitize($value)
@@ -456,6 +527,9 @@ class Data extends AbstractHelper
 
     /**
      * Get the admin URL for the site based on the path passed.
+     *
+     * @param  string $url
+     * @param  array  $params
      */
     public function getAdminUrl(string $url, array $params = []): string
     {
@@ -464,6 +538,9 @@ class Data extends AbstractHelper
 
     /**
      * Get the admin secure URL for the site based on the path passed.
+     *
+     * @param  string $url
+     * @param  array  $params
      */
     public function getAdminSecureUrl(string $url, array $params = []): string
     {
@@ -472,6 +549,9 @@ class Data extends AbstractHelper
 
     /**
      * Get the SP-initiated URL for frontend/customer OIDC login.
+     *
+     * @param  string|null $relayState
+     * @param  string|null $appName
      */
     public function getSPInitiatedUrl(?string $relayState = null, ?string $appName = null): string
     {
@@ -492,6 +572,9 @@ class Data extends AbstractHelper
      * Get the admin SP-initiated URL for admin backend OIDC login.
      *
      * Uses the admin controller which sets loginType=admin.
+     *
+     * @param  string|null $relayState
+     * @param  string|null $appName
      */
     public function getAdminSPInitiatedUrl(?string $relayState = null, ?string $appName = null): string
     {

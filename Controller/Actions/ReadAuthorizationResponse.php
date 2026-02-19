@@ -23,20 +23,36 @@ class ReadAuthorizationResponse extends BaseAction
      */
     protected $_url;
 
+    /** @var \Magento\Customer\Model\Session */
     private readonly \Magento\Customer\Model\Session $customerSession;
 
+    /** @var \MiniOrange\OAuth\Helper\OAuthSecurityHelper */
     private readonly \MiniOrange\OAuth\Helper\OAuthSecurityHelper $securityHelper;
 
+    /** @var \MiniOrange\OAuth\Helper\JwtVerifier */
     private readonly \MiniOrange\OAuth\Helper\JwtVerifier $jwtVerifier;
 
+    /** @var \MiniOrange\OAuth\Helper\Curl */
     private readonly \MiniOrange\OAuth\Helper\Curl $curl;
 
+    /** @var \MiniOrange\OAuth\Model\Service\OidcAuthenticationService */
     private readonly \MiniOrange\OAuth\Model\Service\OidcAuthenticationService $oidcAuthService;
 
+    /** @var \MiniOrange\OAuth\Controller\Actions\CheckAttributeMappingAction */
     private readonly \MiniOrange\OAuth\Controller\Actions\CheckAttributeMappingAction $attrMappingAction;
 
     /**
      * Initialize read authorization response action.
+     *
+     * @param Context                                           $context
+     * @param OAuthUtility                                      $oauthUtility
+     * @param \Magento\Framework\UrlInterface                   $url
+     * @param \Magento\Customer\Model\Session                   $customerSession
+     * @param OAuthSecurityHelper                               $securityHelper
+     * @param JwtVerifier                                       $jwtVerifier
+     * @param Curl                                              $curl
+     * @param OidcAuthenticationService                         $oidcAuthService
+     * @param CheckAttributeMappingAction                       $attrMappingAction
      */
     public function __construct(
         Context $context,
@@ -137,7 +153,7 @@ class ReadAuthorizationResponse extends BaseAction
             $stateToken = $stateData['stateToken'];
         } else {
             // Legacy pipe-delimited format (backward compatibility during rollout)
-            $parts = explode('|', $combinedRelayState);
+            $parts = explode('|', (string) $combinedRelayState);
             $relayState = urldecode($parts[0]);
             $originalSessionId = isset($parts[1]) ? $parts[1] : '';
             $app_name = isset($parts[2]) ? urldecode($parts[2]) : '';
@@ -201,7 +217,6 @@ class ReadAuthorizationResponse extends BaseAction
         $header = $clientDetails["values_in_header"];
         $body = $clientDetails["values_in_body"];
         $redirectURL = $this->oauthUtility->getCallBackUrl();
-        $grantType = isset($clientDetails['grant_type']) ? $clientDetails['grant_type'] : 'authorization_code';
 
         if ($header == 1 && $body == 0) {
             $accessTokenRequest = (new AccessTokenRequestBody($redirectURL, $authorizationCode))->build();

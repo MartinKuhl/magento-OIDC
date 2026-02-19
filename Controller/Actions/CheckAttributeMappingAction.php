@@ -72,32 +72,59 @@ class CheckAttributeMappingAction extends BaseAction
      */
     private $groupName;
 
+    /** @var \MiniOrange\OAuth\Helper\TestResults */
     private readonly \MiniOrange\OAuth\Helper\TestResults $testResults;
 
+    /** @var \MiniOrange\OAuth\Controller\Actions\ShowTestResults */
     private readonly \MiniOrange\OAuth\Controller\Actions\ShowTestResults $testAction;
 
+    /** @var \MiniOrange\OAuth\Controller\Actions\ProcessUserAction */
     private readonly \MiniOrange\OAuth\Controller\Actions\ProcessUserAction $processUserAction;
 
+    /** @var \Magento\User\Model\UserFactory */
     protected \Magento\User\Model\UserFactory $userFactory;
 
+    /** @var \Magento\Backend\Model\UrlInterface */
     protected \Magento\Backend\Model\UrlInterface $backendUrl;
 
+    /** @var \Magento\Authorization\Model\ResourceModel\Role\Collection */
     protected \Magento\Authorization\Model\ResourceModel\Role\Collection $roleCollection;
 
+    /** @var \Magento\Framework\Math\Random */
     protected \Magento\Framework\Math\Random $randomUtility;
 
+    /** @var \MiniOrange\OAuth\Model\Service\AdminUserCreator */
     protected \MiniOrange\OAuth\Model\Service\AdminUserCreator $adminUserCreator;
 
+    /** @var \Magento\Customer\Model\Session */
     protected \Magento\Customer\Model\Session $customerSession;
 
+    /** @var \Magento\Framework\Stdlib\CookieManagerInterface */
     protected \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager;
 
+    /** @var \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory */
     protected \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory;
 
+    /** @var \MiniOrange\OAuth\Helper\OAuthSecurityHelper */
     private readonly \MiniOrange\OAuth\Helper\OAuthSecurityHelper $securityHelper;
 
     /**
      * Constructor with dependency injection
+     *
+     * @param \Magento\Framework\App\Action\Context                               $context
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility                               $oauthUtility
+     * @param \MiniOrange\OAuth\Helper\TestResults                                $testResults
+     * @param \MiniOrange\OAuth\Controller\Actions\ProcessUserAction              $processUserAction
+     * @param \Magento\User\Model\UserFactory                                     $userFactory
+     * @param \Magento\Backend\Model\UrlInterface                                 $backendUrl
+     * @param \Magento\Authorization\Model\ResourceModel\Role\Collection          $roleCollection
+     * @param \Magento\Framework\Math\Random                                      $randomUtility
+     * @param AdminUserCreator                                                    $adminUserCreator
+     * @param \Magento\Customer\Model\Session                                     $customerSession
+     * @param \MiniOrange\OAuth\Controller\Actions\ShowTestResults                $testAction
+     * @param OAuthSecurityHelper                                                 $securityHelper
+     * @param CookieManagerInterface                                              $cookieManager
+     * @param CookieMetadataFactory                                               $cookieMetadataFactory
      */
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
@@ -327,8 +354,11 @@ class CheckAttributeMappingAction extends BaseAction
      * @param  string $userEmail      User email from OAuth response
      * @throws MissingAttributesException
      */
-    private function moOAuthCheckMapping($attrs, $flattenedAttrs, string $userEmail): \Magento\Framework\Controller\ResultInterface
-    {
+    private function moOAuthCheckMapping(
+        $attrs,
+        $flattenedAttrs,
+        string $userEmail
+    ): \Magento\Framework\Controller\ResultInterface {
         $this->oauthUtility->customlog("Starting attribute mapping for customer user");
 
         // Save debug data

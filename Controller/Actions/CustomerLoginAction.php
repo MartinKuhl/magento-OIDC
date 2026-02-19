@@ -24,10 +24,13 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
      */
     private $relayState;
 
+    /** @var \MiniOrange\OAuth\Helper\OAuthSecurityHelper */
     private readonly \MiniOrange\OAuth\Helper\OAuthSecurityHelper $securityHelper;
 
+    /** @var CookieManagerInterface */
     private readonly CookieManagerInterface $cookieManager;
 
+    /** @var CookieMetadataFactory */
     private readonly CookieMetadataFactory $cookieMetadataFactory;
 
     /**

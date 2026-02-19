@@ -12,17 +12,27 @@ use MiniOrange\OAuth\Helper\OAuthConstants;
  */
 class Debug extends Template
 {
+    /** @var \MiniOrange\OAuth\Helper\OAuthUtility */
     protected \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
 
+    /** @var \Magento\Framework\App\Filesystem\DirectoryList */
     protected \Magento\Framework\App\Filesystem\DirectoryList $directoryList;
 
+    /** @var \Magento\Framework\Filesystem\Driver\File|null */
     protected ?\Magento\Framework\Filesystem\Driver\File $fileDriver;
 
+    /** @var \Magento\Framework\HTTP\Client\Curl|null */
     protected ?\Magento\Framework\HTTP\Client\Curl $curlClient;
 
     /**
-     * @param \Magento\Framework\Filesystem\Driver\File|null $fileDriver
-     * @param \Magento\Framework\HTTP\Client\Curl|null       $curlClient
+     * Initialize Debug block.
+     *
+     * @param Context                                         $context
+     * @param OAuthUtility                                    $oauthUtility
+     * @param DirectoryList                                   $directoryList
+     * @param \Magento\Framework\Filesystem\Driver\File|null  $fileDriver
+     * @param \Magento\Framework\HTTP\Client\Curl|null        $curlClient
+     * @param array                                           $data
      */
     public function __construct(
         Context $context,
@@ -35,7 +45,9 @@ class Debug extends Template
         $this->oauthUtility = $oauthUtility;
         $this->directoryList = $directoryList;
         // optional DI for environments where driver/client are not configured
-        if (!$fileDriver instanceof \Magento\Framework\Filesystem\Driver\File || !$curlClient instanceof \Magento\Framework\HTTP\Client\Curl) {
+        if (!$fileDriver instanceof \Magento\Framework\Filesystem\Driver\File
+            || !$curlClient instanceof \Magento\Framework\HTTP\Client\Curl
+        ) {
             $om = \Magento\Framework\App\ObjectManager::getInstance();
             if (!$fileDriver instanceof \Magento\Framework\Filesystem\Driver\File) {
                 $fileDriver = $om->get(\Magento\Framework\Filesystem\Driver\File::class);
@@ -184,7 +196,7 @@ class Debug extends Template
         return [
             'status' => $httpCode ?: 'Error',
             'reachable' => !empty($httpCode),
-            'response_time' => $responseTime !== null ? (string) $responseTime . ' ms' : null,
+            'response_time' => $responseTime !== null ? $responseTime . ' ms' : null,
             'error' => $error
         ];
     }

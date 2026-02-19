@@ -13,16 +13,30 @@ use Magento\Framework\Math\Random;
  */
 class AdminUserCreator
 {
+    /** @var \Magento\User\Model\UserFactory */
     private readonly \Magento\User\Model\UserFactory $userFactory;
 
+    /** @var \MiniOrange\OAuth\Helper\OAuthUtility */
     private readonly \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
 
+    /** @var \Magento\Framework\Math\Random */
     private readonly \Magento\Framework\Math\Random $randomUtility;
 
+    /** @var \Magento\User\Model\ResourceModel\User */
     private readonly \Magento\User\Model\ResourceModel\User $userResource;
 
+    /** @var UserCollectionFactory */
     private readonly UserCollectionFactory $userCollectionFactory;
 
+    /**
+     * Initialize admin user creator.
+     *
+     * @param UserFactory                            $userFactory
+     * @param OAuthUtility                           $oauthUtility
+     * @param Random                                 $randomUtility
+     * @param \Magento\User\Model\ResourceModel\User $userResource
+     * @param UserCollectionFactory                  $userCollectionFactory
+     */
     public function __construct(
         UserFactory $userFactory,
         OAuthUtility $oauthUtility,
@@ -40,9 +54,11 @@ class AdminUserCreator
     /**
      * Create an admin user based on OIDC attributes
      *
-     * @param  string      $userName
+     * @param  string      $email
+     * @param  mixed       $userName
      * @param  string|null $firstName
      * @param  string|null $lastName
+     * @param  array       $userGroups
      * @return \Magento\User\Model\User|null
      */
     public function createAdminUser(string $email, $userName, $firstName, $lastName, array $userGroups)
@@ -66,9 +82,11 @@ class AdminUserCreator
     /**
      * Save the admin user to database
      *
-     * @param  string $userName
-     * @param  string $firstName
-     * @param  string $lastName
+     * @param  mixed  $userName
+     * @param  string $email
+     * @param  mixed  $firstName
+     * @param  mixed  $lastName
+     * @param  int    $roleId
      * @return \Magento\User\Model\User|null
      */
     private function saveAdminUser($userName, string $email, $firstName, $lastName, int $roleId)
@@ -114,8 +132,9 @@ class AdminUserCreator
     /**
      * Apply name fallbacks from email when firstName/lastName are empty
      *
-     * @param  string|null $firstName
-     * @param  string|null $lastName
+     * @param  mixed  $firstName
+     * @param  mixed  $lastName
+     * @param  string $email
      * @return array [firstName, lastName]
      */
     private function applyNameFallbacks($firstName, $lastName, string $email): array
@@ -173,7 +192,7 @@ class AdminUserCreator
         // No mapping found, use default role
         $defaultRole = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_DEFAULT_ROLE);
         if (!empty($defaultRole) && is_numeric($defaultRole)) {
-            $this->oauthUtility->customlog("AdminUserCreator: Using configured default role ID: " . (string) $defaultRole);
+            $this->oauthUtility->customlog("AdminUserCreator: Using configured default role ID: " . $defaultRole);
             return (int) $defaultRole;
         }
 
@@ -186,6 +205,8 @@ class AdminUserCreator
 
     /**
      * Check if the email/username belongs to an existing admin user
+     *
+     * @param  string $email
      */
     public function isAdminUser(string $email): bool
     {
@@ -204,7 +225,7 @@ class AdminUserCreator
 
         if ($userCollection->getSize() > 0) {
             $user = $userCollection->getFirstItem();
-            $this->oauthUtility->customlog("AdminUserCreator: Admin user found by email - ID: " . (string) $user->getId());
+            $this->oauthUtility->customlog("AdminUserCreator: Admin user found by email - ID: " . $user->getId());
             return true;
         }
 

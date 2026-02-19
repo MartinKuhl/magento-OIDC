@@ -62,6 +62,15 @@ class OidcCredentialAdapter implements StorageInterface
      */
     protected $userCollectionFactory;
 
+    /**
+     * Initialize OIDC credential adapter.
+     *
+     * @param UserFactory           $userFactory
+     * @param ManagerInterface      $eventManager
+     * @param OAuthUtility          $oauthUtility
+     * @param UserResourceModel     $userResource
+     * @param UserCollectionFactory $userCollectionFactory
+     */
     public function __construct(
         UserFactory $userFactory,
         ManagerInterface $eventManager,
@@ -105,6 +114,7 @@ class OidcCredentialAdapter implements StorageInterface
      * After deserialization, dependencies may be null. This method safely logs
      * only when the oauthUtility dependency is available.
      *
+     * @param  string $message
      * @return void
      */
     protected function log(string $message)

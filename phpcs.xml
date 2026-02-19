@@ -17,6 +17,15 @@
         <severity>5</severity>
     </rule>
 
+    <!--
+        Magento2 coding standard sets testVersion="8.1-8.2" internally. Our minimum PHP is 8.2
+        (see composer.json), so we suppress the "NonUnionNull" sniff which flags ): null syntax
+        as incompatible. The standalone null return type is valid since PHP 8.2.
+    -->
+    <rule ref="PHPCompatibility.FunctionDeclarations.NewReturnTypeDeclarations.NonUnionNull">
+        <severity>0</severity>
+    </rule>
+
     <!-- Only scan PHP and PHTML files -->
     <arg name="extensions" value="php,phtml"/>
 
@@ -24,4 +33,7 @@
     <exclude-pattern>vendor/*</exclude-pattern>
     <exclude-pattern>node_modules/*</exclude-pattern>
     <exclude-pattern>*/.github/*</exclude-pattern>
+
+    <!-- Minimum supported PHP version (8.2+) -->
+    <config name="testVersion" value="8.2-"/>
 </ruleset>

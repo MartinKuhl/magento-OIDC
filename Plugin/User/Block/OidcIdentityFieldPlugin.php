@@ -20,12 +20,17 @@ use MiniOrange\OAuth\Helper\OAuthUtility;
 
 class OidcIdentityFieldPlugin
 {
+    /** @var \Magento\Framework\Stdlib\CookieManagerInterface */
     protected \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager;
 
+    /** @var \MiniOrange\OAuth\Helper\OAuthUtility */
     protected \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
 
     /**
-     * Constructor
+     * Initialize OIDC identity field plugin.
+     *
+     * @param CookieManagerInterface $cookieManager
+     * @param OAuthUtility           $oauthUtility
      */
     public function __construct(
         CookieManagerInterface $cookieManager,

@@ -21,10 +21,18 @@ use MiniOrange\OAuth\Helper\Curl;
  */
 class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetActionInterface
 {
+    /** @var Curl */
     private readonly Curl $curl;
 
     /**
      * Initialize OAuth settings controller.
+     *
+     * @param \Magento\Backend\App\Action\Context              $context
+     * @param \Magento\Framework\View\Result\PageFactory       $resultPageFactory
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility            $oauthUtility
+     * @param \Magento\Framework\Message\ManagerInterface      $messageManager
+     * @param \Psr\Log\LoggerInterface                         $logger
+     * @param Curl                                             $curl
      */
     public function __construct(
         \Magento\Backend\App\Action\Context $context,
@@ -158,6 +166,8 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
 
     /**
      * Process Values being submitted and save data in the database.
+     *
+     * @param array $params
      */
     private function processValuesAndSaveData(array $params): void
     {

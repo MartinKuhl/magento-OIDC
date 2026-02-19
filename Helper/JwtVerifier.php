@@ -12,14 +12,21 @@ use Magento\Framework\App\CacheInterface;
  */
 class JwtVerifier
 {
+    /** @var OAuthUtility */
     private readonly OAuthUtility $oauthUtility;
 
+    /** @var CacheInterface */
     private readonly CacheInterface $cache;
 
+    /** @var \Magento\Framework\HTTP\Adapter\CurlFactory */
     private readonly \Magento\Framework\HTTP\Adapter\CurlFactory $curlFactory;
 
     /**
      * Initialize JWT verifier.
+     *
+     * @param OAuthUtility                                $oauthUtility
+     * @param CacheInterface                              $cache
+     * @param \Magento\Framework\HTTP\Adapter\CurlFactory $curlFactory
      */
     public function __construct(
         OAuthUtility $oauthUtility,
@@ -148,6 +155,7 @@ class JwtVerifier
     /**
      * Fetch and parse JWKS from the given URL.
      *
+     * @param  string $jwksUrl
      * @return array|null The JWKS keys array, or null on failure
      */
     private function fetchJwks(string $jwksUrl): ?array
@@ -293,6 +301,8 @@ class JwtVerifier
 
     /**
      * Encode ASN.1 DER length bytes.
+     *
+     * @param  int $length
      */
     private function asn1Length(int $length): string
     {
@@ -306,6 +316,8 @@ class JwtVerifier
 
     /**
      * Base64url decode (RFC 7515).
+     *
+     * @param  string $input
      */
     private function base64UrlDecode(string $input): string
     {

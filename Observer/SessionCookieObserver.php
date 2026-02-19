@@ -11,10 +11,18 @@ use MiniOrange\OAuth\Helper\SessionHelper;
  */
 class SessionCookieObserver implements ObserverInterface
 {
+    /** @var \MiniOrange\OAuth\Helper\OAuthUtility */
     protected \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
 
+    /** @var \MiniOrange\OAuth\Helper\SessionHelper */
     private readonly \MiniOrange\OAuth\Helper\SessionHelper $sessionHelper;
 
+    /**
+     * Initialize session cookie observer.
+     *
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     * @param SessionHelper                         $sessionHelper
+     */
     public function __construct(
         \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
         SessionHelper $sessionHelper
@@ -25,6 +33,8 @@ class SessionCookieObserver implements ObserverInterface
 
     /**
      * Observer-Methode, die vor dem Senden der Response aufgerufen wird
+     *
+     * @param \Magento\Framework\Event\Observer $observer
      */
     #[\Override]
     public function execute(\Magento\Framework\Event\Observer $observer): void

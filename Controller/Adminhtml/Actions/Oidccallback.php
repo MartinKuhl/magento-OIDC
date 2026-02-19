@@ -28,34 +28,61 @@ use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
  */
 class Oidccallback implements ActionInterface, HttpGetActionInterface
 {
+    /** @var \Magento\User\Model\UserFactory */
     protected \Magento\User\Model\UserFactory $userFactory;
 
+    /** @var \Magento\Backend\Model\Auth */
     protected \Magento\Backend\Model\Auth $auth;
 
+    /** @var \Magento\Framework\Controller\ResultFactory */
     protected \Magento\Framework\Controller\ResultFactory $resultFactory;
 
+    /** @var \Magento\Framework\App\RequestInterface */
     protected \Magento\Framework\App\RequestInterface $request;
 
+    /** @var \MiniOrange\OAuth\Helper\OAuthUtility */
     protected \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
 
+    /** @var \Magento\Framework\Message\ManagerInterface */
     protected \Magento\Framework\Message\ManagerInterface $messageManager;
 
+    /** @var \Magento\Framework\UrlInterface */
     protected \Magento\Framework\UrlInterface $url;
 
+    /** @var \Magento\Framework\Stdlib\CookieManagerInterface */
     protected \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager;
 
+    /** @var \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory */
     protected \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory;
 
+    /** @var BackendUrlInterface */
     protected BackendUrlInterface $backendUrl;
 
+    /** @var \MiniOrange\OAuth\Helper\OAuthSecurityHelper */
     private readonly \MiniOrange\OAuth\Helper\OAuthSecurityHelper $securityHelper;
 
+    /** @var \Magento\Framework\App\Config\ScopeConfigInterface */
     private readonly \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig;
 
+    /** @var \Magento\User\Model\ResourceModel\User\CollectionFactory */
     protected \Magento\User\Model\ResourceModel\User\CollectionFactory $userCollectionFactory;
 
     /**
      * Initialize OIDC callback action.
+     *
+     * @param \Magento\User\Model\UserFactory                                 $userFactory
+     * @param \Magento\Backend\Model\Auth                                     $auth
+     * @param ResultFactory                                                   $resultFactory
+     * @param RequestInterface                                                $request
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility                           $oauthUtility
+     * @param ManagerInterface                                                $messageManager
+     * @param UrlInterface                                                    $url
+     * @param CookieManagerInterface                                          $cookieManager
+     * @param CookieMetadataFactory                                           $cookieMetadataFactory
+     * @param BackendUrlInterface                                             $backendUrl
+     * @param OAuthSecurityHelper                                             $securityHelper
+     * @param \Magento\User\Model\ResourceModel\User\CollectionFactory        $userCollectionFactory
+     * @param \Magento\Framework\App\Config\ScopeConfigInterface              $scopeConfig
      */
     public function __construct(
         \Magento\User\Model\UserFactory $userFactory,

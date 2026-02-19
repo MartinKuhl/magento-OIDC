@@ -17,10 +17,13 @@ class OidcAuthenticationService
 {
     private const MAX_RECURSION_DEPTH = 5;
 
+    /** @var \MiniOrange\OAuth\Helper\OAuthUtility */
     private readonly \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
 
     /**
      * Initialize OIDC authentication service.
+     *
+     * @param OAuthUtility $oauthUtility
      */
     public function __construct(OAuthUtility $oauthUtility)
     {
@@ -130,6 +133,7 @@ class OidcAuthenticationService
      * Recursively search for an email address in the user info data.
      *
      * @param  mixed $arr
+     * @param  int   $depth
      */
     private function findEmailRecursive($arr, int $depth = 0): string
     {
@@ -147,7 +151,7 @@ class OidcAuthenticationService
 
         foreach ($arr as $value) {
             if (is_scalar($value) && filter_var($value, FILTER_VALIDATE_EMAIL)) {
-                $this->oauthUtility->customlog("OidcAuthenticationService: findEmailRecursive found: " . (string) $value);
+                $this->oauthUtility->customlog("OidcAuthenticationService: findEmailRecursive found: " . $value);
                 return $value;
             }
 

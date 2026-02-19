@@ -19,6 +19,7 @@ use MiniOrange\OAuth\Helper\Exception\SupportQueryRequiredFieldsException;
 abstract class BaseAdminAction extends \Magento\Backend\App\Action
 {
 
+    /** @var \MiniOrange\OAuth\Helper\OAuthUtility */
     protected \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
 
     /**
@@ -26,6 +27,7 @@ abstract class BaseAdminAction extends \Magento\Backend\App\Action
      */
     protected $context;
 
+    /** @var \Magento\Framework\View\Result\PageFactory */
     protected \Magento\Framework\View\Result\PageFactory $resultPageFactory;
 
     /**
@@ -33,6 +35,7 @@ abstract class BaseAdminAction extends \Magento\Backend\App\Action
      */
     protected $messageManager;
 
+    /** @var \Psr\Log\LoggerInterface */
     protected \Psr\Log\LoggerInterface $logger;
 
     /**
@@ -42,6 +45,12 @@ abstract class BaseAdminAction extends \Magento\Backend\App\Action
 
     /**
      * Initialize base admin action.
+     *
+     * @param \Magento\Backend\App\Action\Context             $context
+     * @param \Magento\Framework\View\Result\PageFactory      $resultPageFactory
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility           $oauthUtility
+     * @param \Magento\Framework\Message\ManagerInterface     $messageManager
+     * @param \Psr\Log\LoggerInterface                        $logger
      */
     public function __construct(
         \Magento\Backend\App\Action\Context $context,

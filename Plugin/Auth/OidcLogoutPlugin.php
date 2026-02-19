@@ -17,12 +17,22 @@ use MiniOrange\OAuth\Helper\OAuthUtility;
 
 class OidcLogoutPlugin
 {
+    /** @var \Magento\Framework\Stdlib\CookieManagerInterface */
     protected \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager;
 
+    /** @var \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory */
     protected \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory;
 
+    /** @var \MiniOrange\OAuth\Helper\OAuthUtility */
     protected \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
 
+    /**
+     * Initialize OIDC logout plugin.
+     *
+     * @param CookieManagerInterface $cookieManager
+     * @param CookieMetadataFactory  $cookieMetadataFactory
+     * @param OAuthUtility           $oauthUtility
+     */
     public function __construct(
         CookieManagerInterface $cookieManager,
         CookieMetadataFactory $cookieMetadataFactory,
@@ -36,6 +46,7 @@ class OidcLogoutPlugin
     /**
      * Delete OIDC cookie after logout
      *
+     * @param  Auth  $subject
      * @param  mixed $result
      * @return mixed
      */

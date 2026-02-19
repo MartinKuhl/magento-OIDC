@@ -29,6 +29,16 @@ class OAuthObserver implements ObserverInterface
      */
     private const REQUEST_PARAMS = ['option'];
 
+    /**
+     * Initialize OAuth observer.
+     *
+     * @param ManagerInterface $messageManager
+     * @param HttpRequest      $request
+     * @param HttpResponse     $response
+     * @param OAuthUtility     $oauthUtility
+     * @param TestResults      $testResults
+     * @param LoggerInterface  $logger
+     */
     public function __construct(
         private readonly ManagerInterface $messageManager,
         private readonly HttpRequest $request,
@@ -41,6 +51,8 @@ class OAuthObserver implements ObserverInterface
 
     /**
      * Handle the `controller_action_predispatch` event.
+     *
+     * @param Observer $observer
      */
     #[\Override]
     public function execute(Observer $observer): void
@@ -73,6 +85,9 @@ class OAuthObserver implements ObserverInterface
 
     /**
      * Route the request to the appropriate action based on the `option` parameter.
+     *
+     * @param string $op
+     * @param array  $params
      */
     private function routeData(string $op, array $params): void
     {

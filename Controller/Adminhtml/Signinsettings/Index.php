@@ -27,13 +27,25 @@ use Psr\Log\LoggerInterface;
  */
 class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetActionInterface
 {
+    /** @var \Magento\Framework\App\Response\Http\FileFactory */
     protected \Magento\Framework\App\Response\Http\FileFactory $fileFactory;
 
+    /** @var \Magento\Store\Model\StoreManagerInterface */
     protected \Magento\Store\Model\StoreManagerInterface $_storeManager;
+    /** @var \Magento\Framework\App\ProductMetadataInterface */
     private readonly \Magento\Framework\App\ProductMetadataInterface $productMetadata;
 
     /**
      * Initialize sign-in settings controller.
+     *
+     * @param Context                                          $context
+     * @param PageFactory                                      $resultPageFactory
+     * @param OAuthUtility                                     $oauthUtility
+     * @param ManagerInterface                                 $messageManager
+     * @param LoggerInterface                                  $logger
+     * @param \Magento\Framework\App\Response\Http\FileFactory $fileFactory
+     * @param \Magento\Store\Model\StoreManagerInterface       $storeManager
+     * @param \Magento\Framework\App\ProductMetadataInterface  $productMetadata
      */
     public function __construct(
         Context $context,
@@ -194,6 +206,8 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
 
     /**
      * Process Values being submitted and save data in the database.
+     *
+     * @param array $params
      */
     private function processValuesAndSaveData(array $params): void
     {
@@ -272,7 +286,6 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
 
     /**
      * Save the sign-in settings configuration.
-     *
      *
      * @param (false|mixed|string)[] $values
      * @psalm-param list{string, mixed, mixed, mixed, mixed, mixed, mixed, mixed, mixed, mixed, mixed, mixed,

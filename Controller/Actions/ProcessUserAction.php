@@ -98,22 +98,37 @@ class ProcessUserAction
      */
     private $countryAttribute;
 
+    /** @var \MiniOrange\OAuth\Controller\Actions\CustomerLoginAction */
     private readonly \MiniOrange\OAuth\Controller\Actions\CustomerLoginAction $customerLoginAction;
 
+    /** @var \Magento\Store\Model\StoreManagerInterface */
     private readonly \Magento\Store\Model\StoreManagerInterface $storeManager;
 
+    /** @var \MiniOrange\OAuth\Helper\OAuthUtility */
     private readonly \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
 
+    /** @var \MiniOrange\OAuth\Model\Service\CustomerUserCreator */
     private readonly \MiniOrange\OAuth\Model\Service\CustomerUserCreator $customerUserCreator;
 
+    /** @var \Magento\Framework\Controller\Result\RedirectFactory */
     private readonly \Magento\Framework\Controller\Result\RedirectFactory $resultRedirectFactory;
 
+    /** @var \Magento\Framework\Message\ManagerInterface */
     private readonly \Magento\Framework\Message\ManagerInterface $messageManager;
 
+    /** @var \Magento\Customer\Api\CustomerRepositoryInterface */
     private readonly \Magento\Customer\Api\CustomerRepositoryInterface $customerRepository;
 
     /**
      * Initialize ProcessUserAction.
+     *
+     * @param OAuthUtility $oauthUtility
+     * @param CustomerRepositoryInterface $customerRepository
+     * @param StoreManagerInterface $storeManager
+     * @param CustomerLoginAction $customerLoginAction
+     * @param CustomerUserCreator $customerUserCreator
+     * @param RedirectFactory $resultRedirectFactory
+     * @param ManagerInterface $messageManager
      */
     public function __construct(
         OAuthUtility $oauthUtility,
@@ -217,6 +232,11 @@ class ProcessUserAction
 
     /**
      * Process user action.
+     *
+     * @param  string      $userEmail
+     * @param  string|null $firstName
+     * @param  string|null $lastName
+     * @param  string|null $userName
      */
     private function processUserAction(
         string $userEmail,
@@ -284,6 +304,14 @@ class ProcessUserAction
      *
      * @throws \RuntimeException If customer creation fails
      */
+    /**
+     * Create a new customer from OIDC attributes.
+     *
+     * @param  string      $userEmail
+     * @param  string|null $firstName
+     * @param  string|null $lastName
+     * @param  string|null $userName
+     */
     private function createNewUser(
         string $userEmail,
         ?string $firstName,
@@ -325,6 +353,7 @@ class ProcessUserAction
     /**
      * Load customer by email from the current website.
      *
+     * @param  string $userEmail
      * @return \Magento\Customer\Api\Data\CustomerInterface|false
      */
     private function getCustomerFromAttributes(string $userEmail)

@@ -15,12 +15,19 @@ use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
  */
 class SendAuthorizationRequest extends BaseAction
 {
+    /** @var \MiniOrange\OAuth\Helper\OAuthSecurityHelper */
     private readonly \MiniOrange\OAuth\Helper\OAuthSecurityHelper $securityHelper;
 
+    /** @var \Magento\Framework\Session\SessionManagerInterface */
     private readonly \Magento\Framework\Session\SessionManagerInterface $sessionManager;
 
     /**
      * Initialize send authorization request action.
+     *
+     * @param \Magento\Framework\App\Action\Context              $context
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility              $oauthUtility
+     * @param OAuthSecurityHelper                                $securityHelper
+     * @param \Magento\Framework\Session\SessionManagerInterface $sessionManager
      */
     public function __construct(
         \Magento\Framework\App\Action\Context $context,

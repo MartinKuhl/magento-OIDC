@@ -19,22 +19,31 @@ use Magento\Customer\Api\Data\CustomerInterface;
  */
 class CustomerUserCreator
 {
+    /** @var \Magento\Customer\Model\CustomerFactory */
     private readonly \Magento\Customer\Model\CustomerFactory $customerFactory;
 
+    /** @var \Magento\Customer\Api\Data\AddressInterfaceFactory */
     private readonly \Magento\Customer\Api\Data\AddressInterfaceFactory $addressFactory;
 
+    /** @var \Magento\Customer\Api\AddressRepositoryInterface */
     private readonly \Magento\Customer\Api\AddressRepositoryInterface $addressRepository;
 
+    /** @var \Magento\Store\Model\StoreManagerInterface */
     private readonly \Magento\Store\Model\StoreManagerInterface $storeManager;
 
+    /** @var \Magento\Framework\Math\Random */
     private readonly \Magento\Framework\Math\Random $randomUtility;
 
+    /** @var \MiniOrange\OAuth\Helper\OAuthUtility */
     private readonly \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
 
+    /** @var CountryCollectionFactory */
     private readonly CountryCollectionFactory $countryCollectionFactory;
 
+    /** @var \Magento\Framework\Stdlib\DateTime\DateTime */
     private readonly \Magento\Framework\Stdlib\DateTime\DateTime $dateTime;
 
+    /** @var DirectoryData */
     private readonly DirectoryData $directoryData;
 
     // Attribute mapping keys
@@ -67,10 +76,22 @@ class CustomerUserCreator
      */
     private $countryAttribute;
 
+    /** @var \Magento\Customer\Api\CustomerRepositoryInterface */
     private readonly \Magento\Customer\Api\CustomerRepositoryInterface $customerRepository;
 
     /**
      * Initialize customer user creator service.
+     *
+     * @param CustomerFactory $customerFactory
+     * @param AddressInterfaceFactory $addressFactory
+     * @param AddressRepositoryInterface $addressRepository
+     * @param StoreManagerInterface $storeManager
+     * @param Random $randomUtility
+     * @param OAuthUtility $oauthUtility
+     * @param CountryCollectionFactory $countryCollectionFactory
+     * @param DateTime $dateTime
+     * @param DirectoryData $directoryData
+     * @param \Magento\Customer\Api\CustomerRepositoryInterface $customerRepository
      */
     public function __construct(
         CustomerFactory $customerFactory,
@@ -134,6 +155,13 @@ class CustomerUserCreator
 
     /**
      * Create a customer from OIDC attributes.
+     *
+     * @param  string $email
+     * @param  string $userName
+     * @param  string $firstName
+     * @param  string $lastName
+     * @param  array  $flattenedAttrs
+     * @param  array  $rawAttrs
      */
     public function createCustomer(
         string $email,
@@ -195,7 +223,7 @@ class CustomerUserCreator
             $savedCustomer = $this->customerRepository->save($customerDataModel, $randomPassword);
 
             $this->oauthUtility->customlog(
-                "CustomerUserCreator: Customer created with ID: " . (string) $savedCustomer->getId()
+                "CustomerUserCreator: Customer created with ID: " . $savedCustomer->getId()
             );
 
             // Create customer address
@@ -212,6 +240,12 @@ class CustomerUserCreator
 
     /**
      * Create customer address with mapped OIDC attributes
+     *
+     * @param  CustomerInterface $customer
+     * @param  string            $firstName
+     * @param  string            $lastName
+     * @param  array             $flattenedAttrs
+     * @param  array             $rawAttrs
      */
     private function createCustomerAddress(
         CustomerInterface $customer,
@@ -249,7 +283,7 @@ class CustomerUserCreator
 
             $this->addressRepository->save($address);
             $this->oauthUtility->customlog(
-                "CustomerUserCreator: Address created for customer ID: " . (string) $customer->getId()
+                "CustomerUserCreator: Address created for customer ID: " . $customer->getId()
             );
 
         } catch (\Exception $e) {
@@ -336,6 +370,7 @@ class CustomerUserCreator
     /**
      * Map OIDC gender value to Magento gender ID
      *
+     * @param string $genderValue
      * @psalm-return 1|2|3|null
      */
     private function mapGender(string $genderValue): int|null
@@ -358,6 +393,8 @@ class CustomerUserCreator
 
     /**
      * Resolve country name or code to Magento country ID
+     *
+     * @param  string|null $country
      */
     private function resolveCountryId(string|null $country)
     {

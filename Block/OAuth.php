@@ -13,20 +13,35 @@ use Magento\Framework\Escaper;
  */
 class OAuth extends \Magento\Framework\View\Element\Template
 {
+    /** @var \MiniOrange\OAuth\Helper\OAuthUtility */
     private readonly \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
 
+    /** @var \Magento\Authorization\Model\ResourceModel\Role\Collection */
     private readonly \Magento\Authorization\Model\ResourceModel\Role\Collection $adminRoleModel;
 
+    /** @var \Magento\Customer\Model\ResourceModel\Group\Collection */
     private readonly \Magento\Customer\Model\ResourceModel\Group\Collection $userGroupModel;
 
+    /** @var \Magento\Customer\Model\Session */
     protected \Magento\Customer\Model\Session $customerSession;
 
+    /** @var \Magento\Framework\Escaper */
     protected \Magento\Framework\Escaper $escaper;
 
+    /** @var \Magento\Framework\Data\Form\FormKey */
     protected \Magento\Framework\Data\Form\FormKey $_formKey;
 
     /**
      * Initialize OAuth block.
+     *
+     * @param \Magento\Framework\View\Element\Template\Context $context
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     * @param \Magento\Authorization\Model\ResourceModel\Role\Collection $adminRoleModel
+     * @param \Magento\Customer\Model\ResourceModel\Group\Collection $userGroupModel
+     * @param Session $customerSession
+     * @param Escaper $escaper
+     * @param \Magento\Framework\Data\Form\FormKey $formKey
+     * @param array $data
      */
     public function __construct(
         \Magento\Framework\View\Element\Template\Context $context,
@@ -38,18 +53,6 @@ class OAuth extends \Magento\Framework\View\Element\Template
         \Magento\Framework\Data\Form\FormKey $formKey,
         array $data = []
     ) {
-        /**
-         * OAuth block constructor.
-         *
-         * @param \Magento\Framework\View\Element\Template\Context $context
-         * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
-         * @param \Magento\Authorization\Model\ResourceModel\Role\Collection $adminRoleModel
-         * @param \Magento\Customer\Model\ResourceModel\Group\Collection $userGroupModel
-         * @param Session $customerSession
-         * @param Escaper $escaper
-         * @param \Magento\Framework\Data\Form\FormKey $formKey
-         * @param array $data
-         */
         $this->oauthUtility = $oauthUtility;
         $this->adminRoleModel = $adminRoleModel;
         $this->userGroupModel = $userGroupModel;
@@ -70,8 +73,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
     /**
      * Escape HTML to prevent XSS
      *
-     * @param  array|string      $data        Data to escape
-     * @param  array|null|string $allowedTags Allowed HTML tags
+     * @param array|string $data Data to escape
+     * @param array|string|null $allowedTags Allowed HTML tags
      * @return array|string
      * @psalm-suppress ImplementedReturnTypeMismatch Parent only declares string, but Escaper supports array
      */
@@ -480,6 +483,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * Create the URL for one of the SAML SP plugin sections to be shown as link on any of the template files.
+     *
+     * @param string $page
      */
     public function getExtensionPageUrl(string $page): string
     {
@@ -555,6 +560,9 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * Create/Get the SP initiated URL for the site (frontend/customer login).
+     *
+     * @param string|null $relayState
+     * @param string|null $app_name
      */
     public function getSPInitiatedUrl(?string $relayState = null, ?string $app_name = null): string
     {
@@ -565,6 +573,9 @@ class OAuth extends \Magento\Framework\View\Element\Template
      * Create/Get the Admin SP initiated URL (admin backend OIDC login).
      *
      * Uses the admin controller which sets loginType=admin.
+     *
+     * @param string|null $relayState
+     * @param string|null $app_name
      */
     public function getAdminSPInitiatedUrl(?string $relayState = null, ?string $app_name = null): string
     {

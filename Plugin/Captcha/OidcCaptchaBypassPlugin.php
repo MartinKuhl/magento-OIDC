@@ -21,10 +21,13 @@ use MiniOrange\OAuth\Helper\OAuthUtility;
 
 class OidcCaptchaBypassPlugin
 {
+    /** @var \MiniOrange\OAuth\Helper\OAuthUtility */
     protected \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
 
     /**
-     * Constructor
+     * Initialize OIDC CAPTCHA bypass plugin.
+     *
+     * @param OAuthUtility $oauthUtility
      */
     public function __construct(OAuthUtility $oauthUtility)
     {
@@ -39,6 +42,9 @@ class OidcCaptchaBypassPlugin
      * it skips CAPTCHA validation entirely. For standard password-based authentication,
      * it proceeds with normal CAPTCHA validation.
      *
+     * @param  CheckUserLoginBackendObserver       $subject
+     * @param  callable                            $proceed
+     * @param  \Magento\Framework\Event\Observer   $observer
      * @return CheckUserLoginBackendObserver
      */
     public function aroundExecute(

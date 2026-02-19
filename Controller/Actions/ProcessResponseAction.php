@@ -21,10 +21,15 @@ class ProcessResponseAction extends BaseAction
      */
     private $userInfoResponse;
 
+    /** @var \MiniOrange\OAuth\Controller\Actions\CheckAttributeMappingAction */
     private readonly \MiniOrange\OAuth\Controller\Actions\CheckAttributeMappingAction $attrMappingAction;
 
     /**
      * Initialize process response action.
+     *
+     * @param \Magento\Framework\App\Action\Context                              $context
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility                              $oauthUtility
+     * @param \MiniOrange\OAuth\Controller\Actions\CheckAttributeMappingAction   $attrMappingAction
      */
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
@@ -141,7 +146,7 @@ class ProcessResponseAction extends BaseAction
 
         foreach ($arr as $value) {
             if (is_scalar($value) && filter_var($value, FILTER_VALIDATE_EMAIL)) {
-                $this->oauthUtility->customlog("ProcessResponseAction: findUserEmail found: " . (string) $value);
+                $this->oauthUtility->customlog("ProcessResponseAction: findUserEmail found: " . $value);
                 return $value;
             }
 
@@ -160,6 +165,7 @@ class ProcessResponseAction extends BaseAction
      *
      * @param  string       $keyprefix
      * @param  array|object $arr
+     * @param  array        $flattenedattributesarray
      * @param  int          $depth
      * @return array
      */
@@ -171,10 +177,12 @@ class ProcessResponseAction extends BaseAction
 
         foreach ($arr as $key => $resource) {
             if (is_array($resource) || is_object($resource)) {
-                $newPrefix = $keyprefix === null || $keyprefix === '' || $keyprefix === '0' ? $key : $keyprefix . "." . $key;
+                $newPrefix = ($keyprefix === null || $keyprefix === '' || $keyprefix === '0')
+                    ? $key : $keyprefix . "." . $key;
                 $this->getflattenedArray($newPrefix, $resource, $flattenedattributesarray, $depth + 1);
             } else {
-                $newKey = $keyprefix === null || $keyprefix === '' || $keyprefix === '0' ? $key : $keyprefix . "." . $key;
+                $newKey = ($keyprefix === null || $keyprefix === '' || $keyprefix === '0')
+                    ? $key : $keyprefix . "." . $key;
                 $flattenedattributesarray[$newKey] = $resource;
             }
         }

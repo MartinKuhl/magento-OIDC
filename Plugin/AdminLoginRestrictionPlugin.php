@@ -18,12 +18,17 @@ use Psr\Log\LoggerInterface;
  */
 class AdminLoginRestrictionPlugin
 {
+    /** @var OAuthUtility */
     private readonly OAuthUtility $oauthUtility;
 
+    /** @var LoggerInterface */
     private readonly LoggerInterface $logger;
 
     /**
-     * Constructor
+     * Initialize admin login restriction plugin.
+     *
+     * @param OAuthUtility    $oauthUtility
+     * @param LoggerInterface $logger
      */
     public function __construct(
         OAuthUtility $oauthUtility,
@@ -39,6 +44,8 @@ class AdminLoginRestrictionPlugin
      * Safety net: if OIDC-only is enabled but the OIDC button is NOT shown,
      * allow normal login to prevent complete lockout.
      *
+     * @param  Auth   $subject
+     * @param  string $username
      * @param  string $password
      * @throws AuthenticationException
      */

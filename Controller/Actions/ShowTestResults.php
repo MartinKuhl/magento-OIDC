@@ -42,20 +42,26 @@ class ShowTestResults extends Action
      */
     private $hasExceptionOccurred;
 
+    /** @var OAuthUtility */
     private readonly OAuthUtility $oauthUtility;
 
+    /** @var \Magento\Framework\App\Request\Http */
     protected \Magento\Framework\App\Request\Http $request;
 
+    /** @var \Magento\Framework\App\Config\ScopeConfigInterface */
     protected \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig;
 
+    /** @var \Magento\Framework\Escaper */
     private readonly \Magento\Framework\Escaper $escaper;
 
+    /** @var \Magento\Customer\Model\Session */
     private readonly \Magento\Customer\Model\Session $customerSession;
 
     /**
      * @var string HTML template for the test results page
      */
-    private string|array $template = '<div style="font-family:Calibri;padding:0 3%;">{{header}}{{commonbody}}{{footer}}</div>';
+    private string|array $template = '<div style="font-family:Calibri;padding:0 3%;">'
+        . '{{header}}{{commonbody}}{{footer}}</div>';
 
     /**
      * @var string HTML header for successful test
@@ -117,6 +123,13 @@ class ShowTestResults extends Action
 
     /**
      * Initialize ShowTestResults action.
+     *
+     * @param Context $context
+     * @param OAuthUtility $oauthUtility
+     * @param \Magento\Framework\App\Request\Http $request
+     * @param ScopeConfigInterface $scopeConfig
+     * @param \Magento\Customer\Model\Session $customerSession
+     * @param \Magento\Framework\Escaper $escaper
      */
     public function __construct(
         Context $context,
@@ -222,6 +235,8 @@ class ShowTestResults extends Action
 
     /**
      * Handle OIDC error and display TEST UNSUCCESSFUL page
+     *
+     * @param  string $encodedError
      */
     private function handleOidcError(string $encodedError): \Magento\Framework\Controller\ResultInterface
     {
@@ -339,11 +354,13 @@ class ShowTestResults extends Action
      * Set the OAuth exception instance.
      *
      * @param  \Exception|null $exception
-     * @return void
      */
-    public function setOAuthException($exception)
+    // phpcs:disable Magento2.CodeAnalysis.EmptyBlock.DetectedFunction
+    public function setOAuthException($exception): void
     {
+        // intentionally empty — exception display is handled via hasExceptionOccurred flag
     }
+    // phpcs:enable Magento2.CodeAnalysis.EmptyBlock.DetectedFunction
 
     /**
      * Set the user email address.

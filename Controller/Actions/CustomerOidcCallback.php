@@ -31,18 +31,25 @@ use Magento\Framework\Controller\Result\Redirect;
  */
 class CustomerOidcCallback extends BaseAction
 {
+    /** @var CustomerFactory */
     private readonly CustomerFactory $customerFactory;
 
+    /** @var CustomerSession */
     private readonly CustomerSession $customerSession;
 
+    /** @var StoreManagerInterface */
     private readonly StoreManagerInterface $storeManager;
 
+    /** @var CookieManagerInterface */
     private readonly CookieManagerInterface $cookieManager;
 
+    /** @var CookieMetadataFactory */
     private readonly CookieMetadataFactory $cookieMetadataFactory;
 
+    /** @var OAuthSecurityHelper */
     private readonly OAuthSecurityHelper $securityHelper;
 
+    /** @var CustomerRepositoryInterface */
     private readonly CustomerRepositoryInterface $customerRepository;
 
     /**
@@ -165,7 +172,7 @@ class CustomerOidcCallback extends BaseAction
         }
 
         $this->oauthUtility->customlog(
-            "CustomerOidcCallback: Loaded customer ID: " . (string) $customerId
+            "CustomerOidcCallback: Loaded customer ID: " . $customerId
         );
 
         // Convert CustomerInterface to Model for session
@@ -180,7 +187,7 @@ class CustomerOidcCallback extends BaseAction
         if (!$customerModel->getId()) {
             $this->oauthUtility->customlog(
                 "ERROR: Failed to load customer model for ID: "
-                . (string) $customerId
+                . $customerId
             );
             $this->messageManager->addErrorMessage(__(
                 'Authentication failed. Please try again.'

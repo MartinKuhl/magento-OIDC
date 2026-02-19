@@ -20,16 +20,25 @@ class SessionHelper
      */
     private const ADMIN_COOKIE_NAMES = ['PHPSESSID', 'admin'];
 
+    /** @var \Magento\Framework\Stdlib\CookieManagerInterface */
     private readonly \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager;
 
+    /** @var \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory */
     private readonly \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory;
 
+    /** @var \MiniOrange\OAuth\Helper\OAuthUtility */
     private readonly \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
 
+    /** @var BackendUrlInterface */
     private readonly BackendUrlInterface $backendUrl;
 
     /**
      * Initialize session helper.
+     *
+     * @param CookieManagerInterface $cookieManager
+     * @param CookieMetadataFactory  $cookieMetadataFactory
+     * @param OAuthUtility           $oauthUtility
+     * @param BackendUrlInterface    $backendUrl
      */
     public function __construct(
         CookieManagerInterface $cookieManager,

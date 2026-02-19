@@ -27,7 +27,14 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
 
     /**
      * Initialize attribute settings controller.
+     *
+     * @param Context           $context
+     * @param PageFactory       $resultPageFactory
+     * @param OAuthUtility      $oauthUtility
+     * @param ManagerInterface  $messageManager
+     * @param LoggerInterface   $logger
      */
+    // phpcs:ignore Generic.CodeAnalysis.UselessOverridingMethod.Found
     public function __construct(
         Context $context,
         PageFactory $resultPageFactory,
@@ -75,6 +82,8 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
     }
     /**
      * Process Values being submitted and save data in the database.
+     *
+     * @param array $params
      */
     private function processValuesAndSaveData(array $params): void
     {

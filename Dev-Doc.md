@@ -135,3 +135,18 @@ However, Psalm needs to find the Composer autoloader, so it must run from the Ma
 
 ## AI command
 please look at @github/OIDC/Code-Review.md here you find phpcs issues mentioned for different files. Fix them all. Use sub-agents where applicable. DO not create new issue for PHPStan or PHPCS scans.
+
+
+# root level
+
+## Run PHPStan: 
+cd /var/www/html/github/OIDC && /var/www/html/vendor/bin/phpstan analyse --memory-limit=1G --configuration=phpstan.local.neon 
+
+## Run Psalm: 9
+cd /var/www/html/ && /var/www/html/vendor/bin/psalm --no-cache --config=/var/www/html/github/OIDC/psalm.xml --root=/var/www/html 
+
+## Run PHPCS: 9 files
+cd /var/www/html/github/OIDC && /var/www/html/vendor/bin/phpcs --extensions=php,phtml --standard=phpcs.xml . 
+
+## Run Rector:
+cd /var/www/html/github/OIDC && /var/www/html/vendor/bin/rector process --dry-run

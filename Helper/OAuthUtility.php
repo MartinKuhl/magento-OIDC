@@ -28,20 +28,28 @@ use MiniOrange\OAuth\Helper\Data;
  */
 class OAuthUtility extends Data
 {
+    /** @var \Magento\Backend\Model\Session */
     protected \Magento\Backend\Model\Session $adminSession;
 
+    /** @var \Magento\Customer\Model\Session */
     protected \Magento\Customer\Model\Session $customerSession;
 
+    /** @var \Magento\Backend\Model\Auth\Session */
     protected \Magento\Backend\Model\Auth\Session $authSession;
 
+    /** @var \Magento\Framework\App\Cache\TypeListInterface */
     protected \Magento\Framework\App\Cache\TypeListInterface $cacheTypeList;
 
+    /** @var \Magento\Framework\App\Cache\Frontend\Pool */
     protected \Magento\Framework\App\Cache\Frontend\Pool $cacheFrontendPool;
 
+    /** @var \Magento\Framework\Filesystem\Driver\File */
     protected \Magento\Framework\Filesystem\Driver\File $fileSystem;
 
+    /** @var \Psr\Log\LoggerInterface */
     protected \Psr\Log\LoggerInterface $logger;
 
+    /** @var \Magento\Framework\App\Config\ReinitableConfigInterface */
     protected \Magento\Framework\App\Config\ReinitableConfigInterface $reinitableConfig;
 
     /**
@@ -49,14 +57,45 @@ class OAuthUtility extends Data
      */
     protected $_logger;
 
+    /** @var \Magento\Framework\App\ProductMetadataInterface */
     protected \Magento\Framework\App\ProductMetadataInterface $productMetadata;
 
+    /** @var \Magento\Framework\Stdlib\DateTime\DateTime */
     protected \Magento\Framework\Stdlib\DateTime\DateTime $dateTime;
 
+    /** @var \Magento\Framework\App\Filesystem\DirectoryList */
     protected \Magento\Framework\App\Filesystem\DirectoryList $directoryList;
 
     /**
      * Initialize OAuthUtility helper.
+     *
+     * @param Context $context
+     * @param UserFactory $adminFactory
+     * @param CustomerFactory $customerFactory
+     * @param UrlInterface $urlInterface
+     * @param WriterInterface $configWriter
+     * @param Repository $assetRepo
+     * @param \Magento\Backend\Helper\Data $helperBackend
+     * @param Url $frontendUrl
+     * @param \Magento\Backend\Model\Session $adminSession
+     * @param Session $customerSession
+     * @param \Magento\Backend\Model\Auth\Session $authSession
+     * @param \Magento\Framework\App\Config\ReinitableConfigInterface $reinitableConfig
+     * @param TypeListInterface $cacheTypeList
+     * @param Pool $cacheFrontendPool
+     * @param \Psr\Log\LoggerInterface $logger
+     * @param \MiniOrange\OAuth\Logger\Logger $logger2
+     * @param File $fileSystem
+     * @param \Magento\Framework\App\ProductMetadataInterface $productMetadata
+     * @param \MiniOrange\OAuth\Model\MiniorangeOauthClientAppsFactory $miniorangeOauthClientAppsFactory
+     * @param \MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps\CollectionFactory $clientCollectionFactory
+     * @param \MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps $appResource
+     * @param \Magento\User\Model\ResourceModel\User $userResource
+     * @param \Magento\Customer\Model\ResourceModel\Customer $customerResource
+     * @param DateTime $dateTime
+     * @param DirectoryList $directoryList
+     * @param \Magento\Framework\Encryption\EncryptorInterface $encryptor
+     * @param \Magento\Framework\Escaper $escaper
      */
     public function __construct(
         Context $context,
@@ -133,6 +172,8 @@ class OAuthUtility extends Data
     //CUSTOM LOG FILE OPERATION
     /**
      * This function print custom log in var/log/mo_oauth.log file.
+     *
+     * @param string $txt
      */
     public function customlog(string $txt): void
     {
@@ -176,6 +217,8 @@ class OAuthUtility extends Data
 
     /**
      * Check if a value is empty or not set.
+     *
+     * @param mixed $value
      */
     public function isBlank(mixed $value): bool
     {
@@ -373,6 +416,7 @@ class OAuthUtility extends Data
     /**
      * Flush Magento Cache.
      *
+     * @param string $from
      * @psalm-suppress PossiblyUnusedParam – $from used for future logging
      */
     public function flushCache(string $from = ""): void
@@ -574,6 +618,8 @@ class OAuthUtility extends Data
      * Decode a base64 encoded string safely.
      *
      * Returns empty string on invalid input.
+     *
+     * @param  string|null $input
      */
     public function decodeBase64(?string $input): string
     {
@@ -589,6 +635,8 @@ class OAuthUtility extends Data
      * Extract the path component from a URL in a safe manner.
      *
      * Returns empty string on failure.
+     *
+     * @param  string $url
      */
     public function extractPathFromUrl(string $url): string
     {
@@ -604,6 +652,8 @@ class OAuthUtility extends Data
      * Parse a URL and return components in a safe manner.
      *
      * Returns empty array on failure.
+     *
+     * @param  string $url
      */
     public function parseUrlComponents(string $url): array
     {

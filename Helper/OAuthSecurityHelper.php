@@ -20,12 +20,18 @@ class OAuthSecurityHelper
     private const STATE_CACHE_PREFIX = 'mooauth_state_';
     private const NONCE_TTL = 120;     // 2 minutes
     private const STATE_TTL = 600;     // 10 minutes
+
+    /** @var CacheInterface */
     private readonly CacheInterface $cache;
 
+    /** @var OAuthUtility */
     private readonly OAuthUtility $oauthUtility;
 
     /**
      * Initialize OAuth security helper.
+     *
+     * @param CacheInterface $cache
+     * @param OAuthUtility   $oauthUtility
      */
     public function __construct(
         CacheInterface $cache,

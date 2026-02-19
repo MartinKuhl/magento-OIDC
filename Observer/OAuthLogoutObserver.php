@@ -17,12 +17,16 @@ use MiniOrange\OAuth\Helper\OAuthConstants;
  */
 class OAuthLogoutObserver implements ObserverInterface
 {
+    /** @var \MiniOrange\OAuth\Helper\OAuthUtility */
     private readonly \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
 
+    /** @var \Magento\Framework\App\ResponseInterface */
     protected \Magento\Framework\App\ResponseInterface $_response;
 
+    /** @var CookieManagerInterface */
     private readonly CookieManagerInterface $cookieManager;
 
+    /** @var CookieMetadataFactory */
     private readonly CookieMetadataFactory $cookieMetadataFactory;
 
     /**
