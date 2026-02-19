@@ -8,7 +8,7 @@ parameters:
         - .
     excludePaths:
         analyseAndScan:
-            - vendor
+            - vendor (?)
             - .github
         analyse:
             - psalm-stubs.stub
