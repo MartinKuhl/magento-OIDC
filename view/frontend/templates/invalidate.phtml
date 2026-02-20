@@ -1,7 +1,10 @@
 <script>
     // Define the mo_invalidate function
     function mo_invalidate($, fullname, firstname) {
-        $('.greet.welcome').html('<span data-bind="text: new String(\'Welcome, %1!\').replace(\'%1\', customer().firstname)">Welcome, ' + firstname + '!</span>');
+        var welcomeHtml = '<span data-bind="text: new String(\'Welcome, %1!\')'
+            + '.replace(\'%1\', customer().firstname)">Welcome, '
+            + firstname + '!</span>';
+        $('.greet.welcome').html(welcomeHtml);
         $('.customer-name span').html(fullname);
     }
 
@@ -21,12 +24,12 @@
 </script>
 
 <?php
-$customerSession = $this->getCustomerSession();
+$customerSession = $block->getCustomerSession();
 if ($customerSession->isLoggedIn()) {
     $fullname = $customerSession->getCustomer()->getName();
     $fname = $customerSession->getCustomer()->getFirstname();
     if (!empty($fullname)) {
-?>
+        ?>
 <script>
     // Execute on window load
     window.addEventListener('load', function() {
@@ -38,7 +41,11 @@ if ($customerSession->isLoggedIn()) {
             while (delay < 5000) {
                 (function(d) {
                     setTimeout(function() {
-                        mo_invalidate(jQuery, "<?php echo $block->escapeJs($fullname); ?>", "<?php echo $block->escapeJs($fname); ?>");
+                        mo_invalidate(
+                            jQuery,
+                            "<?= $escaper->escapeJs($fullname); ?>",
+                            "<?= $escaper->escapeJs($fname); ?>"
+                        );
                     }, d);
                 })(delay);
                 delay += 100;
@@ -46,7 +53,7 @@ if ($customerSession->isLoggedIn()) {
         }
     });
 </script>
-<?php
+        <?php
     }
 }
 ?>

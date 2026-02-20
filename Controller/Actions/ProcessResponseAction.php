@@ -2,26 +2,35 @@
 namespace MiniOrange\OAuth\Controller\Actions;
 
 use MiniOrange\OAuth\Helper\Exception\IncorrectUserInfoDataException;
-use MiniOrange\OAuth\Helper\Exception\UserEmailNotFoundException;
 use MiniOrange\OAuth\Helper\OAuthConstants;
 
 /**
- * Handles processing of SAML Responses from the IDP. Process the SAML Response
- * from the IDP and detect if it's a valid response from the IDP. Validate the
- * certificates and the SAML attributes and Update existing user attributes
- * and groups if necessary. Log the user in.
+ * Backwards-compatible shim for older flow.
+ *
+ * @deprecated This controller has been superseded by the service layer
+ *             and `CheckAttributeMappingAction`.
+ *             Use `\MiniOrange\OAuth\Model\Service\OidcAuthenticationService`
+ *             together with `CheckAttributeMappingAction` instead.
+ * @see        \MiniOrange\OAuth\Model\Service\OidcAuthenticationService
+ * @psalm-suppress ImplicitToStringCast Magento's __() returns Phrase with __toString()
  */
 class ProcessResponseAction extends BaseAction
 {
-    private $userInfoResponse;
-    private $testAction;
-    private $processUserAction;
-    
     /**
-     * @var CheckAttributeMappingAction
+     * @var array|object|null Raw userinfo response (array or stdClass)
      */
-    private $attrMappingAction;
+    private $userInfoResponse;
 
+    /** @var \MiniOrange\OAuth\Controller\Actions\CheckAttributeMappingAction */
+    private readonly \MiniOrange\OAuth\Controller\Actions\CheckAttributeMappingAction $attrMappingAction;
+
+    /**
+     * Initialize process response action.
+     *
+     * @param \Magento\Framework\App\Action\Context                              $context
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility                              $oauthUtility
+     * @param \MiniOrange\OAuth\Controller\Actions\CheckAttributeMappingAction   $attrMappingAction
+     */
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
         \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
@@ -34,64 +43,147 @@ class ProcessResponseAction extends BaseAction
 
     /**
      * Execute function to execute the classes function.
+     *
      * @throws IncorrectUserInfoDataException
      */
+    #[\Override]
     public function execute()
     {
         $this->oauthUtility->customlog("processResponseAction: execute");
-        $this->validateUserInfoData();
+
+        try {
+            $this->validateUserInfoData();
+        } catch (IncorrectUserInfoDataException $e) {
+            $this->oauthUtility->customlog(
+                "ERROR: Invalid user info data from OAuth provider - " . $e->getMessage()
+            );
+            $this->messageManager->addErrorMessage(
+                __('Authentication failed: Invalid user information received from identity provider.')
+            );
+            return $this->resultRedirectFactory->create()->setPath('customer/account/login');
+        }
+
         $userInfoResponse = $this->userInfoResponse;
-        
+
         // flatten the nested OAuth response
         $flattenedUserInfoResponse = [];
         $flattenedUserInfoResponse = $this->getflattenedArray("", $userInfoResponse, $flattenedUserInfoResponse);
-        
-        $userEmail = $this->findUserEmail($userInfoResponse);
-        if (empty($userEmail)) {
-            return $this->getResponse()->setBody("Email address not received. Please check attribute mapping.");
+
+        // First try the configured email attribute
+        $emailAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_EMAIL);
+        if ($this->oauthUtility->isBlank($emailAttribute)) {
+            $emailAttribute = OAuthConstants::DEFAULT_MAP_EMAIL;
         }
-        
+
+        $userEmail = '';
+        if (isset($flattenedUserInfoResponse[$emailAttribute])
+            && filter_var($flattenedUserInfoResponse[$emailAttribute], FILTER_VALIDATE_EMAIL)
+        ) {
+            $userEmail = $flattenedUserInfoResponse[$emailAttribute];
+            $this->oauthUtility->customlog(
+                "ProcessResponseAction: Email found via configured attribute '$emailAttribute': " . $userEmail
+            );
+        }
+
+        // Fallback to recursive search if configured attribute didn't yield an email
+        if (empty($userEmail)) {
+            $userEmail = $this->findUserEmail($userInfoResponse);
+        }
+
+        if (empty($userEmail)) {
+            $this->messageManager->addErrorMessage(
+                __('Email address not received. Please check attribute mapping.')
+            );
+            return $this->resultRedirectFactory->create()->setPath('customer/account/login');
+        }
+
+        // Extract loginType from userInfoResponse (defaults to customer for backward compatibility)
+        $loginType = OAuthConstants::LOGIN_TYPE_CUSTOMER;
+        if (is_array($userInfoResponse) && isset($userInfoResponse['loginType'])) {
+            $loginType = $userInfoResponse['loginType'];
+        } elseif (is_object($userInfoResponse) && isset($userInfoResponse->loginType)) {
+            $loginType = $userInfoResponse->loginType;
+        }
+        $this->oauthUtility->customlog("ProcessResponseAction: loginType = " . $loginType);
+
         $result = $this->attrMappingAction->setUserInfoResponse($userInfoResponse)
             ->setFlattenedUserInfoResponse($flattenedUserInfoResponse)
-            ->setUserEmail($userEmail)->execute();
-        
-        // Debug: Prüfe was zurückkommt
-        $this->oauthUtility->customlog("ProcessResponseAction: attrMappingAction returned: " . 
-            ($result ? get_class($result) : 'NULL'));
-        
+            ->setUserEmail($userEmail)
+            ->setLoginType($loginType)
+            ->execute();
+
+        // Debug: Check what is returned
+        $this->oauthUtility->customlog(
+            "ProcessResponseAction: attrMappingAction returned: " .
+            get_class($result)
+        );
+
         return $result;
     }
 
-    private function findUserEmail($arr)
-    { 
-        $this->oauthUtility->customlog("processResponseAction: findUserEmail");
-        if ($arr) {
-            foreach ($arr as $value) {
-                if (is_array($value)) {
-                    $value = $this->findUserEmail($value);
-                }
-                if (filter_var($value, FILTER_VALIDATE_EMAIL)) {
-                    $this->oauthUtility->customlog("processResponseAction: findUserEmail :" . $value);
-                    return $value;
-                }
-            }
+    private const MAX_RECURSION_DEPTH = 5;
+
+    /**
+     * Recursively search for an email address in the user info array
+     *
+     * @param  mixed $arr
+     * @param  int   $depth
+     * @return string
+     */
+    private function findUserEmail($arr, int|float $depth = 0)
+    {
+        if ($depth > self::MAX_RECURSION_DEPTH) {
             return "";
         }
+
+        if (is_object($arr)) {
+            $arr = (array) $arr;
+        }
+
+        if (!is_array($arr)) {
+            return "";
+        }
+
+        foreach ($arr as $value) {
+            if (is_scalar($value) && filter_var($value, FILTER_VALIDATE_EMAIL)) {
+                $this->oauthUtility->customlog("ProcessResponseAction: findUserEmail found: " . (string)$value);
+                return $value;
+            }
+
+            if (is_array($value) || is_object($value)) {
+                $email = $this->findUserEmail($value, $depth + 1);
+                if (!empty($email)) {
+                    return $email;
+                }
+            }
+        }
+        return "";
     }
 
-    private function getflattenedArray($keyprefix, $arr, &$flattenedattributesarray)
+    /**
+     * Flatten a multidimensional array with dot notation keys
+     *
+     * @param  string       $keyprefix
+     * @param  array|object $arr
+     * @param  array        $flattenedattributesarray
+     * @param  int          $depth
+     * @return array
+     */
+    private function getflattenedArray(?string $keyprefix, $arr, array &$flattenedattributesarray, int|float $depth = 0)
     {
+        if ($depth > self::MAX_RECURSION_DEPTH) {
+            return $flattenedattributesarray;
+        }
+
         foreach ($arr as $key => $resource) {
             if (is_array($resource) || is_object($resource)) {
-                if (!empty($keyprefix)) {
-                    $keyprefix .= ".";
-                }
-                $this->getflattenedArray($keyprefix . $key, $resource, $flattenedattributesarray);
+                $newPrefix = ($keyprefix === null || $keyprefix === '' || $keyprefix === '0')
+                    ? $key : $keyprefix . "." . $key;
+                $this->getflattenedArray($newPrefix, $resource, $flattenedattributesarray, $depth + 1);
             } else {
-                if (!empty($keyprefix)) {
-                    $key = $keyprefix . "." . $key;
-                }
-                $flattenedattributesarray[$key] = $resource;
+                $newKey = ($keyprefix === null || $keyprefix === '' || $keyprefix === '0')
+                    ? $key : $keyprefix . "." . $key;
+                $flattenedattributesarray[$newKey] = $resource;
             }
         }
         return $flattenedattributesarray;
@@ -99,23 +191,34 @@ class ProcessResponseAction extends BaseAction
 
     /**
      * Function checks if the
+     *
      * @throws IncorrectUserInfoDataException
      */
-    private function validateUserInfoData()
+    private function validateUserInfoData(): void
     {
         $this->oauthUtility->customlog("processResponseAction: validateUserInfoData");
-        
+
         $userInfo = $this->userInfoResponse;
-        if (isset($userInfo->error)) {
+        if (is_object($userInfo) && isset($userInfo->error)) {
+            throw new IncorrectUserInfoDataException();
+        }
+        if (is_array($userInfo) && isset($userInfo['error'])) {
+            throw new IncorrectUserInfoDataException();
+        }
+        if (empty($userInfo)) {
             throw new IncorrectUserInfoDataException();
         }
     }
 
-    /** Setter for the UserInfo Parameter */
-    public function setUserInfoResponse($userInfoResponse)
+    /**
+     * Setter for the UserInfo Parameter.
+     *
+     * @param array|object|null $userInfoResponse
+     */
+    public function setUserInfoResponse($userInfoResponse): static
     {
         $this->oauthUtility->customlog("processResponseAction: setUserInfoResponse");
-        
+
         $this->userInfoResponse = $userInfoResponse;
         return $this;
     }

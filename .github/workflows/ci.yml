@@ -1,0 +1,284 @@
+name: Magento OIDC CI
+
+on:
+  push:
+    branches: [ "main", "dev" ]
+  pull_request:
+    branches: [ "main", "dev" ]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+
+jobs:
+
+  # -----------------------------------------------------
+  # PHP QUALITY JOB (PHPCS + PHPCompatibility)
+  # -----------------------------------------------------
+  php:
+    name: PHP QA (PHP ${{ matrix.php-version }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: [8.2, 8.3, 8.4]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          tools: composer, phpcs, phpcbf
+
+      - name: Determine Composer Home
+        run: echo "COMPOSER_HOME=$(composer global config home --absolute)" >> $GITHUB_ENV
+
+      - name: Cache Composer Global
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.COMPOSER_HOME }}
+          key: phpcs-magento-${{ runner.os }}-${{ hashFiles('.github/workflows/*.yml') }}
+          restore-keys: |
+            phpcs-magento-${{ runner.os }}-
+
+      - name: Allow phpcodesniffer-composer-installer plugin
+        run: composer global config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
+
+      - name: Install Magento Coding Standard + PHPCompatibility Fork
+        run: |
+          composer global require magento/magento-coding-standard --no-interaction --no-progress
+          phpcs --config-set installed_paths "$COMPOSER_HOME/vendor/magento/magento-coding-standard,$COMPOSER_HOME/vendor/magento/php-compatibility-fork"
+
+      - name: Debug PHPCS Standards
+        run: phpcs -i
+
+      - name: Create reports directory
+        run: mkdir -p reports
+
+      - name: PHP Compatibility Check (non-blocking)
+        run: |
+          phpcs --standard=PHPCompatibility \
+                --runtime-set testVersion 8.2- \
+                --extensions=php,phtml \
+                --ignore=vendor/*,node_modules/*,.github/* \
+                --report=full \
+                --report-file=reports/phpcompat-php${{ matrix.php-version }}.txt \
+                . || true
+
+      - name: Debug PHPCS Config
+        run: |
+          echo "=== PHPCS version ==="
+          phpcs --version
+          echo "=== Installed standards ==="
+          phpcs -i
+          echo "=== Config ==="
+          phpcs --config-show
+          echo "=== Checking if phpcs.xml is found ==="
+          ls -la phpcs.xml || echo "phpcs.xml NOT FOUND in CWD"
+          echo "=== Dry-run with -e (explain sniffs) ==="
+          phpcs --standard=phpcs.xml -e | head -50
+
+      - name: Magento2 Standard (blocking)
+        run: |
+          set -o pipefail
+          phpcs --standard=phpcs.xml \
+                --report=full \
+                --report-checkstyle=reports/phpcs-checkstyle-php${{ matrix.php-version }}.xml \
+                . 2>&1 | tee reports/phpcs-php${{ matrix.php-version }}.txt
+
+      - name: Upload PHP QA Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: php-qa-reports-php${{ matrix.php-version }}
+          path: reports/
+          retention-days: 7
+
+
+  # -----------------------------------------------------
+  # STATIC ANALYSIS JOB (PHPStan + Psalm)
+  # -----------------------------------------------------
+  static-analysis:
+    name: Static Analysis (PHPStan + Psalm)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          tools: composer
+
+      - name: Determine Composer Home
+        run: echo "COMPOSER_HOME=$(composer global config home --absolute)" >> $GITHUB_ENV
+
+      - name: Cache vendor dependencies
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: static-vendor-${{ runner.os }}-${{ hashFiles('.github/workflows/*.yml') }}
+          restore-keys: |
+            static-vendor-${{ runner.os }}-
+
+      - name: Create temporary composer.json for Magento stubs
+        run: |
+          if [ -f composer.json ]; then
+            cp composer.json composer.json.bak
+          fi
+          cat > composer.json <<'EOF'
+          {
+            "require-dev": {
+              "phpstan/phpstan": "*",
+              "bitexpert/phpstan-magento": "*",
+              "magento/framework": "*",
+              "magento/module-backend": "*",
+              "magento/module-catalog": "*",
+              "magento/module-customer": "*",
+              "magento/module-store": "*",
+              "magento/module-config": "*",
+              "magento/module-ui": "*",
+              "magento/module-authorization": "*",
+              "magento/module-user": "*",
+              "magento/module-directory": "*",
+              "vimeo/psalm": "*"
+            },
+            "repositories": [
+              {
+                "type": "composer",
+                "url": "https://mirror.mage-os.org/"
+              }
+            ],
+            "minimum-stability": "dev",
+            "prefer-stable": true
+          }
+          EOF
+
+      - name: Allow Magento Composer plugins
+        run: |
+          composer config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
+          composer config --no-plugins allow-plugins.magento/composer-dependency-version-audit-plugin true
+
+      - name: Install PHPStan + Magento Stubs + Psalm
+        run: composer install --no-interaction --no-progress
+
+      - name: Restore original composer.json
+        run: |
+          if [ -f composer.json.bak ]; then
+            mv composer.json.bak composer.json
+          else
+            rm -f composer.json
+          fi
+
+      - name: Create reports directory
+        run: mkdir -p reports
+
+      - name: Run PHPStan
+        run: |
+          set -o pipefail
+          vendor/bin/phpstan analyse --memory-limit=1G \
+            --error-format=table 2>&1 | tee reports/phpstan.txt
+          # Zusätzlich Checkstyle-Format für Tool-Integration
+          vendor/bin/phpstan analyse --memory-limit=1G \
+            --error-format=checkstyle > reports/phpstan-checkstyle.xml 2>/dev/null || true
+
+      - name: Adapt psalm.xml for CI environment
+        run: |
+          # Lokal zeigt ../../vendor auf den Magento-Root vendor-Ordner.
+          # Im CI liegt vendor/ direkt im Workspace – Pfad anpassen.
+          sed -i 's|<directory name="../../vendor" />|<directory name="vendor" />|' psalm.xml
+
+      - name: Run Psalm
+        run: |
+          set -o pipefail
+          vendor/bin/psalm --no-cache \
+            --output-format=text 2>&1 | tee reports/psalm.txt
+          # Zusätzlich Checkstyle-Format für Tool-Integration
+          vendor/bin/psalm --no-cache \
+            --output-format=checkstyle > reports/psalm-checkstyle.xml 2>/dev/null || true
+
+      - name: Upload Static Analysis Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: static-analysis-reports
+          path: reports/
+          retention-days: 7
+
+
+  # -----------------------------------------------------
+  # RECTOR CHECK JOB (dry-run, blocking)
+  # -----------------------------------------------------
+  rector:
+    name: Rector (dry-run)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          tools: composer
+
+      - name: Cache vendor dependencies
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: rector-vendor-${{ runner.os }}-${{ hashFiles('.github/workflows/*.yml') }}
+          restore-keys: |
+            rector-vendor-${{ runner.os }}-
+
+      - name: Create temporary composer.json for Rector
+        run: |
+          if [ -f composer.json ]; then
+            cp composer.json composer.json.bak
+          fi
+          cat > composer.json <<'EOF'
+          {
+            "require": {
+              "rector/rector": "^1.2",
+              "magento/magento-coding-standard": "^39.0"
+            },
+            "minimum-stability": "stable",
+            "prefer-stable": true
+          }
+          EOF
+
+      - name: Allow Composer plugins
+        run: |
+          composer config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
+          composer config --no-plugins allow-plugins.magento/composer-dependency-version-audit-plugin true
+
+      - name: Install Rector + Magento Coding Standard
+        run: composer install --no-interaction --no-progress
+
+      - name: Restore original composer.json
+        run: |
+          if [ -f composer.json.bak ]; then
+            mv composer.json.bak composer.json
+          else
+            rm -f composer.json
+          fi
+
+      - name: Create reports directory
+        run: mkdir -p reports
+
+      - name: Run Rector dry-run (blocking)
+        run: |
+          set -o pipefail
+          vendor/bin/rector process --dry-run 2>&1 | tee reports/rector.txt
+
+      - name: Upload Rector Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rector-reports
+          path: reports/
+          retention-days: 7

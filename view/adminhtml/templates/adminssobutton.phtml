@@ -1,16 +1,67 @@
-<!-- 
-        This template shows a SSO box on the admin backend pages
-        Use this if you want to show a sso button on your backend pages
-    -->
-<?php
+<!--
+    This template shows a SSO box on the admin backend pages
+-->
 
-echo
-    '<div class="actions" style="text-align:center;">
-            <svg height="5" width="131">
-                <line x1="0" y1="0" x2="127" y2="0" style="stroke:#969393;stroke-width:3" ></line>
-            </svg>OR
-            <svg height="5" width="133">
-                <line x1="0" y1="0" x2="128" y2="0" style="stroke:#969393;stroke-width:3" ></line>
-            </svg>
-            <button type="button" class="action-login action-primary" style="margin-top:3%; padding: 3% 14%; width:100%; text-align:center;" onclick="window.location.href=\'' . $this->escapeUrl($this->getSPInitiatedUrl(null, $this->getAppName())) . '\';">' . $this->escapeHtml($this->getSSOButtonText()) . '</button>
-    </div>';
+<?php
+/** @var \MiniOrange\OAuth\Block\OAuth $block */
+/** @var \Magento\Framework\Escaper $escaper */
+/** @var \MiniOrange\OAuth\ViewModel\OidcLoginVisibility $oidcVisibility */
+$oidcVisibility = $block->getData('oidc_visibility');
+?>
+<?php if ($oidcVisibility && $oidcVisibility->isAdminButtonVisible()): ?>
+
+    <?php
+    $ssoUrl = $block->getAdminSPInitiatedUrl(null, $block->getAppName());
+    ?>
+
+<div id="mo-sso-login-wrapper"
+     style="display:none; text-align:center; width:100%;
+            box-sizing:border-box; margin-top:15px;">
+    <?php if (!$block->isNonOidcAdminLoginDisabled()): ?>
+    <div style="display:flex; flex-direction:row; flex-wrap:nowrap;
+                align-items:center; width:100%; gap:10px; margin-bottom:10px;">
+        <span style="flex:1 1 0%; height:1px; background-color:#969393;"></span>
+        <span style="flex:0 0 auto; white-space:nowrap; font-weight:bold; color:#444;">OR</span>
+        <span style="flex:1 1 0%; height:1px; background-color:#969393;"></span>
+    </div>
+    <?php endif; ?>
+    <button
+        type="button"
+        class="action-login action-primary"
+        style="padding:10px 14px; width:100%; text-align:center; box-sizing:border-box;"
+        onclick="window.location.href='<?= $escaper->escapeUrl($ssoUrl) ?>';"
+    >
+        <?= $escaper->escapeHtml($block->getSSOButtonText()) ?>
+    </button>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var ssoWrapper = document.getElementById('mo-sso-login-wrapper');
+        var fieldset = document.querySelector('#login-form .admin__fieldset');
+        if (ssoWrapper && fieldset) {
+            fieldset.appendChild(ssoWrapper);
+            ssoWrapper.style.display = 'block';
+        }
+    });
+</script>
+
+    <?php if ($block->isNonOidcAdminLoginDisabled()): ?>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var usernameField = document.querySelector('.field-username');
+            if (usernameField) { usernameField.style.display = 'none'; }
+
+            var passwordField = document.querySelector('.field-password');
+            if (passwordField) { passwordField.style.display = 'none'; }
+
+            var loginButton = document.querySelector('.form-actions .action-login:not([onclick])');
+            if (loginButton) { loginButton.style.display = 'none'; }
+
+            var forgotLink = document.querySelector('.form-actions .action-forgotpassword');
+            if (forgotLink) { forgotLink.style.display = 'none'; }
+        });
+    </script>
+<?php endif; ?>
+
+<?php endif; ?>

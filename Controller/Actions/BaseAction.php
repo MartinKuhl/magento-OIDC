@@ -2,8 +2,6 @@
 
 namespace MiniOrange\OAuth\Controller\Actions;
 
-use MiniOrange\OAuth\Helper\OAuthConstants;
-use MiniOrange\OAuth\Helper\Exception\NotRegisteredException;
 use MiniOrange\OAuth\Helper\Exception\RequiredFieldsException;
 
 /**
@@ -16,9 +14,20 @@ use MiniOrange\OAuth\Helper\Exception\RequiredFieldsException;
 abstract class BaseAction extends \Magento\Framework\App\Action\Action
 {
 
-    protected $oauthUtility;
+    /** @var \MiniOrange\OAuth\Helper\OAuthUtility */
+    protected \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
+
+    /**
+     * @var \Magento\Framework\App\Action\Context
+     */
     protected $context;
 
+    /**
+     * Initialize base action with OAuth utility.
+     *
+     * @param \Magento\Framework\App\Action\Context  $context
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility  $oauthUtility
+     */
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
         \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
@@ -28,73 +37,74 @@ abstract class BaseAction extends \Magento\Framework\App\Action\Action
         parent::__construct($context);
     }
 
-
     /**
-     * This function checks if the required fields passed to
-     * this function are empty or not. If empty throw an exception.
+     * Check if any of the required fields are empty. Throws RequiredFieldsException if so.
      *
-     * @param $array
+     * Supports two calling conventions:
+     * 1. checkIfRequiredFieldsEmpty(['key1' => $params, ...]) — legacy associative style
+     * 2. checkIfRequiredFieldsEmpty(['key1', 'key2'], $params) — key list + params array
+     *
+     * @param array      $array  Required keys (or legacy associative array)
+     * @param array|null $params Source data array (for the two-parameter form)
+     *
      * @throws RequiredFieldsException
+     *
+     * @return void
      */
-    protected function checkIfRequiredFieldsEmpty($array)
+    protected function checkIfRequiredFieldsEmpty($array, $params = null)
     {
-        foreach ($array as $key => $value) {
+        if ($params !== null) {
+            // Two-parameter form: $array is a list of required keys, $params is the data
+            foreach ($array as $key) {
+                if (!isset($params[$key]) || $this->oauthUtility->isBlank($params[$key])) {
+                    throw new RequiredFieldsException();
+                }
+            }
+            return;
+        }
 
-            if ((is_array($value) && ( !isset($value[$key]) || $this->oauthUtility->isBlank($value[$key])) )
+        // Legacy single-parameter form
+        foreach ($array as $key => $value) {
+            if ((is_array($value) && (!isset($value[$key]) || $this->oauthUtility->isBlank($value[$key])))
                 || $this->oauthUtility->isBlank($value)
-              ) {
+            ) {
                 throw new RequiredFieldsException();
             }
         }
     }
 
-
     /**
-     * This function is used to send AuthorizeRequest as a request Parameter.
-     * LogoutRequest & AuthRequest is sent in the request parameter if the binding is
-     * set as HTTP Redirect. Http Redirect is the default way Authn Request
-     * is sent. Function also generates the signature and appends it in the
-     * parameter as well along with the relayState parameter
-     * @param $samlRequest
-     * @param $sendRelayState
-     * @param $idpUrl
+     * Send an authorization request via HTTP Redirect.
+     *
+     * This prepares and returns a redirect response for the provided
+     * authorize URL or query string. The method does not perform manual
+     * session handling to avoid interfering with Magento session managers.
+     *
+     * @param string $oauthRequest Full authorize URL or query string
+     * @param string $authorizeUrl Base authorize URL to prepend
+     * @param string $relayState   Optional relay state to include
+     * @param array  $params       Additional parameters (unused)
      */
-    protected function sendHTTPRedirectRequest($oauthRequest, $authorizeUrl, $relayState = '', $params = [])
-    {
-        $this->oauthUtility->customlog("BaseAction: sendHTTPRedirectRequest - Ensuring PHP session is properly saved before redirect");
-        
-        // Stellt sicher, dass alle Session-Daten richtig gespeichert werden, bevor wir umleiten
-        if (session_status() === PHP_SESSION_ACTIVE) {
-            $this->oauthUtility->customlog("BaseAction: Current session ID: " . session_id());
-            session_write_close();
-        }
-        
+    protected function sendHTTPRedirectRequest(
+        $oauthRequest,
+        string $authorizeUrl,
+        $relayState = '',
+        $params = []
+    ): \Magento\Framework\Controller\Result\Redirect {
+        $this->oauthUtility->customlog(
+            "BaseAction: sendHTTPRedirectRequest - Ensuring PHP session is properly saved before redirect"
+        );
+
+        // Session handling relies on Magento specific session managers.
+        // Manual session_write_close removed to prevent conflicts.
+
         $oauthRequest = $authorizeUrl . $oauthRequest;
         return $this->resultRedirectFactory->create()->setUrl($oauthRequest);
     }
 
-    
-    /** This function is abstract that needs to be implemented by each Action Class */
-    abstract public function execute();
-
-
-    /* ===================================================================================================
-                THE FUNCTIONS BELOW ARE FREE PLUGIN SPECIFIC AND DIFFER IN THE PREMIUM VERSION
-       ===================================================================================================
-     */
-
     /**
-     * This function checks if the user has registered himself
-     * and throws an Exception if not registered. Checks the
-     * if the admin key and api key are saved in the database.
-     *
-     * @throws NotRegisteredException
+     * This function is abstract that needs to be implemented by each Action Class
      */
-    protected function checkIfValidPlugin()
-    {
-        
-        if (!$this->oauthUtility->micr()) {
-            throw new NotRegisteredException;
-        }
-    }
+    #[\Override]
+    abstract public function execute();
 }

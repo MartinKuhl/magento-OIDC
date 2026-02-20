@@ -5,11 +5,5 @@
     <!-- This event is invoked before every controller is processed -->
     <event name="controller_action_predispatch">
         <observer name="oauth_observer" instance="MiniOrange\OAuth\Observer\OAuthObserver" />
-        <observer name="miniorange_oauth_session_cookie_predispatch" instance="MiniOrange\OAuth\Observer\SessionCookieObserver" />
-    </event>
-    
-    <!-- Event zum Modifizieren der Session-Cookies vor dem Senden der Response -->
-    <event name="controller_front_send_response_before">
-        <observer name="miniorange_oauth_session_cookie_observer" instance="MiniOrange\OAuth\Observer\SessionCookieObserver" />
     </event>
 </config>

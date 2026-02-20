@@ -1,0 +1,17 @@
+includes:
+    - %rootDir%/../../bitexpert/phpstan-magento/extension.neon
+
+parameters:
+    phpVersion: 80300  # PHP 8.3.0
+    level: 4
+    paths:
+        - .
+    excludePaths:
+        analyseAndScan:
+            - vendor (?)
+            - .github
+        analyse:
+            - psalm-stubs.stub
+            - rector.php
+    scanFiles:
+        - psalm-stubs.stub

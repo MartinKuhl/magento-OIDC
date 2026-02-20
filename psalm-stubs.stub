@@ -1,0 +1,80 @@
+<?php
+/**
+ * Psalm & PHPStan Stubs für Magento-generierte Factory-Klassen.
+ *
+ * Diese Datei wurde deaktiviert (Endung .stub) um Probleme mit dem DI-Scanner
+ * zu vermeiden. Für statische Analyse-Tools kann sie bei Bedarf wieder umbenannt
+ * oder in separaten Dateien pro Namespace aufgeteilt werden.
+ */
+
+// phpcs:ignoreFile
+
+namespace Magento\User\Model {
+    class UserFactory
+    {
+        public function create(array $data = [])
+        {
+            return new \Magento\User\Model\User();
+        }
+    }
+}
+
+namespace Magento\User\Model\ResourceModel\User {
+    class CollectionFactory
+    {
+        public function create(array $data = [])
+        {
+            return new \Magento\User\Model\ResourceModel\User\Collection();
+        }
+    }
+}
+
+namespace Magento\Customer\Model {
+    class CustomerFactory
+    {
+        public function create(array $data = [])
+        {
+            return new \Magento\Customer\Model\Customer();
+        }
+    }
+}
+
+namespace Magento\Customer\Api\Data {
+    class AddressInterfaceFactory
+    {
+        public function create(array $data = [])
+        {
+            return new class implements \Magento\Customer\Api\Data\AddressInterface {};
+        }
+    }
+}
+
+namespace Magento\Directory\Model\ResourceModel\Country {
+    class CollectionFactory
+    {
+        public function create(array $data = [])
+        {
+            return new \Magento\Directory\Model\ResourceModel\Country\Collection();
+        }
+    }
+}
+
+namespace Magento\Framework\HTTP\Adapter {
+    class CurlFactory
+    {
+        public function create(array $data = [])
+        {
+            return new \Magento\Framework\HTTP\Adapter\Curl();
+        }
+    }
+}
+
+namespace MiniOrange\OAuth\Model {
+    class MiniorangeOauthClientAppsFactory
+    {
+        public function create(array $data = [])
+        {
+            return new \MiniOrange\OAuth\Model\MiniorangeOauthClientApps();
+        }
+    }
+}

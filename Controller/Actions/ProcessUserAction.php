@@ -1,372 +1,405 @@
 <?php
 namespace MiniOrange\OAuth\Controller\Actions;
 
-use Magento\Authorization\Model\ResourceModel\Role\Collection;
-use Magento\Customer\Model\Customer;
-use Magento\Customer\Model\CustomerFactory;
-use Magento\Framework\App\Action\Context;
+use MiniOrange\OAuth\Model\Service\CustomerUserCreator;
 use Magento\Framework\App\ResponseFactory;
-use Magento\Framework\Math\Random;
 use Magento\Store\Model\StoreManagerInterface;
-use Magento\User\Model\User;
-use Magento\User\Model\UserFactory;
 use MiniOrange\OAuth\Helper\Exception\MissingAttributesException;
 use MiniOrange\OAuth\Helper\OAuthConstants;
 use MiniOrange\OAuth\Helper\OAuthUtility;
 use MiniOrange\OAuth\Helper\OAuthMessages;
 use Magento\Framework\App\Config\ScopeConfigInterface;
-use Magento\Store\Model\ScopeInterface;
+use Magento\Framework\Controller\Result\RedirectFactory;
+use Magento\Framework\Message\ManagerInterface;
+use Magento\Customer\Api\CustomerRepositoryInterface;
+use Magento\Framework\Exception\NoSuchEntityException;
+use Magento\Customer\Api\Data\CustomerInterface;
 
-use Magento\Framework\Stdlib\DateTime\dateTime;
-
-class ProcessUserAction extends BaseAction
+/**
+ * Handles creation or lookup of customer users from OIDC attributes
+ * and performs the customer login flow.
+ *
+ * @psalm-suppress ImplicitToStringCast Magento's __() returns Phrase with __toString()
+ */
+class ProcessUserAction
 {
+    /**
+     * @var array|null
+     */
     private $attrs;
-    private $flattenedattrs;
-    private $userEmail;
-    private $checkIfMatchBy;
-    private $defaultRole;
-    private $emailAttribute;
-    private $usernameAttribute;
-    private $firstNameKey;
-    private $lastNameKey;
-    private $userGroupModel;
-    private $adminRoleModel;
-    private $adminUserModel;
-    private $customerModel;
-    private $customerLoginAction;
-    private $responseFactory;
-    private $customerFactory;
-    private $userFactory;
-    private $randomUtility;
-    private $storeManager;
-    protected $scopeConfig;
-    protected $dateTime;
 
+    /**
+     * @var array|null
+     */
+    private $flattenedattrs;
+
+    /**
+     * @var string|null
+     */
+    private $userEmail;
+
+    /**
+     * @var string|null
+     */
+    private $defaultRole;
+
+    /**
+     * @var string
+     */
+    private $emailAttribute;
+
+    /**
+     * @var string
+     */
+    private $usernameAttribute;
+
+    /**
+     * @var string
+     */
+    private $firstNameKey;
+
+    /**
+     * @var string
+     */
+    private $lastNameKey;
+
+    /**
+     * @var string|null
+     */
+    private $dobAttribute;
+
+    /**
+     * @var string|null
+     */
+    private $genderAttribute;
+
+    /**
+     * @var string|null
+     */
+    private $phoneAttribute;
+
+    /**
+     * @var string|null
+     */
+    private $streetAttribute;
+
+    /**
+     * @var string|null
+     */
+    private $zipAttribute;
+
+    /**
+     * @var string|null
+     */
+    private $cityAttribute;
+
+    /**
+     * @var string|null
+     */
+    private $countryAttribute;
+
+    /** @var \MiniOrange\OAuth\Controller\Actions\CustomerLoginAction */
+    private readonly \MiniOrange\OAuth\Controller\Actions\CustomerLoginAction $customerLoginAction;
+
+    /** @var \Magento\Store\Model\StoreManagerInterface */
+    private readonly \Magento\Store\Model\StoreManagerInterface $storeManager;
+
+    /** @var \MiniOrange\OAuth\Helper\OAuthUtility */
+    private readonly \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
+
+    /** @var \MiniOrange\OAuth\Model\Service\CustomerUserCreator */
+    private readonly \MiniOrange\OAuth\Model\Service\CustomerUserCreator $customerUserCreator;
+
+    /** @var \Magento\Framework\Controller\Result\RedirectFactory */
+    private readonly \Magento\Framework\Controller\Result\RedirectFactory $resultRedirectFactory;
+
+    /** @var \Magento\Framework\Message\ManagerInterface */
+    private readonly \Magento\Framework\Message\ManagerInterface $messageManager;
+
+    /** @var \Magento\Customer\Api\CustomerRepositoryInterface */
+    private readonly \Magento\Customer\Api\CustomerRepositoryInterface $customerRepository;
+
+    /**
+     * Initialize ProcessUserAction.
+     *
+     * @param OAuthUtility $oauthUtility
+     * @param CustomerRepositoryInterface $customerRepository
+     * @param StoreManagerInterface $storeManager
+     * @param CustomerLoginAction $customerLoginAction
+     * @param CustomerUserCreator $customerUserCreator
+     * @param RedirectFactory $resultRedirectFactory
+     * @param ManagerInterface $messageManager
+     */
     public function __construct(
-        Context $context,
         OAuthUtility $oauthUtility,
-        \Magento\Customer\Model\ResourceModel\Group\Collection $userGroupModel,
-        Collection $adminRoleModel,
-        User $adminUserModel,
-        Customer $customerModel,
+        CustomerRepositoryInterface $customerRepository,
         StoreManagerInterface $storeManager,
-        ResponseFactory $responseFactory,
         CustomerLoginAction $customerLoginAction,
-        CustomerFactory $customerFactory,
-        UserFactory $userFactory,
-        Random $randomUtility,
-        dateTime $dateTime,
-        ScopeConfigInterface $scopeConfig
+        CustomerUserCreator $customerUserCreator,
+        RedirectFactory $resultRedirectFactory,
+        ManagerInterface $messageManager
     ) {
         $this->emailAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_EMAIL);
-        $this->emailAttribute = $oauthUtility->isBlank($this->emailAttribute) ? OAuthConstants::DEFAULT_MAP_EMAIL : $this->emailAttribute;
+        $this->emailAttribute = $oauthUtility->isBlank($this->emailAttribute)
+            ? OAuthConstants::DEFAULT_MAP_EMAIL
+            : $this->emailAttribute;
         $this->usernameAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_USERNAME);
-        $this->usernameAttribute = $oauthUtility->isBlank($this->usernameAttribute) ? OAuthConstants::DEFAULT_MAP_USERN : $this->usernameAttribute;
+        $this->usernameAttribute = $oauthUtility->isBlank($this->usernameAttribute)
+            ? OAuthConstants::DEFAULT_MAP_USERN
+            : $this->usernameAttribute;
         $this->firstNameKey = $oauthUtility->getStoreConfig(OAuthConstants::MAP_FIRSTNAME);
-        $this->firstNameKey = $oauthUtility->isBlank($this->firstNameKey) ? OAuthConstants::DEFAULT_MAP_FN : $this->firstNameKey;
+        $this->firstNameKey = $oauthUtility->isBlank($this->firstNameKey)
+            ? OAuthConstants::DEFAULT_MAP_FN
+            : $this->firstNameKey;
         $this->lastNameKey = $oauthUtility->getStoreConfig(OAuthConstants::MAP_LASTNAME);
-        $this->lastNameKey = $oauthUtility->isBlank($this->lastNameKey) ? OAuthConstants::DEFAULT_MAP_LN : $this->lastNameKey;
+        $this->lastNameKey = $oauthUtility->isBlank($this->lastNameKey)
+            ? OAuthConstants::DEFAULT_MAP_LN
+            : $this->lastNameKey;
         $this->defaultRole = $oauthUtility->getStoreConfig(OAuthConstants::MAP_DEFAULT_ROLE);
-        $this->checkIfMatchBy = $oauthUtility->getStoreConfig(OAuthConstants::MAP_MAP_BY);
-        $this->userGroupModel = $userGroupModel;
-        $this->adminRoleModel = $adminRoleModel;
-        $this->adminUserModel = $adminUserModel;
-        $this->customerModel = $customerModel;
+
+        // Initialize customer data mapping attributes
+        $this->dobAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_DOB);
+        $this->dobAttribute = $oauthUtility->isBlank($this->dobAttribute)
+            ? OAuthConstants::DEFAULT_MAP_DOB
+            : $this->dobAttribute;
+        $this->genderAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_GENDER);
+        $this->genderAttribute = $oauthUtility->isBlank($this->genderAttribute)
+            ? OAuthConstants::DEFAULT_MAP_GENDER
+            : $this->genderAttribute;
+        $this->phoneAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_PHONE);
+        $this->phoneAttribute = $oauthUtility->isBlank($this->phoneAttribute)
+            ? OAuthConstants::DEFAULT_MAP_PHONE
+            : $this->phoneAttribute;
+        $this->streetAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_STREET);
+        $this->streetAttribute = $oauthUtility->isBlank($this->streetAttribute)
+            ? OAuthConstants::DEFAULT_MAP_STREET
+            : $this->streetAttribute;
+        $this->zipAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_ZIP);
+        $this->zipAttribute = $oauthUtility->isBlank($this->zipAttribute)
+            ? OAuthConstants::DEFAULT_MAP_ZIP
+            : $this->zipAttribute;
+        $this->cityAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_CITY);
+        $this->cityAttribute = $oauthUtility->isBlank($this->cityAttribute)
+            ? OAuthConstants::DEFAULT_MAP_CITY
+            : $this->cityAttribute;
+        $this->countryAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_COUNTRY);
+        $this->countryAttribute = $oauthUtility->isBlank($this->countryAttribute)
+            ? OAuthConstants::DEFAULT_MAP_COUNTRY
+            : $this->countryAttribute;
+
+        $this->customerRepository = $customerRepository;
         $this->storeManager = $storeManager;
-        $this->checkIfMatchBy = $oauthUtility->getStoreConfig(OAuthConstants::MAP_MAP_BY);
-        $this->responseFactory = $responseFactory;
         $this->customerLoginAction = $customerLoginAction;
-        $this->customerFactory = $customerFactory;
-        $this->userFactory = $userFactory;
-        $this->randomUtility = $randomUtility;
-        $this->scopeConfig = $scopeConfig;
-        $this->dateTime = $dateTime;
-        parent::__construct($context, $oauthUtility);
+        $this->oauthUtility = $oauthUtility;
+        $this->customerUserCreator = $customerUserCreator;
+        $this->resultRedirectFactory = $resultRedirectFactory;
+        $this->messageManager = $messageManager;
     }
 
-    public function execute()
-    { 
-        try {
-            $this->oauthUtility->customlog("ProcessUserAction: execute");
-            if (empty($this->attrs)) {
-                $this->oauthUtility->customlog("No Attributes Received");
-                throw new MissingAttributesException;
-            }
-
-            $firstName = $this->flattenedattrs[$this->firstNameKey] ?? null;
-            $lastName = $this->flattenedattrs[$this->lastNameKey] ?? null;
-            $userName = $this->flattenedattrs[$this->usernameAttribute] ?? null;
-
-            $this->oauthUtility->customlog("ProcessUserAction: first name: ".$firstName);
-            $this->oauthUtility->customlog("ProcessUserAction: last name: ".$lastName);
-            $this->oauthUtility->customlog("ProcessUserAction: username: ".$userName);
-
-            if ($this->oauthUtility->isBlank($this->defaultRole)) {
-                $this->defaultRole = OAuthConstants::DEFAULT_ROLE;
-            }
-            
-            $this->processUserAction($this->userEmail, $firstName, $lastName, $userName, $this->defaultRole);
-            
-        } catch (\Exception $e) {
-            $this->oauthUtility->customlog("CRITICAL ERROR in execute: " . $e->getMessage());
-            throw $e;
-        }
-    }
-
-        private function processUserAction($user_email, $firstName, $lastName, $userName, $defaultRole)
+    /**
+     * Execute the user processing action.
+     */
+    public function execute(): \Magento\Framework\Controller\Result\Redirect
     {
-        $admin = false;
-        $user = $this->getCustomerFromAttributes($user_email);
+        $this->oauthUtility->customlog("ProcessUserAction: execute");
+        if (empty($this->attrs)) {
+            $this->oauthUtility->customlog("No Attributes Received");
+            return $this->handleMissingAttributes();
+        }
+
+        $firstName = $this->flattenedattrs[$this->firstNameKey] ?? null;
+        $lastName = $this->flattenedattrs[$this->lastNameKey] ?? null;
+        $userName = $this->flattenedattrs[$this->usernameAttribute] ?? null;
+
+        if ($this->oauthUtility->isBlank($this->defaultRole)) {
+            $this->defaultRole = OAuthConstants::DEFAULT_ROLE;
+        }
+
+        return $this->processUserAction($this->userEmail, $firstName, $lastName, $userName);
+    }
+
+    /**
+     * Handle missing attributes by logging and redirecting to login.
+     */
+    private function handleMissingAttributes(): \Magento\Framework\Controller\Result\Redirect
+    {
+        $this->oauthUtility->customlog("ERROR: Missing required attributes from OAuth provider");
+        $this->messageManager->addErrorMessage(
+            __('Authentication failed: Required user information not received from identity provider.')
+        );
+        return $this->resultRedirectFactory->create()->setPath('customer/account/login');
+    }
+
+    /**
+     * Process user action.
+     *
+     * @param  string      $userEmail
+     * @param  string|null $firstName
+     * @param  string|null $lastName
+     * @param  string|null $userName
+     */
+    private function processUserAction(
+        string $userEmail,
+        ?string $firstName,
+        ?string $lastName,
+        ?string $userName
+    ): \Magento\Framework\Controller\Result\Redirect {
+        $user = $this->getCustomerFromAttributes($userEmail);
 
         if (!$user) {
-            $this->oauthUtility->customlog("User Not found. Inside autocreate user tab");
-            $donotCreateUsers = $this->oauthUtility->getStoreConfig(OAuthConstants::MAGENTO_COUNTER);
+            $this->oauthUtility->customlog("User not found. Checking auto-create configuration");
 
-            if (is_null($donotCreateUsers)) {
-                $this->oauthUtility->setStoreConfig(OAuthConstants::MAGENTO_COUNTER, 10);
-                $this->oauthUtility->reinitConfig();
-                $donotCreateUsers = $this->oauthUtility->getStoreConfig(OAuthConstants::MAGENTO_COUNTER);
+            $autoCreateEnabled = $this->oauthUtility->getStoreConfig(OAuthConstants::AUTO_CREATE_CUSTOMER);
+
+            if (!$autoCreateEnabled) {
+                $this->oauthUtility->customlog("Auto Create Customer is disabled. Rejecting login.");
+                $encodedError = base64_encode(OAuthMessages::AUTO_CREATE_USER_DISABLED);
+                $baseLoginUrl = $this->oauthUtility->getCustomerLoginUrl();
+                $sep = (strpos($baseLoginUrl, '?') !== false) ? '&' : '?';
+                $loginUrl = $baseLoginUrl . $sep . 'oidc_error=' . $encodedError;
+                return $this->resultRedirectFactory->create()->setUrl($loginUrl);
             }
 
-            if ($donotCreateUsers < 1) {
-                $this->oauthUtility->customlog("Auto Create User Limit exceeded");
-                // [Auto-create limit logic bleibt gleich - gekürzt für Übersicht]
-                $this->messageManager->addErrorMessage(OAuthMessages::AUTO_CREATE_USER_LIMIT);
-                $url = $this->oauthUtility->getCustomerLoginUrl();
-                return $this->getResponse()->setRedirect($url)->sendResponse();
-            } else {
-                $count = $this->oauthUtility->getStoreConfig(OAuthConstants::MAGENTO_COUNTER);
-                $this->oauthUtility->setStoreConfig(OAuthConstants::MAGENTO_COUNTER, $count-1);
-                $this->oauthUtility->reinitConfig();
-                $this->oauthUtility->customlog("Creating new customer");
-                $user = $this->createNewUser($user_email, $firstName, $lastName, $userName, $user, $admin);
-                $this->oauthUtility->customlog("processUserAction: user created");
-            }
-        } else {
-            $this->oauthUtility->customlog("processUserAction: User Found");
+            $user = $this->createNewUser($userEmail, $firstName, $lastName, $userName);
         }
 
-        $this->oauthUtility->customlog("processUserAction: redirecting user");
+        /**
+ * @var \Magento\Store\Model\Store $store
+*/
+        $store = $this->storeManager->getStore();
+        $store_url = $store->getBaseUrl(\Magento\Framework\UrlInterface::URL_TYPE_WEB);
+        $store_url = rtrim((string) $store_url, '/\\');
 
-        $store_url = $this->storeManager->getStore()->getBaseUrl(\Magento\Framework\UrlInterface::URL_TYPE_WEB);
-        $store_url = rtrim($store_url, '/\\');
-        
-        if (isset($this->attrs['relayState']) && !str_contains($this->attrs['relayState'], $store_url) && $this->attrs['relayState']!='/') {
+        if (isset($this->attrs['relayState'])
+            && !str_contains((string) $this->attrs['relayState'], $store_url)
+            && $this->attrs['relayState'] != '/'
+        ) {
             $this->attrs['relayState'] = $store_url;
-            $this->oauthUtility->customlog("processUserAction: changing relayState with store url " .$store_url);
+            $this->oauthUtility->customlog("processUserAction: changing relayState with store url " . $store_url);
         }
 
-        $isAdminLogin = false;
+        // Customer login flow (admin routing is now handled by CheckAttributeMappingAction)
+        $this->oauthUtility->customlog("processUserAction: Processing as customer login");
+
         $relayState = '';
-        
         if (is_array($this->attrs) && isset($this->attrs['relayState'])) {
             $relayState = $this->attrs['relayState'];
-        } elseif (isset($this->attrs->relayState)) {
-            $relayState = $this->attrs->relayState;
         }
-        
+
+        if ($this->oauthUtility->getSessionData('guest_checkout')) {
+            $this->oauthUtility->setSessionData('guest_checkout', null);
+            $target = rtrim($this->oauthUtility->getBaseUrl(), '/') . '/checkout';
+            return $this->customerLoginAction->setUser($user)->setRelayState($target)->execute();
+        }
+
         if (!empty($relayState)) {
-            $isAdminLogin = (strpos($relayState, '/admin') !== false) || 
-                           (strpos($relayState, 'admin/') !== false) || 
-                           (strpos($relayState, 'admin') === 0);
-            $this->oauthUtility->customlog("processUserAction: Relay state: " . $relayState . ", isAdmin: " . ($isAdminLogin ? "true" : "false"));
+            return $this->customerLoginAction->setUser($user)->setRelayState($relayState)->execute();
         }
 
-        if ($isAdminLogin) {
-            $this->oauthUtility->customlog("processUserAction: Processing as admin login");
-            
-            try {
-                require_once dirname(__FILE__) . '/../../Helper/AdminAuthHelper.php';
-                
-                $adminUser = $this->getAdminUserByEmail($user_email);
-                if ($adminUser && $adminUser->getIsActive() == 1) {
-                    $this->oauthUtility->customlog("processUserAction: Admin user found and is active");
-                    
-                    $redirectUrl = \MiniOrange\OAuth\Helper\AdminAuthHelper::getStandaloneLoginUrl($user_email, $relayState);
-                    
-                    $this->oauthUtility->customlog("processUserAction: Redirecting to: " . $redirectUrl);
-                    $this->getResponse()->setRedirect($redirectUrl)->sendResponse();
-                    return;
-                } else {
-                    $this->oauthUtility->customlog("processUserAction: Admin user not found for email: " . $user_email);
-                    
-                    // KORRIGIERT: Fehler über URL-Parameter weitergeben
-                    $errorMessage = sprintf(
-                        'Admin-Zugang verweigert: Für die E-Mail-Adresse "%s" ist kein Administrator-Konto in Magento hinterlegt. Bitte wenden Sie sich an Ihren Systemadministrator.',
-                        $user_email
-                    );
-                    
-                    $loginUrl = $this->oauthUtility->getBaseUrl() . 'admin?oidc_error=' . base64_encode($errorMessage);
-                    
-                    $this->oauthUtility->customlog("processUserAction: Redirecting to admin login with error");
-                    return $this->getResponse()->setRedirect($loginUrl)->sendResponse();
-                }
-            } catch (\Exception $e) {
-                $this->oauthUtility->customlog("processUserAction: Exception during admin login: " . $e->getMessage());
-                
-                // KORRIGIERT: Fehler über URL-Parameter weitergeben
-                $errorMessage = 'Die Anmeldung über Authelia ist fehlgeschlagen. Bitte versuchen Sie es erneut oder wenden Sie sich an Ihren Administrator.';
-                $loginUrl = $this->oauthUtility->getBaseUrl() . 'admin?oidc_error=' . base64_encode($errorMessage);
-                
-                return $this->getResponse()->setRedirect($loginUrl)->sendResponse();
-            }
-        } else {
-            // Standard customer login flow
-            $this->oauthUtility->customlog("processUserAction: Processing as customer login");
-            if ($this->oauthUtility->getSessionData('guest_checkout')) {
-                $this->oauthUtility->setSessionData('guest_checkout', NULL);
-                $this->customerLoginAction->setUser($user)->setRelayState($this->oauthUtility->getBaseUrl().'checkout')->execute();
-            } else if (is_array($this->attrs)) {
-                $this->customerLoginAction->setUser($user)->setRelayState($this->attrs['relayState'])->execute();
-            } else {
-                $this->customerLoginAction->setUser($user)->setRelayState($this->attrs->relayState)->execute();
-            }
-        }
-    }
-    private function generateEmail($userName)
-    {
-        $this->oauthUtility->customlog("processUserAction: generateEmail");
-        $siteurl = $this->oauthUtility->getBaseUrl();
-        $siteurl = substr($siteurl, strpos($siteurl, '//'), strlen($siteurl)-1);
-        return $userName .'@'.$siteurl;
+        return $this->customerLoginAction->setUser($user)->setRelayState('/')->execute();
     }
 
-    //to do extend with additional user creation logic and fields
-    //additionally handle admin user creation if required
-    private function createNewUser($user_email, $firstName, $lastName, $userName, $user, &$admin)
-    {
-        $this->oauthUtility->customlog("processUserAction: createNewUser");
-        
-        //To Do better handling of missing first name last name username attributes from idp
-        if(empty($firstName)) {
-            $parts = explode("@", $user_email);
+    /**
+     * Create a new customer user from OIDC attributes.
+     *
+     * @throws \RuntimeException If customer creation fails
+     */
+    /**
+     * Create a new customer from OIDC attributes.
+     *
+     * @param  string      $userEmail
+     * @param  string|null $firstName
+     * @param  string|null $lastName
+     * @param  string|null $userName
+     */
+    private function createNewUser(
+        string $userEmail,
+        ?string $firstName,
+        ?string $lastName,
+        ?string $userName
+    ): \Magento\Customer\Api\Data\CustomerInterface {
+        if ($firstName === null || $firstName === '' || $firstName === '0') {
+            $parts = explode("@", $userEmail);
             $firstName = $parts[0];
-        } 
-        
-        if(empty($lastName)) {
-            $parts = explode("@", $user_email);
-            $lastName = $parts[1];
-        } 
-        
-        $random_password = $this->randomUtility->getRandomString(8);
-        $userName = !$this->oauthUtility->isBlank($userName) ? $userName : $user_email;
-        $firstName = !$this->oauthUtility->isBlank($firstName) ? $firstName : $userName;
-        $lastName = !$this->oauthUtility->isBlank($lastName) ? $lastName : $userName;
-        
-        $user = $this->createCustomer($userName, $user_email, $firstName, $lastName, $random_password);
-        return $user;
+        }
+
+        if ($lastName === null || $lastName === '' || $lastName === '0') {
+            $parts = explode("@", $userEmail);
+            $lastName = $parts[1] ?? $parts[0];
+        }
+
+        $userName = $this->oauthUtility->isBlank($userName) ? $userEmail : $userName;
+        $firstName = $this->oauthUtility->isBlank($firstName) ? $userName : $firstName;
+        $lastName = $this->oauthUtility->isBlank($lastName) ? $userName : $lastName;
+
+        $customer = $this->customerUserCreator->createCustomer(
+            $userEmail,
+            $userName,
+            $firstName,
+            $lastName,
+            $this->flattenedattrs,
+            $this->attrs
+        );
+
+        if (!$customer instanceof \Magento\Customer\Api\Data\CustomerInterface) {
+            throw new \RuntimeException(
+                sprintf('Failed to create customer account for email: %s', $userEmail)
+            );
+        }
+
+        return $customer;
     }
 
-    private function createCustomer($userName, $email, $firstName, $lastName, $random_password)
+    /**
+     * Load customer by email from the current website.
+     *
+     * @param  string $userEmail
+     * @return \Magento\Customer\Api\Data\CustomerInterface|false
+     */
+    private function getCustomerFromAttributes(string $userEmail)
     {
-        $this->oauthUtility->customlog("processUserAction: createCustomer");
-        $websiteId = $this->storeManager->getWebsite()->getWebsiteId();
-        $store = $this->storeManager->getStore();
-        $storeId = $store->getStoreId();
-        
-        $this->oauthUtility->customlog("processUserAction: websiteID: ".$websiteId." email: ".$email." firstName: ".$firstName." lastName: ".$lastName);
-        
-        return $this->customerFactory->create()
-            ->setWebsiteId($websiteId)
-            ->setEmail($email)
-            ->setFirstname($firstName)
-            ->setLastname($lastName)
-            ->setPassword($random_password)
-            ->save();
+        try {
+            return $this->customerRepository->get($userEmail);
+        } catch (NoSuchEntityException $e) {
+            return false;
+        }
     }
 
-    private function getCustomerFromAttributes($user_email)
-    {
-        $this->oauthUtility->customlog("processUserAction: getCustomerFromAttributes");
-        $this->customerModel->setWebsiteId($this->storeManager->getStore()->getWebsiteId());
-        $customer = $this->customerModel->loadByEmail($user_email);
-        return !is_null($customer->getId()) ? $customer : false;
-    }
-
-    public function setAttrs($attrs)
+    /**
+     * Set raw attribute array received from OIDC provider.
+     *
+     * @param  array $attrs
+     * @return $this
+     */
+    public function setAttrs($attrs): static
     {
         $this->attrs = $attrs;
         return $this;
     }
 
-    public function setFlattenedAttrs($flattenedattrs)
+    /**
+     * Set flattened attribute map (simple key => value mapping).
+     *
+     * @param  array $flattenedattrs
+     * @return $this
+     */
+    public function setFlattenedAttrs($flattenedattrs): static
     {
         $this->flattenedattrs = $flattenedattrs;
         return $this;
     }
 
-    public function setUserEmail($userEmail)
+    /**
+     * Set the user's email address resolved from attributes.
+     *
+     * @param  string $userEmail
+     * @return $this
+     */
+    public function setUserEmail($userEmail): static
     {
         $this->userEmail = $userEmail;
         return $this;
     }
 
-    private function getAdminUserByEmail($email)
-    {
-        $this->oauthUtility->customlog("processUserAction: getAdminUserByEmail for " . $email);
-        
-        try {
-            // Zuerst nach Benutzername suchen
-            $user = $this->userFactory->create()->loadByUsername($email);
-            if ($user->getId()) {
-                $this->oauthUtility->customlog("processUserAction: Found admin user with ID " . $user->getId() . ", Username: " . $user->getUsername() . ", Is Active: " . $user->getIsActive());
-                return $user;
-            }
-            
-            // Wenn nicht gefunden, nach E-Mail-Adresse suchen
-            $collection = $this->userFactory->create()->getCollection()
-                ->addFieldToFilter('email', $email);
-            
-            if ($collection->getSize() > 0) {
-                $user = $collection->getFirstItem();
-                $this->oauthUtility->customlog("processUserAction: Found admin user by email with ID " . $user->getId() . ", Username: " . $user->getUsername() . ", Is Active: " . $user->getIsActive());
-                
-                // Prüfen, ob Benutzer aktiv ist
-                if ($user->getIsActive() != 1) {
-                    $this->oauthUtility->customlog("processUserAction: Admin user found but is not active");
-                }
-                
-                return $user;
-            }
-            
-            $this->oauthUtility->customlog("processUserAction: No admin user found for email " . $email);
-            return false;
-            
-        } catch (\Exception $e) {
-            $this->oauthUtility->customlog("processUserAction: Error finding admin user: " . $e->getMessage());
-            return false;
-        }
-    }
-
-    // die Funktion muss ggf. erweitert werden, um die Rollenzuweisung zu unterstützen
-    // was ist, wenn die Rolle nicht existiert? // welche Rolle
-    private function createAdminUser($userName, $email, $firstName, $lastName, $random_password, $role_assigned)
-    {
-        $this->oauthUtility->customlog("processUserAction: Creating Admin user"); 
-        
-        $user = $this->userFactory->create();
-        $user->setUsername($userName)
-            ->setFirstname($firstName)
-            ->setLastname($lastName)
-            ->setEmail($email)
-            ->setPassword($random_password)
-            ->setIsActive(1);
-        $user->save();
-        
-        $this->setAdminUserRole($role_assigned, $user);
-        
-        return $user;
-    }
-
-    private function setAdminUserRole($role_assigned, $user)
-    {
-        $this->oauthUtility->customlog("processUserAction: Set Admin User Role"); 
-        $this->oauthUtility->customlog("processUserAction: role ID: ".$role_assigned); 
-        
-        $user->setRoleId($role_assigned);
-        $user->save();
-        
-        return $user;
-    }
+    // Admin creation methods removed as they are now handled by CheckAttributeMappingAction and AdminUserCreator.
 }

@@ -9,18 +9,16 @@ use Magento\Framework\App\Cache\TypeListInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\Config\Storage\WriterInterface;
 use Magento\Framework\Filesystem\Driver\File;
+use Magento\Framework\App\Filesystem\DirectoryList;
 use Magento\Framework\Url;
 use Magento\Framework\UrlInterface;
 use Magento\Framework\View\Asset\Repository;
 use Magento\User\Model\UserFactory;
+use Magento\Framework\App\Helper\Context;
+use Magento\Framework\Stdlib\DateTime\DateTime;
+
 use MiniOrange\OAuth\Helper\OAuthConstants;
-
 use MiniOrange\OAuth\Helper\Data;
-use MiniOrange\OAuth\Helper\Exception\InvalidOperationException;
-use MiniOrange\OAuth\Helper\OAuth\SAML2Utilities;
-use MiniOrange\OAuth\Helper\OAuth\Lib\AESEncryption;
-use Magento\Framework\Stdlib\DateTime\dateTime;
-
 
 /**
  * This class contains some common Utility functions
@@ -30,21 +28,77 @@ use Magento\Framework\Stdlib\DateTime\dateTime;
  */
 class OAuthUtility extends Data
 {
-    protected $adminSession;
-    protected $customerSession;
-    protected $authSession;
-    protected $cacheTypeList;
-    protected $cacheFrontendPool;
-    protected $fileSystem;
-    protected $logger;
-    protected $reinitableConfig;
+    /** @var \Magento\Backend\Model\Session */
+    protected \Magento\Backend\Model\Session $adminSession;
+
+    /** @var \Magento\Customer\Model\Session */
+    protected \Magento\Customer\Model\Session $customerSession;
+
+    /** @var \Magento\Backend\Model\Auth\Session */
+    protected \Magento\Backend\Model\Auth\Session $authSession;
+
+    /** @var \Magento\Framework\App\Cache\TypeListInterface */
+    protected \Magento\Framework\App\Cache\TypeListInterface $cacheTypeList;
+
+    /** @var \Magento\Framework\App\Cache\Frontend\Pool */
+    protected \Magento\Framework\App\Cache\Frontend\Pool $cacheFrontendPool;
+
+    /** @var \Magento\Framework\Filesystem\Driver\File */
+    protected \Magento\Framework\Filesystem\Driver\File $fileSystem;
+
+    /** @var \Psr\Log\LoggerInterface */
+    protected \Psr\Log\LoggerInterface $logger;
+
+    /** @var \Magento\Framework\App\Config\ReinitableConfigInterface */
+    protected \Magento\Framework\App\Config\ReinitableConfigInterface $reinitableConfig;
+
+    /**
+     * @var \MiniOrange\OAuth\Logger\Logger
+     */
     protected $_logger;
-    protected $productMetadata;
-    protected $dateTime;
 
+    /** @var \Magento\Framework\App\ProductMetadataInterface */
+    protected \Magento\Framework\App\ProductMetadataInterface $productMetadata;
 
+    /** @var \Magento\Framework\Stdlib\DateTime\DateTime */
+    protected \Magento\Framework\Stdlib\DateTime\DateTime $dateTime;
+
+    /** @var \Magento\Framework\App\Filesystem\DirectoryList */
+    protected \Magento\Framework\App\Filesystem\DirectoryList $directoryList;
+
+    /**
+     * Initialize OAuthUtility helper.
+     *
+     * @param Context $context
+     * @param UserFactory $adminFactory
+     * @param CustomerFactory $customerFactory
+     * @param UrlInterface $urlInterface
+     * @param WriterInterface $configWriter
+     * @param Repository $assetRepo
+     * @param \Magento\Backend\Helper\Data $helperBackend
+     * @param Url $frontendUrl
+     * @param \Magento\Backend\Model\Session $adminSession
+     * @param Session $customerSession
+     * @param \Magento\Backend\Model\Auth\Session $authSession
+     * @param \Magento\Framework\App\Config\ReinitableConfigInterface $reinitableConfig
+     * @param TypeListInterface $cacheTypeList
+     * @param Pool $cacheFrontendPool
+     * @param \Psr\Log\LoggerInterface $logger
+     * @param \MiniOrange\OAuth\Logger\Logger $logger2
+     * @param File $fileSystem
+     * @param \Magento\Framework\App\ProductMetadataInterface $productMetadata
+     * @param \MiniOrange\OAuth\Model\MiniorangeOauthClientAppsFactory $miniorangeOauthClientAppsFactory
+     * @param \MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps\CollectionFactory $clientCollectionFactory
+     * @param \MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps $appResource
+     * @param \Magento\User\Model\ResourceModel\User $userResource
+     * @param \Magento\Customer\Model\ResourceModel\Customer $customerResource
+     * @param DateTime $dateTime
+     * @param DirectoryList $directoryList
+     * @param \Magento\Framework\Encryption\EncryptorInterface $encryptor
+     * @param \Magento\Framework\Escaper $escaper
+     */
     public function __construct(
-        ScopeConfigInterface $scopeConfig,
+        Context $context,
         UserFactory $adminFactory,
         CustomerFactory $customerFactory,
         UrlInterface $urlInterface,
@@ -63,171 +117,172 @@ class OAuthUtility extends Data
         File $fileSystem,
         \Magento\Framework\App\ProductMetadataInterface $productMetadata,
         \MiniOrange\OAuth\Model\MiniorangeOauthClientAppsFactory $miniorangeOauthClientAppsFactory,
-        dateTime $dateTime
+        \MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps\CollectionFactory $clientCollectionFactory,
+        \MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps $appResource,
+        \Magento\User\Model\ResourceModel\User $userResource,
+        \Magento\Customer\Model\ResourceModel\Customer $customerResource,
+        DateTime $dateTime,
+        DirectoryList $directoryList,
+        \Magento\Framework\Encryption\EncryptorInterface $encryptor,
+        \Magento\Framework\Escaper $escaper
     ) {
-                        $this->adminSession = $adminSession;
-                        $this->customerSession = $customerSession;
-                        $this->authSession = $authSession;
-                        $this->cacheTypeList = $cacheTypeList;
-                        $this->cacheFrontendPool = $cacheFrontendPool;
-                        $this->fileSystem = $fileSystem;
-                        $this->logger = $logger;
-                        $this->reinitableConfig = $reinitableConfig;
-                        $this->_logger = $logger2;
-                        $this->productMetadata = $productMetadata;
-                        $this->dateTime=$dateTime;
-                       parent::__construct(
-                           $scopeConfig,
-                           $adminFactory,
-                           $customerFactory,
-                           $urlInterface,
-                           $configWriter,
-                           $assetRepo,
-                           $helperBackend,
-                           $frontendUrl,
-                           $miniorangeOauthClientAppsFactory
-                       );
+        parent::__construct(
+            $context,
+            $adminFactory,
+            $customerFactory,
+            $urlInterface,
+            $configWriter,
+            $assetRepo,
+            $helperBackend,
+            $frontendUrl,
+            $miniorangeOauthClientAppsFactory,
+            $clientCollectionFactory,
+            $appResource,
+            $userResource,
+            $customerResource,
+            $encryptor,
+            $escaper,
+            $logger
+        );
+        
+        $this->adminSession = $adminSession;
+        $this->customerSession = $customerSession;
+        $this->authSession = $authSession;
+        $this->cacheTypeList = $cacheTypeList;
+        $this->cacheFrontendPool = $cacheFrontendPool;
+        $this->fileSystem = $fileSystem;
+        $this->logger = $logger;
+        $this->reinitableConfig = $reinitableConfig;
+        $this->_logger = $logger2;
+        $this->productMetadata = $productMetadata;
+        $this->dateTime = $dateTime;
+        $this->directoryList = $directoryList;
     }
 
     /**
-     * This function returns phone number as a obfuscated
-     * string which can be used to show as a message to the user.
+     * This function returns phone number as an obfuscated string for display to the user.
      *
-     * @param $phone references the phone number.
-     * @return string
+     * @param  string $phone references the phone number.
      */
-    public function getHiddenPhone($phone)
+    public function getHiddenPhone($phone): string
     {
-        $hidden_phone = 'xxxxxxx' . substr($phone, strlen($phone) - 3);
-        return $hidden_phone;
+        return 'xxxxxxx' . substr($phone, strlen($phone) - 3);
     }
 
     //CUSTOM LOG FILE OPERATION
     /**
      * This function print custom log in var/log/mo_oauth.log file.
-     */
-    public function customlog($txt)
-    {   
-        $this->isLogEnable() ? $this->_logger->debug($txt): NULL; 
-    }
-       /**
-    * This function check whether any custom log file exist or not. 
-     */ 
-    public function isCustomLogExist()
-    {   if($this->fileSystem->isExists("../var/log/mo_oauth.log")){
-        return 1;
-    }elseif($this->fileSystem->isExists("var/log/mo_oauth.log")){
-        return 1;
-    }
-      return 0; 
-    }
-    
-    public function deleteCustomLogFile()
-    {if($this->fileSystem->isExists("../var/log/mo_oauth.log")){
-        $this->fileSystem->deleteFile("../var/log/mo_oauth.log");
-    }elseif($this->fileSystem->isExists("var/log/mo_oauth.log")){
-        $this->fileSystem->deleteFile("var/log/mo_oauth.log");
-    }
-}
-    /**
-     * This function checks if a value is set or
-     * empty. Returns true if value is empty
      *
-     * @return True or False
-     * @param $value //references the variable passed.
+     * @param string $txt
      */
-    public function isBlank($value)
+    public function customlog(string $txt): void
     {
-        if (! isset($value) || empty($value)) {
-            return true;
+        if ($this->isLogEnable()) {
+            $this->_logger->debug($txt);
         }
-        return false;
+    }
+    /**
+     * This function check whether any custom log file exist or not.
+     *
+     * @psalm-return 0|1
+     */
+    public function isCustomLogExist(): int
+    {
+        try {
+            $logPath = $this->directoryList->getPath(DirectoryList::VAR_DIR)
+                . '/log/mo_oauth.log';
+            if ($this->fileSystem->isExists($logPath)) {
+                return 1;
+            }
+        } catch (\Exception $e) {
+            $this->logger->debug('Path error while checking log file: ' . $e->getMessage());
+        }
+        return 0;
     }
 
-
     /**
-     * This function checks if cURL has been installed
-     * or enabled on the site.
-     *
-     * @return True or False
+     * Delete the custom OAuth log file if it exists.
      */
-    public function isCurlInstalled()
+    public function deleteCustomLogFile(): void
     {
-        if (in_array('curl', get_loaded_extensions())) {
-            return 1;
-        } else {
-            return 0;
+        try {
+            $logPath = $this->directoryList->getPath(DirectoryList::VAR_DIR) . '/log/mo_oauth.log';
+            if ($this->fileSystem->isExists($logPath)) {
+                $this->fileSystem->deleteFile($logPath);
+            }
+        } catch (\Exception $e) {
+            $this->logger->debug('Path error while deleting log file: ' . $e->getMessage());
         }
     }
 
-
     /**
-     * This function checks if the phone number is in the correct format or not.
+     * Check if a value is empty or not set.
      *
-     * @param $phone refers to the phone number entered
-     * @return bool
+     * @param mixed $value
      */
-    public function validatePhoneNumber($phone)
+    public function isBlank(mixed $value): bool
     {
-        if (!preg_match(MoIDPConstants::PATTERN_PHONE, $phone, $matches)) {
-            return false;
-        } else {
-            return true;
-        }
+        return empty($value);
     }
 
+    /**
+     * This function checks if cURL has been installed or enabled on the site.
+     *
+     * Magento 2 uses \Magento\Framework\HTTP\Adapter\Curl for HTTP requests,
+     * but verifying curl_init availability is a standard check for the underlying library.
+     */
+    public function isCurlInstalled(): int
+    {
+        return function_exists('curl_init') ? 1 : 0;
+    }
 
     /**
-     * This function is used to obfuscate and return
-     * the email in question.
+     * This function is used to obfuscate and return the email in question.
      *
-     * @param $email //refers to the email id to be obfuscated
+     * @param  string $email //refers to the email id to be obfuscated
      * @return string obfuscated email id.
      */
-    public function getHiddenEmail($email)
+    public function getHiddenEmail($email): string
     {
-        if (!isset($email) || trim($email)==='') {
+        if (trim($email) === '') {
             return "";
         }
 
         $emailsize = strlen($email);
         $partialemail = substr($email, 0, 1);
         $temp = strrpos($email, "@");
-        $endemail = substr($email, $temp-1, $emailsize);
-        for ($i=1; $i<$temp; $i++) {
-            $partialemail = $partialemail . 'x';
+        $endemail = substr($email, $temp - 1, $emailsize);
+        for ($i = 1; $i < $temp; $i++) {
+            $partialemail .= 'x';
         }
 
-        $hiddenemail = $partialemail . $endemail;
-
-        return $hiddenemail;
+        return $partialemail . $endemail;
     }
-/***
- * @return \Magento\Backend\Model\Session
- */
-    public function getAdminSession()
+    /**
+     * Get admin session instance.
+     */
+    public function getAdminSession(): \Magento\Backend\Model\Session
     {
         return $this->adminSession;
     }
 
     /**
-     * set Admin Session Data
+     * Set Admin Session Data
      *
-     * @param $key
-     * @param $value
-     * @return
+     * @param  string $key
+     * @param  mixed  $value
+     * @return mixed
      */
     public function setAdminSessionData($key, $value)
     {
         return $this->adminSession->setData($key, $value);
     }
 
-
     /**
-     * get Admin Session data based of on the key
+     * Get Admin Session data based of on the key
      *
-     * @param $key
-     * @param $remove
+     * @param  string $key
+     * @param  bool   $remove
      * @return mixed
      */
     public function getAdminSessionData($key, $remove = false)
@@ -235,41 +290,40 @@ class OAuthUtility extends Data
         return $this->adminSession->getData($key, $remove);
     }
 
-
     /**
-     * set customer Session Data
+     * Set customer Session Data
      *
-     * @param $key
-     * @param $value
-     * @return
+     * @param  string $key
+     * @param  mixed  $value
+     * @return mixed
      */
     public function setSessionData($key, $value)
     {
         return $this->customerSession->setData($key, $value);
     }
 
-
     /**
      * Get customer Session data based off on the key
      *
-     * @param $key
-     * @param $remove
+     * @param  string $key
+     * @param  bool   $remove
+     * @return mixed
      */
     public function getSessionData($key, $remove = false)
     {
         return $this->customerSession->getData($key, $remove);
     }
 
-
     /**
-     * Set Session data for logged in user based on if he/she
-     * is in the backend of frontend. Call this function only if
-     * you are not sure where the user is logged in at.
+     * Set session data for the currently logged-in user.
      *
-     * @param $key
-     * @param $value
+     * Detects whether the user is in the frontend or backend
+     * and stores the data in the appropriate session.
+     *
+     * @param  string $key
+     * @param  mixed  $value
      */
-    public function setSessionDataForCurrentUser($key, $value)
+    public function setSessionDataForCurrentUser($key, $value): void
     {
         if ($this->customerSession->isLoggedIn()) {
             $this->setSessionData($key, $value);
@@ -278,65 +332,56 @@ class OAuthUtility extends Data
         }
     }
 
-
     /**
-     * Check if the admin has configured the plugin with
-     * the Identity Provier. Returns true or false
+     * Check if OAuth/OIDC is configured by verifying that a valid app with required endpoints exists.
      */
-    public function isOAuthConfigured()
+    public function isOAuthConfigured(): bool
     {
-        $loginUrl = $this->getStoreConfig(OAuthConstants::AUTHORIZE_URL);
-        return $this->isBlank($loginUrl) ? false : true;
+        $appName = $this->getStoreConfig(OAuthConstants::APP_NAME);
+        if ($this->isBlank($appName)) {
+            return false;
+        }
+
+        try {
+            $clientDetails = $this->getClientDetailsByAppName($appName);
+        } catch (\Exception $e) {
+            return false;
+        }
+
+        return !empty($clientDetails['clientID'])
+            && !empty($clientDetails['authorize_endpoint'])
+            && !empty($clientDetails['access_token_endpoint']);
     }
 
-
     /**
-     * This function is used to check if customer has completed
-     * the registration process. Returns TRUE or FALSE. Checks
-     * for the email and customerkey in the database are set
-     * or not.
+     * Check if there is an active user session for frontend or backend.
      */
-    public function micr()
-    {
-              $email = $this->getStoreConfig(OAuthConstants::CUSTOMER_EMAIL);
-        $key = $this->getStoreConfig(OAuthConstants::CUSTOMER_KEY);
-        return !$this->isBlank($email) && !$this->isBlank($key) ? true : false;
-    }
-
-
-    /**
-     * Check if there's an active session of the user
-     * for the frontend or the backend. Returns TRUE
-     * or FALSE
-     */
-    public function isUserLoggedIn()
+    public function isUserLoggedIn(): bool
     {
         return $this->customerSession->isLoggedIn()
-                || $this->authSession->isLoggedIn();
+            || $this->authSession->isLoggedIn();
     }
 
     /**
      * Get the Current Admin User who is logged in
      */
-    public function getCurrentAdminUser()
+    public function getCurrentAdminUser(): \Magento\User\Model\User|null
     {
         return $this->authSession->getUser();
     }
 
-
     /**
      * Get the Current Admin User who is logged in
      */
-    public function getCurrentUser()
+    public function getCurrentUser(): \Magento\Customer\Model\Customer
     {
         return $this->customerSession->getCustomer();
     }
 
-
     /**
      * Get the admin login url
      */
-    public function getAdminLoginUrl()
+    public function getAdminLoginUrl(): string
     {
         return $this->getAdminUrl('adminhtml/auth/login');
     }
@@ -344,38 +389,39 @@ class OAuthUtility extends Data
     /**
      * Get the admin page url
      */
-    public function getAdminPageUrl()
+    public function getAdminPageUrl(): string
     {
-            return $this->getAdminBaseUrl();
+        return $this->getAdminBaseUrl();
     }
 
     /**
      * Get the customer login url
      */
-    public function getCustomerLoginUrl()
+    public function getCustomerLoginUrl(): string
     {
         return $this->getUrl('customer/account/login');
     }
 
     /**
      * Get is Test Configuration clicked
+     *
+     * @return         bool
+     * @psalm-suppress PossiblyUnusedMethod – Called from templates
      */
     public function getIsTestConfigurationClicked()
     {
         return $this->getStoreConfig(OAuthConstants::IS_TEST);
     }
 
-
     /**
-     * Flush Magento Cache. This has been added to make
-     * sure the admin/user has a smooth experience and
-     * doesn't have to flush his cache over and over again
-     * to see his changes.
+     * Flush Magento Cache.
+     *
+     * @param string $from
+     * @psalm-suppress PossiblyUnusedParam – $from used for future logging
      */
-    public function flushCache($from = "")
+    public function flushCache(string $from = ""): void
     {
-
-        $types = ['db_ddl']; // we just need to clear the database cache
+        $types = ['db_ddl'];
 
         foreach ($types as $type) {
             $this->cacheTypeList->cleanType($type);
@@ -386,29 +432,36 @@ class OAuthUtility extends Data
         }
     }
 
-
     /**
      * Get data in the file specified by the path
+     *
+     * @param          string $file
+     * @return         string
+     * @psalm-suppress PossiblyUnusedMethod – Called dynamically
      */
     public function getFileContents($file)
     {
         return $this->fileSystem->fileGetContents($file);
     }
 
-
     /**
      * Put data in the file specified by the path
+     *
+     * @param          string $file
+     * @param          string $data
+     * @psalm-suppress PossiblyUnusedMethod – Called dynamically
      */
-    public function putFileContents($file, $data)
+    public function putFileContents($file, $data): void
     {
         $this->fileSystem->filePutContents($file, $data);
     }
 
-
     /**
      * Get the Current User's logout url
+     *
+     * @psalm-suppress PossiblyUnusedMethod – Called from templates
      */
-    public function getLogoutUrl()
+    public function getLogoutUrl(): string
     {
         if ($this->customerSession->isLoggedIn()) {
             return $this->getUrl('customer/account/logout');
@@ -419,121 +472,193 @@ class OAuthUtility extends Data
         return '/';
     }
 
-
     /**
      * Get/Create Callback URL of the site
+     *
+     * @psalm-suppress PossiblyUnusedMethod – Called from templates
      */
-    public function getCallBackUrl()
+    public function getCallBackUrl(): string
     {
         return $this->getBaseUrl() . OAuthConstants::CALLBACK_URL;
     }
 
-    public function removeSignInSettings()
-    {
-            $this->setStoreConfig(OAuthConstants::SHOW_CUSTOMER_LINK, 0);
-            $this->setStoreConfig(OAuthConstants::SHOW_ADMIN_LINK, 0);
-    }
-    public function reinitConfig(){
-
-            $this->reinitableConfig->reinit();
-    }
-
-        /**
-     * This function is used to check if customer has completed
-     * the registration process. Returns TRUE or FALSE. Checks
-     * for the email and customerkey in the database are set
-     * or not. Then checks if license key has been verified.
-     */
-	public function mclv()
-	{
-		$token = $this->getStoreConfig(OAuthConstants::TOKEN);
-		$isVerified = AESEncryption::decrypt_data($this->getStoreConfig(OAuthConstants::SAMLSP_CKL),$token);
-		$licenseKey = $this->getStoreConfig(OAuthConstants::SAMLSP_LK);
-		return $isVerified == "true" ? TRUE : FALSE;
-	}
-    
     /**
-     * Check if debug logging is enabled
-     * Uses the existing configuration path from the database
-     * 
-     * @return bool
+     * Remove sign-in settings
+     *
+     * @psalm-suppress PossiblyUnusedMethod – Called dynamically
      */
-    public function isLogEnable()
+    public function removeSignInSettings(): void
     {
-        // Verwende die existierende Konfiguration über die Konstante
-        $configValue = $this->getStoreConfig(OAuthConstants::ENABLE_DEBUG_LOG);
-        
-        // Wenn die neue Config existiert, bevorzuge diese
-        $newConfigValue = $this->getStoreConfig('miniorange/oauth/debug_log');
-        if ($newConfigValue !== null) {
-            return (bool)$newConfigValue;
-        }
-        
-        // Fallback auf alte Konfiguration
-        return (bool)$configValue;
+        $this->setStoreConfig(OAuthConstants::SHOW_CUSTOMER_LINK, 0);
+        $this->setStoreConfig(OAuthConstants::SHOW_ADMIN_LINK, 0);
     }
 
     /**
-     *Common Log Method .. Accessible in all classes through
-     **/
-    public function log_debug($msg="", $obj=null){
+     * Reinitialize config
+     *
+     * @psalm-suppress PossiblyUnusedMethod – Called from admin actions
+     */
+    public function reinitConfig(): void
+    {
+        $this->reinitableConfig->reinit();
+    }
 
-        if(is_object($msg)){
-             $this->customlog("MO OAuth Free : ".print_r($obj,true)) ;
-        }else{
-             $this->customlog("MO OAuth Free : ".$msg) ;
+    /**
+     * Check if debug logging is enabled.
+     */
+    public function isLogEnable(): bool
+    {
+        return (bool) $this->getStoreConfig(OAuthConstants::ENABLE_DEBUG_LOG);
+    }
 
+    /**
+     * Common log method accessible from all classes.
+     *
+     * @param string|object $msg Debug message to log
+     * @param mixed|null    $obj Optional object to dump
+     * @psalm-suppress PossiblyUnusedMethod – Called dynamically
+     */
+    public function logDebug(string|object $msg = "", $obj = null): void
+    {
+        if (is_object($msg)) {
+            $this->customlog(var_export($msg, true));
+        } else {
+            $this->customlog($msg);
         }
 
-        if($obj!=null){
-         $this->customlog("MO OAuth Free : ".var_export($obj,true))  ;
-
-
+        if ($obj != null) {
+            $this->customlog(var_export($obj, true));
         }
     }
 
     /**
-     * Get client details
-     * used in ShowTestResultsAction.php
+     * Get client details used in ShowTestResultsAction.
+     *
+     * @psalm-suppress PossiblyUnusedMethod – Called dynamically
+     *
+     * @return (mixed|null|string)[]
+     *
+     * @psalm-return list{string, mixed|null, mixed|null, mixed|null, mixed|null, mixed|null, mixed|null,
+     *               mixed|null, mixed|null, mixed|null, mixed, mixed, mixed, mixed}
      */
-    public function getClientDetails()
+    public function getClientDetails(): array
     {
-        $appName = $this->getStoreConfig(OAuthConstants::APP_NAME);       
-        $clientDetails = null;
-        $collection = $this->getOAuthClientApps();
-        $this->log_debug("SendAuthorizationRequest: collection :", count($collection));
-        foreach ($collection as $item) {
-            if ($item->getData()["app_name"] === $appName) {
-                $clientDetails = $item->getData();
-            }
-        }
+        $appName = $this->getStoreConfig(OAuthConstants::APP_NAME);
+        $clientDetails = $this->getClientDetailsByAppName($appName);
         $clientID = $clientDetails["clientID"];
         $clientSecret = $clientDetails["client_secret"];
         $accesstoken_url = $clientDetails["access_token_endpoint"];
         $scope = $clientDetails["scope"];
         $header = $clientDetails["values_in_header"];
         $body = $clientDetails["values_in_body"];
-        $getuserinfo_url =$clientDetails['user_info_endpoint'];
+        $getuserinfo_url = $clientDetails['user_info_endpoint'];
         $authorize_url = $clientDetails['authorize_endpoint'];
         $endpoint_url = $clientDetails['well_known_config_url'];
         $show_customer_link = $this->getStoreConfig(OAuthConstants::SHOW_CUSTOMER_LINK);
-        $attribute_email = $this->getStoreConfig(OAuthConstants::MAP_EMAIL );
+        $attribute_email = $this->getStoreConfig(OAuthConstants::MAP_EMAIL);
         $attribute_username = $this->getStoreConfig(OAuthConstants::MAP_USERNAME);
         $customer_email = $this->getStoreConfig(OAuthConstants::DEFAULT_MAP_EMAIL);
-        return array($appName,$scope,$clientID,$clientSecret,$authorize_url,$accesstoken_url,$getuserinfo_url, $header,$body,$endpoint_url, $show_customer_link,$attribute_email,$attribute_username,$customer_email);
+        return [
+            $appName,
+            $scope,
+            $clientID,
+            $clientSecret,
+            $authorize_url,
+            $accesstoken_url,
+            $getuserinfo_url,
+            $header,
+            $body,
+            $endpoint_url,
+            $show_customer_link,
+            $attribute_email,
+            $attribute_username,
+            $customer_email
+        ];
     }
 
-    public function getProductVersion(){
-        return  $this->productMetadata->getVersion(); 
+    /**
+     * Retrieve the base URL of the store.
+     *
+     * @return string
+     */
+    public function getProductVersion()
+    {
+        return $this->productMetadata->getVersion();
     }
 
-    public function getEdition(){
-        return $this->productMetadata->getEdition() == 'Community' ? 'Magento Open Source':'Adobe Commerce Enterprise/Cloud';
+    /**
+     * Retrieve the current store URL.
+     */
+    public function getEdition(): string
+    {
+        return $this->productMetadata->getEdition() == 'Community'
+            ? 'Magento Open Source'
+            : 'Adobe Commerce Enterprise/Cloud';
     }
 
-    public function getCurrentDate(){
-        $dateTimeZone = new \DateTimeZone('Asia/Calcutta'); 
+    /**
+     * Retrieve the admin base URL.
+     */
+    public function getCurrentDate(): string
+    {
+        try {
+            $timezone = $this->scopeConfig->getValue(
+                'general/locale/timezone',
+                \Magento\Store\Model\ScopeInterface::SCOPE_STORE
+            );
+            $dateTimeZone = new \DateTimeZone($timezone ?: 'UTC');
+        } catch (\Exception $e) {
+            $dateTimeZone = new \DateTimeZone('UTC');
+        }
         $dateTime = new \DateTime('now', $dateTimeZone);
         return $dateTime->format('n/j/Y, g:i:s a');
+    }
+
+    /**
+     * Decode a base64 encoded string safely.
+     *
+     * Returns empty string on invalid input.
+     *
+     * @param  string|null $input
+     */
+    public function decodeBase64(?string $input): string
+    {
+        if ($input === null || $input === '' || $input === '0') {
+            return '';
+        }
+        // phpcs:ignore Magento2.Functions.DiscouragedFunction
+        $decoded = base64_decode($input, true);
+        return $decoded === false ? '' : $decoded;
+    }
+
+    /**
+     * Extract the path component from a URL in a safe manner.
+     *
+     * Returns empty string on failure.
+     *
+     * @param  string $url
+     */
+    public function extractPathFromUrl(string $url): string
+    {
+        // phpcs:ignore Magento2.Functions.DiscouragedFunction
+        $parsed = parse_url($url);
+        if ($parsed === false) {
+            return '';
+        }
+        return $parsed['path'] ?? '';
+    }
+
+    /**
+     * Parse a URL and return components in a safe manner.
+     *
+     * Returns empty array on failure.
+     *
+     * @param  string $url
+     */
+    public function parseUrlComponents(string $url): array
+    {
+        // phpcs:ignore Magento2.Functions.DiscouragedFunction
+        $parsed = parse_url($url);
+        return is_array($parsed) ? $parsed : [];
     }
 }

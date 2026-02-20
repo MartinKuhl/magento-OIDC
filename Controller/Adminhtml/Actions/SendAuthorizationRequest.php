@@ -4,29 +4,66 @@ namespace MiniOrange\OAuth\Controller\Adminhtml\Actions;
 
 use MiniOrange\OAuth\Helper\OAuth\AuthorizationRequest;
 use MiniOrange\OAuth\Helper\OAuthConstants;
+use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
 use MiniOrange\OAuth\Helper\SessionHelper;
 use Magento\Backend\App\Action;
 use MiniOrange\OAuth\Helper\OAuthUtility;
 use MiniOrange\OAuth\Controller\Actions\BaseAction;
 
+/**
+ * Admin: Send authorization request to the configured OIDC provider.
+ *
+ * Builds an authorization URL and redirects the admin user to the
+ * provider's authorization endpoint. Uses `AuthorizationRequest` helper
+ * to construct the final URL.
+ *
+ * @psalm-suppress ImplicitToStringCast Magento's __() returns Phrase with __toString()
+ */
 class SendAuthorizationRequest extends BaseAction
 {
-    protected $oauthUtility;
+    /**
+     * @var \Magento\Framework\UrlInterface
+     */
     protected $urlBuilder;
 
+    /** @var \MiniOrange\OAuth\Helper\OAuthSecurityHelper */
+    private readonly \MiniOrange\OAuth\Helper\OAuthSecurityHelper $securityHelper;
+
+    /** @var \Magento\Framework\Session\SessionManagerInterface */
+    private readonly \Magento\Framework\Session\SessionManagerInterface $sessionManager;
+
+    /**
+     * Initialize admin send authorization request action.
+     *
+     * @param \Magento\Backend\App\Action\Context                    $context
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility                  $oauthUtility
+     * @param OAuthSecurityHelper                                    $securityHelper
+     * @param \Magento\Framework\Session\SessionManagerInterface     $sessionManager
+     */
     public function __construct(
         \Magento\Backend\App\Action\Context $context,
-        \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
-        // ggf. weitere DI-Objekte
+        \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
+        OAuthSecurityHelper $securityHelper,
+        \Magento\Framework\Session\SessionManagerInterface $sessionManager
     ) {
         parent::__construct($context, $oauthUtility);
         $this->urlBuilder = $context->getUrl();
+        $this->securityHelper = $securityHelper;
+        $this->sessionManager = $sessionManager;
     }
 
+    /**
+     * Execute the admin authorization request.
+     *
+     * @return \Magento\Framework\Controller\Result\Redirect
+     */
+    #[\Override]
     public function execute()
     {
-        SessionHelper::configureSSOSession();
-        SessionHelper::updateSessionCookies();
+        // configureSSOSession() removed: it creates a host-only PHPSESSID cookie (no domain)
+        // that conflicts with PHP's session cookie (domain=...). The duplicate cookie prevents
+        // session_regenerate_id() from updating the browser's session ID after login.
+        // SameSite=None is unnecessary — OAuth uses top-level navigation (SameSite=Lax suffices).
 
         $Log_file_time = $this->oauthUtility->getStoreConfig(OAuthConstants::LOG_FILE_TIME);
         $current_time = time();
@@ -34,47 +71,59 @@ class SendAuthorizationRequest extends BaseAction
         $islogEnable = $this->oauthUtility->getStoreConfig(OAuthConstants::ENABLE_DEBUG_LOG);
         $log_file_exist = $this->oauthUtility->isCustomLogExist();
 
-        if ((($Log_file_time != NULL && ($current_time - $Log_file_time) >= 60*60*24*7) && $islogEnable) || ($islogEnable == 0 && $log_file_exist)) {
+        if ((($Log_file_time != null && ($current_time - $Log_file_time) >= 60 * 60 * 24 * 7) && $islogEnable)
+            || ($islogEnable == 0 && $log_file_exist)
+        ) {
             $this->oauthUtility->setStoreConfig(OAuthConstants::ENABLE_DEBUG_LOG, 0);
             $chk_enable_log = 0;
-            $this->oauthUtility->setStoreConfig(OAuthConstants::LOG_FILE_TIME, NULL);
+            $this->oauthUtility->setStoreConfig(OAuthConstants::LOG_FILE_TIME, null);
             $this->oauthUtility->deleteCustomLogFile();
-            $this->oauthUtility->flushCache();
+            //$this->oauthUtility->flushCache(); // REMOVED for performance
         }
-        $chk_enable_log ? $this->oauthUtility->customlog("SendAuthorizationRequest: execute") : NULL;
+        if ($chk_enable_log !== 0) {
+            $this->oauthUtility->customlog("SendAuthorizationRequest: execute");
+        }
 
         $params = $this->getRequest()->getParams();
-        $chk_enable_log ? $this->oauthUtility->customlog("SendAuthorizationRequest: Full params: " . print_r($params, true)) : NULL;
+        if ($chk_enable_log !== 0) {
+            $this->oauthUtility->customlog(
+                "SendAuthorizationRequest: Full params: " . var_export($params, true)
+            );
+        }
 
         $isFromPopup = isset($params['from_popup']) && $params['from_popup'] == '1';
 
-        $app_name = isset($params['app_name']) ? $params['app_name'] : $this->oauthUtility->getStoreConfig(OAuthConstants::APP_NAME);
+        $app_name = isset($params['app_name'])
+            ? $params['app_name']
+            : $this->oauthUtility->getStoreConfig(OAuthConstants::APP_NAME);
         $this->oauthUtility->customlog("SendAuthorizationRequest: Using app_name: " . $app_name);
 
-        $currentSessionId = session_id();
+        $currentSessionId = $this->sessionManager->getSessionId();
         $clientDetails = null;
 
         if (!$app_name) {
-            $relayState = isset($params['relayState']) ? $params['relayState'] : $this->oauthUtility->getBaseUrl() . 'customer/account/login';
-            $this->messageManager->addErrorMessage('App name not found. Please contact the administrator for assistance.');
-            return $this->getResponse()->setRedirect($relayState)->sendResponse();
+            $backendLoginUrl = $this->urlBuilder->getUrl('adminhtml/auth/login');
+            $this->messageManager->addErrorMessage(
+                'App name not found. Please contact the administrator for assistance.'
+            );
+            return $this->resultRedirectFactory->create()->setUrl($backendLoginUrl);
         }
         $this->oauthUtility->setSessionData(OAuthConstants::APP_NAME, $app_name);
 
-        $collection = $this->oauthUtility->getOAuthClientApps();
-        $this->oauthUtility->log_debug("SendAuthorizationRequest: collection :", count($collection));
-        foreach ($collection as $item) {
-            if ($item->getData()["app_name"] === $app_name) {
-                $clientDetails = $item->getData();
-            }
+        $clientDetails = $this->oauthUtility->getClientDetailsByAppName($app_name);
+        if ($clientDetails === null || $clientDetails === []) {
+            $backendLoginUrl = $this->urlBuilder->getUrl('adminhtml/auth/login');
+            $msg = 'Provided App name is not configured. Please contact the administrator for assistance.';
+            $this->messageManager->addErrorMessage($msg);
+            return $this->resultRedirectFactory->create()->setUrl($backendLoginUrl);
         }
-        if (empty($clientDetails)) {
-            $relayState = isset($params['relayState']) ? $params['relayState'] : $this->oauthUtility->getBaseUrl() . 'customer/account/login';
-            $this->messageManager->addErrorMessage('Provided App name is not configured. Please contact the administrator for assistance.');
-            return $this->getResponse()->setRedirect($relayState)->sendResponse();
-        }
+
         if (!$clientDetails["authorize_endpoint"]) {
-            return;
+            $this->messageManager->addErrorMessage(
+                __('Authorization endpoint is not configured. Please contact the administrator.')
+            );
+            $backendUrl = $this->urlBuilder->getUrl('adminhtml/auth/login');
+            return $this->resultRedirectFactory->create()->setUrl($backendUrl);
         }
 
         $clientID = $clientDetails["clientID"];
@@ -83,23 +132,41 @@ class SendAuthorizationRequest extends BaseAction
         $responseType = OAuthConstants::CODE;
         $redirectURL = $this->oauthUtility->getCallBackUrl();
 
-        // relayState Standardwert
-        $relayState = $isFromPopup
+        // Build relayState with login type for admin, with redirect validation
+        $rawRelayState = $isFromPopup
             ? $this->oauthUtility->getBaseUrl() . "checkout"
             : (isset($params['relayState']) ? $params['relayState'] : '/');
-        $relayState = $relayState . '|' . $currentSessionId . '|' . $app_name;
+        $relayState = $this->securityHelper->validateRedirectUrl($rawRelayState, '/');
+        $stateToken = $this->securityHelper->createStateToken($currentSessionId);
+        $relayState = $this->securityHelper->encodeRelayState(
+            $relayState,
+            $currentSessionId,
+            $app_name,
+            OAuthConstants::LOGIN_TYPE_ADMIN,
+            $stateToken
+        );
 
         $isTest = (
             ($this->oauthUtility->getStoreConfig(OAuthConstants::IS_TEST) == true)
             || (isset($params['option']) && $params['option'] === OAuthConstants::TEST_CONFIG_OPT)
         );
 
-        // Testfall: relayState auf Testergebnis überschreiben
+        // Test flow: rebuild combined state with test results URL as the relayState segment
         if ($isTest) {
             $testKey = bin2hex(random_bytes(16));
             $baseUrl = $this->oauthUtility->getBaseUrl();
-            $relayState = $baseUrl . 'mooauth/actions/showTestResults/key/' . $testKey . '/';
-            $this->oauthUtility->customlog("SendAuthorizationRequest: Test-Flow, setting relayState to: " . $relayState);
+            $testRelayState = $baseUrl . 'mooauth/actions/showTestResults/key/' . $testKey . '/';
+            $this->oauthUtility->customlog(
+                "SendAuthorizationRequest: Test-Flow, setting relayState to: " . $testRelayState
+            );
+            // Rebuild combined state preserving sessionId, appName, loginType, stateToken
+            $relayState = $this->securityHelper->encodeRelayState(
+                $testRelayState,
+                $currentSessionId,
+                $app_name,
+                OAuthConstants::LOGIN_TYPE_ADMIN,
+                $stateToken
+            );
         }
 
         $this->oauthUtility->customlog("Test relayState FINAL: " . $relayState);
@@ -114,9 +181,11 @@ class SendAuthorizationRequest extends BaseAction
             $params
         ))->build();
 
-        $chk_enable_log ? $this->oauthUtility->customlog(
-            "SendAuthorizationRequest:  Authorization Request: " . $authorizationRequest
-        ) : NULL;
+        if ($chk_enable_log !== 0) {
+            $this->oauthUtility->customlog(
+                "SendAuthorizationRequest:  Authorization Request: " . $authorizationRequest
+            );
+        }
 
         return $this->sendHTTPRedirectRequest($authorizationRequest, $authorizeURL, $relayState, $params);
     }

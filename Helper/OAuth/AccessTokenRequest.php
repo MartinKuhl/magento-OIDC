@@ -16,18 +16,39 @@ use MiniOrange\OAuth\Helper\OAuthConstants;
  */
 class AccessTokenRequest
 {
+    /**
+     * @var string
+     */
     private $clientID;
+
+    /**
+     * @var string
+     */
     private $clientSecret;
-    private $grantType;
+
+    /**
+     * @var string
+     */
     private $redirectURL;
+
+    /**
+     * @var string
+     */
     private $code;
 
-    public function __construct($clientID, $clientSecret, $grantType, $redirectURL, $code)
+    /**
+     * Initialize access token request.
+     *
+     * @param string $clientID
+     * @param string $clientSecret
+     * @param string $redirectURL
+     * @param string $code
+     */
+    public function __construct($clientID, $clientSecret, $redirectURL, $code)
     {
         // all values required in the authn request are set here
         $this->clientID = $clientID;
         $this->clientSecret = $clientSecret;
-        $this->grantType = $grantType;
         $this->redirectURL = $redirectURL;
         $this->code = $code;
     }
@@ -36,26 +57,26 @@ class AccessTokenRequest
      *
      *
      */
-    private function generateRequest()
+    /**
+     * Build the access token request as an associative array.
+     */
+    private function generateRequest(): array
     {
-        
-        $accessTokenRequestPostData =  [
-            'redirect_uri'     => $this->redirectURL,
-            'grant_type'  => OAuthConstants::GRANT_TYPE,
-            'client_id'  => $this->clientID,
-            'client_secret'  => $this->clientSecret,
-            'code'  => $this->code
-        ];
-        return $accessTokenRequestPostData;
-    }
 
+        return [
+            'redirect_uri' => $this->redirectURL,
+            'grant_type' => OAuthConstants::GRANT_TYPE,
+            'client_id' => $this->clientID,
+            'client_secret' => $this->clientSecret,
+            'code' => $this->code
+        ];
+    }
 
     /**
      * This function is used to build our AccessToken request
      */
-    public function build()
+    public function build(): array
     {
-        $accessTokenRequestPostData = $this->generateRequest();
-        return $accessTokenRequestPostData;
+        return $this->generateRequest();
     }
 }

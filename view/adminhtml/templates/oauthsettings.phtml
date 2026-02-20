@@ -3,180 +3,316 @@
     File acts as a view file for our OAuth Provider settings.
 -->
 <?php
-    // initialize all values
-    $isEnabled = $this->isEnabled() ? "" : "disabled";
-    $appName = $this->getAppName();
-    $logoutURL = $this->getLogoutURL();
-    $callbackURL = $this->getCallBackUrl();
-	$jwksURL = $this ->getJwksUrl();
-    $x509Certificate = $this->getX509Cert();
-	$disabled = !$isEnabled ? "disabled" : "";
-	$testUrl = $this->getTestUrl();
-	$premiumlink = $this->getExtensionPageUrl('upgrade');
-	$isJwksUrl = empty($jwksURL) ? "" : "checked";
- 	$isCertificate = empty($x509Certificate) ? "" : "checked";
-	$grantType= $this->getGrantType();
+// Initialize all values
+$isEnabled = $block->isEnabled() ? "" : "disabled";
+$appName = $block->getAppName();
+$logoutURL = $block->getLogoutURL();
+$callbackURL = $block->getCallBackUrl();
+$jwksURL = $block->getJwksUrl();
+$x509Certificate = $block->getX509Cert();
+$disabled = !$isEnabled ? "disabled" : "";
+$testUrl = $block->getTestUrl();
+$premiumlink = $block->getExtensionPageUrl('upgrade');
+$isJwksUrl = empty($jwksURL) ? "" : "checked";
+$isCertificate = empty($x509Certificate) ? "" : "checked";
+$grantType = $block->getGrantType();
 
-    //fetching values from 'miniorange_oauth_client_apps' table in $clientDetails array
-	if(isset($appName)){
-	$collection = $this->getAllIdpConfiguration();
-		$clientDetails=null;
-		foreach($collection as $item){
-			if($item->getData()["app_name"]===$appName){
-			$clientDetails=$item->getData();
-		}
-	}
+// Fetching values from 'miniorange_oauth_client_apps' table
+if (isset($appName)) {
+    $collection = $block->getAllIdpConfiguration();
+    $clientDetails = null;
+    foreach ($collection as $item) {
+        if ($item->getData()["app_name"] === $appName) {
+            $clientDetails = $item->getData();
+        }
+    }
 }
-	$isOAuthConfigured = isset($clientDetails['authorize_endpoint']) ? '' :'disabled title="Please Configure an OAuth Provider"';
-	$clientID = isset($clientDetails['clientID']) ? $clientDetails['clientID'] : '';
-	$clientSecret =isset($clientDetails['client_secret']) ? $clientDetails['client_secret'] : '';
-	$isHeader =isset($clientDetails['values_in_header']) && $clientDetails['values_in_header']==1 ? "checked" : "";
-	$isBody =isset($clientDetails['values_in_body']) && $clientDetails['values_in_body']==1 ? "checked" : "";
-	$authorizeURL = isset($clientDetails['authorize_endpoint']) ? $clientDetails['authorize_endpoint'] : '';
-	$accessTokenURL =isset($clientDetails['access_token_endpoint']) ? $clientDetails['access_token_endpoint'] : '';
-	$getUserInfoURL =isset($clientDetails['user_info_endpoint']) ? $clientDetails['user_info_endpoint'] : '';
-	$endpoint_url =isset($clientDetails['well_known_config_url']) ? $clientDetails['well_known_config_url'] : '';
-	$scope=isset($clientDetails['scope']) ? $clientDetails['scope'] : '';
+
+$isOAuthConfigured = isset($clientDetails['authorize_endpoint'])
+    ? ''
+    : 'disabled title="Please Configure an OAuth Provider"';
+$clientID = isset($clientDetails['clientID']) ? $clientDetails['clientID'] : '';
+$clientSecret = isset($clientDetails['client_secret']) ? $clientDetails['client_secret'] : '';
+$isHeader = isset($clientDetails['values_in_header']) && $clientDetails['values_in_header'] == 1 ? "checked" : "";
+$isBody = isset($clientDetails['values_in_body']) && $clientDetails['values_in_body'] == 1 ? "checked" : "";
+$authorizeURL = isset($clientDetails['authorize_endpoint']) ? $clientDetails['authorize_endpoint'] : '';
+$accessTokenURL = isset($clientDetails['access_token_endpoint']) ? $clientDetails['access_token_endpoint'] : '';
+$getUserInfoURL = isset($clientDetails['user_info_endpoint']) ? $clientDetails['user_info_endpoint'] : '';
+$endpoint_url = isset($clientDetails['well_known_config_url']) ? $clientDetails['well_known_config_url'] : '';
+$scope = isset($clientDetails['scope']) ? $clientDetails['scope'] : '';
 ?>
-	<script>
-		var testURL = "<?php  echo $block->escapeJs($testUrl); ?>";
-	</script>
+
+<script>
+    var testURL = "<?= $escaper->escapeJs($testUrl) ?>";
+</script>
 
 <div class="row">
-<div class="col-sm-7 page_margin">
-	<div class="page" id="oauthprovider">
-		<div class="mosp_table_layout">
-			<form name="f" method="post" action="">
-			<input type="hidden" name="form_key" value="<?= $block->escapeHtmlAttr($block->getFormKey()) ?>" />
-				<input type="hidden" <?php ; ?> name="option" value="saveOAuthSettings" />
-				<h3>CONFIGURE OAUTH</h3>
-				<hr>
-				<table style="width:100%;">
+    <div class="col-sm-7 page_margin">
+        <div class="page" id="oauthprovider">
+            <div class="mosp_table_layout">
+                <h3>CONFIGURE OAUTH</h3>
+                <hr>
+                <p style="font-style: italic; color: #666; margin-top: 10px;">
+                    Configure your OAuth/OIDC provider settings for Single Sign-On authentication.
+                </p>
+                <div style="background-color: #fff3cd; color: #856404; padding: 10px;
+                            margin-top: 10px; border: 1px solid #ffeeba; border-radius: 4px;">
+                    <strong>Note:</strong> Configuration changes are cached.
+                    Please click 'Save' to apply changes and flush the cache.
+                </div>
+            </div>
 
-					<tr>
-						<td style="width:200px;"><strong>OAuth Provider Name<span style="color:red;">*</span>:</strong></td>
-						<td><input type="text" <?php ; ?> name="mo_oauth_app_name"
-								style="width: 100%;" value="<?php  echo $block->escapeHtmlAttr($appName); ?>" required
-								pattern="^\w*$" title="Only alphabets, numbers and underscore is allowed"/></td>
-					</tr>
-					<tr>
-						<td><strong>Client ID <span style="color:red;">*</span>:</strong></td>
-						<td><input type="text" <?php ; ?> name="mo_oauth_client_id" style="width: 100%;"
-							value="<?php echo $block->escapeHtmlAttr($clientID); ?>" required /></td>
-					</tr>
-					<tr>
-						<td><strong>Client Secret <span style="color:red;">*</span>:</strong></td>
-						<td><input type="text" <?php ; ?> name="mo_oauth_client_secret" style="width: 100%;"
-							value="<?php echo $block->escapeHtmlAttr($clientSecret); ?>" required /></td>
-					</tr>
-					<tr>
-						<td><strong>Scope <span style="color:red;">*</span>:</strong></td>
-						<td><input type="text"<?php ; ?> name="mo_oauth_scope" style="width: 100%;"
-							value="<?php echo $block->escapeHtmlAttr($scope) ; ?>" required /></td>
-					</tr>
-					
-					<input type="hidden" value="<?php echo $block->escapeHtmlAttr($grantType); ?>" name="mo_selected_grant" id="mo_selected_grant" />
-					<tr>
-					<td><strong>Send Client Credentials in:</strong> </td>
-					<td><input type="checkbox" <?php ; ?> name="send_header" value="Yes" <?php echo $block->escapeHtmlAttr($isHeader); ?> />Headers
-					&nbsp;&nbsp;&nbsp;<input type="checkbox" name="send_body" value="Yes" <?php echo $block->escapeHtmlAttr($isBody); ?>/>Body
-					</td>
-					</tr>
-                    <tr >
-                        <td ><strong>OAuth Endpoints <span style="color:red;">*</span> :</strong></td>
-                        <td >
-                            <label style="margin-left: 1px"> <input type="radio" <?php ; ?> id="chk_url" name="endpoint_radio_button" value="byurl" onclick="ShowHideDiv()" required> Well-Known Config URL </label>
-                            <label style="margin-left: 60px"><input type="radio" <?php ; ?> id="chk_manual" name="endpoint_radio_button" value="bymanual" <?php if($authorizeURL || $accessTokenURL || $getUserInfoURL){ echo 'checked="checked"';}?> onclick="ShowHideDiv()" required >    Enter Endpoints </label>
+            <!-- OAuth Settings Form -->
+            <form name="f" method="post" action="">
+                <input type="hidden" name="form_key" value="<?= $escaper->escapeHtmlAttr($block->getFormKey()) ?>">
+                <input type="hidden" name="option" value="saveOAuthSettings">
 
+                <table style="width:100%;">
+                    <!-- OAuth Provider Name -->
+                    <tr>
+                        <td style="width:200px;">
+                            <label><strong>OAuth Provider Name<span style="color:red;">*</span>:</strong></label>
+                        </td>
+                        <td>
+                            <input type="text"
+                                   name="mo_oauth_app_name"
+                                   style="width: 100%;"
+                                   value="<?= $escaper->escapeHtmlAttr($appName) ?>"
+                                   required
+                                   pattern="^\w*$"
+                                   title="Only alphabets, numbers and underscore is allowed">
+                        </td>
+                    </tr>
+
+                    <!-- Client ID -->
+                    <tr>
+                        <td>
+                            <label><strong>Client ID<span style="color:red;">*</span>:</strong></label>
+                        </td>
+                        <td>
+                            <input type="text"
+                                   name="mo_oauth_client_id"
+                                   style="width: 100%;"
+                                   value="<?= $escaper->escapeHtmlAttr($clientID) ?>"
+                                   required>
+                        </td>
+                    </tr>
+
+                    <!-- Client Secret -->
+                    <tr>
+                        <td>
+                            <label><strong>Client Secret<span style="color:red;">*</span>:</strong></label>
+                        </td>
+                        <td>
+                            <input type="password"
+                                   name="mo_oauth_client_secret"
+                                   style="width: 100%;"
+                                   value="<?= $escaper->escapeHtmlAttr($clientSecret) ?>"
+                                   required>
+                        </td>
+                    </tr>
+
+                    <!-- Scope -->
+                    <tr>
+                        <td>
+                            <label><strong>Scope<span style="color:red;">*</span>:</strong></label>
+                        </td>
+                        <td>
+                            <input type="text"
+                                   name="mo_oauth_scope"
+                                   style="width: 100%;"
+                                   value="<?= $escaper->escapeHtmlAttr($scope) ?>"
+                                   required>
+                        </td>
+                    </tr>
+
+                    <input type="hidden"
+                           value="<?= $escaper->escapeHtmlAttr($grantType) ?>"
+                           name="mo_selected_grant"
+                           id="mo_selected_grant">
+
+                    <!-- Send Client Credentials -->
+                    <tr>
+                        <td>
+                            <label><strong>Send Client Credentials in:</strong></label>
+                        </td>
+                        <td>
+                            <input type="checkbox"
+                                   name="send_header"
+                                   value="Yes"
+                                   <?= $escaper->escapeHtmlAttr($isHeader) ?>> Headers
+                            &nbsp;&nbsp;&nbsp;
+                            <input type="checkbox"
+                                   name="send_body"
+                                   value="Yes"
+                                   <?= $escaper->escapeHtmlAttr($isBody) ?>> Body
+                        </td>
+                    </tr>
+
+                    <!-- OAuth Endpoints -->
+                    <tr>
+                        <td>
+                            <label><strong>OAuth Endpoints<span style="color:red;">*</span>:</strong></label>
+                        </td>
+                        <td>
+                            <label style="margin-left: 1px">
+                                <input type="radio"
+                                       id="chk_url"
+                                       name="endpoint_radio_button"
+                                       value="byurl"
+                                       onclick="ShowHideDiv()"
+                                       required> Well-Known Config URL
+                            </label>
+                            <label style="margin-left: 60px">
+                                <input type="radio"
+                                       id="chk_manual"
+                                       name="endpoint_radio_button"
+                                       value="bymanual"
+                                       <?php if ($authorizeURL || $accessTokenURL || $getUserInfoURL) {
+                                            echo 'checked="checked"';
+                                       } ?>
+                                       onclick="ShowHideDiv()"
+                                       required> Enter Endpoints
+                            </label>
                         </td>
                     </tr>
                 </table>
 
-                <div style="display : none; padding: 8px 0px 10px 0px;" id="endpoint_url">
-
-                    <label style="margin-left: 10px ;"> <strong>Well-Known Config URL<span style="color:red;">*</span>:</strong></label>
-                    <input  type="url" name="endpoint_url" style="width: 59% ;padding: 8px;margin-left: 23px;border-color: #eee ;box-shadow: 3px 2px 4px #ebebeb; border: 1px solid #B7B5B5" id="endpoint_url" value="<?php echo $block->escapeHtmlAttr($endpoint_url) ; ?> "  >
+                <!-- Well-Known Config URL Section -->
+                <div style="display: none; padding: 8px 0px 10px 0px;" id="endpoint_url">
+                    <label style="margin-left: 10px;">
+                        <strong>Well-Known Config URL<span style="color:red;">*</span>:</strong>
+                    </label>
+                    <input type="url"
+                           name="endpoint_url"
+                           style="width: 59%; padding: 8px; margin-left: 23px;
+                                  border: 1px solid #B7B5B5; box-shadow: 3px 2px 4px #ebebeb;"
+                           id="endpoint_url_input"
+                           value="<?= $escaper->escapeHtmlAttr($endpoint_url) ?>">
                 </div>
 
+                <!-- Manual Endpoints Section -->
+                <div style="<?php if ($authorizeURL || $accessTokenURL || $getUserInfoURL) { echo 'display: block';
+                            } else { echo 'display: none'; } ?>;" id="mo_oauth_authorize_url">
+                    <!-- Authorization Endpoint -->
+                    <div style="padding: 8px 0px 5px 10px;">
+                        <label><strong>Authorization Endpoint<span style="color:red;">*</span>:</strong></label>
+                        <input type="url"
+                               name="mo_oauth_authorize_url"
+                               style="width: 59%; padding: 8px; margin-left: 22px;
+                                      border: 1px solid #B7B5B5; box-shadow: 3px 2px 4px #ebebeb;"
+                               value="<?= $escaper->escapeHtmlAttr($authorizeURL) ?>">
+                    </div>
+                    <br>
 
-                <div style="<?php if($authorizeURL || $accessTokenURL || $getUserInfoURL){echo 'display : block';}else{ echo 'display : none';}?>;" id="mo_oauth_authorize_url" >
-                    <div style="padding: 8px 0px 5px 10px">
-                        <label ><strong>Authorization Endpoint<span style="color:red;">*</span>:</strong></label>
-                        <input type="url" <?php ; ?> name="mo_oauth_authorize_url"  style="width: 59% ;padding: 8px;margin-left: 22px; border-color: #eee ;box-shadow: 3px 2px 4px #ebebeb; border: 1px solid #B7B5B5" value="<?php echo $block->escapeHtmlAttr($authorizeURL); ?> " >
-                    </div><br>
-                    <div style="padding: 0px 0px 5px 10px">
-                        <label ><strong>AccessToken Endpoint<span style="color:red;">*</span>:</strong></label>
-                        <input type="url" <?php ; ?> name="mo_oauth_accesstoken_url" style="width: 59%;padding: 8px;margin-left: 31px; border-color: #eee ;box-shadow: 3px 2px 4px #ebebeb; border: 1px solid #B7B5B5" value="<?php echo $block->escapeHtmlAttr($accessTokenURL) ; ?> "  >
-                    </div><br>
-                    <div style="padding: 0px 0px 0px 10px">
-                        <label ><strong>Get User Info Endpoint : </strong></label>
-                        <input type="url" <?php ; ?> name="mo_oauth_getuserinfo_url" style="width: 59%;padding: 8px;margin-left: 33px; border-color: #eee ;box-shadow: 3px 2px 4px #ebebeb; border: 1px solid #B7B5B5" value="<?php echo $block->escapeHtmlAttr($getUserInfoURL) ; ?> " >
-                    </div><br>
-                </div>			
-                
+                    <!-- Access Token Endpoint -->
+                    <div style="padding: 0px 0px 5px 10px;">
+                        <label><strong>AccessToken Endpoint<span style="color:red;">*</span>:</strong></label>
+                        <input type="url"
+                               name="mo_oauth_accesstoken_url"
+                               style="width: 59%; padding: 8px; margin-left: 31px;
+                                      border: 1px solid #B7B5B5; box-shadow: 3px 2px 4px #ebebeb;"
+                               value="<?= $escaper->escapeHtmlAttr($accessTokenURL) ?>">
+                    </div>
+                    <br>
 
-					
-					<div style="padding:10px 0px 5px 0px;margin-left: 10px ;">
-						<strong>Grant Type:</strong>
-						
-							
-							<select name="mo_oauth_grant_type" <?php ; ?> id="mo_oauth_grant_type"  style="width: 59%;padding: 6px;margin-left: 31mm">
-								<option  value="authorization_code" <?php if($grantType=='authorization_code'){echo 'selected';}?>>Authorization Code Grant</option>
-								<option  value="implicit_grant" disabled <?php if($grantType=='implicit_grant'){echo 'selected';}?>>Implicit Grant (maybe comming later)</option>
-								<option  value="hybrid_grant" disabled <?php if($grantType=='hybrid_grant'){echo 'selected';}?>>Hybrid Grant (maybe comming later)</option>
-								<option  value="password_grant" disabled <?php if($grantType=='password_grant'){echo 'selected';}?>>Password Grant(maybe comming later)</option>
-								<option  value="client_credentials_grant" disabled <?php if($grantType=='client_credentials_grant'){ echo 'selected';} ?>> Client Credentials Grant (maybe comming later)</option>
-							</select>
+                    <!-- User Info Endpoint -->
+                    <div style="padding: 0px 0px 0px 10px;">
+                        <label><strong>Get User Info Endpoint:</strong></label>
+                        <input type="url"
+                               name="mo_oauth_getuserinfo_url"
+                               style="width: 59%; padding: 8px; margin-left: 33px;
+                                      border: 1px solid #B7B5B5; box-shadow: 3px 2px 4px #ebebeb;"
+                               value="<?= $escaper->escapeHtmlAttr($getUserInfoURL) ?>">
+                    </div>
+                    <br>
+                </div>
+
+                <!-- Grant Type -->
+                <div style="padding: 10px 0px 5px 0px; margin-left: 10px;">
+                    <label><strong>Grant Type:</strong></label>
+                    <select name="mo_oauth_grant_type"
+                            id="mo_oauth_grant_type"
+                            style="width: 59%; padding: 6px; margin-left: 31mm;">
+                        <option value="authorization_code"
+                            <?php if ($grantType == 'authorization_code') {
+                                echo 'selected';
+                            } ?>>
+                            Authorization Code Grant
+                        </option>
+                        <option value="implicit_grant" disabled
+                            <?php if ($grantType == 'implicit_grant') {
+                                echo 'selected';
+                            } ?>>
+                            Implicit Grant (maybe comming later)
+                        </option>
+                        <option value="hybrid_grant" disabled
+                            <?php if ($grantType == 'hybrid_grant') {
+                                echo 'selected';
+                            } ?>>
+                            Hybrid Grant (maybe comming later)
+                        </option>
+                        <option value="password_grant" disabled
+                            <?php if ($grantType == 'password_grant') {
+                                echo 'selected';
+                            } ?>>
+                            Password Grant(maybe comming later)
+                        </option>
+                        <option value="client_credentials_grant" disabled
+                            <?php if ($grantType == 'client_credentials_grant') {
+                                echo 'selected';
+                            } ?>>
+                            Client Credentials Grant (maybe comming later)
+                        </option>
+                    </select>
+                </div>
+
+                <!-- Save and Test Buttons -->
+                <div style="margin-left: 210px;">
+                    <br>
+                    <input class="btn-round"
+                           type="submit"
+                           name="submit"
+                           style="width: 100px;"
+                           value="Save">
+                    &nbsp;
+                    <input class="btn-round"
+                           type="button"
+                           name="test"
+                           title="You can only test your Configuration after saving your Service Provider Settings."
+                           onclick="showTestWindow();"
+                           <?= $escaper->escapeHtmlAttr($isOAuthConfigured) ?>
+                           value="Test configuration"
+                           style="width: 150px;">
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
-															<!-- OPENID FLOW -->
-					<div style="padding:10px 0px 5px 0px;margin-left: 10px ;">
-						
-</div>
 
-                	<script>
-    				 function radio_click()
-    				 {
-    				 	var cert = document.getElementsByName('cert');
-              			for(i = 0; i < cert.length; i++) {
-			                if(cert[i].checked){
-			                	if(cert[i].value=="jwks_url"){
-			                		document.getElementsByClassName('upload_cert')[0].style.display = 'none';
-			                		document.getElementsByClassName('jwks_url')[0].style.display = 'block';
-			                	}
-			                	else{
-			                		document.getElementsByClassName('jwks_url')[0].style.display = 'none';
-			                		document.getElementsByClassName('upload_cert')[0].style.display = 'block';
-			                	}
-			                }
-			            }
-    				 }
-			        </script>
-					
-					<div style="margin-left:210px">
-						<br /><input class="btn-round" type="submit" <?php ; ?> name="submit" style="width:100px;" value="Save" class="button button-primary button-large"
-							/> &nbsp;
-							<input class="btn-round" type="button" name="test"<?php ; ?> title="You can only test your Configuration after saving your Service Provider Settings."
-								onclick="showTestWindow();" <?php echo $block->escapeHtmlAttr($isOAuthConfigured) ; ?> value="Test configuration" style="width:150px"/>						
-					</div>				
-			</form>
-		</div>
+<script>
+function ShowHideDiv() {
+    var chk_url = document.getElementById("chk_url");
+    var endpoint_url = document.getElementById("endpoint_url");
+    endpoint_url.style.display = chk_url.checked ? "block" : "none";
 
-    <script type="text/javascript">
-        function ShowHideDiv() {
-            var chk_url = document.getElementById("chk_url");
+    var chk_manual = document.getElementById("chk_manual");
+    var mo_oauth_authorize_url = document.getElementById("mo_oauth_authorize_url");
+    mo_oauth_authorize_url.style.display = chk_manual.checked ? "block" : "none";
+}
 
-            var endpoint_url = document.getElementById("endpoint_url");
-            endpoint_url.style.display = chk_url.checked ? "block" : "none";
-
-
-            var chk_manual = document.getElementById("chk_manual");
-
-
-            var mo_oauth_authorize_url= document.getElementById("mo_oauth_authorize_url");
-            mo_oauth_authorize_url.style.display = chk_manual.checked ? "block" : "none";
-
-
+function radio_click() {
+    var cert = document.getElementsByName('cert');
+    for (var i = 0; i < cert.length; i++) {
+        if (cert[i].checked) {
+            if (cert[i].value == "jwks_url") {
+                document.getElementsByClassName('upload_cert')[0].style.display = 'none';
+                document.getElementsByClassName('jwks_url')[0].style.display = 'block';
+            } else {
+                document.getElementsByClassName('jwks_url')[0].style.display = 'none';
+                document.getElementsByClassName('upload_cert')[0].style.display = 'block';
+            }
         }
-    </script>
-
-
+    }
+}
+</script>

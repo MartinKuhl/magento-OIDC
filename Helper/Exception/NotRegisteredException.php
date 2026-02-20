@@ -9,6 +9,9 @@ use MiniOrange\OAuth\Helper\OAuthMessages;
  */
 class NotRegisteredException extends \Exception
 {
+    /**
+     * Exception thrown when a user is not registered.
+     */
     public function __construct()
     {
         $message     = OAuthMessages::parse('NOT_REG_ERROR');
@@ -16,7 +19,11 @@ class NotRegisteredException extends \Exception
         parent::__construct($message, $code, null);
     }
 
-    public function __toString()
+    /**
+     * String representation of the exception.
+     */
+    #[\Override]
+    public function __toString(): string
     {
         return __CLASS__ . ": [{$this->code}]: {$this->message}\n";
     }

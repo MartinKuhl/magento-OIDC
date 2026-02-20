@@ -9,6 +9,9 @@ use MiniOrange\OAuth\Helper\OAuthMessages;
  */
 class IncorrectUserInfoDataException extends \Exception
 {
+    /**
+     * Exception thrown when user info data from the OIDC provider is incorrect.
+     */
     public function __construct()
     {
         $message     = OAuthMessages::parse('INVALID_USER_INFO');
@@ -16,7 +19,11 @@ class IncorrectUserInfoDataException extends \Exception
         parent::__construct($message, $code, null);
     }
 
-    public function __toString()
+    /**
+     * String representation of the exception.
+     */
+    #[\Override]
+    public function __toString(): string
     {
         return __CLASS__ . ": [{$this->code}]: {$this->message}\n";
     }

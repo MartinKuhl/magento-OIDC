@@ -16,18 +16,24 @@ use MiniOrange\OAuth\Helper\OAuthConstants;
  */
 class AccessTokenRequestBody
 {
-    private $clientID;
-    private $clientSecret;
-    private $grantType;
+    /**
+     * @var string
+     */
     private $redirectURL;
+
+    /**
+     * @var string
+     */
     private $code;
 
-    public function __construct($grantType, $redirectURL, $code)
+    /**
+     * Initialize access token request body.
+     *
+     * @param string $redirectURL
+     * @param string $code
+     */
+    public function __construct($redirectURL, $code)
     {
-        // all values required in the authn request are set here
-        // $this->clientID = $clientID;
-        // $this->clientSecret = $clientSecret;
-        $this->grantType = $grantType;
         $this->redirectURL = $redirectURL;
         $this->code = $code;
     }
@@ -36,25 +42,24 @@ class AccessTokenRequestBody
      *
      *
      */
-    private function generateRequest()
+    /**
+     * Build the request body as an associative array.
+     */
+    private function generateRequest(): array
     {
-       
-        $accessTokenRequestPostData =  [
-            'redirect_uri'     => $this->redirectURL,
-            'grant_type'  => OAuthConstants::GRANT_TYPE,
-            'code'  => $this->code
+
+        return [
+            'redirect_uri' => $this->redirectURL,
+            'grant_type' => OAuthConstants::GRANT_TYPE,
+            'code' => $this->code
         ];
-
-        return $accessTokenRequestPostData;
     }
-
 
     /**
      * This function is used to build our AccessToken request
      */
-    public function build()
+    public function build(): array
     {
-        $accessTokenRequestPostData = $this->generateRequest();
-        return $accessTokenRequestPostData;
+        return $this->generateRequest();
     }
 }

@@ -1,17 +1,211 @@
 <?php
-echo '
-    <div class="sso-divider">
-        <svg class="sso-line" height="5" width="215">
-            <line x1="0" y1="0" x2="210" y2="0"></line>
-        </svg>
-        <span class="sso-or-text">OR</span>
-        <svg class="sso-line" height="5" width="210">
-            <line x1="0" y1="0" x2="210" y2="0"></line>
-        </svg>
-    </div>
-    <div class="sso-button-container">
-       <a href="'. $block->escapeUrl($block->getSPInitiatedUrl(null, $block->getAppName())) .'" class="sso-button">
-    <span>' .$block->escapeHtml($block->getSSOButtonText()) .'</span>
-        </a>
-    </div>';
+/** @var \MiniOrange\OAuth\Block\OAuth $block */
+/** @var \Magento\Framework\Escaper $escaper */
+/** @var \MiniOrange\OAuth\ViewModel\OidcLoginVisibility $oidcVisibility */
+$oidcVisibility = $block->getData('oidc_visibility');
 ?>
+<?php if ($oidcVisibility && $oidcVisibility->isCustomerButtonVisible()): ?>
+
+    <?php if ($block->hasOidcError()): ?>
+    <div style="
+        width: 470px;
+        margin: 10px 0 15px 0;
+        background: #fff0f0;
+        border: 2px solid #e22626;
+        border-radius: 5px;
+        padding: 12px;
+        box-sizing: border-box;
+    ">
+        <div style="display: flex; align-items: flex-start; gap: 10px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
+                style="flex-shrink: 0; margin-top: 2px;">
+                <circle cx="12" cy="12" r="10" stroke="#e22626" stroke-width="2" fill="none" />
+                <path d="M12 8V12M12 16H12.01" stroke="#e22626" stroke-width="2" stroke-linecap="round" />
+            </svg>
+            <div style="flex: 1;">
+                <strong style="color: #e22626; font-size: 13px; display: block; margin-bottom: 6px;">
+                    <?= $escaper->escapeHtml(__('OIDC-Login failed')) ?>
+                </strong>
+                <p style="margin: 0; color: #333; font-size: 12px; line-height: 1.4;">
+                    <?= $escaper->escapeHtml($block->getOidcErrorMessage()) ?>
+                </p>
+            </div>
+        </div>
+    </div>
+<?php endif; ?>
+
+<div class="sso-divider">
+    <svg class="sso-line" height="5" width="215">
+        <line x1="0" y1="0" x2="210" y2="0"></line>
+    </svg>
+    <span class="sso-or-text">OR</span>
+    <svg class="sso-line" height="5" width="215">
+        <line x1="0" y1="0" x2="210" y2="0"></line>
+    </svg>
+</div>
+<div class="sso-button-container">
+    <a class="sso-button" href="<?= $escaper->escapeUrl($block->getSPInitiatedUrl(null, $block->getAppName())) ?>">
+        <?= $escaper->escapeHtml($block->getSSOButtonText()) ?>
+    </a>
+</div>
+
+<?php endif; ?>
+
+<?php if ($oidcVisibility && $oidcVisibility->isNonOidcCustomerLoginDisabled()): ?>
+<!-- Hide password fields and demo content when OIDC-only mode enabled -->
+<style>
+    /* Hide form login elements */
+    form.form-login,
+    fieldset.login,
+    fieldset.fieldset.login {
+        display: none !important;
+    }
+
+    /* Hide OR divider */
+    .sso-divider {
+        display: none !important;
+    }
+
+    /* Hide demo box by background color (beige/yellow) */
+    .block-customer-login .box,
+    .login-container .box,
+    div[style*="background"],
+    div[style*="rgb(255, 248, 220)"],
+    div[style*="#fff8dc"] {
+        display: none !important;
+    }
+
+    /* Hide New Customers section */
+    .block-new-customer {
+        display: none !important;
+    }
+
+    /* Hide demo box - it's in block-static-block! */
+    .login-container .block-static-block,
+    .login-container .widget.block,
+    .login-container .message.info {
+        display: none !important;
+    }
+
+    /* Reduce spacing and remove white space */
+    .login-container {
+        margin-bottom: 0 !important;
+        padding-bottom: 0 !important;
+    }
+
+    .block-customer-login,
+    .block-new-customer {
+        margin-bottom: 0 !important;
+        padding-bottom: 0 !important;
+    }
+
+    .block-customer-login .block-content,
+    .login-container .block-content {
+        min-height: auto !important;
+        padding-top: 0 !important;
+        padding-bottom: 20px !important;
+        margin-bottom: 0 !important;
+    }
+
+    /* Tighten up the page layout when OIDC-only */
+    .login-container::after,
+    .block-customer-login::after,
+    .block-new-customer::after {
+        display: none !important;
+    }
+
+    /* Fix SSO button positioning */
+    .sso-button-container {
+        width: 100% !important;
+        max-width: 470px !important;
+        margin: 0 !important;
+        float: none !important;
+        clear: both !important;
+    }
+</style>
+
+<script>
+(function() {
+    'use strict';
+
+    // Hide password login fields when OIDC-only mode enabled
+    function hidePasswordFields() {
+        // Get the login block container
+        var loginBlock = document.querySelector('.block-customer-login')
+            || document.querySelector('.login-container')
+            || document.querySelector('body');
+
+        if (!loginBlock) {
+            return;
+        }
+
+        // Hide form elements
+        var loginForm = loginBlock.querySelector('form.form-login');
+        if (loginForm) {
+            loginForm.style.display = 'none';
+        }
+
+        var fieldsets = loginBlock.querySelectorAll(
+            'fieldset.login, fieldset.fieldset.login'
+        );
+        fieldsets.forEach(function(fieldset) {
+            fieldset.style.display = 'none';
+        });
+
+        // AGGRESSIVE: Hide demo box and any parent containers
+        var allElements = loginBlock.querySelectorAll('*');
+        allElements.forEach(function(el) {
+            var text = (el.textContent || '').trim();
+
+            // Hide demo customer access box - check first 100 chars
+            var shortText = text.substring(0, 100);
+            if (shortText.includes('Try Demo') ||
+                shortText.includes('Demo Customer')) {
+
+                // Hide element and its parent
+                el.style.display = 'none';
+                if (el.parentElement) {
+                    el.parentElement.style.display = 'none';
+                }
+
+                // Also hide grandparent if it exists
+                if (el.parentElement && el.parentElement.parentElement) {
+                    var grandparent = el.parentElement.parentElement;
+                    // Only hide if it's not the whole login block
+                    if (!grandparent.classList.contains('block-customer-login')) {
+                        grandparent.style.display = 'none';
+                    }
+                }
+            }
+
+            // Hide OR divider
+            if (text === 'OR' || text === 'or') {
+                el.style.display = 'none';
+                if (el.previousElementSibling) {
+                    el.previousElementSibling.style.display = 'none';
+                }
+                if (el.nextElementSibling) {
+                    el.nextElementSibling.style.display = 'none';
+                }
+            }
+        });
+
+        // Update header text
+        var headerText = loginBlock.querySelector('.block-title strong');
+        if (headerText) {
+            headerText.textContent = 'Please sign in with OIDC';
+        }
+    }
+
+    // Run when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener(
+            'DOMContentLoaded',
+            hidePasswordFields
+        );
+    } else {
+        hidePasswordFields();
+    }
+})();
+</script>
+<?php endif; ?>

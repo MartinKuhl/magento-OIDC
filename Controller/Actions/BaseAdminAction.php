@@ -2,8 +2,6 @@
 
 namespace MiniOrange\OAuth\Controller\Actions;
 
-use MiniOrange\OAuth\Helper\OAuthConstants;
-use MiniOrange\OAuth\Helper\Exception\NotRegisteredException;
 use MiniOrange\OAuth\Helper\Exception\RequiredFieldsException;
 use MiniOrange\OAuth\Helper\Exception\SupportQueryRequiredFieldsException;
 
@@ -21,12 +19,39 @@ use MiniOrange\OAuth\Helper\Exception\SupportQueryRequiredFieldsException;
 abstract class BaseAdminAction extends \Magento\Backend\App\Action
 {
 
-    protected $oauthUtility;
-    protected $context;
-    protected $resultPageFactory;
-    protected $messageManager;
-    protected $logger;
+    /** @var \MiniOrange\OAuth\Helper\OAuthUtility */
+    protected \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
 
+    /**
+     * @var \Magento\Backend\App\Action\Context
+     */
+    protected $context;
+
+    /** @var \Magento\Framework\View\Result\PageFactory */
+    protected \Magento\Framework\View\Result\PageFactory $resultPageFactory;
+
+    /**
+     * @var \Magento\Framework\Message\ManagerInterface
+     */
+    protected $messageManager;
+
+    /** @var \Psr\Log\LoggerInterface */
+    protected \Psr\Log\LoggerInterface $logger;
+
+    /**
+     * @var \Magento\Framework\AuthorizationInterface
+     */
+    protected $_authorization;
+
+    /**
+     * Initialize base admin action.
+     *
+     * @param \Magento\Backend\App\Action\Context             $context
+     * @param \Magento\Framework\View\Result\PageFactory      $resultPageFactory
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility           $oauthUtility
+     * @param \Magento\Framework\Message\ManagerInterface     $messageManager
+     * @param \Psr\Log\LoggerInterface                        $logger
+     */
     public function __construct(
         \Magento\Backend\App\Action\Context $context,
         \Magento\Framework\View\Result\PageFactory $resultPageFactory,
@@ -42,83 +67,63 @@ abstract class BaseAdminAction extends \Magento\Backend\App\Action
         parent::__construct($context);
     }
 
-
     /**
-     * Check if form is being saved in the backend other just
-     * show the page. Checks if the request parameter has
-     * an option key. All our forms need to have a hidden option
-     * key.
+     * Determine whether the incoming request is attempting to save a form option.
      *
-     * @param params
+     * Checks for the presence of an `option` key in the request data.
+     *
+     * @param  array $params Request parameters
      * @return bool
      */
-    protected function isFormOptionBeingSaved($params)
+    protected function isFormOptionBeingSaved(array $params)
     {
         return isset($params['option']);
     }
 
     /**
-     * This function checks if the required fields passed to
-     * this function are empty or not. If empty throw an exception.
+     * Validate that required fields are present and not blank.
      *
-     * @param $array
+     * Expects an associative array where keys map to values or an array of
+     * required keys paired with the source array. Throws {@see RequiredFieldsException}
+     * when a required value is missing or blank.
+     *
+     * @param array $array Required keys or legacy associative mapping
+     *
      * @throws RequiredFieldsException
+     *
+     * @return void
      */
-    protected function checkIfRequiredFieldsEmpty($array)
+    protected function checkIfRequiredFieldsEmpty(array $array)
     {
-        
         foreach ($array as $key => $value) {
-            if ((is_array($value) && ( !isset($value[$key]) || $this->oauthUtility->isBlank($value[$key])) )
-                    || $this->oauthUtility->isBlank($value)
-              ) {
+            if ((is_array($value) && (!isset($value[$key]) || $this->oauthUtility->isBlank($value[$key])))
+                || $this->oauthUtility->isBlank($value)
+            ) {
                 throw new RequiredFieldsException();
             }
         }
-
-        
     }
 
-
     /**
-     * Check if support query forms are empty. If empty throw
-     * an exception. This is an extension of the requiredFields
-     * function.
+     * Validate support query specific fields and translate the exception type.
      *
-     * @param $array
+     * @param array $array Required fields mapping
+     *
      * @throws SupportQueryRequiredFieldsException
      */
-    public function checkIfSupportQueryFieldsEmpty($array)
+    public function checkIfSupportQueryFieldsEmpty(array $array): void
     {
-        
         try {
             $this->checkIfRequiredFieldsEmpty($array);
         } catch (RequiredFieldsException $e) {
+            $this->oauthUtility->customlog("ERROR: Required fields missing in admin context");
             throw new SupportQueryRequiredFieldsException();
         }
     }
-    
-    /** This function is abstract that needs to be implemented by each Action Class */
-    abstract public function execute();
-
-
-    /* ===================================================================================================
-                THE FUNCTIONS BELOW ARE FREE PLUGIN SPECIFIC AND DIFFER IN THE PREMIUM VERSION
-       ===================================================================================================
-     */
 
     /**
-     * This function checks if the user has registered himself
-     * and throws an Exception if not registered. Checks the
-     * if the admin key and api key are saved in the database.
-     *
-     * @throws NotRegisteredException
-     * @todo remove the comments
+     * This function is abstract that needs to be implemented by each Action Class
      */
-    protected function checkIfValidPlugin()
-    {
-        
-        if (!$this->oauthUtility->micr()) {
-            throw new NotRegisteredException;
-        }
-    }
+    #[\Override]
+    abstract public function execute();
 }

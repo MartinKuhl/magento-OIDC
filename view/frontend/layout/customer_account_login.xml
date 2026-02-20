@@ -1,12 +1,17 @@
 <?xml version="1.0"?>
 <page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-	  xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
     <body>
         <referenceContainer name="content">
             <block class="MiniOrange\OAuth\Block\OAuth" 
-                    name="miniorange.oauth.customer.link" 
-                    ifconfig="miniorange/oauth/showcustomerlink"
-                    template="customerssobutton.phtml" />
+                name="miniorange.oauth.customer.link" 
+                template="customerssobutton.phtml">
+                <arguments>
+                    <argument name="oidc_visibility" xsi:type="object">
+                        MiniOrange\OAuth\ViewModel\OidcLoginVisibility
+                    </argument>
+                </arguments>
+            </block>
         </referenceContainer>
     </body>
 </page>

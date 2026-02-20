@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<psalm
+    errorLevel="4"
+    phpVersion="8.3"
+    resolveFromConfigFile="true"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="https://getpsalm.org/schema/config"
+    xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
+    findUnusedBaselineEntry="false"
+    findUnusedCode="false"
+>
+    <projectFiles>
+        <directory name="Block" />
+        <directory name="Controller" />
+        <directory name="Helper" />
+        <directory name="Model" />
+        <directory name="Observer" />
+        <directory name="Plugin" />
+        <directory name="Logger" />
+        <!-- Magento-Core NICHT scannen -->
+        <ignoreFiles>
+            <directory name="../../vendor" />
+        </ignoreFiles>
+    </projectFiles>
+
+    <stubs>
+        <file name="psalm-stubs.stub" />
+    </stubs>
+
+    <issueHandlers>
+        <!-- Magento-Klassen werden via XML/DI referenziert, nicht direkt im Code -->
+        <UnusedClass errorLevel="suppress" />
+
+        <!-- Magento Factory-Klassen werden zur Laufzeit generiert -->
+        <UndefinedDocblockClass errorLevel="suppress" />
+
+        <!-- Magento Magic Methods (getId, setEmail, etc.) sind Framework-Level -->
+        <UndefinedMagicMethod errorLevel="suppress" />
+
+    </issueHandlers>
+</psalm>

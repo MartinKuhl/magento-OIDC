@@ -10,20 +10,57 @@ use MiniOrange\OAuth\Helper\Exception\MissingIssuerValueException;
 
 /**
  * This class is used to generate our AuthnRequest string.
- *
  */
 class AuthorizationRequest
 {
 
+    /**
+     * @var string
+     */
     private $clientID;
+
+    /**
+     * @var string
+     */
     private $scope;
+
+    /**
+     * @var string
+     */
     private $authorizeURL;
+
+    /**
+     * @var string
+     */
     private $responseType;
+
+    /**
+     * @var string
+     */
     private $redirectURL;
+
+    /**
+     * @var array
+     */
     private $params;
+
+    /**
+     * @var string
+     */
     private $state;
 
-    public function __construct($clientID, $scope, $authorizeURL, $responseType, $redirectURL, $relayState,$params)
+    /**
+     * Initialize authorization request parameters.
+     *
+     * @param string $clientID
+     * @param string $scope
+     * @param string $authorizeURL
+     * @param string $responseType
+     * @param string $redirectURL
+     * @param string $relayState
+     * @param array  $params
+     */
+    public function __construct($clientID, $scope, $authorizeURL, $responseType, $redirectURL, $relayState, $params)
     {
         $this->clientID = $clientID;
         $this->scope = $scope;
@@ -32,7 +69,6 @@ class AuthorizationRequest
         $this->responseType = $responseType;
         $this->redirectURL = $redirectURL;
         $this->params = $params;
-
     }
 
     /**
@@ -43,36 +79,38 @@ class AuthorizationRequest
      *
      * @todo - Have to convert this so that it's not a string value but an XML document
      */
-    private function generateRequest()
+    private function generateRequest(): string
     {
         $requestStr = "";
 
-        if (!(strpos($this->authorizeURL, '?') !== false)) {
+        if (strpos($this->authorizeURL, '?') === false) {
             $requestStr .= '?';
         }
 
         $requestStr .=
-            'client_id=' . $this->clientID .
+            'client_id=' . urlencode($this->clientID) .
             '&scope=' . urlencode($this->scope) .
             '&state=' . urlencode($this->state) .
             '&redirect_uri=' . urlencode($this->redirectURL) .
-            '&response_type=' . $this->responseType;
+            '&response_type=' . urlencode($this->responseType);
 
-            foreach($this->params as $key=>$value){
-                if($key != "relayState")
-                    $requestStr = $requestStr. "&$key=".$value;
-                }
+        // Only forward recognized OAuth parameters to the IdP, URL-encoded
+        $allowedExtraParams = ['nonce', 'prompt', 'login_hint', 'acr_values'];
+        foreach ($this->params as $key => $value) {
+            if (in_array($key, $allowedExtraParams, true)) {
+                $requestStr .= '&' . urlencode($key) . '=' . urlencode((string) $value);
+            }
+        }
 
         return $requestStr;
     }
-
 
     /**
      * This function is used to build our AuthnRequest. Deflate
      * and encode the AuthnRequest string if the sso binding
      * type is empty or is of type HTTPREDIRECT.
      */
-    public function build()
+    public function build(): string
     {
         return $this->generateRequest();
     }

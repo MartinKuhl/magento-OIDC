@@ -3,7 +3,8 @@
  * Kompakte Version der OIDC Error Message
  */
 static $displayed = false;
-if ($displayed) return;
+if ($displayed) { return;
+}
 $displayed = true;
 ?>
 
@@ -20,7 +21,9 @@ $displayed = true;
     ">
         <div style="display: flex; align-items: flex-start; gap: 10px;">
             <!-- Icon -->
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink: 0; margin-top: 2px;">
+            <svg width="20" height="20" viewBox="0 0 24 24"
+                fill="none" xmlns="http://www.w3.org/2000/svg"
+                style="flex-shrink: 0; margin-top: 2px;">
                 <circle cx="12" cy="12" r="10" stroke="#e22626" stroke-width="2" fill="none"/>
                 <path d="M12 8V12M12 16H12.01" stroke="#e22626" stroke-width="2" stroke-linecap="round"/>
             </svg>
@@ -28,10 +31,10 @@ $displayed = true;
             <!-- Content -->
             <div style="flex: 1;">
                 <strong style="color: #e22626; font-size: 13px; display: block; margin-bottom: 6px;">
-                    <?= $block->escapeHtml(__('OIDC-Authentifizierung fehlgeschlagen')) ?>
+                    <?= $escaper->escapeHtml(__('OIDC Authentication Failed')) ?>
                 </strong>
                 <p style="margin: 0; color: #333; font-size: 12px; line-height: 1.4;">
-                    <?= $block->escapeHtml($block->getOidcErrorMessage()) ?>
+                    <?= $escaper->escapeHtml($block->getOidcErrorMessage()) ?>
                 </p>
             </div>
         </div>

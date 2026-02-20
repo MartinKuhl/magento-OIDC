@@ -1,11 +1,16 @@
 <?php /**  * SSO Script for Hyvä Theme  */ ?>
-<script type="text/javascript">
+<?php
+/** @var \MiniOrange\OAuth\ViewModel\OidcLoginVisibility $oidcVisibility */
+$oidcVisibility = $block->getData('oidc_visibility');
+?>
+<?php if ($oidcVisibility && $oidcVisibility->isCustomerButtonVisible()): ?>
+<script>
     document.addEventListener('DOMContentLoaded', function() {
         'use strict';
 
         window.ssoData = {
-            ssoUrl: "<?= $this->escapeJsQuote($this->getSPInitiatedUrl(null, $this->getAppName())) ?>",
-            ssoButtonText: "<?= $this->escapeJsQuote($this->getSSOButtonText()) ?>"
+            ssoUrl: "<?= $escaper->escapeJsQuote($block->getSPInitiatedUrl(null, $block->getAppName())) ?>",
+            ssoButtonText: "<?= $escaper->escapeJsQuote($block->getSSOButtonText()) ?>"
         };
 
         document.addEventListener('click', function(e) {
@@ -37,3 +42,4 @@
         // };
     });
 </script>
+<?php endif; ?>

@@ -1,4 +1,4 @@
-require(['jquery', 'jquery/ui'], function($){
+require(['jquery'], function($){
     var $m = $.noConflict();
     $m(document).ready(function() {
 

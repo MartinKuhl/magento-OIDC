@@ -1,40 +1,119 @@
 <?php
 
+declare(strict_types=1);
+
 namespace MiniOrange\OAuth\Helper;
 
-use \Magento\Framework\App\Helper\AbstractHelper;
-use MiniOrange\OAuth\Helper\OAuthConstants;
+use Magento\Backend\Helper\Data as BackendHelper;
+use Magento\Customer\Model\CustomerFactory;
+use Magento\Customer\Model\ResourceModel\Customer as CustomerResource;
+use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Framework\App\Config\Storage\WriterInterface;
+use Magento\Framework\App\Helper\AbstractHelper;
+use Magento\Framework\App\Helper\Context;
+use Magento\Framework\Encryption\EncryptorInterface;
+use Magento\Framework\Escaper;
+use Magento\Framework\Url;
+use Magento\Framework\UrlInterface;
+use Magento\Framework\View\Asset\Repository as AssetRepository;
+use Magento\Store\Model\ScopeInterface;
+use Magento\User\Model\ResourceModel\User as UserResource;
+use Magento\User\Model\UserFactory;
+use MiniOrange\OAuth\Model\MiniorangeOauthClientAppsFactory;
+use MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps as AppResource;
+use MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps\CollectionFactory as ClientCollectionFactory;
+use Psr\Log\LoggerInterface;
 
 /**
- * This class contains functions to get and set the required data
- * from Magento database or session table/file or generate some
- * necessary values to be used in our module.
+ * Helper class for reading/writing OAuth configuration data,
+ * managing OAuth client app records, and providing URL utilities.
  */
 class Data extends AbstractHelper
 {
+    /** @var UserFactory */
+    private readonly UserFactory $adminFactory;
 
-    protected $scopeConfig;
-    protected $adminFactory;
-    protected $customerFactory;
-    protected $urlInterface;
-    protected $configWriter;
-    protected $assetRepo;
-    protected $helperBackend;
-    protected $frontendUrl;
-    protected $_miniorangeOauthClientAppsFactory;
+    /** @var CustomerFactory */
+    private readonly CustomerFactory $customerFactory;
 
+    /** @var UrlInterface */
+    private readonly UrlInterface $urlInterface;
+
+    /** @var WriterInterface */
+    private readonly WriterInterface $configWriter;
+
+    /** @var AssetRepository */
+    private readonly AssetRepository $assetRepo;
+
+    /** @var BackendHelper */
+    private readonly BackendHelper $helperBackend;
+
+    /** @var Url */
+    private readonly Url $frontendUrl;
+
+    /** @var MiniorangeOauthClientAppsFactory */
+    private readonly MiniorangeOauthClientAppsFactory $clientAppsFactory;
+
+    /** @var ClientCollectionFactory */
+    private readonly ClientCollectionFactory $clientCollectionFactory;
+
+    /** @var AppResource */
+    private readonly AppResource $appResource;
+
+    /** @var UserResource */
+    private readonly UserResource $userResource;
+
+    /** @var CustomerResource */
+    private readonly CustomerResource $customerResource;
+
+    /** @var EncryptorInterface */
+    private readonly EncryptorInterface $encryptor;
+
+    /** @var Escaper */
+    private readonly Escaper $escaper;
+
+    /** @var LoggerInterface */
+    private readonly LoggerInterface $logger;
+
+    /**
+     * Initialize Data helper.
+     *
+     * @param Context                          $context
+     * @param UserFactory                      $adminFactory
+     * @param CustomerFactory                  $customerFactory
+     * @param UrlInterface                     $urlInterface
+     * @param WriterInterface                  $configWriter
+     * @param AssetRepository                  $assetRepo
+     * @param BackendHelper                    $helperBackend
+     * @param Url                              $frontendUrl
+     * @param MiniorangeOauthClientAppsFactory $clientAppsFactory
+     * @param ClientCollectionFactory          $clientCollectionFactory
+     * @param AppResource                      $appResource
+     * @param UserResource                     $userResource
+     * @param CustomerResource                 $customerResource
+     * @param EncryptorInterface               $encryptor
+     * @param Escaper                          $escaper
+     * @param LoggerInterface                  $logger
+     */
     public function __construct(
-        \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
-        \Magento\User\Model\UserFactory $adminFactory,
-        \Magento\Customer\Model\CustomerFactory $customerFactory,
-        \Magento\Framework\UrlInterface $urlInterface,
-        \Magento\Framework\App\Config\Storage\WriterInterface $configWriter,
-        \Magento\Framework\View\Asset\Repository $assetRepo,
-        \Magento\Backend\Helper\Data $helperBackend,
-        \Magento\Framework\Url $frontendUrl,
-        \MiniOrange\OAuth\Model\MiniorangeOauthClientAppsFactory $miniorangeOauthClientAppsFactory
+        Context $context,
+        UserFactory $adminFactory,
+        CustomerFactory $customerFactory,
+        UrlInterface $urlInterface,
+        WriterInterface $configWriter,
+        AssetRepository $assetRepo,
+        BackendHelper $helperBackend,
+        Url $frontendUrl,
+        MiniorangeOauthClientAppsFactory $clientAppsFactory,
+        ClientCollectionFactory $clientCollectionFactory,
+        AppResource $appResource,
+        UserResource $userResource,
+        CustomerResource $customerResource,
+        EncryptorInterface $encryptor,
+        Escaper $escaper,
+        LoggerInterface $logger
     ) {
-        $this->scopeConfig = $scopeConfig;
+        parent::__construct($context);
         $this->adminFactory = $adminFactory;
         $this->customerFactory = $customerFactory;
         $this->urlInterface = $urlInterface;
@@ -42,375 +121,473 @@ class Data extends AbstractHelper
         $this->assetRepo = $assetRepo;
         $this->helperBackend = $helperBackend;
         $this->frontendUrl = $frontendUrl;
-        $this->_miniorangeOauthClientAppsFactory=$miniorangeOauthClientAppsFactory;
+        $this->clientAppsFactory = $clientAppsFactory;
+        $this->clientCollectionFactory = $clientCollectionFactory;
+        $this->appResource = $appResource;
+        $this->userResource = $userResource;
+        $this->customerResource = $customerResource;
+        $this->encryptor = $encryptor;
+        $this->escaper = $escaper;
+        $this->logger = $logger;
     }
 
-
-     /**
-     * Set the entry in the OAuthClientApp Table
+    /**
+     * Set the entry in the OAuthClientApp table.
      *
-     * @param $mo_oauth_app_name
-     * @param $mo_oauth_client_id
-     * @param  $mo_oauth_client_secret
-     * @param  $mo_oauth_scope
-     * @param  $mo_oauth_endsession_url
-     * @param  $mo_oauth_authorize_url
-     * @param  $mo_oauth_accesstoken_url
-     * @param  $mo_oauth_grant_type
-     * @param  $mo_oauth_getuserinfo_url
-     * @param  $send_header
-     * @param  $send_body
-     * @param  $jwksURL
-     */  
-
-     public function setOAuthClientApps(
-                $mo_oauth_app_name,
-                $mo_oauth_client_id,
-                $mo_oauth_client_secret,
-                $mo_oauth_scope,
-                $mo_oauth_authorize_url,
-                $mo_oauth_accesstoken_url,
-                $mo_oauth_getuserinfo_url,
-                $mo_oauth_well_known_config_url,
-                $mo_oauth_grant_type,
-                $send_header,
-                $send_body,
-        )
-    {
-        $model = $this->_miniorangeOauthClientAppsFactory->create();
-        $model->addData([
-        "app_name" => $mo_oauth_app_name,
-        "callback_uri" => '',
-        "clientID" => $mo_oauth_client_id,
-        "client_secret" => $mo_oauth_client_secret,
-        "scope" => $mo_oauth_scope,
-        "authorize_endpoint" => $mo_oauth_authorize_url,
-        "access_token_endpoint" => $mo_oauth_accesstoken_url,
-        "user_info_endpoint" => $mo_oauth_getuserinfo_url,
-        "well_known_config_url"=> $mo_oauth_well_known_config_url,
-        "grant_type" => $mo_oauth_grant_type,
-        "values_in_header" => $send_header,
-        "values_in_body" =>$send_body 
-        ]);
-        $model->save();
+     * @param  string $appName
+     * @param  string $clientId
+     * @param  string $clientSecret
+     * @param  string $scope
+     * @param  string $authorizeUrl
+     * @param  string $accessTokenUrl
+     * @param  string $userInfoUrl
+     * @param  string $wellKnownConfigUrl
+     * @param  string $grantType
+     * @param  bool   $sendHeader
+     * @param  bool   $sendBody
+     * @param  string $issuer
+     * @throws \Exception
+     */
+    public function setOAuthClientApps(
+        string $appName,
+        string $clientId,
+        string $clientSecret,
+        string $scope,
+        string $authorizeUrl,
+        string $accessTokenUrl,
+        string $userInfoUrl,
+        string $wellKnownConfigUrl,
+        string $grantType,
+        bool $sendHeader,
+        bool $sendBody,
+        string $issuer = ''
+    ): void {
+        $model = $this->clientAppsFactory->create();
+        $model->addData(
+            [
+                "app_name" => $this->sanitize($appName),
+                "callback_uri" => '',
+                "clientID" => $this->sanitize($clientId),
+                "client_secret" => $this->encryptor->encrypt(
+                    $this->sanitize($clientSecret)
+                ),
+                "scope" => $this->sanitize($scope),
+                "authorize_endpoint" => $this->sanitize($authorizeUrl),
+                "access_token_endpoint" => $this->sanitize($accessTokenUrl),
+                "user_info_endpoint" => $this->sanitize($userInfoUrl),
+                "well_known_config_url" => $this->sanitize($wellKnownConfigUrl),
+                "issuer" => $this->sanitize($issuer),
+                "grant_type" => $this->sanitize($grantType),
+                "values_in_header" => $sendHeader,
+                "values_in_body" => $sendBody
+            ]
+        );
+        $this->appResource->save($model);
     }
 
     /**
-     * Delete all the records
+     * Delete all OAuth client app records.
      */
-    public function deleteAllRecords()
-{
-    $this->_miniorangeOauthClientAppsFactory
-        ->create()
-        ->getCollection()
-        ->walk('delete');
-}
-    /**
-     * Get All the entry from the OAuthClientApp Table
-     */
-    public function getOAuthClientApps()
+    public function deleteAllRecords(): void
     {
-        $model = $this->_miniorangeOauthClientAppsFactory->create();
-        $collection = $model->getCollection();
-        return $collection;
-    }
-
-    /**
-     * Get the app ID from the OAuthClientApp Table
-     */
-    public function getIDPApps()
-    {
-        $model = $this->_miniorangeOauthClientAppsFactory->create();
-        $collection = $model->getCollection();
-        return $collection;
-    }
-
-    /**
-     * Get base url of miniorange
-     */
-    public function getMiniOrangeUrl()
-    {
-        return OAuthConstants::HOSTNAME;
-    }
-
-    /**
-     * Function to extract data stored in the store config table.
-     *
-     * @param $config
-     */
-    public function getStoreConfig($config)
-    {
-        $storeScope = \Magento\Store\Model\ScopeInterface::SCOPE_STORE;
-        return $this->scopeConfig->getValue('miniorange/oauth/' . $config, $storeScope);
-    }
-
-
-    /**
-     * Function to store data stored in the store config table.
-     *
-     * @param $config
-     * @param $value
-     */
-    public function setStoreConfig($config, $value)
-    {
-        $this->configWriter->save('miniorange/oauth/' . $config, $value);
-        
-        // Wenn es sich um Admin- oder Kunden-Link-Einstellungen handelt, aktualisieren Sie auch die OAuth-Client-App-Tabelle
-        if ($config === OAuthConstants::SHOW_ADMIN_LINK || $config === OAuthConstants::SHOW_CUSTOMER_LINK) {
-            try {
-                $collection = $this->getOAuthClientApps();
-                if ($collection && count($collection) > 0) {
-                    foreach ($collection as $item) {
-                        $model = $this->_miniorangeOauthClientAppsFactory->create()->load($item->getId());
-                        $model->setData($config, $value);
-                        $model->save();
-                    }
-                }
-            } catch (\Exception $e) {
-                // Fehler beim Aktualisieren der Client-App-Tabelle protokollieren
+        $collection = $this->clientCollectionFactory->create();
+        foreach ($collection as $item) {
+            if (is_object($item) && method_exists($item, 'delete')) {
+                $item->delete();
             }
         }
     }
-    
 
     /**
-     * This function is used to save user attributes to the
-     * database and save it. Mostly used in the SSO flow to
-     * update user attributes. Decides which user to update.
+     * Get all entries from the OAuthClientApp table.
      *
-     * @param $url
-     * @param $value
-     * @param $id
-     * @param $admin
+     * @return \MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps\Collection
+     */
+    public function getOAuthClientApps()
+    {
+        return $this->clientCollectionFactory->create();
+    }
+
+    /**
+     * Get client details by app name using collection filtering.
+     *
+     * @param  string $appName
+     * @return array|null Client details array or null if not found
+     */
+    public function getClientDetailsByAppName(string $appName): ?array
+    {
+        $collection = $this->getOAuthClientApps();
+        $collection->addFieldToFilter('app_name', $appName);
+        $data = $collection->getSize() > 0 ? $collection->getFirstItem()->getData() : null;
+
+        if ($data !== null && isset($data['client_secret']) && !empty($data['client_secret'])) {
+            // Magento encrypted values use format "version:key_num:base64data" (e.g. "0:2:abc...")
+            // Only attempt decryption if the value matches this pattern
+            if (preg_match('/^\d+:\d+:/', (string) $data['client_secret'])) {
+                $data['client_secret'] = $this->encryptor->decrypt($data['client_secret']);
+            }
+            // Otherwise keep as-is (plaintext — will be encrypted on next admin save)
+        }
+
+        return $data;
+    }
+
+    /**
+     * Extract data stored in the store config table.
+     *
+     * @param  string $config
+     * @return mixed
+     */
+    public function getStoreConfig(string $config)
+    {
+        return $this->scopeConfig->getValue(
+            'miniorange/oauth/' . $config,
+            ScopeInterface::SCOPE_STORE
+        );
+    }
+
+    /**
+     * Store data in the store config table.
+     *
+     * @param  string $config
+     * @param  mixed  $value
+     * @param  bool   $skipSanitize
+     */
+    public function setStoreConfig(string $config, $value, bool $skipSanitize = false): void
+    {
+        $finalValue = $skipSanitize ? $value : $this->sanitize($value);
+        $this->configWriter->save('miniorange/oauth/' . $config, $finalValue);
+
+        // If this is an admin or customer link setting, also update the OAuth client app table
+        if ($config === OAuthConstants::SHOW_ADMIN_LINK
+            || $config === OAuthConstants::SHOW_CUSTOMER_LINK
+        ) {
+            try {
+                $collection = $this->getOAuthClientApps();
+                if (count($collection) > 0) {
+                    foreach ($collection as $item) {
+                        $model = $this->clientAppsFactory->create();
+                        $this->appResource->load($model, $item->getId());
+                        $model->setData($config, $finalValue);
+                        $this->appResource->save($model);
+                    }
+                }
+            } catch (\Exception $e) {
+                $this->logger->error(
+                    'Failed to update OAuth client app table: ' . $e->getMessage(),
+                    ['exception' => $e]
+                );
+            }
+        }
+    }
+
+    /**
+     * Save user attributes to the database.
+     *
+     * Decides which user type (admin or customer) to update.
+     *
+     * @param  string     $url
+     * @param  mixed      $value
+     * @param  int|string $id
+     * @param  bool       $admin
      * @throws \Exception
      */
-    public function saveConfig($url, $value, $id, $admin)
+    public function saveConfig(string $url, $value, $id, bool $admin): void
     {
         $admin ? $this->saveAdminStoreConfig($url, $value, $id) : $this->saveCustomerStoreConfig($url, $value, $id);
     }
 
-
     /**
-     * Function to extract information stored in the admin user table.
+     * Extract information stored in the admin user table.
      *
-     * @param $config
-     * @param $id
+     * @param  string     $config
+     * @param  int|string $id
+     * @return mixed
      */
-    public function getAdminStoreConfig($config, $id)
+    public function getAdminStoreConfig(string $config, $id)
     {
-        return $this->adminFactory->create()->load($id)->getData($config);
+        $model = $this->adminFactory->create();
+        $this->userResource->load($model, $id);
+        return $model->getData($config);
     }
 
-
     /**
-     * This function is used to save admin attributes to the
-     * database and save it. Mostly used in the SSO flow to
-     * update user attributes.
+     * Save admin attributes to the database.
      *
-     * @param $url
-     * @param $value
-     * @param $id
+     * @param  string     $url
+     * @param  mixed      $value
+     * @param  int|string $id
      * @throws \Exception
      */
-    private function saveAdminStoreConfig($url, $value, $id)
+    private function saveAdminStoreConfig(string $url, $value, $id): void
     {
-        $data = [$url=>$value];
-        $model = $this->adminFactory->create()->load($id)->addData($data);
-        $model->setId($id)->save();
+        $data = [$url => $value];
+        $model = $this->adminFactory->create();
+        $this->userResource->load($model, $id);
+        $model->addData($data);
+        $model->setId($id);
+        $this->userResource->save($model);
     }
-    
 
     /**
-     * Function to extract information stored in the customer user table.
+     * Extract information stored in the customer user table.
      *
-     * @param $config
-     * @param $id
+     * @param  string     $config
+     * @param  int|string $id
+     * @return mixed
      */
-    public function getCustomerStoreConfig($config, $id)
+    public function getCustomerStoreConfig(string $config, $id)
     {
-        return $this->customerFactory->create()->load($id)->getData($config);
+        $model = $this->customerFactory->create();
+        $this->customerResource->load($model, $id);
+        return $model->getData($config);
     }
 
-
     /**
-     * This function is used to save customer attributes to the
-     * database and save it. Mostly used in the SSO flow to
-     * update user attributes.
+     * Save customer attributes to the database.
      *
-     * @param $url
-     * @param $value
-     * @param $id
+     * @param  string     $url
+     * @param  mixed      $value
+     * @param  int|string $id
      * @throws \Exception
      */
-    private function saveCustomerStoreConfig($url, $value, $id)
+    private function saveCustomerStoreConfig(string $url, $value, $id): void
     {
-        $data = [$url=>$value];
-        $model = $this->customerFactory->create()->load($id)->addData($data);
-        $model->setId($id)->save();
+        $data = [$url => $value];
+        $model = $this->customerFactory->create();
+        $this->customerResource->load($model, $id);
+        $model->addData($data);
+        $model->setId($id);
+        $this->customerResource->save($model);
     }
 
-
     /**
-     * Function to get the sites Base URL.
+     * Get the site's base URL.
      */
-    public function getBaseUrl()
+    public function getBaseUrl(): string
     {
-        return  $this->urlInterface->getBaseUrl();
+        return $this->urlInterface->getBaseUrl();
     }
 
-
     /**
-     * Function get the current url the user is on.
+     * Get the current URL the user is on.
      */
-    public function getCurrentUrl()
+    public function getCurrentUrl(): string
     {
-        return  $this->urlInterface->getCurrentUrl();
+        return $this->urlInterface->getCurrentUrl();
     }
 
-
     /**
-     * Function to get the url based on where the user is.
+     * Get a URL based on the given path and parameters.
      *
-     * @param $url
+     * @param  string $url
+     * @param  array  $params
      */
-    public function getUrl($url, $params = [])
+    public function getUrl(string $url, array $params = []): string
     {
-        return  $this->urlInterface->getUrl($url, ['_query'=>$params]);
+        return $this->urlInterface->getUrl($url, ['_query' => $params]);
     }
 
-
     /**
-     * Function to get the sites frontend url.
+     * Get a frontend URL for the given path and parameters.
      *
-     * @param $url
+     * @param  string $url
+     * @param  array  $params
      */
-    public function getFrontendUrl($url, $params = [])
+    public function getFrontendUrl(string $url, array $params = []): string
     {
-        return  $this->frontendUrl->getUrl($url, ['_query'=>$params]);
+        return $this->frontendUrl->getUrl($url, ['_query' => $params]);
     }
 
-
     /**
-     * Function to get the sites Issuer URL.
+     * Get the site's issuer URL.
      */
-    public function getIssuerUrl()
+    public function getIssuerUrl(): string
     {
         return $this->getBaseUrl() . OAuthConstants::ISSUER_URL_PATH;
     }
 
-
     /**
-     * Function to get the Image URL of our module.
+     * Get the image URL for a module asset.
      *
-     * @param $image
+     * @param  string $image
      */
-    public function getImageUrl($image)
+    public function getImageUrl(string $image): string
     {
-        return $this->assetRepo->getUrl(OAuthConstants::MODULE_DIR.OAuthConstants::MODULE_IMAGES.$image);
+        return $this->assetRepo->getUrl(
+            OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_IMAGES . $image
+        );
     }
 
-
     /**
-     * Get Admin CSS URL
-     */
-    public function getAdminCssUrl($css)
-    {
-        return $this->assetRepo->getUrl(OAuthConstants::MODULE_DIR.OAuthConstants::MODULE_CSS.$css, ['area'=>'adminhtml']);
-    }
-
-
-    /**
-     * Get Admin JS URL
-     */
-    public function getAdminJSUrl($js)
-    {
-        return $this->assetRepo->getUrl(OAuthConstants::MODULE_DIR.OAuthConstants::MODULE_JS.$js, ['area'=>'adminhtml']);
-    }
-
-
-    /**
-     * Get Admin Metadata Download URL
-     */
-    public function getMetadataUrl()
-    {
-        return $this->assetRepo->getUrl(OAuthConstants::MODULE_DIR.OAuthConstants::MODULE_METADATA, ['area'=>'adminhtml']);
-    }
-
-
-    /**
-     * Get Admin Metadata File Path
-     */
-    public function getMetadataFilePath()
-    {
-        return $this->assetRepo->createAsset(OAuthConstants::MODULE_DIR.OAuthConstants::MODULE_METADATA, ['area'=>'adminhtml'])
-                    ->getSourceFile();
-    }
-
-
-    /**
-     * Function to get the resource as a path instead of the URL.
+     * Get admin CSS URL.
      *
-     * @param $key
+     * @param  string $css
      */
-    public function getResourcePath($key)
+    public function getAdminCssUrl(string $css): string
+    {
+        /**
+         * @psalm-suppress TooManyArguments
+         */
+        // @phpstan-ignore-next-line
+        return $this->assetRepo->getUrl(
+            OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_CSS . $css,
+            ['area' => 'adminhtml']
+        );
+    }
+
+    /**
+     * Get admin JS URL.
+     *
+     * @param  string $js
+     */
+    public function getAdminJSUrl(string $js): string
+    {
+        /**
+         * @psalm-suppress TooManyArguments
+         */
+        // @phpstan-ignore-next-line
+        return $this->assetRepo->getUrl(
+            OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_JS . $js,
+            ['area' => 'adminhtml']
+        );
+    }
+
+    /**
+     * Get admin metadata download URL.
+     */
+    public function getMetadataUrl(): string
+    {
+        /**
+         * @psalm-suppress TooManyArguments
+         */
+        // @phpstan-ignore-next-line
+        return $this->assetRepo->getUrl(
+            OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_METADATA,
+            ['area' => 'adminhtml']
+        );
+    }
+
+    /**
+     * Get admin metadata file path.
+     */
+    public function getMetadataFilePath(): string
+    {
+        return $this->assetRepo->createAsset(
+            OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_METADATA,
+            ['area' => 'adminhtml']
+        )->getSourceFile();
+    }
+
+    /**
+     * Get the resource as a file path instead of a URL.
+     *
+     * @param  string $key
+     */
+    public function getResourcePath(string $key): string
     {
         return $this->assetRepo
-                    ->createAsset(OAuthConstants::MODULE_DIR.OAuthConstants::MODULE_CERTS.$key, ['area'=>'adminhtml'])
-                    ->getSourceFile();
+            ->createAsset(
+                OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_CERTS . $key,
+                ['area' => 'adminhtml']
+            )
+            ->getSourceFile();
     }
 
-
     /**
-     * Get admin Base url for the site.
+     * Get the admin base/home page URL.
      */
-    public function getAdminBaseUrl()
+    public function getAdminBaseUrl(): string
     {
         return $this->helperBackend->getHomePageUrl();
     }
 
     /**
-     * Get the Admin url for the site based on the path passed,
-     * Append the query parameters to the URL if necessary.
+     * Sanitize input data to prevent XSS and other injection attacks.
      *
-     * @param $url
-     * @param $params
+     * @param  mixed $value
+     * @return mixed
      */
-    public function getAdminUrl($url, $params = [])
+    public function sanitize($value)
     {
-        return $this->helperBackend->getUrl($url, ['_query'=>$params]);
-    }
-
-
-    /**
-     * Get the Admin secure url for the site based on the path passed,
-     * Append the query parameters to the URL if necessary.
-     *
-     * @param $url
-     * @param $params
-     */
-    public function getAdminSecureUrl($url, $params = [])
-    {
-        return $this->helperBackend->getUrl($url, ['_secure'=>true,'_query'=>$params]);
-    }
-
-
-    /**
-     * Get the SP InitiatedURL
-     *
-     * @param $relayState
-     */
-    public function getSPInitiatedUrl($relayState = null,$app_name=NULL)
-    {
-        $relayState = is_null($relayState) ?$this->getCurrentUrl() : $relayState;
-        
-        // Wenn app_name nicht gesetzt ist, versuchen Sie es aus der Konfiguration zu holen
-        if (empty($app_name)) {
-            $app_name = $this->getStoreConfig(OAuthConstants::APP_NAME);
+        if (is_array($value)) {
+            foreach ($value as $key => $val) {
+                $value[$key] = $this->sanitize($val);
+            }
+            return $value;
         }
-        
+
+        if (is_string($value)) {
+            $clean = strip_tags(trim($value));
+            return $this->escaper->escapeHtml($clean);
+        }
+
+        return $value;
+    }
+
+    /**
+     * Get the admin URL for the site based on the path passed.
+     *
+     * @param  string $url
+     * @param  array  $params
+     */
+    public function getAdminUrl(string $url, array $params = []): string
+    {
+        return $this->helperBackend->getUrl($url, ['_query' => $params]);
+    }
+
+    /**
+     * Get the admin secure URL for the site based on the path passed.
+     *
+     * @param  string $url
+     * @param  array  $params
+     */
+    public function getAdminSecureUrl(string $url, array $params = []): string
+    {
+        return $this->helperBackend->getUrl($url, ['_secure' => true, '_query' => $params]);
+    }
+
+    /**
+     * Get the SP-initiated URL for frontend/customer OIDC login.
+     *
+     * @param  string|null $relayState
+     * @param  string|null $appName
+     */
+    public function getSPInitiatedUrl(?string $relayState = null, ?string $appName = null): string
+    {
+        $relayState = $relayState ?? $this->getCurrentUrl();
+
+        // If app_name is not set, try to retrieve it from the configuration
+        if ($appName === null || $appName === '' || $appName === '0') {
+            $appName = $this->getStoreConfig(OAuthConstants::APP_NAME);
+        }
+
         return $this->getFrontendUrl(
             OAuthConstants::OAUTH_LOGIN_URL,
-            ["relayState"=>$relayState]
-        )."&app_name=".$app_name;
+            ["relayState" => $relayState]
+        ) . "&app_name=" . $appName;
+    }
+
+    /**
+     * Get the admin SP-initiated URL for admin backend OIDC login.
+     *
+     * Uses the admin controller which sets loginType=admin.
+     *
+     * @param  string|null $relayState
+     * @param  string|null $appName
+     */
+    public function getAdminSPInitiatedUrl(?string $relayState = null, ?string $appName = null): string
+    {
+        $relayState = $relayState ?? $this->getCurrentUrl();
+
+        if ($appName === null || $appName === '' || $appName === '0') {
+            $appName = $this->getStoreConfig(OAuthConstants::APP_NAME);
+        }
+
+        // Use admin URL to route to admin SendAuthorizationRequest controller
+        return $this->getAdminUrl(
+            OAuthConstants::OAUTH_LOGIN_URL,
+            ["relayState" => $relayState, "app_name" => $appName]
+        );
     }
 }

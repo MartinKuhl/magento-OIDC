@@ -14,33 +14,36 @@ use MiniOrange\OAuth\Controller\Actions\BaseAdminAction;
 use MiniOrange\OAuth\Helper\OAuthUtility;
 use Psr\Log\LoggerInterface;
 
-
-
 /**
  * This class handles the action for endpoint: mooauth/attrsettings/Index
  * Extends the \Magento\Backend\App\Action for Admin Actions which
  * inturn extends the \Magento\Framework\App\Action\Action class necessary
  * for each Controller class
+ *
+ * @psalm-suppress ImplicitToStringCast Magento's __() returns Phrase with __toString()
  */
 class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetActionInterface
 {
 
-    private $adminRoleModel;
-    private $userGroupModel;
-
+    /**
+     * Initialize attribute settings controller.
+     *
+     * @param Context           $context
+     * @param PageFactory       $resultPageFactory
+     * @param OAuthUtility      $oauthUtility
+     * @param ManagerInterface  $messageManager
+     * @param LoggerInterface   $logger
+     */
+    // phpcs:ignore Generic.CodeAnalysis.UselessOverridingMethod.Found
     public function __construct(
         Context $context,
         PageFactory $resultPageFactory,
         OAuthUtility $oauthUtility,
         ManagerInterface $messageManager,
-        LoggerInterface $logger,
-        \Magento\Authorization\Model\ResourceModel\Role\Collection $adminRoleModel,
-        Collection $userGroupModel
+        LoggerInterface $logger
     ) {
         //You can use dependency injection to get any class this observer may need.
         parent::__construct($context, $resultPageFactory, $oauthUtility, $messageManager, $logger);
-        $this->adminRoleModel = $adminRoleModel;
-        $this->userGroupModel = $userGroupModel;
     }
 
     /**
@@ -53,16 +56,17 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
      * URL. It prepares all the values required on the SP setting
      * page in the backend and returns the block to be displayed.
      *
-     * @return \Magento\Backend\Model\View\Result\Page
+     * @return \Magento\Framework\View\Result\Page
      */
+    #[\Override]
     public function execute()
     {
 
         try {
             $params = $this->getRequest()->getParams(); //get params
-            
+
             if ($this->isFormOptionBeingSaved($params)) { // check if form options are being saved
-                $this->checkIfRequiredFieldsEmpty(['oauth_am_username'=>$params,'oauth_am_email'=>$params]);
+                $this->checkIfRequiredFieldsEmpty(['oauth_am_username' => $params, 'oauth_am_email' => $params]);
                 $this->processValuesAndSaveData($params);
                 $this->oauthUtility->flushCache();
                 $this->messageManager->addSuccessMessage(OAuthMessages::SETTINGS_SAVED);
@@ -70,30 +74,92 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
             }
         } catch (\Exception $e) {
             $this->messageManager->addErrorMessage($e->getMessage());
-            $this->oauthUtility->customlog($e->getMessage()) ;
+            $this->oauthUtility->customlog($e->getMessage());
         }
         $resultPage = $this->resultPageFactory->create();
-        $resultPage->getConfig()->getTitle()->prepend(__(OAuthConstants::MODULE_TITLE));
+        $resultPage->getConfig()->getTitle()->prepend(__('MiniOrange OAuth'));
         return $resultPage;
     }
-
-
     /**
      * Process Values being submitted and save data in the database.
-     * @param $param
+     *
+     * @param array $params
      */
-    private function processValuesAndSaveData($params)
+    private function processValuesAndSaveData(array $params): void
     {
-          $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_USERNAME, $params['oauth_am_username']);
-          $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_EMAIL, $params['oauth_am_email']);
+        //ToDo_MK extend for other attributes like first name, last name if needed
+        $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_USERNAME, $params['oauth_am_username']);
+        $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_EMAIL, $params['oauth_am_email']);
+
+        $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_FIRSTNAME, $params['oauth_am_first_name']);
+        $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_LASTNAME, $params['oauth_am_last_name']);
 
         if (isset($params['dont_create_user_if_role_not_mapped'])) {
-            $this->oauthUtility->setStoreConfig(OAuthConstants::CREATEIFNOTMAP, $params['dont_create_user_if_role_not_mapped']);
+            $this->oauthUtility->setStoreConfig(
+                OAuthConstants::CREATEIFNOTMAP,
+                $params['dont_create_user_if_role_not_mapped']
+            );
         }
 
         if (isset($params['dont_allow_unlisted_user_role'])) {
-            $this->oauthUtility->setStoreConfig(OAuthConstants::UNLISTED_ROLE, $params['dont_allow_unlisted_user_role']);
+            $this->oauthUtility->setStoreConfig(
+                OAuthConstants::UNLISTED_ROLE,
+                $params['dont_allow_unlisted_user_role']
+            );
         }
+
+        // Save group attribute name for OIDC groups claim
+        if (isset($params['oauth_am_group'])) {
+            $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_GROUP, $params['oauth_am_group']);
+        }
+
+        // Save default admin role
+        if (isset($params['oauth_am_default_role'])) {
+            $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_DEFAULT_ROLE, $params['oauth_am_default_role']);
+        }
+
+        // Save admin role mappings as JSON (filter out empty mappings)
+        if (isset($params['oauth_role_mapping'])) {
+            $roleMappings = array_filter(
+                $params['oauth_role_mapping'],
+                function ($mapping): bool {
+                    return !empty($mapping['group']) && !empty($mapping['role']);
+                }
+            );
+            $roleMappingsJson = json_encode(array_values($roleMappings));
+            $this->oauthUtility->setStoreConfig('adminRoleMapping', $roleMappingsJson, true);
+            $logMsg = 'Saved admin role mappings: ' . $roleMappingsJson;
+            $this->oauthUtility->customlog($logMsg);
+        }
+
+        // Save customer data mapping fields (directly from dropdown selection)
+        $dobValue = $params['oauth_am_dob'] ?? '';
+        $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_DOB, $dobValue);
+        $this->oauthUtility->customlog("Saved DOB mapping: " . $dobValue);
+
+        $genderValue = $params['oauth_am_gender'] ?? '';
+        $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_GENDER, $genderValue);
+        $this->oauthUtility->customlog("Saved gender mapping: " . $genderValue);
+
+        $phoneValue = $params['oauth_am_phone'] ?? '';
+        $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_PHONE, $phoneValue);
+        $this->oauthUtility->customlog("Saved phone mapping: " . $phoneValue);
+
+        $streetValue = $params['oauth_am_street'] ?? '';
+        $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_STREET, $streetValue);
+        $this->oauthUtility->customlog("Saved street mapping: " . $streetValue);
+
+        $zipValue = $params['oauth_am_zip'] ?? '';
+        $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_ZIP, $zipValue);
+        $this->oauthUtility->customlog("Saved zip mapping: " . $zipValue);
+
+        $cityValue = $params['oauth_am_city'] ?? '';
+        $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_CITY, $cityValue);
+        $this->oauthUtility->customlog("Saved city mapping: " . $cityValue);
+
+        $countryValue = $params['oauth_am_country'] ?? '';
+        $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_COUNTRY, $countryValue);
+        $this->oauthUtility->customlog("Saved country mapping: " . $countryValue);
     }
 
     /**
@@ -103,8 +169,9 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
      *
      * @return bool
      */
+    #[\Override]
     protected function _isAllowed()
     {
-        return $this->_authorization->isAllowed(OAuthConstants::MODULE_DIR.OAuthConstants::MODULE_ATTR);
+        return $this->_authorization->isAllowed(OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_ATTR);
     }
 }

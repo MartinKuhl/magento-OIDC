@@ -1,21 +1,25 @@
+/**
+ * Authelia OIDC admin menu icon
+ *
+ * Uses Magento's native 'Admin Icons' font for consistent styling.
+ * Positioning matches Magento core menu items exactly.
+ */
+
+/* Icon (pseudo-element) - matches Magento default menu icon styling */
 .admin__menu .item-oauth.parent.level-0 > a:before,
-.admin__menu .item-oauth.level-0 > a:before  { /* oauth is name of menu.xml parent  */
-    content: url('../images/mo.png');
-    display: block; /* Ensures that margin-bottom works properly */
-    width: 50px;
-    height: 42px;
-    margin: 0 auto 5px auto; /* Center horizontally and add oauthace below */
-    text-transform: none;
-    color: #b9944c;
-    text-decoration: underline;
-    text-decoration: solid;
-    font-weight: bold;
-    text-transform: none;
+.admin__menu .item-oauth.level-0 > a:before {
+    content: '\e61b'; /* Lock icon from Admin Icons font */
+    padding-left: 5px; /* +5px kompensiert die asymmetrische Glyph-Box des Lock-Icons */
 }
 
-.admin__menu .item-oauth.level-0 > a {
-    color: #eca311;
-    font-weight: bold;
-    text-transform: none; /* Ensure the text isn't capitalized */
+/* Hover states */
+.admin__menu .item-oauth.level-0 > a:hover,
+.admin__menu .item-oauth.level-0 > a:hover:before {
+    color: #fff;
 }
 
+/* Active state */
+.admin__menu .item-oauth._current.level-0 > a,
+.admin__menu .item-oauth._current.level-0 > a:before {
+    color: #fff;
+}
