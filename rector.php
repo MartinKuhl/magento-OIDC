@@ -44,4 +44,11 @@ return RectorConfig::configure()
         // inherited from Magento Framework base classes (AbstractHelper, Action, etc.)
         // and are not dynamic. Rector cannot resolve cross-package inheritance.
         \Rector\CodeQuality\Rector\Class_\CompleteDynamicPropertiesRector::class,
+        // StorageInterface::authenticate($username, $password) has no parameter types.
+        // Without the full Magento vendor in CI, Rector cannot detect the interface
+        // signature and incorrectly adds `string $username`, causing a PHP 8 fatal error
+        // (Declaration incompatible). Skip this rule for the affected file only.
+        \Rector\TypeDeclaration\Rector\ClassMethod\StrictStringParamConcatRector::class => [
+            __DIR__ . '/Model/Auth/OidcCredentialAdapter.php',
+        ],
     ]);

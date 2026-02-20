@@ -268,7 +268,7 @@ class ProcessUserAction
 */
         $store = $this->storeManager->getStore();
         $store_url = $store->getBaseUrl(\Magento\Framework\UrlInterface::URL_TYPE_WEB);
-        $store_url = rtrim($store_url, '/\\');
+        $store_url = rtrim((string) $store_url, '/\\');
 
         if (isset($this->attrs['relayState'])
             && !str_contains((string) $this->attrs['relayState'], $store_url)

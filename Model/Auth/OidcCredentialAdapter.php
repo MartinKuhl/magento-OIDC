@@ -130,11 +130,10 @@ class OidcCredentialAdapter implements StorageInterface
      *
      * @param  string $username User email from OIDC provider
      * @param  string $password OIDC token marker (should be OIDC_TOKEN_MARKER)
-     * @return bool
      * @throws AuthenticationException
      */
     #[\Override]
-    public function authenticate($username, $password)
+    public function authenticate($username, $password): bool
     {
         $this->restoreDependencies();
         $this->log("OidcCredentialAdapter: Starting authentication for: " . $username);
@@ -209,11 +208,10 @@ class OidcCredentialAdapter implements StorageInterface
      *
      * @param  string $username
      * @param  string $password
-     * @return $this
      * @throws AuthenticationException
      */
     #[\Override]
-    public function login($username, $password)
+    public function login($username, $password): static
     {
         $this->restoreDependencies();
 
@@ -231,11 +229,9 @@ class OidcCredentialAdapter implements StorageInterface
      *
      * Called after login AND after session deserialization (via Authentication plugin).
      * Dependencies may be null after deserialization, so we restore them first.
-     *
-     * @return $this
      */
     #[\Override]
-    public function reload()
+    public function reload(): static
     {
         $this->restoreDependencies();
 
@@ -263,10 +259,9 @@ class OidcCredentialAdapter implements StorageInterface
      * Set if user has available resources
      *
      * @param  bool $hasResources
-     * @return $this
      */
     #[\Override]
-    public function setHasAvailableResources($hasResources)
+    public function setHasAvailableResources($hasResources): static
     {
         $this->hasAvailableResources = (bool)$hasResources;
         return $this;
