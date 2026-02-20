@@ -43,7 +43,7 @@ Modern e-commerce platforms require secure, centralized authentication. This mod
 
 ## Requirements
 
-- **PHP**: 8.1 or higher
+- **PHP**: 8.2 or higher
 - **Magento**: 2.4.7 or higher
 - **Identity Provider**: OIDC-compliant IdP (OpenID Connect 1.0)
 - **HTTPS**: Required for production (SameSite=None cookies require Secure flag)
