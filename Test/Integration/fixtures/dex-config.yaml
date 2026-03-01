@@ -1,0 +1,62 @@
+# Dex OIDC provider configuration for MiniOrange OIDC integration tests (TEST-06).
+#
+# This is a minimal Dex setup with:
+#   - Static password store (no external LDAP/DB needed)
+#   - Two test users: a regular customer and an admin
+#   - One OAuth2 client configured for the module's callback URL
+#   - Short token TTL to enable token-expiry / refresh tests
+#
+# Dex listens on http://dex.local:5556/dex (inside the Docker network).
+
+issuer: http://dex.local:5556/dex
+
+storage:
+    type: memory
+
+web:
+    http: 0.0.0.0:5556
+
+logger:
+    level: "debug"
+    format: "text"
+
+# OAuth2 token lifetimes — kept short so refresh tests run quickly in CI.
+oauth2:
+    skipApprovalScreen: true
+    responseTypes:
+        - code
+    tokenExpiry: 60s        # access token expires in 60 s
+    refreshExpiry: 600s     # refresh token expires in 10 min
+
+connectors:
+    - type: mockCallback
+      id: mock
+      name: Mock Connector
+
+# Static passwords — test credentials only, never use in production.
+enablePasswordDB: true
+
+staticPasswords:
+    - email: "testuser@example.com"
+      hash: "$2y$10$gKtDcHrP2S5vYt7HQfAaweJzN8LZ6vlFpSP8m1G3FQaGBGkJBVT82"
+      # Plain-text: testpass
+      username: "testuser"
+      userID: "testuser-uid-0001"
+
+    - email: "adminuser@example.com"
+      hash: "$2y$10$H9lMJ6m1qHHPkZpBi0qJUujMV5MKTxJkN3z6KgFNMtlQA3Bpf9Hb6"
+      # Plain-text: adminpass
+      username: "adminuser"
+      userID: "adminuser-uid-0002"
+
+staticClients:
+    - id: miniorange-test-client
+      secret: miniorange-test-secret
+      name: "MiniOrange OIDC Test Client"
+      redirectURIs:
+          - "http://localhost/mooauth/actions/readauthresponse"
+          - "http://localhost/mooauth/actions/backchannel-logout"
+      # Grant types for token refresh tests
+      grantTypes:
+          - authorization_code
+          - refresh_token

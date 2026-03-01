@@ -1,0 +1,556 @@
+<!--
+    Template for the Add / Edit OIDC Provider form.
+    Used for both creating new providers (id=0) and editing existing ones (id>0).
+    Route: mooauth/provider/edit[/id/<id>]
+-->
+<?php
+$providerId   = (int) $block->getRequest()->getParam('id', 0);
+$isEditMode   = $providerId > 0;
+$providerData = $isEditMode ? ($block->getClientDetailsById($providerId) ?? []) : [];
+
+/** Returns the saved value for $key, or $default when adding a new provider. */
+$val = static function (string $key, $default = '') use ($providerData) {
+    return $providerData[$key] ?? $default;
+};
+
+$saveUrl   = $block->getUrl('mooauth/provider/save');
+$listUrl   = $block->getUrl('mooauth/provider/index');
+$formKey   = $block->getFormKey();
+$loginType = (string) $val('login_type', 'both');
+$grantType = (string) $val('grant_type', 'authorization_code');
+$isActive  = $isEditMode ? (bool)(int) $val('is_active', 1) : true;
+$inHeader  = (bool)(int) $val('values_in_header', 0);
+$inBody    = (bool)(int) $val('values_in_body', 0);
+$btnColor  = (string) $val('button_color', '#eb5202');
+
+$pageTitle = $isEditMode
+    ? __('Edit OIDC Provider: %1', (string) $val('app_name', (string) $providerId))
+    : __('Add New OIDC Provider');
+?>
+<div class="row">
+    <div class="col-sm-7 page_margin">
+        <div class="page" id="provider-add">
+
+            <div class="mosp_table_layout">
+                <h3><?= $escaper->escapeHtml($pageTitle) ?></h3>
+                <hr>
+            </div>
+
+            <form name="provider_edit_form"
+                  method="post"
+                  action="<?= $escaper->escapeUrl($saveUrl) ?>">
+                <input type="hidden"
+                       name="form_key"
+                       value="<?= $escaper->escapeHtmlAttr($formKey) ?>">
+                <input type="hidden"
+                       name="id"
+                       value="<?= $escaper->escapeHtmlAttr((string) $providerId) ?>">
+
+                <!-- ============================================================
+                     Section A: Provider Identity
+                ============================================================ -->
+                <div class="mosp_table_layout" style="margin-top:16px;">
+                    <h3>PROVIDER IDENTITY</h3>
+                    <hr>
+                    <p style="font-style: italic; color: #666; margin-top: 10px;">
+                        <?= $escaper->escapeHtml(
+                            __('Basic identity and appearance settings for this provider.')
+                        ) ?>
+                    </p>
+                </div>
+
+                <table style="width:100%;">
+                    <tr>
+                        <td style="width:200px;">
+                            <label>
+                                <strong>
+                                    <?= $escaper->escapeHtml(__('Provider Name')) ?>
+                                    <span style="color:red">*</span>
+                                </strong>
+                            </label>
+                        </td>
+                        <td>
+                            <input type="text"
+                                   id="app_name"
+                                   name="app_name"
+                                   required
+                                   placeholder="e.g. Authelia"
+                                   value="<?= $escaper->escapeHtmlAttr($val('app_name')) ?>"
+                                   style="width:100%;">
+                            <small style="color:#666;">
+                                <?= $escaper->escapeHtml(__('Internal identifier used in the codebase.')) ?>
+                            </small>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label>
+                                <strong><?= $escaper->escapeHtml(__('Display Name')) ?></strong>
+                            </label>
+                        </td>
+                        <td>
+                            <input type="text"
+                                   id="display_name"
+                                   name="display_name"
+                                   placeholder="e.g. Login with Authelia"
+                                   value="<?= $escaper->escapeHtmlAttr($val('display_name')) ?>"
+                                   style="width:100%;">
+                            <small style="color:#666;">
+                                <?= $escaper->escapeHtml(__('Label shown on the SSO button.')) ?>
+                            </small>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label>
+                                <strong><?= $escaper->escapeHtml(__('Login Type')) ?></strong>
+                            </label>
+                        </td>
+                        <td>
+                            <select id="login_type" name="login_type" style="width:100%;">
+                                <option value="customer"
+                                    <?= $loginType === 'customer' ? 'selected="selected"' : '' ?>>
+                                    <?= $escaper->escapeHtml(__('Customer')) ?>
+                                </option>
+                                <option value="admin"
+                                    <?= $loginType === 'admin' ? 'selected="selected"' : '' ?>>
+                                    <?= $escaper->escapeHtml(__('Admin')) ?>
+                                </option>
+                                <option value="both"
+                                    <?= $loginType === 'both' ? 'selected="selected"' : '' ?>>
+                                    <?= $escaper->escapeHtml(__('Both')) ?>
+                                </option>
+                            </select>
+                            <small style="color:#666;">
+                                <?= $escaper->escapeHtml(__('Who can use this provider to log in.')) ?>
+                            </small>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label>
+                                <strong><?= $escaper->escapeHtml(__('Active')) ?></strong>
+                            </label>
+                        </td>
+                        <td>
+                            <input type="checkbox"
+                                   id="is_active"
+                                   name="is_active"
+                                   value="1"
+                                   <?= $isActive ? 'checked="checked"' : '' ?>>
+                            <small style="color:#666; margin-left:6px;">
+                                <?= $escaper->escapeHtml(__('Uncheck to disable this provider.')) ?>
+                            </small>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label>
+                                <strong><?= $escaper->escapeHtml(__('Sort Order')) ?></strong>
+                            </label>
+                        </td>
+                        <td>
+                            <input type="number"
+                                   id="sort_order"
+                                   name="sort_order"
+                                   value="<?= (int) $val('sort_order', 0) ?>"
+                                   min="0"
+                                   style="width:80px;">
+                            <small style="color:#666; margin-left:6px;">
+                                <?= $escaper->escapeHtml(__('Lower numbers appear first.')) ?>
+                            </small>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label>
+                                <strong><?= $escaper->escapeHtml(__('Button Label')) ?></strong>
+                            </label>
+                        </td>
+                        <td>
+                            <input type="text"
+                                   id="button_label"
+                                   name="button_label"
+                                   placeholder="e.g. Login with SSO"
+                                   value="<?= $escaper->escapeHtmlAttr($val('button_label')) ?>"
+                                   style="width:100%;">
+                            <small style="color:#666;">
+                                <?= $escaper->escapeHtml(__('Leave empty to use the Display Name.')) ?>
+                            </small>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label>
+                                <strong><?= $escaper->escapeHtml(__('Button Color')) ?></strong>
+                            </label>
+                        </td>
+                        <td>
+                            <input type="color"
+                                   id="button_color"
+                                   name="button_color"
+                                   value="<?= $escaper->escapeHtmlAttr($btnColor) ?>"
+                                   style="width:60px; height:36px; padding:2px; cursor:pointer;">
+                            <small style="color:#666; margin-left:6px;">
+                                <?= $escaper->escapeHtml(__('Hex colour for the SSO login button.')) ?>
+                            </small>
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- ============================================================
+                     Section B: OAuth / OIDC Configuration
+                ============================================================ -->
+                <div class="mosp_table_layout" style="margin-top:24px;">
+                    <h3>OAUTH / OIDC CONFIGURATION</h3>
+                    <hr>
+                    <p style="font-style: italic; color: #666; margin-top: 10px;">
+                        <?= $escaper->escapeHtml(
+                            __('You can provide a Discovery URL to auto-discover endpoints,'
+                            . ' or enter them manually below.')
+                        ) ?>
+                    </p>
+                </div>
+
+                <table style="width:100%;">
+                    <tr>
+                        <td style="width:200px;">
+                            <label>
+                                <strong>
+                                    <?= $escaper->escapeHtml(__('Client ID')) ?>
+                                    <span style="color:red">*</span>
+                                </strong>
+                            </label>
+                        </td>
+                        <td>
+                            <input type="text"
+                                   id="clientID"
+                                   name="clientID"
+                                   required
+                                   value="<?= $escaper->escapeHtmlAttr($val('clientID')) ?>"
+                                   style="width:100%;">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label>
+                                <strong>
+                                    <?= $escaper->escapeHtml(__('Client Secret')) ?>
+                                    <?php if (!$isEditMode): ?>
+                                    <span style="color:red">*</span>
+                                    <?php endif; ?>
+                                </strong>
+                            </label>
+                        </td>
+                        <td>
+                            <input type="password"
+                                   id="client_secret"
+                                   name="client_secret"
+                                   <?= !$isEditMode ? 'required' : '' ?>
+                                   autocomplete="new-password"
+                                   value=""
+                                   style="width:100%;">
+                            <?php if ($isEditMode): ?>
+                            <small style="color:#666;">
+                                <?= $escaper->escapeHtml(__('Leave blank to keep the existing secret.')) ?>
+                            </small>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label>
+                                <strong><?= $escaper->escapeHtml(__('Scope')) ?></strong>
+                            </label>
+                        </td>
+                        <td>
+                            <input type="text"
+                                   id="scope"
+                                   name="scope"
+                                   placeholder="openid profile email"
+                                   value="<?= $escaper->escapeHtmlAttr($val('scope', 'openid profile email')) ?>"
+                                   style="width:100%;">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label>
+                                <strong><?= $escaper->escapeHtml(__('Grant Type')) ?></strong>
+                            </label>
+                        </td>
+                        <td>
+                            <select id="grant_type" name="grant_type" style="width:100%;">
+                                <option value="authorization_code"
+                                    <?= $grantType === 'authorization_code'
+                                        ? 'selected="selected"' : '' ?>>
+                                    <?= $escaper->escapeHtml(__('Authorization Code')) ?>
+                                </option>
+                                <option value="implicit"
+                                    <?= $grantType === 'implicit' ? 'selected="selected"' : '' ?>>
+                                    <?= $escaper->escapeHtml(__('Implicit')) ?>
+                                </option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label>
+                                <strong><?= $escaper->escapeHtml(__('Send Credentials')) ?></strong>
+                            </label>
+                        </td>
+                        <td>
+                            <label>
+                                <input type="checkbox"
+                                       name="values_in_header"
+                                       value="1"
+                                       <?= $inHeader ? 'checked="checked"' : '' ?>>
+                                <?= $escaper->escapeHtml(__('In Authorization Header')) ?>
+                            </label>
+                            &nbsp;&nbsp;
+                            <label>
+                                <input type="checkbox"
+                                       name="values_in_body"
+                                       value="1"
+                                       <?= $inBody ? 'checked="checked"' : '' ?>>
+                                <?= $escaper->escapeHtml(__('In Request Body')) ?>
+                            </label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label>
+                                <strong><?= $escaper->escapeHtml(__('Discovery URL')) ?></strong>
+                            </label>
+                        </td>
+                        <td>
+                            <input type="url"
+                                   id="well_known_config_url"
+                                   name="well_known_config_url"
+                                   placeholder="https://your-idp/.well-known/openid-configuration"
+                                   value="<?= $escaper->escapeHtmlAttr($val('well_known_config_url')) ?>"
+                                   style="width:100%;">
+                            <small style="color:#666;">
+                                <?= $escaper->escapeHtml(
+                                    __('Optional — overrides manual endpoint fields on save.')
+                                ) ?>
+                            </small>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label>
+                                <strong>
+                                    <?= $escaper->escapeHtml(__('Authorization Endpoint')) ?>
+                                </strong>
+                            </label>
+                        </td>
+                        <td>
+                            <input type="url"
+                                   id="authorize_endpoint"
+                                   name="authorize_endpoint"
+                                   value="<?= $escaper->escapeHtmlAttr($val('authorize_endpoint')) ?>"
+                                   style="width:100%;">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label>
+                                <strong>
+                                    <?= $escaper->escapeHtml(__('Access Token Endpoint')) ?>
+                                </strong>
+                            </label>
+                        </td>
+                        <td>
+                            <input type="url"
+                                   id="access_token_endpoint"
+                                   name="access_token_endpoint"
+                                   value="<?= $escaper->escapeHtmlAttr($val('access_token_endpoint')) ?>"
+                                   style="width:100%;">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label>
+                                <strong>
+                                    <?= $escaper->escapeHtml(__('UserInfo Endpoint')) ?>
+                                </strong>
+                            </label>
+                        </td>
+                        <td>
+                            <input type="url"
+                                   id="user_info_endpoint"
+                                   name="user_info_endpoint"
+                                   value="<?= $escaper->escapeHtmlAttr($val('user_info_endpoint')) ?>"
+                                   style="width:100%;">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label>
+                                <strong>
+                                    <?= $escaper->escapeHtml(__('JWKS Endpoint')) ?>
+                                </strong>
+                            </label>
+                        </td>
+                        <td>
+                            <input type="url"
+                                   id="jwks_endpoint"
+                                   name="jwks_endpoint"
+                                   value="<?= $escaper->escapeHtmlAttr($val('jwks_endpoint')) ?>"
+                                   style="width:100%;">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label>
+                                <strong>
+                                    <?= $escaper->escapeHtml(__('End Session Endpoint')) ?>
+                                </strong>
+                            </label>
+                        </td>
+                        <td>
+                            <input type="url"
+                                   id="endsession_endpoint"
+                                   name="endsession_endpoint"
+                                   value="<?= $escaper->escapeHtmlAttr($val('endsession_endpoint')) ?>"
+                                   style="width:100%;">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label>
+                                <strong><?= $escaper->escapeHtml(__('Issuer')) ?></strong>
+                            </label>
+                        </td>
+                        <td>
+                            <input type="text"
+                                   id="issuer"
+                                   name="issuer"
+                                   placeholder="https://your-idp"
+                                   value="<?= $escaper->escapeHtmlAttr($val('issuer')) ?>"
+                                   style="width:100%;">
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- ============================================================
+                     Section C: Attribute Mapping
+                ============================================================ -->
+                <div class="mosp_table_layout" style="margin-top:24px;">
+                    <h3>ATTRIBUTE MAPPING</h3>
+                    <hr>
+                    <p style="font-style: italic; color: #666; margin-top: 10px;">
+                        <?= $escaper->escapeHtml(
+                            __('Map OIDC token claims to Magento user fields.'
+                            . ' Enter the exact claim name your provider returns.')
+                        ) ?>
+                    </p>
+                </div>
+
+                <table style="width:100%;">
+                    <tr>
+                        <td style="width:200px;">
+                            <label>
+                                <strong><?= $escaper->escapeHtml(__('Email Claim')) ?></strong>
+                            </label>
+                        </td>
+                        <td>
+                            <input type="text"
+                                   id="email_attribute"
+                                   name="email_attribute"
+                                   placeholder="email"
+                                   value="<?= $escaper->escapeHtmlAttr($val('email_attribute', 'email')) ?>"
+                                   style="width:100%;">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label>
+                                <strong><?= $escaper->escapeHtml(__('Username Claim')) ?></strong>
+                            </label>
+                        </td>
+                        <td>
+                            <input type="text"
+                                   id="username_attribute"
+                                   name="username_attribute"
+                                   placeholder="preferred_username"
+                                   value="<?= $escaper->escapeHtmlAttr(
+                                       $val('username_attribute', 'preferred_username')
+                                   ) ?>"
+                                   style="width:100%;">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label>
+                                <strong><?= $escaper->escapeHtml(__('First Name Claim')) ?></strong>
+                            </label>
+                        </td>
+                        <td>
+                            <input type="text"
+                                   id="firstname_attribute"
+                                   name="firstname_attribute"
+                                   placeholder="given_name"
+                                   value="<?= $escaper->escapeHtmlAttr(
+                                       $val('firstname_attribute', 'given_name')
+                                   ) ?>"
+                                   style="width:100%;">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label>
+                                <strong><?= $escaper->escapeHtml(__('Last Name Claim')) ?></strong>
+                            </label>
+                        </td>
+                        <td>
+                            <input type="text"
+                                   id="lastname_attribute"
+                                   name="lastname_attribute"
+                                   placeholder="family_name"
+                                   value="<?= $escaper->escapeHtmlAttr(
+                                       $val('lastname_attribute', 'family_name')
+                                   ) ?>"
+                                   style="width:100%;">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label>
+                                <strong><?= $escaper->escapeHtml(__('Group / Role Claim')) ?></strong>
+                            </label>
+                        </td>
+                        <td>
+                            <input type="text"
+                                   id="group_attribute"
+                                   name="group_attribute"
+                                   placeholder="groups"
+                                   value="<?= $escaper->escapeHtmlAttr($val('group_attribute')) ?>"
+                                   style="width:100%;">
+                            <small style="color:#666;">
+                                <?= $escaper->escapeHtml(
+                                    __('Used for admin role and customer group mapping.')
+                                ) ?>
+                            </small>
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- Buttons -->
+                <div style="margin-left: 210px;">
+                    <br>
+                    <input class="btn-round"
+                           type="submit"
+                           name="submit"
+                           style="width:150px;"
+                           value="<?= $escaper->escapeHtmlAttr(__('Save Provider')) ?>">
+                    &nbsp;&nbsp;
+                    <a href="<?= $escaper->escapeUrl($listUrl) ?>">
+                        <?= $escaper->escapeHtml(__('Back to List')) ?>
+                    </a>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>

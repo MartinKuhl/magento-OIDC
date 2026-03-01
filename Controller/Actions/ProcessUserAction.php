@@ -270,12 +270,20 @@ class ProcessUserAction
         $store_url = $store->getBaseUrl(\Magento\Framework\UrlInterface::URL_TYPE_WEB);
         $store_url = rtrim((string) $store_url, '/\\');
 
-        if (isset($this->attrs['relayState'])
-            && !str_contains((string) $this->attrs['relayState'], $store_url)
-            && $this->attrs['relayState'] != '/'
-        ) {
-            $this->attrs['relayState'] = $store_url;
-            $this->oauthUtility->customlog("processUserAction: changing relayState with store url " . $store_url);
+        // SEC-09: Validate relay state by comparing parsed hosts — str_contains allows open-redirect bypass
+        // (e.g. https://evil.com?q=real-store.com would have passed str_contains).
+        if (isset($this->attrs['relayState']) && $this->attrs['relayState'] !== '/') {
+            // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
+            $relayHost = parse_url((string) $this->attrs['relayState'], PHP_URL_HOST);
+            // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
+            $storeHost  = parse_url($store_url, PHP_URL_HOST);
+            if ($relayHost !== $storeHost) {
+                $this->attrs['relayState'] = $store_url;
+                $this->oauthUtility->customlog(
+                    "SEC-09: relayState host mismatch ('"
+                    . $relayHost . "' != '" . $storeHost . "'), reset to store URL."
+                );
+            }
         }
 
         // Customer login flow (admin routing is now handled by CheckAttributeMappingAction)

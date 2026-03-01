@@ -1,45 +1,64 @@
 <!--
     This template file is for the OAuth Provider settings.
     File acts as a view file for our OAuth Provider settings.
+    Supports provider-context mode: when provider_id is in the URL,
+    data is loaded from and saved to that specific provider record.
 -->
 <?php
+// Provider-context detection
+$activeProviderId  = $block->getActiveProviderId();
+$providerData      = $block->getProviderData(); // non-null when provider_id is in URL
+
 // Initialize all values
 $isEnabled = $block->isEnabled() ? "" : "disabled";
-$appName = $block->getAppName();
-$logoutURL = $block->getLogoutURL();
 $callbackURL = $block->getCallBackUrl();
-$jwksURL = $block->getJwksUrl();
-$x509Certificate = $block->getX509Cert();
-$disabled = !$isEnabled ? "disabled" : "";
 $testUrl = $block->getTestUrl();
 $premiumlink = $block->getExtensionPageUrl('upgrade');
-$isJwksUrl = empty($jwksURL) ? "" : "checked";
-$isCertificate = empty($x509Certificate) ? "" : "checked";
-$grantType = $block->getGrantType();
 
-// Fetching values from 'miniorange_oauth_client_apps' table
-if (isset($appName)) {
-    $collection = $block->getAllIdpConfiguration();
+if ($providerData !== null) {
+    // --- Provider-context mode: read from the specific provider record ---
+    $clientDetails  = $providerData;
+    $appName        = $providerData['app_name'] ?? '';
+    $grantType      = $providerData['grant_type'] ?? 'authorization_code';
+    $jwksURL        = $providerData['jwks_endpoint'] ?? '';
+    $x509Certificate = '';
+} else {
+    // --- Legacy global mode ---
+    $appName         = $block->getAppName();
+    $logoutURL       = $block->getLogoutURL();
+    $jwksURL         = $block->getJwksUrl();
+    $x509Certificate = $block->getX509Cert();
+    $grantType       = $block->getGrantType();
+
+    // Fetching values from 'miniorange_oauth_client_apps' table
     $clientDetails = null;
-    foreach ($collection as $item) {
-        if ($item->getData()["app_name"] === $appName) {
-            $clientDetails = $item->getData();
+    if (isset($appName)) {
+        $collection = $block->getAllIdpConfiguration();
+        foreach ($collection as $item) {
+            if ($item->getData()['app_name'] === $appName) {
+                $clientDetails = $item->getData();
+            }
         }
     }
 }
 
+$disabled = !$isEnabled ? "disabled" : "";
+$isJwksUrl = empty($jwksURL) ? "" : "checked";
+$isCertificate = empty($x509Certificate) ? "" : "checked";
+
 $isOAuthConfigured = isset($clientDetails['authorize_endpoint'])
     ? ''
     : 'disabled title="Please Configure an OAuth Provider"';
-$clientID = isset($clientDetails['clientID']) ? $clientDetails['clientID'] : '';
-$clientSecret = isset($clientDetails['client_secret']) ? $clientDetails['client_secret'] : '';
-$isHeader = isset($clientDetails['values_in_header']) && $clientDetails['values_in_header'] == 1 ? "checked" : "";
-$isBody = isset($clientDetails['values_in_body']) && $clientDetails['values_in_body'] == 1 ? "checked" : "";
-$authorizeURL = isset($clientDetails['authorize_endpoint']) ? $clientDetails['authorize_endpoint'] : '';
-$accessTokenURL = isset($clientDetails['access_token_endpoint']) ? $clientDetails['access_token_endpoint'] : '';
-$getUserInfoURL = isset($clientDetails['user_info_endpoint']) ? $clientDetails['user_info_endpoint'] : '';
-$endpoint_url = isset($clientDetails['well_known_config_url']) ? $clientDetails['well_known_config_url'] : '';
-$scope = isset($clientDetails['scope']) ? $clientDetails['scope'] : '';
+$clientID       = $clientDetails['clientID'] ?? '';
+// Never pre-fill the secret field for security
+$isHeader       = !empty($clientDetails['values_in_header']) ? "checked" : "";
+$isBody         = !empty($clientDetails['values_in_body']) ? "checked" : "";
+$authorizeURL   = $clientDetails['authorize_endpoint'] ?? '';
+$accessTokenURL = $clientDetails['access_token_endpoint'] ?? '';
+$getUserInfoURL = $clientDetails['user_info_endpoint'] ?? '';
+$endSessionURL  = $clientDetails['endsession_endpoint'] ?? '';
+$endpoint_url   = $clientDetails['well_known_config_url'] ?? '';
+$scope          = $clientDetails['scope'] ?? '';
 ?>
 
 <script>
@@ -62,10 +81,25 @@ $scope = isset($clientDetails['scope']) ? $clientDetails['scope'] : '';
                 </div>
             </div>
 
+            <?php if ($providerData !== null): ?>
+            <div style="background:#e8f4fd; border:1px solid #bee0f7; padding:10px 14px;
+                        border-radius:4px; margin-bottom:14px; color:#1a5276;">
+                <strong><?= $escaper->escapeHtml(__('Editing provider:')) ?></strong>
+                <?= $escaper->escapeHtml($providerData['display_name'] ?: ($providerData['app_name'] ?? '')) ?>
+                &nbsp;|&nbsp;
+                <a href="<?= $escaper->escapeUrl($block->getUrl('mooauth/provider/index')) ?>">
+                    <?= $escaper->escapeHtml(__('Back to provider list')) ?>
+                </a>
+            </div>
+            <?php endif; ?>
+
             <!-- OAuth Settings Form -->
             <form name="f" method="post" action="">
                 <input type="hidden" name="form_key" value="<?= $escaper->escapeHtmlAttr($block->getFormKey()) ?>">
                 <input type="hidden" name="option" value="saveOAuthSettings">
+                <input type="hidden"
+                       name="provider_id"
+                       value="<?= $escaper->escapeHtmlAttr((string) $activeProviderId) ?>">
 
                 <table style="width:100%;">
                     <!-- OAuth Provider Name -->
@@ -107,8 +141,12 @@ $scope = isset($clientDetails['scope']) ? $clientDetails['scope'] : '';
                             <input type="password"
                                    name="mo_oauth_client_secret"
                                    style="width: 100%;"
-                                   value="<?= $escaper->escapeHtmlAttr($clientSecret) ?>"
-                                   required>
+                                   autocomplete="new-password"
+                                   value=""
+                                   placeholder="<?= $escaper->escapeHtmlAttr(
+                                       __('Leave empty to keep existing secret')
+                                   ) ?>"
+                                   <?= $activeProviderId > 0 ? '' : 'required' ?>>
                         </td>
                     </tr>
 
@@ -224,6 +262,23 @@ $scope = isset($clientDetails['scope']) ? $clientDetails['scope'] : '';
                                style="width: 59%; padding: 8px; margin-left: 33px;
                                       border: 1px solid #B7B5B5; box-shadow: 3px 2px 4px #ebebeb;"
                                value="<?= $escaper->escapeHtmlAttr($getUserInfoURL) ?>">
+                    </div>
+                    <br>
+
+                    <!-- End Session (Logout) Endpoint — optional, used for RP-Initiated Logout -->
+                    <div style="padding: 0px 0px 0px 10px;">
+                        <label style="display: block;"><strong>End Session (Logout) Endpoint:</strong></label>
+                        <input type="url"
+                               name="mo_oauth_endsession_url"
+                               id="mo_oauth_endsession_url"
+                               style="width: 59%; padding: 8px;
+                                      border: 1px solid #B7B5B5; box-shadow: 3px 2px 4px #ebebeb;"
+                               value="<?= $escaper->escapeHtmlAttr($endSessionURL) ?>">
+                        <br>
+                        <small style="color: #666;">
+                            Optional. When set, users are redirected here on logout
+                            (OIDC RP-Initiated Logout).
+                        </small>
                     </div>
                     <br>
                 </div>

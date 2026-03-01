@@ -141,6 +141,12 @@ class OAuthConstants
     public const CODE = 'code';
     public const GRANT_TYPE = 'authorization_code';
 
+    // PKCE (RFC 7636) — FEAT-01
+    /** Session key used to store the PKCE code_verifier between authorization and token requests */
+    public const PKCE_VERIFIER_SESSION_KEY = 'oidc_pkce_verifier';
+    /** The only supported challenge method (SHA-256) */
+    public const PKCE_METHOD_S256 = 'S256';
+
     //OAUTH Constants
     public const OAUTH = 'OAUTH';
     public const HTTP_REDIRECT = 'HttpRedirect';

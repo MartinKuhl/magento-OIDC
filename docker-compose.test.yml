@@ -1,0 +1,87 @@
+# TEST-06: Docker Compose environment for MiniOrange OIDC end-to-end / integration tests.
+#
+# Services:
+#   dex      — CoreOS Dex OIDC provider (IdP)
+#   php      — PHP 8.2 CLI container that runs the PHPUnit suite
+#
+# Usage:
+#   # Start Dex in the background and run all tests:
+#   docker compose -f docker-compose.test.yml up -d dex
+#   docker compose -f docker-compose.test.yml run --rm php
+#
+#   # Run only unit tests (no Dex required):
+#   docker compose -f docker-compose.test.yml run --rm php vendor/bin/phpunit --testsuite "MiniOrange OIDC Unit Tests"
+#
+#   # Run only integration tests (requires Dex):
+#   docker compose -f docker-compose.test.yml run --rm php vendor/bin/phpunit --testsuite "MiniOrange OIDC Integration Tests"
+#
+#   # Tear down:
+#   docker compose -f docker-compose.test.yml down -v
+#
+# Credentials (test-only — never use in production):
+#   Client ID     : miniorange-test-client
+#   Client Secret : miniorange-test-secret
+#   Test user     : testuser@example.com / password: testpass
+#   Admin user    : adminuser@example.com / password: adminpass
+
+version: "3.9"
+
+networks:
+    oidc-test:
+        driver: bridge
+
+volumes:
+    dex-data:
+
+services:
+
+    # ------------------------------------------------------------------ Dex IdP
+    dex:
+        image: ghcr.io/dexidp/dex:v2.39.1
+        container_name: oidc_test_dex
+        restart: "no"
+        networks:
+            oidc-test:
+                aliases:
+                    - dex.local
+        ports:
+            - "5556:5556"   # OIDC endpoints
+        volumes:
+            - ./Test/Integration/fixtures/dex-config.yaml:/etc/dex/config.yaml:ro
+            - dex-data:/var/dex
+        command: ["dex", "serve", "/etc/dex/config.yaml"]
+        healthcheck:
+            test: ["CMD", "wget", "-qO-", "http://localhost:5556/dex/.well-known/openid-configuration"]
+            interval: 5s
+            timeout: 5s
+            retries: 10
+            start_period: 10s
+
+    # --------------------------------------------------------------- PHP runner
+    php:
+        image: php:8.2-cli
+        container_name: oidc_test_php
+        restart: "no"
+        depends_on:
+            dex:
+                condition: service_healthy
+        networks:
+            - oidc-test
+        working_dir: /app
+        volumes:
+            - .:/app:ro
+            - ./Test/Integration:/app/Test/Integration:rw
+        environment:
+            # Dex endpoint used by integration tests
+            OIDC_TEST_ISSUER: "http://dex.local:5556/dex"
+            OIDC_TEST_CLIENT_ID: "miniorange-test-client"
+            OIDC_TEST_CLIENT_SECRET: "miniorange-test-secret"
+            OIDC_TEST_REDIRECT_URI: "http://localhost/mooauth/actions/readauthresponse"
+        command: >
+            sh -c "
+                apt-get update -q && apt-get install -y -q curl unzip &&
+                php -r \"copy('https://getcomposer.org/installer', 'composer-setup.php');\" &&
+                php composer-setup.php --quiet &&
+                php composer.phar install --no-interaction --prefer-dist --optimize-autoloader &&
+                vendor/bin/phpunit --configuration phpunit.xml
+            "

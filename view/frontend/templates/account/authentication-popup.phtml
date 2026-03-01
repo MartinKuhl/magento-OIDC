@@ -197,7 +197,7 @@ $isAutocompleteEnabled = $storeConfig->getStoreConfig('customer/password/autocom
                             <template x-for="(message, index) in errorMessages" :key="index">
                                 <div>
                                     <template x-if="message">
-                                        <span x-html="message"></span>
+                                        <span x-text="message"></span>
                                     </template>
                                 </div>
                             </template>

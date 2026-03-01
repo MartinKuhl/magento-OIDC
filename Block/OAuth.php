@@ -492,6 +492,62 @@ class OAuth extends \Magento\Framework\View\Element\Template
     }
 
     /**
+     * Get the active provider_id from the current request (URL or POST).
+     *
+     * Returns 0 when no provider context is active (global/legacy mode).
+     */
+    public function getActiveProviderId(): int
+    {
+        return (int) $this->getRequest()->getParam('provider_id', 0);
+    }
+
+    /**
+     * Load the provider data array for the active provider_id.
+     *
+     * Returns null when no provider_id is set or provider is not found.
+     *
+     * @return array<string,mixed>|null
+     */
+    public function getProviderData(): ?array
+    {
+        $id = $this->getActiveProviderId();
+        if ($id <= 0) {
+            return null;
+        }
+        return $this->oauthUtility->getClientDetailsById($id);
+    }
+
+    /**
+     * Load provider data by a specific provider ID (used by provider_edit.phtml in edit mode).
+     *
+     * @param int $id Provider database ID
+     * @return array<string,mixed>|null
+     */
+    public function getClientDetailsById(int $id): ?array
+    {
+        if ($id <= 0) {
+            return null;
+        }
+        return $this->oauthUtility->getClientDetailsById($id);
+    }
+
+    /**
+     * Build a tab URL that carries the current provider_id when in provider-context.
+     *
+     * Falls back to the plain extension page URL when no provider_id is active.
+     *
+     * @param string $page e.g. 'oauthsettings', 'attrsettings'
+     */
+    public function getProviderTabUrl(string $page): string
+    {
+        $providerId = $this->getActiveProviderId();
+        if ($providerId > 0) {
+            return $this->getUrl('mooauth/' . $page . '/index', ['provider_id' => $providerId]);
+        }
+        return $this->getExtensionPageUrl($page);
+    }
+
+    /**
      * Read the Tab and retrieve the current active tab if any.
      */
     public function getCurrentActiveTab(): string
@@ -681,6 +737,35 @@ class OAuth extends \Magento\Framework\View\Element\Template
     {
         $amLastName = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_LASTNAME);
         return $this->oauthUtility->isBlank($amLastName) ? '' : $amLastName;
+    }
+
+    /**
+     * Return all active providers for the given login type, ordered by sort_order.
+     *
+     * MP-05: Powers the multi-provider SSO button loop in customerssobutton.phtml.
+     * Each element is a plain data array (same shape as getClientDetailsByAppName()).
+     *
+     * @param  string $loginType 'customer' | 'admin' | 'both'
+     * @return array  Array of provider data arrays, may be empty
+     */
+    public function getActiveProviders(string $loginType = 'customer'): array
+    {
+        return $this->oauthUtility->getAllActiveProviders($loginType);
+    }
+
+    /**
+     * Build the SP-initiated authorization URL for a specific provider row.
+     *
+     * MP-05: Generates the login URL that includes the numeric provider_id so that
+     * ReadAuthorizationResponse can load the correct provider on callback.
+     *
+     * @param  int         $providerId  Row `id` from miniorange_oauth_client_apps
+     * @param  string|null $relayState  Optional redirect target after login
+     * @return string URL to SendAuthorizationRequest with provider_id query param
+     */
+    public function getSPInitiatedUrlForProvider(int $providerId, ?string $relayState = null): string
+    {
+        return $this->oauthUtility->getSPInitiatedUrlForProvider($providerId, $relayState);
     }
 
     /**

@@ -169,17 +169,77 @@ class OAuthUtility extends Data
         return 'xxxxxxx' . substr($phone, strlen($phone) - 3);
     }
 
-    //CUSTOM LOG FILE OPERATION
+    // CUSTOM LOG FILE OPERATION
+
     /**
-     * This function print custom log in var/log/mo_oauth.log file.
+     * Sensitive field names whose values must be masked before logging (FEAT-05).
+     */
+    private const SENSITIVE_LOG_KEYS = [
+        'client_secret', 'access_token', 'id_token', 'refresh_token', 'password', 'token',
+    ];
+
+    /**
+     * Write a plain-text message to the custom OIDC log as a JSON entry (FEAT-05).
      *
-     * @param string $txt
+     * Log format:
+     *   {"ts":"2026-01-01T12:00:00+00:00","level":"debug","message":"..."}
+     *
+     * This replaces the previous plain-text format while keeping the same
+     * public signature so all existing call-sites continue to work unchanged.
+     *
+     * @param string $txt Human-readable log message
      */
     public function customlog(string $txt): void
     {
         if ($this->isLogEnable()) {
-            $this->_logger->debug($txt);
+            $entry = json_encode([
+                'ts'      => (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM),
+                'level'   => 'debug',
+                'message' => $txt,
+            ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            $this->_logger->debug($entry !== false ? $entry : $txt);
         }
+    }
+
+    /**
+     * Write a structured JSON log entry with additional context fields (FEAT-05).
+     *
+     * Sensitive context keys are automatically masked with "***".
+     *
+     * Example:
+     *   $this->oauthUtility->customlogContext('oidc.token.exchange', [
+     *       'user'        => 'user@example.com',
+     *       'provider'    => 'okta',
+     *       'duration_ms' => 142,
+     *   ]);
+     *
+     * @param string $event   Short dot-notation event name (e.g. "oidc.login.success")
+     * @param array  $context Additional key-value context to include in the log entry
+     */
+    public function customlogContext(string $event, array $context = []): void
+    {
+        if (!$this->isLogEnable()) {
+            return;
+        }
+
+        // Mask sensitive values before logging
+        foreach (self::SENSITIVE_LOG_KEYS as $key) {
+            if (isset($context[$key])) {
+                $context[$key] = '***';
+            }
+        }
+
+        $payload = array_merge(
+            [
+                'ts'    => (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM),
+                'level' => 'info',
+                'event' => $event,
+            ],
+            $context
+        );
+
+        $entry = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        $this->_logger->debug($entry !== false ? $entry : $event);
     }
     /**
      * This function check whether any custom log file exist or not.
@@ -521,13 +581,13 @@ class OAuthUtility extends Data
     public function logDebug(string|object $msg = "", $obj = null): void
     {
         if (is_object($msg)) {
-            $this->customlog(var_export($msg, true));
+            $this->customlog(json_encode($msg, JSON_UNESCAPED_SLASHES) ?: '');
         } else {
             $this->customlog($msg);
         }
 
-        if ($obj != null) {
-            $this->customlog(var_export($obj, true));
+        if ($obj !== null) {
+            $this->customlog(json_encode($obj, JSON_UNESCAPED_SLASHES) ?: '');
         }
     }
 
@@ -660,5 +720,38 @@ class OAuthUtility extends Data
         // phpcs:ignore Magento2.Functions.DiscouragedFunction
         $parsed = parse_url($url);
         return is_array($parsed) ? $parsed : [];
+    }
+
+    /**
+     * Derive a first/last name pair from an email address local-part.
+     *
+     * Used as a fallback when the OIDC provider does not return given_name /
+     * family_name claims. Centralised here to avoid the same logic being
+     * duplicated across AdminUserCreator, CustomerUserCreator, ProcessUserAction,
+     * and CheckAttributeMappingAction. (REF-02)
+     *
+     * Examples:
+     *   "john.doe@example.com"  → ['first' => 'John', 'last' => 'Doe']
+     *   "jsmith@example.com"    → ['first' => 'Jsmith', 'last' => '']
+     *   "first_last@x.com"      → ['first' => 'First', 'last' => 'Last']
+     *
+     * @param  string $email A valid email address
+     * @return array{first: string, last: string}
+     */
+    public function extractNameFromEmail(string $email): array
+    {
+        $local = (string) strstr($email, '@', true);
+        if ($local === '') {
+            // Email has no local part (starts with '@') or no '@' at all —
+            // fall back to the domain portion, stripping the leading '@'.
+            $domain = ltrim((string) strstr($email, '@'), '@');
+            $local  = $domain !== '' ? $domain : $email;
+        }
+        $parts  = preg_split('/[\s._\-]+/', $local, 2) ?: [$local];
+
+        return [
+            'first' => ucfirst(strtolower($parts[0])),
+            'last'  => ucfirst(strtolower($parts[1] ?? '')),
+        ];
     }
 }

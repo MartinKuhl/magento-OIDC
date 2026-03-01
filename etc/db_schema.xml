@@ -58,8 +58,26 @@
       <column xsi:type="text" name="oauth_am_billingandshipping" nullable="false" comment="enable billing and shipping address" />
       <column xsi:type="text" name="oauth_am_sameasbilling" nullable="false" comment="Same as billing address" />
 
+      <!-- FEAT-04: Claims-based access control rules (Sprint 7) -->
+      <column xsi:type="text" name="access_control_rules" nullable="true" comment="JSON access control rules array [{claim,operator,value,deny_message}]" />
+
+      <!-- MP-01: Multi-provider support columns (Sprint 5) -->
+      <column xsi:type="varchar" name="display_name" length="255" nullable="true" comment="Human-readable provider label (e.g. Okta, Google)" />
+      <column xsi:type="smallint" name="is_active" padding="1" unsigned="true" nullable="false" default="1" comment="Enable (1) or disable (0) this provider" />
+      <column xsi:type="varchar" name="login_type" length="20" nullable="false" default="customer" comment="Login scope: customer | admin | both" />
+      <column xsi:type="smallint" name="sort_order" padding="5" unsigned="true" nullable="false" default="0" comment="Display order for SSO buttons (lower = first)" />
+      <column xsi:type="varchar" name="button_label" length="100" nullable="true" comment="Override text shown on the SSO button" />
+      <column xsi:type="varchar" name="button_color" length="7" nullable="true" comment="Hex colour for SSO button (#rrggbb)" />
+
       <constraint xsi:type="primary" referenceId="PRIMARY">
          <column name="id" />
       </constraint>
+
+      <!-- Index for active-provider queries (getAllActiveProviders) -->
+      <index referenceId="MINIORANGE_OAUTH_CLIENT_APPS_IS_ACTIVE_LOGIN_TYPE" indexType="btree">
+         <column name="is_active" />
+         <column name="login_type" />
+         <column name="sort_order" />
+      </index>
    </table>
 </schema>

@@ -266,9 +266,8 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
 */
         $resultRedirect = $this->resultFactory->create(ResultFactory::TYPE_REDIRECT);
 
-        // Create admin login URL with error parameter
-        $encoded = base64_encode((string) $message);
-        $loginUrl = $this->url->getUrl('admin', ['_query' => ['oidc_error' => $encoded]]);
+        // Create admin login URL with error parameter (URL-encoded, not base64 — read-side uses getParam() directly)
+        $loginUrl = $this->url->getUrl('admin', ['_query' => ['oidc_error' => (string) $message]]);
 
         $resultRedirect->setUrl($loginUrl);
         return $resultRedirect;

@@ -91,10 +91,12 @@ class AdminUserCreator
      */
     private function saveAdminUser($userName, string $email, $firstName, $lastName, int $roleId)
     {
-        // Generate secure random password (32 chars)
-        $randomPassword = $this->randomUtility->getRandomString(28)
+        // Generate a 32-char password and shuffle to avoid predictable character-class ordering (SEC-12).
+        $randomPassword = str_shuffle(
+            $this->randomUtility->getRandomString(28)
             . $this->randomUtility->getRandomString(2, '!@#$%^&*')
-            . $this->randomUtility->getRandomString(2, '0123456789');
+            . $this->randomUtility->getRandomString(2, '0123456789')
+        );
 
         $user = $this->userFactory->create();
         $user->setUsername($userName)
@@ -130,7 +132,10 @@ class AdminUserCreator
     }
 
     /**
-     * Apply name fallbacks from email when firstName/lastName are empty
+     * Apply name fallbacks from email when firstName/lastName are empty.
+     *
+     * Delegates to OAuthUtility::extractNameFromEmail() — single source of
+     * truth shared with CustomerUserCreator and the action controllers. (REF-02)
      *
      * @param  mixed  $firstName
      * @param  mixed  $lastName
@@ -139,16 +144,21 @@ class AdminUserCreator
      */
     private function applyNameFallbacks($firstName, $lastName, string $email): array
     {
+        if (!empty($firstName) && !empty($lastName)) {
+            return [$firstName, $lastName];
+        }
+
+        $derived = $this->oauthUtility->extractNameFromEmail($email);
+
         if (empty($firstName)) {
-            $parts = explode("@", $email);
-            $firstName = $parts[0];
-            $this->oauthUtility->customlog("AdminUserCreator: firstName fallback from email prefix: " . $firstName);
+            $firstName = $derived['first'];
+            $this->oauthUtility->customlog("AdminUserCreator: firstName fallback from email: " . $firstName);
         }
         if (empty($lastName)) {
-            $parts = explode("@", $email);
-            $lastName = isset($parts[1]) ? $parts[1] : $firstName;
-            $this->oauthUtility->customlog("AdminUserCreator: lastName fallback from email domain: " . $lastName);
+            $lastName = $derived['last'] !== '' ? $derived['last'] : $firstName;
+            $this->oauthUtility->customlog("AdminUserCreator: lastName fallback from email: " . $lastName);
         }
+
         return [$firstName, $lastName];
     }
 
@@ -168,7 +178,7 @@ class AdminUserCreator
             $roleMappings = is_array($decoded) ? $decoded : [];
         }
 
-        // FIX: empty.variable – $roleMappings direkt mit count() prüfen statt empty()
+        // Use strict empty-array check instead of empty() to avoid falsy edge-cases.
         if ($userGroups !== [] && $roleMappings !== []) {
             foreach ($roleMappings as $mapping) {
                 $mappedGroup = $mapping['group'] ?? '';
@@ -221,7 +231,7 @@ class AdminUserCreator
             return true;
         }
 
-        // FIX: Collection via Factory statt über Model::getCollection()
+        // Use CollectionFactory (injected) instead of Model::getCollection() to respect DI.
         $userCollection = $this->userCollectionFactory->create()
             ->addFieldToFilter('email', $email);
 

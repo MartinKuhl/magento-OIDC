@@ -86,8 +86,9 @@ class SendAuthorizationRequest extends BaseAction
 
         $params = $this->getRequest()->getParams();
         if ($chk_enable_log !== 0) {
+            // REF-04: Use JSON instead of var_export to avoid leaking nested PHP structures.
             $this->oauthUtility->customlog(
-                "SendAuthorizationRequest: Full params: " . var_export($params, true)
+                "SendAuthorizationRequest: params: " . json_encode($params, JSON_UNESCAPED_SLASHES)
             );
         }
 

@@ -1,0 +1,62 @@
+# MiniOrange OIDC — GraphQL API (FEAT-08)
+#
+# Provides headless / Hyva frontends with OIDC provider data and login URLs
+# without requiring server-side rendering of the phtml button template.
+#
+# Usage examples:
+#
+#   # Get the login URL for a specific provider
+#   query {
+#     oidcLoginUrl(provider_id: 3) {
+#       url
+#       label
+#       provider_id
+#     }
+#   }
+#
+#   # List all providers available on the customer-facing storefront
+#   query {
+#     oidcProviders(login_type: "customer") {
+#       id
+#       display_name
+#       button_label
+#       button_color
+#       login_url
+#     }
+#   }
+
+type Query {
+    oidcLoginUrl(
+        provider_id: Int @doc(description: "Numeric provider ID. When omitted the first active customer provider is used.")
+    ): OidcLoginUrlOutput
+        @resolver(class: "MiniOrange\\OAuth\\Model\\Resolver\\OidcLoginUrl")
+        @doc(description: "Returns the SP-initiated login URL for the requested OIDC provider.")
+
+    oidcProviders(
+        login_type: String @doc(description: "Filter by login_type: customer (default), admin, or both.")
+    ): [OidcProviderOutput]
+        @resolver(class: "MiniOrange\\OAuth\\Model\\Resolver\\OidcProviders")
+        @doc(description: "Returns all active OIDC providers available on the storefront.")
+}
+
+type OidcLoginUrlOutput @doc(description: "SP-initiated OIDC login URL with provider metadata.") {
+    url: String!
+        @doc(description: "Fully-qualified SP-initiated login URL including provider_id.")
+    label: String
+        @doc(description: "Configured button label for this provider.")
+    provider_id: Int
+        @doc(description: "Numeric database ID of the resolved provider.")
+}
+
+type OidcProviderOutput @doc(description: "An active OIDC provider available for login.") {
+    id: Int!
+        @doc(description: "Database ID of the provider.")
+    display_name: String
+        @doc(description: "Human-readable name of the provider.")
+    button_label: String
+        @doc(description: "Text shown on the SSO login button.")
+    button_color: String
+        @doc(description: "Hex colour code for the login button (e.g. #0066cc).")
+    login_url: String!
+        @doc(description: "SP-initiated login URL that initiates the OIDC flow for this provider.")
+}

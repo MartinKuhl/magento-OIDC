@@ -272,7 +272,7 @@
                 sortOrder="10"/>
     </type>
 
-    <!-- OAuthLogoutObserver Dependencies (for cookie cleanup) -->
+    <!-- OAuthLogoutObserver Dependencies (MP-08: added customerSession for provider-aware logout) -->
     <type name="MiniOrange\OAuth\Observer\OAuthLogoutObserver">
         <arguments>
             <argument name="cookieManager" xsi:type="object">
@@ -280,6 +280,34 @@
             </argument>
             <argument name="cookieMetadataFactory" xsi:type="object">
                 Magento\Framework\Stdlib\Cookie\CookieMetadataFactory
+            </argument>
+            <argument name="customerSession" xsi:type="object">
+                Magento\Customer\Model\Session
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- MP-09: Dynamic CSP — inject every active provider's hostname at runtime (multi-provider) -->
+    <type name="Magento\Csp\Model\Collector\MergeCollector">
+        <arguments>
+            <argument name="collectors" xsi:type="array">
+                <item name="miniorange_oidc" xsi:type="object">
+                    MiniOrange\OAuth\Plugin\Csp\OidcCspPolicyCollector
+                </item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- FEAT-07: CLI commands for OIDC provider config export / import -->
+    <type name="Magento\Framework\Console\CommandList">
+        <arguments>
+            <argument name="commands" xsi:type="array">
+                <item name="oidc_config_export" xsi:type="object">
+                    MiniOrange\OAuth\Console\Command\ExportOidcConfig
+                </item>
+                <item name="oidc_config_import" xsi:type="object">
+                    MiniOrange\OAuth\Console\Command\ImportOidcConfig
+                </item>
             </argument>
         </arguments>
     </type>

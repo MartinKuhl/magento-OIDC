@@ -146,6 +146,7 @@ class Data extends AbstractHelper
      * @param  bool   $sendHeader
      * @param  bool   $sendBody
      * @param  string $issuer
+     * @param  string $endSessionUrl
      * @throws \Exception
      */
     public function setOAuthClientApps(
@@ -160,7 +161,8 @@ class Data extends AbstractHelper
         string $grantType,
         bool $sendHeader,
         bool $sendBody,
-        string $issuer = ''
+        string $issuer = '',
+        string $endSessionUrl = ''
     ): void {
         $model = $this->clientAppsFactory->create();
         $model->addData(
@@ -177,6 +179,7 @@ class Data extends AbstractHelper
                 "user_info_endpoint" => $this->sanitize($userInfoUrl),
                 "well_known_config_url" => $this->sanitize($wellKnownConfigUrl),
                 "issuer" => $this->sanitize($issuer),
+                "endsession_endpoint" => $this->sanitize($endSessionUrl),
                 "grant_type" => $this->sanitize($grantType),
                 "values_in_header" => $sendHeader,
                 "values_in_body" => $sendBody
@@ -230,6 +233,63 @@ class Data extends AbstractHelper
         }
 
         return $data;
+    }
+
+    /**
+     * Get client details by numeric provider ID (row `id`).
+     *
+     * MP-03: Direct lookup by primary key. Used when `providerId` is available
+     * from the decoded OAuth state parameter (Sprint 5).
+     *
+     * @param  int $providerId  Row `id` of the provider record (must be > 0)
+     * @return array|null Client details array or null if not found
+     */
+    public function getClientDetailsById(int $providerId): ?array
+    {
+        if ($providerId <= 0) {
+            return null;
+        }
+        $collection = $this->getOAuthClientApps();
+        $collection->addFieldToFilter('id', ['eq' => $providerId]);
+        $data = $collection->getSize() > 0 ? $collection->getFirstItem()->getData() : null;
+
+        if ($data !== null && isset($data['client_secret']) && !empty($data['client_secret'])
+            && preg_match('/^\d+:\d+:/', (string) $data['client_secret'])) {
+            $data['client_secret'] = $this->encryptor->decrypt($data['client_secret']);
+        }
+
+        return $data;
+    }
+
+    /**
+     * Return all active provider records for a given login type, ordered by sort_order.
+     *
+     * MP-03: Powers multi-provider SSO button rendering and provider selection UI.
+     *
+     * @param  string $loginType  'customer', 'admin', or 'both'
+     * @return array  Array of provider data arrays (may be empty)
+     */
+    public function getAllActiveProviders(string $loginType = 'customer'): array
+    {
+        $collection = $this->getOAuthClientApps();
+        $collection->addFieldToFilter('is_active', ['eq' => 1]);
+        $collection->addFieldToFilter(
+            'login_type',
+            ['in' => [$loginType, 'both']]
+        );
+        $collection->setOrder('sort_order', 'ASC');
+
+        $results = [];
+        foreach ($collection as $item) {
+            $data = $item->getData();
+            if (isset($data['client_secret']) && !empty($data['client_secret'])
+                && preg_match('/^\d+:\d+:/', (string) $data['client_secret'])) {
+                $data['client_secret'] = $this->encryptor->decrypt($data['client_secret']);
+            }
+            $results[] = $data;
+        }
+
+        return $results;
     }
 
     /**
@@ -505,14 +565,26 @@ class Data extends AbstractHelper
     /**
      * Sanitize input data to prevent XSS and other injection attacks.
      *
+     * Guards against memory exhaustion from deeply nested or oversized arrays
+     * by capping recursion depth at 10 and array length at 500 (SEC-14).
+     *
      * @param  mixed $value
-     * @return mixed
+     * @param  int   $depth Current recursion depth (internal use only)
      */
-    public function sanitize($value)
+    public function sanitize($value, int $depth = 0): mixed
     {
+        // SEC-14: abort recursion beyond 10 levels to prevent stack exhaustion.
+        if ($depth > 10) {
+            return '';
+        }
+
         if (is_array($value)) {
+            // SEC-14: truncate arrays larger than 500 elements to prevent memory exhaustion.
+            if (count($value) > 500) {
+                $value = array_slice($value, 0, 500, true);
+            }
             foreach ($value as $key => $val) {
-                $value[$key] = $this->sanitize($val);
+                $value[$key] = $this->sanitize($val, $depth + 1);
             }
             return $value;
         }
@@ -566,6 +638,26 @@ class Data extends AbstractHelper
             OAuthConstants::OAUTH_LOGIN_URL,
             ["relayState" => $relayState]
         ) . "&app_name=" . $appName;
+    }
+
+    /**
+     * Build the SP-initiated URL for a specific provider by its numeric ID.
+     *
+     * MP-05: Used by the multi-provider SSO button loop. The URL includes
+     * `provider_id` so `SendAuthorizationRequest` can load the correct row
+     * without needing `app_name`.
+     *
+     * @param  int         $providerId  Row `id` from miniorange_oauth_client_apps
+     * @param  string|null $relayState  Optional post-login redirect URL
+     * @return string Frontend SSO URL with provider_id query parameter
+     */
+    public function getSPInitiatedUrlForProvider(int $providerId, ?string $relayState = null): string
+    {
+        $relayState = $relayState ?? $this->getCurrentUrl();
+        return $this->getFrontendUrl(
+            OAuthConstants::OAUTH_LOGIN_URL,
+            ['relayState' => $relayState]
+        ) . '&provider_id=' . $providerId;
     }
 
     /**

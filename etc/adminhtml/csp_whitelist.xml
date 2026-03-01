@@ -1,36 +1,15 @@
 <?xml version="1.0"?>
 <!--
 /**
- * CSP Whitelist for MiniOrange OAuth SSO Plugin - Admin Area
+ * CSP Whitelist for MiniOrange OIDC Plugin (adminhtml)
+ *
+ * Provider hostnames are added at runtime by OidcCspPolicyCollector
+ * based on the configured OIDC provider authorize URL.
+ * Do NOT add customer-specific hostnames here — they would apply
+ * to every installation that installs this module.
  */
 -->
 <csp_whitelist xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Csp:etc/csp_whitelist.xsd">
-    <policies>
-        <policy id="script-src">
-            <values>
-                <value id="auth-casa-kuhl" type="host">https://auth.casa-kuhl.de</value>
-            </values>
-        </policy>
-        <policy id="connect-src">
-            <values>
-                <value id="auth-casa-kuhl" type="host">https://auth.casa-kuhl.de</value>
-            </values>
-        </policy>
-        <policy id="frame-src">
-            <values>
-                <value id="auth-casa-kuhl" type="host">https://auth.casa-kuhl.de</value>
-            </values>
-        </policy>
-        <policy id="form-action">
-            <values>
-                <value id="auth-casa-kuhl" type="host">https://auth.casa-kuhl.de</value>
-            </values>
-        </policy>
-        <policy id="img-src">
-            <values>
-                <value id="auth-casa-kuhl" type="host">https://auth.casa-kuhl.de</value>
-            </values>
-        </policy>
-    </policies>
+    <policies/>
 </csp_whitelist>

@@ -1,0 +1,93 @@
+<!--
+    Template for the OIDC Provider management list page.
+    Shows all configured OIDC providers with Edit and Delete actions.
+-->
+<?php
+$addUrl     = $block->getUrl('mooauth/provider/edit');
+$deleteBase = $block->getUrl('mooauth/provider/delete');
+$collection = $block->getAllIdpConfiguration();
+
+$providers = [];
+foreach ($collection as $item) {
+    $providers[] = $item->getData();
+}
+?>
+<div class="mo-oauth-section" style="padding: 0 1%;">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+        <h2 style="margin: 0;"><?= $escaper->escapeHtml(__('OIDC Providers')) ?></h2>
+        <a href="<?= $escaper->escapeUrl($addUrl) ?>"
+           class="action-primary"
+           style="padding: 8px 16px; background:#eb5202; color:#fff;
+                  border-radius:3px; text-decoration:none; font-weight:600;">
+            <?= $escaper->escapeHtml(__('Add New Provider')) ?>
+        </a>
+    </div>
+
+    <?php if (empty($providers)): ?>
+        <p style="color:#666;">
+            <?= $escaper->escapeHtml(__('No providers configured yet. Click \'Add New Provider\' to get started.')) ?>
+        </p>
+    <?php else: ?>
+        <table class="data-grid" style="width:100%; border-collapse:collapse;">
+            <thead>
+                <tr>
+                    <th class="data-grid-th"><?= $escaper->escapeHtml(__('ID')) ?></th>
+                    <th class="data-grid-th"><?= $escaper->escapeHtml(__('Provider Name')) ?></th>
+                    <th class="data-grid-th"><?= $escaper->escapeHtml(__('Client ID')) ?></th>
+                    <th class="data-grid-th"><?= $escaper->escapeHtml(__('Login Type')) ?></th>
+                    <th class="data-grid-th"><?= $escaper->escapeHtml(__('Status')) ?></th>
+                    <th class="data-grid-th"><?= $escaper->escapeHtml(__('Sort Order')) ?></th>
+                    <th class="data-grid-th"><?= $escaper->escapeHtml(__('Actions')) ?></th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($providers as $provider): ?>
+                    <?php
+                    $id          = (int) ($provider['id'] ?? 0);
+                    $name        = !empty($provider['display_name'])
+                        ? $provider['display_name']
+                        : ($provider['app_name'] ?? '');
+                    $clientId    = $provider['clientID'] ?? '';
+                    $clientIdShort = mb_strlen($clientId) > 30 ? mb_substr($clientId, 0, 30) . '…' : $clientId;
+                    $loginType   = $provider['login_type'] ?? 'customer';
+                    $isActive    = (int) ($provider['is_active'] ?? 1);
+                    $sortOrder   = (int) ($provider['sort_order'] ?? 0);
+                    $editUrl     = $block->getUrl('mooauth/providersettings/index', ['provider_id' => $id]);
+                    $deleteUrl   = $deleteBase . 'id/' . $id;
+                    ?>
+                    <tr>
+                        <td><?= $escaper->escapeHtml((string) $id) ?></td>
+                        <td><?= $escaper->escapeHtml($name) ?></td>
+                        <td title="<?= $escaper->escapeHtmlAttr($clientId) ?>">
+                            <?= $escaper->escapeHtml($clientIdShort) ?>
+                        </td>
+                        <td><?= $escaper->escapeHtml($loginType) ?></td>
+                        <td>
+                            <?php if ($isActive): ?>
+                                <span style="color:#185b00; font-weight:600;">
+                                    <?= $escaper->escapeHtml(__('Active')) ?>
+                                </span>
+                            <?php else: ?>
+                                <span style="color:#b30000;">
+                                    <?= $escaper->escapeHtml(__('Inactive')) ?>
+                                </span>
+                            <?php endif; ?>
+                        </td>
+                        <td><?= $escaper->escapeHtml((string) $sortOrder) ?></td>
+                        <td>
+                            <a href="<?= $escaper->escapeUrl($editUrl) ?>"><?= $escaper->escapeHtml(__('Edit')) ?></a>
+                            &nbsp;|&nbsp;
+                            <a href="<?= $escaper->escapeUrl($deleteUrl) ?>"
+                               onclick="return confirm(
+                                   '<?= $escaper->escapeJs(__('Are you sure you want to delete this provider?')) ?>'
+                               );"
+                               style="color:#b30000;">
+                                <?= $escaper->escapeHtml(__('Delete')) ?>
+                            </a>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    <?php endif; ?>
+</div>

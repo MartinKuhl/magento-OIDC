@@ -43,11 +43,47 @@ $oidcVisibility = $block->getData('oidc_visibility');
         <line x1="0" y1="0" x2="210" y2="0"></line>
     </svg>
 </div>
+    <?php
+/**
+ * MP-05: Multi-provider SSO button loop.
+ *
+ * When multiple active providers are configured, renders one button per
+ * provider using each provider's display_name, button_label, and
+ * button_color. Falls back to the single-provider behaviour (app_name
+ * lookup) for installations that have not yet run the migration patch.
+ */
+    $activeProviders = $block->getActiveProviders('customer');
+    ?>
+    <?php if (!empty($activeProviders)): ?>
+<div class="sso-button-container sso-button-container--multi">
+        <?php foreach ($activeProviders as $provider):
+            $pid      = (int) ($provider['id'] ?? 0);
+            $name     = $escaper->escapeHtml($provider['display_name'] ?? $provider['app_name'] ?? '');
+            $label    = $escaper->escapeHtml(
+                !empty($provider['button_label'])
+                ? $provider['button_label']
+                : __('Login with %1', $name)
+            );
+            $color    = preg_match('/^#[0-9a-fA-F]{6}$/', (string) ($provider['button_color'] ?? ''))
+            ? $escaper->escapeHtmlAttr($provider['button_color'])
+            : '#0066cc';
+            $url      = $escaper->escapeUrl($block->getSPInitiatedUrlForProvider($pid));
+            ?>
+    <a class="sso-button sso-button--provider"
+       href="<?= $url /* @noEscape */ ?>"
+       style="background-color: <?= $color /* @noEscape */ ?>;"
+       aria-label="<?= $escaper->escapeHtmlAttr(__('Sign in with %1', $name)) ?>">
+            <?= $label /* @noEscape */ ?>
+    </a>
+    <?php endforeach; ?>
+</div>
+    <?php else: ?>
 <div class="sso-button-container">
     <a class="sso-button" href="<?= $escaper->escapeUrl($block->getSPInitiatedUrl(null, $block->getAppName())) ?>">
         <?= $escaper->escapeHtml($block->getSSOButtonText()) ?>
     </a>
 </div>
+    <?php endif; ?>
 
 <?php endif; ?>
 

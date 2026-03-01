@@ -27,32 +27,41 @@ class AccessTokenRequestBody
     private $code;
 
     /**
+     * @var string|null PKCE code_verifier to include in the token request (FEAT-01)
+     */
+    private readonly ?string $codeVerifier;
+
+    /**
      * Initialize access token request body.
      *
-     * @param string $redirectURL
-     * @param string $code
+     * @param string      $redirectURL
+     * @param string      $code
+     * @param string|null $codeVerifier PKCE code_verifier (RFC 7636 §4.5); null when PKCE is disabled
      */
-    public function __construct($redirectURL, $code)
+    public function __construct($redirectURL, $code, ?string $codeVerifier = null)
     {
-        $this->redirectURL = $redirectURL;
-        $this->code = $code;
+        $this->redirectURL  = $redirectURL;
+        $this->code         = $code;
+        $this->codeVerifier = $codeVerifier;
     }
 
-    /*
-     *
-     *
-     */
     /**
      * Build the request body as an associative array.
      */
     private function generateRequest(): array
     {
-
-        return [
+        $body = [
             'redirect_uri' => $this->redirectURL,
-            'grant_type' => OAuthConstants::GRANT_TYPE,
-            'code' => $this->code
+            'grant_type'   => OAuthConstants::GRANT_TYPE,
+            'code'         => $this->code,
         ];
+
+        // PKCE (RFC 7636 §4.5): include code_verifier when PKCE is enabled (FEAT-01)
+        if ($this->codeVerifier !== null && $this->codeVerifier !== '') {
+            $body['code_verifier'] = $this->codeVerifier;
+        }
+
+        return $body;
     }
 
     /**

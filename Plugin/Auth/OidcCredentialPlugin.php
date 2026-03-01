@@ -67,14 +67,18 @@ class OidcCredentialPlugin
         string $username,
         string $password
     ): array {
+        // SEC-06: Always unconditionally reset both flags at the start of every login
+        // attempt. This guards against the edge case where a prior Auth::login() call
+        // threw an exception before afterLogin() could execute, leaving $isOidcAuth=true
+        // in a recycled PHP-FPM worker process for the next incoming request.
+        $this->isOidcAuth    = false;
+        $this->adapterLogged = false;
+
         if ($password === OidcCredentialAdapter::OIDC_TOKEN_MARKER) {
             $this->oauthUtility->customlog(
                 "OidcCredentialPlugin: OIDC authentication detected for: " . $username
             );
             $this->isOidcAuth = true;
-            $this->adapterLogged = false;
-        } else {
-            $this->isOidcAuth = false;
         }
 
         return [$username, $password];

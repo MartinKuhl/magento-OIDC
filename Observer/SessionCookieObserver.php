@@ -5,9 +5,10 @@ use Magento\Framework\Event\ObserverInterface;
 use MiniOrange\OAuth\Helper\SessionHelper;
 
 /**
- * Observer für Session-Cookie-Anpassung
+ * Observer for session cookie adjustment.
  *
- * Dieser Observer wird aufgerufen, bevor die Response gesendet wird
+ * Called before the HTTP response is sent to ensure the session cookie
+ * carries the correct SameSite attribute for cross-origin OIDC redirects.
  */
 class SessionCookieObserver implements ObserverInterface
 {
@@ -32,7 +33,7 @@ class SessionCookieObserver implements ObserverInterface
     }
 
     /**
-     * Observer-Methode, die vor dem Senden der Response aufgerufen wird
+     * Force SameSite=None on the session cookie before the response is sent.
      *
      * @param \Magento\Framework\Event\Observer $observer
      */
@@ -42,7 +43,7 @@ class SessionCookieObserver implements ObserverInterface
         try {
             $this->sessionHelper->forceSameSiteNone();
         } catch (\Exception $e) {
-            // Nur kritische Fehler loggen
+            // Only log critical errors; minor cookie issues should not break the request.
             $this->oauthUtility->customlog("SessionCookieObserver: Critical error - " . $e->getMessage());
         }
     }

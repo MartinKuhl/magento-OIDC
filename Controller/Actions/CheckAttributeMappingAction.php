@@ -72,6 +72,11 @@ class CheckAttributeMappingAction extends BaseAction
      */
     private $groupName;
 
+    /**
+     * @var array|null Decoded access_control_rules from the provider row (FEAT-04)
+     */
+    private ?array $accessControlRules = null;
+
     /** @var \MiniOrange\OAuth\Helper\TestResults */
     private readonly \MiniOrange\OAuth\Helper\TestResults $testResults;
 
@@ -216,6 +221,22 @@ class CheckAttributeMappingAction extends BaseAction
         $logMsg .= ", Admin intent: " . ($isAdminLoginIntent ? 'YES' : 'NO');
         $this->oauthUtility->customlog($logMsg);
 
+        // FEAT-04: Claims-based access control — evaluate per-provider rules before routing
+        if ($this->accessControlRules !== null && is_array($flattenedAttrs)) {
+            $denialMessage = $this->evaluateAccessControlRules($flattenedAttrs);
+            if ($denialMessage !== null) {
+                $this->oauthUtility->customlog(
+                    "CheckAttributeMappingAction: Access denied for {$userEmail}: {$denialMessage}"
+                );
+                $this->messageManager->addErrorMessage(__($denialMessage));
+                if ($isAdminLoginIntent) {
+                    $adminLoginUrl = $this->backendUrl->getUrl('admin');
+                    return $this->resultRedirectFactory->create()->setUrl($adminLoginUrl);
+                }
+                return $this->resultRedirectFactory->create()->setPath('customer/account/login');
+            }
+        }
+
         if ($isAdminLoginIntent) {
             // User initiated login from admin page - verify they have admin account
             $hasAdminAccount = $this->adminUserCreator->isAdminUser($userEmail);
@@ -310,8 +331,7 @@ class CheckAttributeMappingAction extends BaseAction
                     } else {
                         $this->oauthUtility->customlog("ERROR: Failed to create admin user for: " . $userEmail);
                         $errorMessage = 'Failed to create admin account. Please contact your administrator.';
-                        $encodedError = base64_encode($errorMessage);
-                        $adminLoginUrl = $this->backendUrl->getUrl('admin') . '?oidc_error=' . $encodedError;
+                        $adminLoginUrl = $this->backendUrl->getUrl('admin') . '?oidc_error=' . urlencode($errorMessage);
                         return $this->resultRedirectFactory->create()->setUrl($adminLoginUrl);
                     }
                 } else {
@@ -322,8 +342,7 @@ class CheckAttributeMappingAction extends BaseAction
                         'ADMIN_ACCOUNT_NOT_FOUND',
                         ['email' => $userEmail]
                     );
-                    $encodedError = base64_encode($errorMessage);
-                    $adminLoginUrl = $this->backendUrl->getUrl('admin') . '?oidc_error=' . $encodedError;
+                    $adminLoginUrl = $this->backendUrl->getUrl('admin') . '?oidc_error=' . urlencode($errorMessage);
                     return $this->resultRedirectFactory->create()->setUrl($adminLoginUrl);
                 }
             }
@@ -456,7 +475,7 @@ class CheckAttributeMappingAction extends BaseAction
     {
         if (!isset($attrs[$this->lastName])) {
             $parts = explode("@", (string) $this->userEmail);
-            $attrs[$this->lastName] = isset($parts[1]) ? $parts[1] : '';
+            $attrs[$this->lastName] = $parts[1] ?? '';
             $this->oauthUtility->customlog(
                 "Last name not provided, using email domain: " . ($parts[1] ?? 'empty')
             );
@@ -558,6 +577,111 @@ class CheckAttributeMappingAction extends BaseAction
     {
         $this->loginType = $loginType;
         return $this;
+    }
+
+    /**
+     * Override attribute mappings with per-provider values from the client details row (MP-07).
+     *
+     * When a numeric provider_id is known, ReadAuthorizationResponse passes the provider's
+     * DB row here. Any non-empty attribute column in the row takes precedence over the
+     * global store-config defaults set in the constructor, enabling per-provider mapping.
+     *
+     * Fields read from the provider row:
+     *   email_attribute, username_attribute, firstname_attribute,
+     *   lastname_attribute, group_attribute
+     *
+     * @param  array $clientDetails Provider row data array
+     * @return $this
+     */
+    public function setClientDetails(array $clientDetails): static
+    {
+        if (!empty($clientDetails['email_attribute'])) {
+            $this->emailAttribute = (string) $clientDetails['email_attribute'];
+        }
+        if (!empty($clientDetails['username_attribute'])) {
+            $this->usernameAttribute = (string) $clientDetails['username_attribute'];
+        }
+        if (!empty($clientDetails['firstname_attribute'])) {
+            $this->firstName = (string) $clientDetails['firstname_attribute'];
+        }
+        if (!empty($clientDetails['lastname_attribute'])) {
+            $this->lastName = (string) $clientDetails['lastname_attribute'];
+        }
+        if (!empty($clientDetails['group_attribute'])) {
+            $this->groupName = (string) $clientDetails['group_attribute'];
+        }
+
+        // MP-08: persist provider ID in customer session so the logout observer
+        // can load the correct end_session_endpoint for IdP-initiated logout.
+        $providerId = (int) ($clientDetails['id'] ?? 0);
+        if ($providerId > 0) {
+            $this->customerSession->setData('oidc_provider_id', $providerId);
+        }
+
+        // FEAT-04: load access control rules from the provider row
+        $rulesJson = (string) ($clientDetails['access_control_rules'] ?? '');
+        if ($rulesJson !== '') {
+            $decoded = json_decode($rulesJson, true);
+            $this->accessControlRules = is_array($decoded) ? $decoded : null;
+        }
+
+        return $this;
+    }
+
+    /**
+     * Evaluate per-provider claims-based access control rules (FEAT-04).
+     *
+     * Each rule is an associative array with:
+     *   - claim        (string) : flattened OIDC attribute key to test
+     *   - operator     (string) : eq | neq | contains | not_contains | exists | not_exists
+     *   - value        (string) : expected value (ignored for exists/not_exists)
+     *   - deny_message (string) : user-visible message shown when this rule fails
+     *
+     * Rules are AND-combined; the first failing rule short-circuits and returns
+     * its deny_message. Returns null when all rules pass (access granted).
+     *
+     * Array-valued claims (e.g. groups) are joined with commas for string comparison.
+     *
+     * @param  array       $claims Flattened OIDC claims from the IdP response
+     * @return string|null         Denial message if access is denied, null if granted
+     */
+    private function evaluateAccessControlRules(array $claims): ?string
+    {
+        foreach ($this->accessControlRules as $rule) {
+            if (!is_array($rule)) {
+                continue;
+            }
+
+            $claim    = (string) ($rule['claim']        ?? '');
+            $operator = (string) ($rule['operator']     ?? 'eq');
+            $expected = (string) ($rule['value']        ?? '');
+            $message  = (string) ($rule['deny_message'] ?? '');
+
+            if ($claim === '') {
+                continue;
+            }
+
+            $actual    = $claims[$claim] ?? null;
+            $strActual = is_array($actual)
+                ? implode(',', $actual)
+                : (string) ($actual ?? '');
+
+            $passes = match ($operator) {
+                'eq'           => $strActual === $expected,
+                'neq'          => $strActual !== $expected,
+                'contains'     => str_contains($strActual, $expected),
+                'not_contains' => !str_contains($strActual, $expected),
+                'exists'       => $actual !== null,
+                'not_exists'   => $actual === null,
+                default        => true, // unknown operator: treat as pass
+            };
+
+            if (!$passes) {
+                return $message !== '' ? $message : (string) __('Access denied by provider policy.');
+            }
+        }
+
+        return null; // all rules passed — access granted
     }
 
     /**

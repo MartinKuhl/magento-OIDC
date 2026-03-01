@@ -196,14 +196,19 @@ class CustomerOidcCallback extends BaseAction
                 ->setPath('customer/account/login');
         }
 
-        // Ensure customer has correct website/store context
+        // SEC-08: Enforce website context — reject cross-site login attempts
         $websiteId = $this->storeManager->getStore()->getWebsiteId();
         if ($customerModel->getWebsiteId() != $websiteId) {
             $this->oauthUtility->customlog(
-                "WARNING: Customer website ID mismatch. "
-                . "Customer: " . $customerModel->getWebsiteId()
-                . ", Store: " . $websiteId
+                "SEC-08: Blocked cross-website login. "
+                . "Customer website: " . $customerModel->getWebsiteId()
+                . ", Current store website: " . $websiteId
             );
+            $this->messageManager->addErrorMessage(
+                __('Authentication failed: This account is not registered on this website.')
+            );
+            return $this->resultRedirectFactory->create()
+                ->setPath('customer/account/login');
         }
 
         // Log in customer (clean HTTP context allows proper

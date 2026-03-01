@@ -174,22 +174,25 @@ class CustomerUserCreator
         $this->oauthUtility->customlog("CustomerUserCreator: Starting creation for " . $email);
 
         try {
-            // Name fallbacks if empty
-            if ($firstName === '' || $firstName === '0') {
-                $parts = explode("@", $email);
-                $firstName = $parts[0];
-            }
-            if ($lastName === '' || $lastName === '0') {
-                $parts = explode("@", $email);
-                $lastName = $parts[1] ?? 'User';
+            // Name fallbacks — delegate to shared helper (REF-02)
+            if ($firstName === '' || $firstName === '0' || $lastName === '' || $lastName === '0') {
+                $derived = $this->oauthUtility->extractNameFromEmail($email);
+                if ($firstName === '' || $firstName === '0') {
+                    $firstName = $derived['first'];
+                }
+                if ($lastName === '' || $lastName === '0') {
+                    $lastName = $derived['last'] !== '' ? $derived['last'] : $derived['first'];
+                }
             }
 
             $userName = $this->oauthUtility->isBlank($userName) ? $email : $userName;
 
-            // Generate secure random password (32 chars)
-            $randomPassword = $this->randomUtility->getRandomString(28)
+            // Generate a 32-char password and shuffle to avoid predictable character-class ordering (SEC-12).
+            $randomPassword = str_shuffle(
+                $this->randomUtility->getRandomString(28)
                 . $this->randomUtility->getRandomString(2, '!@#$%^&*')
-                . $this->randomUtility->getRandomString(2, '0123456789');
+                . $this->randomUtility->getRandomString(2, '0123456789')
+            );
 
             $websiteId = $this->storeManager->getWebsite()->getId();
 
@@ -311,7 +314,7 @@ class CustomerUserCreator
         }
 
         // Support nested path notation (e.g., "address.locality")
-        if (strpos($key, '.') !== false) {
+        if (str_contains($key, '.')) {
             // Check in flattened attrs
             if ($flattenedAttrs !== []) {
                 $parts = explode('.', $key);

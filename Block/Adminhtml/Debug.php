@@ -8,7 +8,7 @@ use MiniOrange\OAuth\Helper\OAuthUtility;
 use MiniOrange\OAuth\Helper\OAuthConstants;
 
 /**
- * Debug Block für Authelia Response Daten
+ * Debug block for OIDC response data and connectivity tests.
  */
 class Debug extends Template
 {
@@ -179,9 +179,14 @@ class Debug extends Template
         $httpCode = null;
 
         try {
-            $curl->setOption('CURLOPT_NOBODY', true);
-            $curl->setOption('CURLOPT_TIMEOUT', 5);
-            $curl->setOption('CURLOPT_SSL_VERIFYPEER', false);
+            /** @psalm-suppress InvalidArgument */
+            $curl->setOption(CURLOPT_NOBODY, true);
+            /** @psalm-suppress InvalidArgument */
+            $curl->setOption(CURLOPT_TIMEOUT, 5);
+            /** @psalm-suppress InvalidArgument */
+            $curl->setOption(CURLOPT_SSL_VERIFYPEER, true);
+            /** @psalm-suppress InvalidArgument */
+            $curl->setOption(CURLOPT_SSL_VERIFYHOST, 2);
 
             $startTime = microtime(true);
             $curl->get($url);

@@ -1,0 +1,100 @@
+<?php
+/**
+ * Test results page template.
+ *
+ * Variables injected by ShowTestResults controller:
+ * @var string       $status       'TEST SUCCESSFUL' | 'TEST FAILED' | 'TEST UNSUCCESSFUL'
+ * @var array|null   $attrs        Received OIDC attributes
+ * @var string       $greetingName Display name for greeting
+ * @var string       $errorMessage Escaped error message (only set on TEST UNSUCCESSFUL)
+ * @var string       $rightImage   URL to the success tick image
+ * @var string       $wrongImage   URL to the error cross image
+ */
+
+/** @var \Magento\Framework\Escaper $escaper injected via extract() */
+?>
+<div style="font-family:Calibri;padding:0 3%;">
+
+    <?php if ($status === 'TEST SUCCESSFUL'): ?>
+        <div style="color:#3c763d;background-color:#dff0d8;padding:2%;margin-bottom:20px;
+                    text-align:center;border:1px solid #AEDB9A;font-size:18pt;">
+            TEST SUCCESSFUL
+        </div>
+        <div style="display:block;text-align:center;margin-bottom:4%;">
+            <img style="width:15%;" src="<?= $escaper->escapeUrl($rightImage) ?>" alt="Success">
+        </div>
+    <?php elseif ($status === 'TEST UNSUCCESSFUL'): ?>
+        <div style="color:#a94442;background-color:#f2dede;padding:15px;margin-bottom:20px;
+                    text-align:center;border:1px solid #E6B3B2;font-size:18pt;">
+            TEST UNSUCCESSFUL
+        </div>
+        <div style="display:block;text-align:center;margin-bottom:4%;">
+            <img style="width:15%;" src="<?= $escaper->escapeUrl($wrongImage) ?>" alt="Failed">
+        </div>
+        <div style="font-size:14pt;padding:15px;background-color:#fff3cd;border:1px solid #ffc107;
+                    border-radius:4px;margin-bottom:20px;">
+            <p style="font-weight:bold;color:#856404;margin:0 0 10px 0;">Error Message:</p>
+            <p style="color:#856404;margin:0;"><?= $errorMessage /* @noEscape */ ?></p>
+        </div>
+    <?php else: ?>
+        <div style="color:#a94442;background-color:#f2dede;padding:15px;margin-bottom:20px;
+                    text-align:center;border:1px solid #E6B3B2;font-size:18pt;">
+            TEST FAILED
+        </div>
+        <div style="display:block;text-align:center;margin-bottom:4%;">
+            <img style="width:15%;" src="<?= $escaper->escapeUrl($wrongImage) ?>" alt="Failed">
+        </div>
+    <?php endif; ?>
+
+    <?php if ($status !== 'TEST UNSUCCESSFUL'): ?>
+        <span style="font-size:14pt;"><b>Hello <?= $escaper->escapeHtml($greetingName) ?>,</b></span><br/>
+        <p style="font-weight:bold;font-size:14pt;margin-left:1%;">ATTRIBUTES RECEIVED:</p>
+
+        <table style="border-collapse:collapse;border-spacing:0;display:table;width:100%;
+                      font-size:14pt;background-color:#EDEDED;">
+            <tr style="text-align:center;">
+                <td style="font-weight:bold;border:2px solid #949090;padding:2%;">ATTRIBUTE NAME</td>
+                <td style="font-weight:bold;padding:2%;border:2px solid #949090;word-wrap:break-word;">
+                    ATTRIBUTE VALUE
+                </td>
+            </tr>
+            <?php if (is_array($attrs) && $attrs !== []): ?>
+                <?php foreach ($attrs as $attrKey => $attrValue): ?>
+                    <?php
+                    if (!is_array($attrValue)) {
+                        $attrValue = [$attrValue];
+                    }
+                    if (in_array(null, $attrValue, true)) {
+                        continue;
+                    }
+                    $escapedValues = array_map(
+                        static fn ($v): string => $escaper->escapeHtml((string) $v),
+                        $attrValue
+                    );
+                    ?>
+                    <tr>
+                        <td style="font-weight:bold;border:2px solid #949090;padding:2%;">
+                            <?= $escaper->escapeHtml((string) $attrKey) ?>
+                        </td>
+                        <td style="padding:2%;border:2px solid #949090;word-wrap:break-word;">
+                            <?= implode('<br/>', $escapedValues) /* @noEscape */ ?>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <tr>
+                    <td colspan="2" style="padding:2%;text-align:center;">No Attributes Received.</td>
+                </tr>
+            <?php endif; ?>
+        </table>
+    <?php endif; ?>
+
+    <div style="margin:3%;display:block;text-align:center;">
+        <input style="padding:1%;width:100px;background:#0091CD none repeat scroll 0% 0%;cursor:pointer;
+                      font-size:15px;border-width:1px;border-style:solid;border-radius:3px;
+                      white-space:nowrap;box-sizing:border-box;border-color:#0073AA;
+                      box-shadow:0px 1px 0px rgba(120,200,230,0.6) inset;color:#FFF;"
+               type="button" value="Done" onClick="window.close();">
+    </div>
+
+</div>

@@ -1,0 +1,186 @@
+<!--
+    Provider Settings template.
+    Allows editing of provider identity fields:
+    display_name, login_type, is_active, sort_order, button_label, button_color.
+    Only operates in provider-context mode (requires provider_id in the URL).
+-->
+<?php
+$activeProviderId = $block->getActiveProviderId();
+$providerData     = $block->getProviderData();
+
+if ($providerData !== null) {
+    $displayName = $providerData['display_name'] ?? '';
+    $loginType   = $providerData['login_type']   ?? 'both';
+    $isActive    = (int) ($providerData['is_active'] ?? 1);
+    $sortOrder   = (int) ($providerData['sort_order'] ?? 0);
+    $buttonLabel = $providerData['button_label'] ?? '';
+    $buttonColor = !empty($providerData['button_color']) ? $providerData['button_color'] : '#eb5202';
+}
+?>
+
+<div class="row">
+    <div class="col-sm-7 page_margin">
+        <div class="page" id="providersettings">
+            <div class="mosp_table_layout">
+                <h3>PROVIDER SETTINGS</h3>
+                <hr>
+                <p style="font-style: italic; color: #666; margin-top: 10px;">
+                    Configure provider identity, login scope, and SSO button appearance.
+                </p>
+            </div>
+
+            <?php if ($providerData !== null): ?>
+            <div style="background:#e8f4fd; border:1px solid #bee0f7; padding:10px 14px;
+                        border-radius:4px; margin-bottom:14px; color:#1a5276;">
+                <strong><?= $escaper->escapeHtml(__('Editing provider:')) ?></strong>
+                <?= $escaper->escapeHtml($providerData['display_name'] ?: ($providerData['app_name'] ?? '')) ?>
+                &nbsp;|&nbsp;
+                <a href="<?= $escaper->escapeUrl($block->getUrl('mooauth/provider/index')) ?>">
+                    <?= $escaper->escapeHtml(__('Back to provider list')) ?>
+                </a>
+            </div>
+
+            <!-- Provider Settings Form -->
+            <form name="f" method="post" action="">
+                <input type="hidden" name="form_key" value="<?= $escaper->escapeHtmlAttr($block->getFormKey()) ?>">
+                <input type="hidden" name="option" value="saveProviderSettings">
+                <input type="hidden"
+                       name="provider_id"
+                       value="<?= $escaper->escapeHtmlAttr((string) $activeProviderId) ?>">
+
+                <table style="width:100%;">
+                    <!-- Display Name -->
+                    <tr>
+                        <td style="width:200px;">
+                            <label><strong><?= $escaper->escapeHtml(__('Display Name')) ?>:</strong></label>
+                        </td>
+                        <td>
+                            <input type="text"
+                                   name="display_name"
+                                   style="width:100%;"
+                                   placeholder="e.g. Login with Authelia"
+                                   value="<?= $escaper->escapeHtmlAttr($displayName) ?>">
+                            <small style="color:#666;">
+                                <?= $escaper->escapeHtml(__('Label shown on the SSO button.')) ?>
+                            </small>
+                        </td>
+                    </tr>
+
+                    <!-- Login Type -->
+                    <tr>
+                        <td>
+                            <label><strong><?= $escaper->escapeHtml(__('Login Type')) ?>:</strong></label>
+                        </td>
+                        <td>
+                            <select name="login_type" style="width:100%;">
+                                <option value="customer" <?= $loginType === 'customer' ? 'selected' : '' ?>>
+                                    <?= $escaper->escapeHtml(__('Customer')) ?>
+                                </option>
+                                <option value="admin" <?= $loginType === 'admin' ? 'selected' : '' ?>>
+                                    <?= $escaper->escapeHtml(__('Admin')) ?>
+                                </option>
+                                <option value="both" <?= $loginType === 'both' ? 'selected' : '' ?>>
+                                    <?= $escaper->escapeHtml(__('Both')) ?>
+                                </option>
+                            </select>
+                            <small style="color:#666;">
+                                <?= $escaper->escapeHtml(__('Who can use this provider to log in.')) ?>
+                            </small>
+                        </td>
+                    </tr>
+
+                    <!-- Active -->
+                    <tr>
+                        <td>
+                            <label><strong><?= $escaper->escapeHtml(__('Active')) ?>:</strong></label>
+                        </td>
+                        <td>
+                            <input type="checkbox"
+                                   name="is_active"
+                                   value="1"
+                                   <?= $isActive ? 'checked' : '' ?>>
+                            <small style="color:#666; margin-left:6px;">
+                                <?= $escaper->escapeHtml(
+                                    __('Uncheck to disable this provider without deleting it.')
+                                ) ?>
+                            </small>
+                        </td>
+                    </tr>
+
+                    <!-- Sort Order -->
+                    <tr>
+                        <td>
+                            <label><strong><?= $escaper->escapeHtml(__('Sort Order')) ?>:</strong></label>
+                        </td>
+                        <td>
+                            <input type="number"
+                                   name="sort_order"
+                                   min="0"
+                                   style="width:80px;"
+                                   value="<?= $escaper->escapeHtmlAttr((string) $sortOrder) ?>">
+                            <small style="color:#666; margin-left:6px;">
+                                <?= $escaper->escapeHtml(__('Lower numbers appear first.')) ?>
+                            </small>
+                        </td>
+                    </tr>
+
+                    <!-- Button Label -->
+                    <tr>
+                        <td>
+                            <label><strong><?= $escaper->escapeHtml(__('Button Label')) ?>:</strong></label>
+                        </td>
+                        <td>
+                            <input type="text"
+                                   name="button_label"
+                                   style="width:100%;"
+                                   placeholder="e.g. Login with SSO"
+                                   value="<?= $escaper->escapeHtmlAttr($buttonLabel) ?>">
+                            <small style="color:#666;">
+                                <?= $escaper->escapeHtml(__('Leave empty to use the Display Name.')) ?>
+                            </small>
+                        </td>
+                    </tr>
+
+                    <!-- Button Color -->
+                    <tr>
+                        <td>
+                            <label><strong><?= $escaper->escapeHtml(__('Button Color')) ?>:</strong></label>
+                        </td>
+                        <td>
+                            <input type="color"
+                                   name="button_color"
+                                   value="<?= $escaper->escapeHtmlAttr($buttonColor) ?>"
+                                   style="width:60px; height:36px; padding:2px; cursor:pointer;">
+                            <small style="color:#666; margin-left:6px;">
+                                <?= $escaper->escapeHtml(__('Hex colour for the SSO login button.')) ?>
+                            </small>
+                        </td>
+                    </tr>
+                </table>
+
+                <div style="margin-left: 210px;">
+                    <br>
+                    <input class="btn-round"
+                           type="submit"
+                           name="submit"
+                           style="width:100px;"
+                           value="<?= $escaper->escapeHtmlAttr(__('Save')) ?>">
+                </div>
+            </form>
+
+            <?php else: ?>
+            <div style="background:#fff3cd; border:1px solid #ffc107; padding:14px;
+                        border-radius:4px; color:#856404; margin-top:10px;">
+                <?= $escaper->escapeHtml(
+                    __('No provider selected. Please open this page via Manage Providers → Edit.')
+                ) ?>
+                <br><br>
+                <a href="<?= $escaper->escapeUrl($block->getUrl('mooauth/provider/index')) ?>">
+                    <?= $escaper->escapeHtml(__('Go to Manage Providers')) ?>
+                </a>
+            </div>
+            <?php endif; ?>
+
+        </div>
+    </div>
+</div>

@@ -14,10 +14,30 @@
             Parent Menu Item is the miniOrange OAuth menu item mentioned above.
             Action is the controllerAction to be called when menu item is clicked.
         -->
+        <!--
+            MP-06: Provider management — list, add, edit, delete OIDC providers.
+            Routes to Controller/Adminhtml/Provider/Index.php via mooauth/provider/index.
+        -->
+        <add id="MiniOrange_OAuth::provider_management"
+            title="Manage Providers"
+            module="MiniOrange_OAuth"
+            sortOrder="0"
+            parent="MiniOrange_OAuth::OAuth"
+            action="mooauth/provider/index"
+            resource="MiniOrange_OAuth::oauth_settings"/>
+
+        <add id="MiniOrange_OAuth::provider_settings"
+            title="Provider Settings"
+            module="MiniOrange_OAuth"
+            sortOrder="1"
+            parent="MiniOrange_OAuth::OAuth"
+            action="mooauth/providersettings/index"
+            resource="MiniOrange_OAuth::provider_settings"/>
+
         <add id="MiniOrange_OAuth::oauth_settings"
             title="OAuth Settings"
             module="MiniOrange_OAuth"
-            sortOrder="0"
+            sortOrder="2"
             parent="MiniOrange_OAuth::OAuth"
             action="mooauth/oauthsettings"
             resource="MiniOrange_OAuth::oauth_settings"/>
@@ -30,7 +50,7 @@
         <add id="MiniOrange_OAuth::signin_settings"
             title="Sign In Settings"
             module="MiniOrange_OAuth"
-            sortOrder="1"
+            sortOrder="3"
             parent="MiniOrange_OAuth::OAuth"
             action="mooauth/signinsettings"
             resource="MiniOrange_OAuth::signin_settings"/>
@@ -43,7 +63,7 @@
         <add id="MiniOrange_OAuth::attr_settings"
             title="Attribute Mapping"
             module="MiniOrange_OAuth"
-            sortOrder="2"
+            sortOrder="4"
             parent="MiniOrange_OAuth::OAuth"
             action="mooauth/attrsettings"
             resource="MiniOrange_OAuth::attr_settings"/>

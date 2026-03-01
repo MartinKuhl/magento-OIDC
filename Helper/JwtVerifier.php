@@ -176,6 +176,8 @@ class JwtVerifier
             'CURLOPT_TIMEOUT' => 30,
             'CURLOPT_FOLLOWLOCATION' => true,
             'CURLOPT_RETURNTRANSFER' => true,
+            'CURLOPT_SSL_VERIFYPEER' => true,
+            'CURLOPT_SSL_VERIFYHOST' => 2,
             ]
         );
         $curl->write('GET', $jwksUrl, '1.1', ['Accept: application/json']);
@@ -187,7 +189,7 @@ class JwtVerifier
             return null;
         }
 
-        $data = json_decode((string) $response, true);
+        $data = json_decode($response, true);
         if (!isset($data['keys']) || !is_array($data['keys'])) {
             $this->oauthUtility->customlog("JwtVerifier: Invalid JWKS format from: " . $jwksUrl);
             return null;

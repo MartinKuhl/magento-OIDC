@@ -1,44 +1,77 @@
 <!--
     This template file is for the SAML Attribute/Role Mapping settings.
     File acts as a view file for our attribute / role mapping page.
+    Supports provider-context mode: when provider_id is in the URL,
+    data is loaded from and saved to that specific provider record.
 -->
 <?php
+// Provider-context detection
+$activeProviderId = $block->getActiveProviderId();
+$providerData     = $block->getProviderData(); // non-null when provider_id is in URL
+
 // Initialize all values required to be shown on the page
-$roles = $block->getAllRoles();
+$roles  = $block->getAllRoles();
 $groups = $block->getAllGroups();
 
 $isEnabled = $block->isEnabled();
-$disabled = !$isEnabled ? "disabled" : "";
-$oauth_am_username = $block->getUserNameMapping();
-$oauth_am_email = $block->getUserEmailMapping();
-$oauth_am_first_name = $block->getFirstNameMapping();
-$oauth_am_last_name = $block->getLastNameMapping();
-$oauth_am_table = $block->getTable();
-$oauth_am_country = $block->getCountryMapping();
-$oauth_am_company = $block->getCompanyMapping();
-$oauth_am_group_name = $block->getGroupMapping();
+$disabled  = !$isEnabled ? "disabled" : "";
 
-// Customer data mapping
-$oauth_am_dob = $block->getDobMapping();
-$oauth_am_gender = $block->getGenderMapping();
-$oauth_am_phone = $block->getPhoneMapping();
-$oauth_am_street = $block->getStreetMapping();
-$oauth_am_zip = $block->getZipMapping();
-$oauth_am_city = $block->getCityMapping();
-$oauth_am_state = $block->getStateMapping();
-$oauth_am_country = $block->getCountryMapping();
-$oidc_claims = $block->getOidcStandardClaims();
+if ($providerData !== null) {
+    // --- Provider-context mode: read from provider record ---
+    $oauth_am_username   = $providerData['username_attribute']  ?? '';
+    $oauth_am_email      = $providerData['email_attribute']     ?? '';
+    $oauth_am_first_name = $providerData['firstname_attribute'] ?? '';
+    $oauth_am_last_name  = $providerData['lastname_attribute']  ?? '';
+    $oauth_am_group_name = $providerData['group_attribute']     ?? '';
+    $default_role        = $providerData['default_role']        ?? '';
 
-$oauth_am_account_matcher = $block->getAccountMatcher();
-$emailSelected = $oauth_am_account_matcher == 'email' ? 'selected="selected"' : "";
+    // Role mappings stored as JSON in the provider row
+    $rawMappings = $providerData['oauth_admin_role_mapping'] ?? '[]';
+    $decoded = json_decode((string) $rawMappings, true);
+    $oauth_am_admin_role_mappings = is_array($decoded) ? $decoded : [];
+
+    // These remain global (not per-provider)
+    $oauth_am_account_matcher = $block->getAccountMatcher();
+    $oauth_am_dont_allow_unlisted_user_role = $block->getDisallowUnlistedUserRole();
+    $mo_oauth_dont_create_user_if_role_not_mapped = $block->getDisallowUserCreationIfRoleNotMapped();
+
+    // Customer data mappings — per-provider (text inputs in provider mode)
+    $oauth_am_dob    = '';
+    $oauth_am_gender = '';
+    $oauth_am_phone  = '';
+    $oauth_am_street = '';
+    $oauth_am_zip    = '';
+    $oauth_am_city   = '';
+    $oauth_am_state  = '';
+    $oauth_am_country = '';
+
+    // No OIDC claims dropdown in provider-context — use text inputs
+    $oidc_claims = [];
+} else {
+    // --- Legacy global mode ---
+    $oauth_am_username   = $block->getUserNameMapping();
+    $oauth_am_email      = $block->getUserEmailMapping();
+    $oauth_am_first_name = $block->getFirstNameMapping();
+    $oauth_am_last_name  = $block->getLastNameMapping();
+    $oauth_am_group_name = $block->getGroupMapping();
+    $oauth_am_country    = $block->getCountryMapping();
+    $oauth_am_dob        = $block->getDobMapping();
+    $oauth_am_gender     = $block->getGenderMapping();
+    $oauth_am_phone      = $block->getPhoneMapping();
+    $oauth_am_street     = $block->getStreetMapping();
+    $oauth_am_zip        = $block->getZipMapping();
+    $oauth_am_city       = $block->getCityMapping();
+    $oauth_am_state      = $block->getStateMapping();
+    $oidc_claims         = $block->getOidcStandardClaims();
+    $oauth_am_account_matcher = $block->getAccountMatcher();
+    $oauth_am_dont_allow_unlisted_user_role = $block->getDisallowUnlistedUserRole();
+    $mo_oauth_dont_create_user_if_role_not_mapped = $block->getDisallowUserCreationIfRoleNotMapped();
+    $default_role        = $block->getDefaultRole();
+    $oauth_am_admin_role_mappings = $block->getAdminRoleMappings();
+}
+
+$emailSelected    = $oauth_am_account_matcher == 'email'    ? 'selected="selected"' : "";
 $usernameSelected = $oauth_am_account_matcher == 'username' ? 'selected="selected"' : "";
-
-$oauth_am_dont_allow_unlisted_user_role = $block->getDisallowUnlistedUserRole();
-$mo_oauth_dont_create_user_if_role_not_mapped = $block->getDisallowUserCreationIfRoleNotMapped();
-$default_role = $block->getDefaultRole();
-
-// Admin Role Mapping settings
-$oauth_am_admin_role_mappings = $block->getAdminRoleMappings();
 ?>
 
 <div class="row">
@@ -54,10 +87,25 @@ $oauth_am_admin_role_mappings = $block->getAdminRoleMappings();
                 </p>
             </div>
 
+            <?php if ($providerData !== null): ?>
+            <div style="background:#e8f4fd; border:1px solid #bee0f7; padding:10px 14px;
+                        border-radius:4px; margin-bottom:14px; color:#1a5276;">
+                <strong><?= $escaper->escapeHtml(__('Editing provider:')) ?></strong>
+                <?= $escaper->escapeHtml($providerData['display_name'] ?: ($providerData['app_name'] ?? '')) ?>
+                &nbsp;|&nbsp;
+                <a href="<?= $escaper->escapeUrl($block->getUrl('mooauth/provider/index')) ?>">
+                    <?= $escaper->escapeHtml(__('Back to provider list')) ?>
+                </a>
+            </div>
+            <?php endif; ?>
+
             <!-- Attribute Mapping Form -->
             <form name="f" method="post" action="">
                 <input name="form_key" type="hidden" value="<?= $escaper->escapeHtmlAttr($block->getFormKey()) ?>">
                 <input type="hidden" name="option" value="saveAttrSettings">
+                <input type="hidden"
+                       name="provider_id"
+                       value="<?= $escaper->escapeHtmlAttr((string) $activeProviderId) ?>">
 
                 <table>
                     <!-- What is Attribute Mapping Info -->
@@ -109,6 +157,12 @@ $oauth_am_admin_role_mappings = $block->getAdminRoleMappings();
                             <label><strong>Username<span style="color:red;">*</span>:</strong></label>
                         </td>
                         <td>
+                            <?php if ($providerData !== null): ?>
+                            <input type="text" name="oauth_am_username" id="oauth_am_username"
+                                   placeholder="preferred_username"
+                                   value="<?= $escaper->escapeHtmlAttr($oauth_am_username) ?>"
+                                   <?= $escaper->escapeHtmlAttr($disabled) ?>>
+                            <?php else: ?>
                             <select name="oauth_am_username"
                                     id="oauth_am_username"
                                     <?= $escaper->escapeHtmlAttr($disabled) ?>>
@@ -120,6 +174,7 @@ $oauth_am_admin_role_mappings = $block->getAdminRoleMappings();
                                     </option>
                                 <?php endforeach; ?>
                             </select>
+                            <?php endif; ?>
                         </td>
                     </tr>
 
@@ -129,6 +184,12 @@ $oauth_am_admin_role_mappings = $block->getAdminRoleMappings();
                             <label><strong>Email<span style="color:red;">*</span>:</strong></label>
                         </td>
                         <td>
+                            <?php if ($providerData !== null): ?>
+                            <input type="text" name="oauth_am_email" id="oauth_am_email"
+                                   placeholder="email"
+                                   value="<?= $escaper->escapeHtmlAttr($oauth_am_email) ?>"
+                                   <?= $escaper->escapeHtmlAttr($disabled) ?>>
+                            <?php else: ?>
                             <select name="oauth_am_email"
                                     id="oauth_am_email"
                                     <?= $escaper->escapeHtmlAttr($disabled) ?>>
@@ -140,6 +201,7 @@ $oauth_am_admin_role_mappings = $block->getAdminRoleMappings();
                                     </option>
                                 <?php endforeach; ?>
                             </select>
+                            <?php endif; ?>
                         </td>
                     </tr>
 
@@ -149,6 +211,12 @@ $oauth_am_admin_role_mappings = $block->getAdminRoleMappings();
                             <label><strong>First Name:</strong></label>
                         </td>
                         <td>
+                            <?php if ($providerData !== null): ?>
+                            <input type="text" name="oauth_am_first_name" id="oauth_am_first_name"
+                                   placeholder="given_name"
+                                   value="<?= $escaper->escapeHtmlAttr($oauth_am_first_name) ?>"
+                                   <?= $escaper->escapeHtmlAttr($disabled) ?>>
+                            <?php else: ?>
                             <select name="oauth_am_first_name"
                                     id="oauth_am_first_name"
                                     <?= $escaper->escapeHtmlAttr($disabled) ?>>
@@ -160,6 +228,7 @@ $oauth_am_admin_role_mappings = $block->getAdminRoleMappings();
                                     </option>
                                 <?php endforeach; ?>
                             </select>
+                            <?php endif; ?>
                         </td>
                     </tr>
 
@@ -169,6 +238,12 @@ $oauth_am_admin_role_mappings = $block->getAdminRoleMappings();
                             <label><strong>Last Name:</strong></label>
                         </td>
                         <td>
+                            <?php if ($providerData !== null): ?>
+                            <input type="text" name="oauth_am_last_name" id="oauth_am_last_name"
+                                   placeholder="family_name"
+                                   value="<?= $escaper->escapeHtmlAttr($oauth_am_last_name) ?>"
+                                   <?= $escaper->escapeHtmlAttr($disabled) ?>>
+                            <?php else: ?>
                             <select name="oauth_am_last_name"
                                     id="oauth_am_last_name"
                                     <?= $escaper->escapeHtmlAttr($disabled) ?>>
@@ -180,6 +255,7 @@ $oauth_am_admin_role_mappings = $block->getAdminRoleMappings();
                                     </option>
                                 <?php endforeach; ?>
                             </select>
+                            <?php endif; ?>
                         </td>
                     </tr>
 

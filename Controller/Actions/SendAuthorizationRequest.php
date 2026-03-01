@@ -90,20 +90,26 @@ class SendAuthorizationRequest extends BaseAction
         $currentSessionId = $this->sessionManager->getSessionId();
         $this->oauthUtility->customlog("SendAuthorizationRequest: Current session ID: " . $currentSessionId);
 
+        // Determine provider: prefer numeric provider_id, fall back to app_name lookup (MP-04)
+        $providerId = isset($params['provider_id']) ? (int) $params['provider_id'] : 0;
+
         // Determine app name for authentication
         $app_name = isset($params['app_name'])
             ? $params['app_name']
             : $this->oauthUtility->getStoreConfig(OAuthConstants::APP_NAME);
-        $this->oauthUtility->customlog("SendAuthorizationRequest: Using app_name: " . $app_name);
+        $this->oauthUtility->customlog(
+            "SendAuthorizationRequest: Using app_name: " . $app_name . " provider_id: " . $providerId
+        );
 
-        // Combine relayState with session ID, app name, login type, and CSRF state token
+        // Combine relayState with session ID, app name, login type, CSRF token, and provider ID
         $stateToken = $this->securityHelper->createStateToken($currentSessionId);
         $relayState = $this->securityHelper->encodeRelayState(
             $relayState,
             $currentSessionId,
             $app_name,
             OAuthConstants::LOGIN_TYPE_CUSTOMER,
-            $stateToken
+            $stateToken,
+            $providerId > 0 ? $providerId : null
         );
         $this->oauthUtility->customlog("SendAuthorizationRequest: Combined relayState: " . $relayState);
 
@@ -123,7 +129,10 @@ class SendAuthorizationRequest extends BaseAction
         }
         $this->oauthUtility->setSessionData(OAuthConstants::APP_NAME, $app_name);
 
-        $clientDetails = $this->oauthUtility->getClientDetailsByAppName($app_name);
+        // MP-04: when a numeric provider_id is known, load directly by PK (faster and unambiguous)
+        $clientDetails = $providerId > 0
+            ? $this->oauthUtility->getClientDetailsById($providerId)
+            : $this->oauthUtility->getClientDetailsByAppName($app_name);
         if ($clientDetails === null || $clientDetails === []) {
             $errorRedirect = $this->oauthUtility->getBaseUrl() . 'customer/account/login';
             $this->messageManager->addErrorMessage(
@@ -141,11 +150,22 @@ class SendAuthorizationRequest extends BaseAction
         }
 
         //get required values from the database
-        $clientID = $clientDetails["clientID"];
-        $scope = $clientDetails["scope"];
+        $clientID     = $clientDetails["clientID"];
+        $scope        = $clientDetails["scope"];
         $authorizeURL = $clientDetails["authorize_endpoint"];
         $responseType = OAuthConstants::CODE;
-        $redirectURL = $this->oauthUtility->getCallBackUrl();
+        $redirectURL  = $this->oauthUtility->getCallBackUrl();
+
+        // PKCE (RFC 7636) — generate verifier when provider has S256 configured (FEAT-01)
+        $codeChallenge = null;
+        $pkceFlow      = $clientDetails['pkce_flow'] ?? '';
+        if ($pkceFlow === OAuthConstants::PKCE_METHOD_S256) {
+            $codeVerifier  = $this->securityHelper->generateCodeVerifier();
+            $codeChallenge = $this->securityHelper->computeCodeChallenge($codeVerifier);
+            // Store verifier in session so ReadAuthorizationResponse can include it in the token request
+            $this->oauthUtility->setSessionData(OAuthConstants::PKCE_VERIFIER_SESSION_KEY, $codeVerifier);
+            $this->oauthUtility->customlog("SendAuthorizationRequest: PKCE S256 enabled — challenge generated");
+        }
 
         //generate the authorization request
         $authorizationRequest = (new AuthorizationRequest(
@@ -155,7 +175,8 @@ class SendAuthorizationRequest extends BaseAction
             $responseType,
             $redirectURL,
             $relayState,
-            $params
+            $params,
+            $codeChallenge
         ))->build();
         if ($chk_enable_log !== 0) {
             $this->oauthUtility->customlog(

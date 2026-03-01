@@ -12,6 +12,8 @@ use MiniOrange\OAuth\Helper\OAuthConstants;
 use MiniOrange\OAuth\Helper\OAuthMessages;
 use MiniOrange\OAuth\Controller\Actions\BaseAdminAction;
 use MiniOrange\OAuth\Helper\OAuthUtility;
+use MiniOrange\OAuth\Model\MiniorangeOauthClientAppsFactory;
+use MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps as AppResource;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -25,24 +27,34 @@ use Psr\Log\LoggerInterface;
 class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetActionInterface
 {
 
+    /** @var MiniorangeOauthClientAppsFactory */
+    private readonly MiniorangeOauthClientAppsFactory $clientAppsFactory;
+
+    /** @var AppResource */
+    private readonly AppResource $appResource;
+
     /**
      * Initialize attribute settings controller.
      *
-     * @param Context           $context
-     * @param PageFactory       $resultPageFactory
-     * @param OAuthUtility      $oauthUtility
-     * @param ManagerInterface  $messageManager
-     * @param LoggerInterface   $logger
+     * @param Context                          $context
+     * @param PageFactory                      $resultPageFactory
+     * @param OAuthUtility                     $oauthUtility
+     * @param ManagerInterface                 $messageManager
+     * @param LoggerInterface                  $logger
+     * @param MiniorangeOauthClientAppsFactory $clientAppsFactory
+     * @param AppResource                      $appResource
      */
-    // phpcs:ignore Generic.CodeAnalysis.UselessOverridingMethod.Found
     public function __construct(
         Context $context,
         PageFactory $resultPageFactory,
         OAuthUtility $oauthUtility,
         ManagerInterface $messageManager,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        MiniorangeOauthClientAppsFactory $clientAppsFactory,
+        AppResource $appResource
     ) {
-        //You can use dependency injection to get any class this observer may need.
+        $this->clientAppsFactory = $clientAppsFactory;
+        $this->appResource       = $appResource;
         parent::__construct($context, $resultPageFactory, $oauthUtility, $messageManager, $logger);
     }
 
@@ -83,10 +95,46 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
     /**
      * Process Values being submitted and save data in the database.
      *
+     * When provider_id is present in $params, saves directly to that provider's
+     * row in miniorange_oauth_client_apps (provider-context mode).
+     * Otherwise falls back to the legacy global setStoreConfig behaviour.
+     *
      * @param array $params
      */
     private function processValuesAndSaveData(array $params): void
     {
+        $providerId = (int) ($params['provider_id'] ?? 0);
+
+        if ($providerId > 0) {
+            // --- Provider-context mode: UPDATE the specific provider row ---
+            $model = $this->clientAppsFactory->create();
+            $this->appResource->load($model, $providerId);
+            if (!$model->getId()) {
+                $this->messageManager->addErrorMessage((string) __('Provider not found.'));
+                return;
+            }
+            $model->setData('username_attribute', trim((string) ($params['oauth_am_username']   ?? '')));
+            $model->setData('email_attribute', trim((string) ($params['oauth_am_email']      ?? '')));
+            $model->setData('firstname_attribute', trim((string) ($params['oauth_am_first_name'] ?? '')));
+            $model->setData('lastname_attribute', trim((string) ($params['oauth_am_last_name']  ?? '')));
+            $model->setData('group_attribute', trim((string) ($params['oauth_am_group']      ?? '')));
+            $model->setData('default_role', trim((string) ($params['oauth_am_default_role'] ?? '')));
+
+            // Role mappings as JSON
+            $roleMappings = array_values(array_filter(
+                $params['oauth_role_mapping'] ?? [],
+                static fn ($m): bool => !empty($m['group']) && !empty($m['role'])
+            ));
+            $model->setData('oauth_admin_role_mapping', json_encode($roleMappings));
+
+            $this->appResource->save($model);
+            $this->oauthUtility->customlog(
+                'Saved attribute mapping for provider ID ' . $providerId
+            );
+            return;
+        }
+
+        // --- Legacy global mode: save to core_config_data ---
         //ToDo_MK extend for other attributes like first name, last name if needed
         $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_USERNAME, $params['oauth_am_username']);
         $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_EMAIL, $params['oauth_am_email']);

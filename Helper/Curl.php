@@ -88,21 +88,23 @@ class Curl
             'CURLOPT_RETURNTRANSFER' => true,
             'CURLOPT_AUTOREFERER' => true,
             'CURLOPT_TIMEOUT' => 30,
-            'CURLOPT_MAXREDIRS' => 10
+            'CURLOPT_MAXREDIRS' => 10,
+            'CURLOPT_SSL_VERIFYPEER' => true,
+            'CURLOPT_SSL_VERIFYHOST' => 2,
         ];
 
         $data = in_array("Content-Type: application/x-www-form-urlencoded", $headers)
             ? (empty($jsonData) ? "" : http_build_query($jsonData))
             : (empty($jsonData) ? "" : (string) json_encode($jsonData));
 
-        $method = $data === '' || $data === '0' ? 'GET' : 'POST';
+        $method = $data === '' ? 'GET' : 'POST';
         $curl->setConfig($options);
         $curl->write($method, $url, '1.1', $headers, $data);
         $content = $curl->read();
         $httpCode = $curl->getInfo(CURLINFO_HTTP_CODE);
         $curl->close();
 
-        // read() gibt string zurück – empty string abfangen
+        // read() returns string — catch empty response
         if ($content === '') {
             return '{"error":"empty_response","error_description":"No response received from the OAuth server."}';
         }

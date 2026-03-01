@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <head>
+        <css src="MiniOrange_OAuth::css/adminSettings.css"/>
+    </head>
+    <body>
+        <!--
+        Provider Settings page — edit display_name, login_type, is_active,
+        sort_order, button_label, button_color for a specific provider.
+        -->
+        <referenceContainer name="content">
+            <block class="MiniOrange\OAuth\Block\OAuth"
+                name="miniorange.oauth.navbar"
+                template="navbar.phtml" />
+            <block class="MiniOrange\OAuth\Block\OAuth"
+                name="miniorange.oauth.admin.providersettings"
+                template="providersettings.phtml" />
+        </referenceContainer>
+        <referenceContainer name="before.body.end">
+            <block class="MiniOrange\OAuth\Block\OAuth"
+                template="js.phtml"
+                name="before_body_js"/>
+        </referenceContainer>
+    </body>
+</page>

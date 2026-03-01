@@ -10,19 +10,16 @@ use Magento\Backend\Block\Template\Context;
 class OidcErrorMessage extends Template
 {
     // No constructor required; parent constructor is sufficient.
-
     /**
      * Get OIDC error message from URL parameter
-     *
-     * @return string|null
      */
-    public function getOidcErrorMessage()
+    public function getOidcErrorMessage(): ?string
     {
-        $encodedMessage = $this->getRequest()->getParam('oidc_error');
-        if ($encodedMessage) {
-            $decoded = urldecode((string) $encodedMessage);
-            $decoded = trim($decoded);
-            return $decoded === '' ? null : $decoded;
+        // getParam() already URL-decodes the value; no additional decoding needed.
+        $message = $this->getRequest()->getParam('oidc_error');
+        if ($message) {
+            $message = trim((string) $message);
+            return $message !== '' ? $message : null;
         }
         return null;
     }

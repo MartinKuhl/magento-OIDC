@@ -2,27 +2,59 @@
 use MiniOrange\OAuth\Helper\OAuthConstants;
 
 // Initialisiere alle Variablen
-$oauthsettings = $block->getExtensionPageUrl('oauthsettings');
-$signinsettings = $block->getExtensionPageUrl('signinsettings');
-$attrsettings = $block->getExtensionPageUrl('attrsettings');
-$activeTab = $block->getCurrentActiveTab();
+$oauthsettings      = $block->getProviderTabUrl('oauthsettings');
+$providersettings   = $block->getProviderTabUrl('providersettings');
+$signinsettings     = $block->getProviderTabUrl('signinsettings');
+$attrsettings       = $block->getProviderTabUrl('attrsettings');
+$provider           = $block->getExtensionPageUrl('provider');
+$activeTab      = $block->getCurrentActiveTab();
+$hasProviders   = $block->getAllIdpConfiguration()->count() > 0;
+
+$tabClass = static fn(string $tab) => 'nav-tab ' . ($activeTab === $tab ? 'active' : '');
+
+$providerData   = $block->getProviderData();
+$activeProvName = '';
+if ($providerData !== null) {
+    $activeProvName = $providerData['display_name'] ?: ($providerData['app_name'] ?? '');
+}
 ?>
 <div style="padding: 0 1%;">
     <div class="topnav" id="myTopnav">
-        <a class="nav-tab <?= $escaper->escapeHtmlAttr(
-            $activeTab == 'oauthsettings' ? 'active' : ''
-        ); ?>" href="<?= $escaper->escapeUrl($oauthsettings); ?>">
+        <a class="<?= $escaper->escapeHtmlAttr($tabClass('provider')) ?>"
+           href="<?= $escaper->escapeUrl($provider) ?>">
+            Manage Providers
+        </a>
+        <?php if ($hasProviders): ?>
+        <a class="<?= $escaper->escapeHtmlAttr($tabClass('providersettings')) ?>"
+           href="<?= $escaper->escapeUrl($providersettings) ?>">
+            Provider Settings
+        </a>
+        <a class="<?= $escaper->escapeHtmlAttr($tabClass('oauthsettings')) ?>"
+           href="<?= $escaper->escapeUrl($oauthsettings) ?>">
             OAuth Settings
         </a>
-        <a class="nav-tab <?= $escaper->escapeHtmlAttr(
-            $activeTab == 'signinsettings' ? 'active' : ''
-        ); ?>" href="<?= $escaper->escapeUrl($signinsettings); ?>">
+        <?php endif; ?>
+        <a class="<?= $escaper->escapeHtmlAttr($tabClass('signinsettings')) ?>"
+           href="<?= $escaper->escapeUrl($signinsettings) ?>">
             Sign In Settings
         </a>
-        <a class="nav-tab <?= $escaper->escapeHtmlAttr(
-            $activeTab == 'attrsettings' ? 'active' : ''
-        ); ?>" href="<?= $escaper->escapeUrl($attrsettings); ?>">
+        <?php if ($hasProviders): ?>
+        <a class="<?= $escaper->escapeHtmlAttr($tabClass('attrsettings')) ?>"
+           href="<?= $escaper->escapeUrl($attrsettings) ?>">
             Attribute Mapping
         </a>
+        <?php endif; ?>
     </div>
+    <?php if ($providerData !== null): ?>
+    <div style="background:#1a5276; color:#fff; padding:5px 16px; font-size:12px;
+                border-radius:0 0 3px 3px; margin-top:-2px;">
+        <?= $escaper->escapeHtml(__('Editing:')) ?>
+        <strong><?= $escaper->escapeHtml($activeProvName) ?></strong>
+        &nbsp;&mdash;&nbsp;
+        <a href="<?= $escaper->escapeUrl($block->getUrl('mooauth/provider/index')) ?>"
+           style="color:#aed6f1;">
+            <?= $escaper->escapeHtml(__('Back to list')) ?>
+        </a>
+    </div>
+    <?php endif; ?>
 </div>

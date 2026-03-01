@@ -13,7 +13,7 @@ use Magento\Framework\Controller\Result\Raw as RawResult;
 use Magento\Framework\Controller\ResultFactory;
 
 /**
- * Zeigt die empfangenen OIDC-Attribute im Testfall im Frontend an.
+ * Displays the OIDC attributes received during a test authentication in the frontend.
  */
 class ShowTestResults extends Action
 {
@@ -37,11 +37,6 @@ class ShowTestResults extends Action
      */
     protected $status;
 
-    /**
-     * @var bool
-     */
-    private $hasExceptionOccurred;
-
     /** @var OAuthUtility */
     private readonly OAuthUtility $oauthUtility;
 
@@ -58,68 +53,9 @@ class ShowTestResults extends Action
     private readonly \Magento\Customer\Model\Session $customerSession;
 
     /**
-     * @var string HTML template for the test results page
+     * @var string Absolute path to the PHTML template used for rendering test results.
      */
-    private string|array $template = '<div style="font-family:Calibri;padding:0 3%;">'
-        . '{{header}}{{commonbody}}{{footer}}</div>';
-
-    /**
-     * @var string HTML header for successful test
-     */
-    private string $successHeader = '<div style="color: #3c763d;background-color: #dff0d8; padding:2%;'
-        . 'margin-bottom:20px;text-align:center; border:1px solid #AEDB9A; '
-        . 'font-size:18pt;">TEST SUCCESSFUL</div>'
-        . '<div style="display:block;text-align:center;margin-bottom:4%;">'
-        . '<img style="width:15%;" src="{{right}}"></div>';
-    /**
-     * @var string HTML header for failed test
-     */
-    private string $errorHeader = '<div style="color: #a94442;background-color: #f2dede;padding: 15px;'
-        . 'margin-bottom: 20px;text-align:center; border:1px solid #E6B3B2;font-size:18pt;">TEST FAILED</div>'
-        . '<div style="display:block;text-align:center;margin-bottom:4%;">'
-        . '<img style="width:15%;"src="{{wrong}}"></div>';
-    /**
-     * @var string HTML header for unsuccessful test
-     */
-    private string $unsuccessfulHeader = '<div style="color: #a94442;background-color: #f2dede;padding: 15px;'
-        . 'margin-bottom: 20px;text-align:center; border:1px solid #E6B3B2;font-size:18pt;">'
-        . 'TEST UNSUCCESSFUL</div>'
-        . '<div style="display:block;text-align:center;margin-bottom:4%;">'
-        . '<img style="width:15%;"src="{{wrong}}"></div>';
-    /**
-     * @var string HTML template for error message display
-     */
-    private string $errorBody = '<div style="font-size:14pt;padding:15px;background-color:#fff3cd;'
-        . 'border:1px solid #ffc107;border-radius:4px;margin-bottom:20px;">'
-        . '<p style="font-weight:bold;color:#856404;margin:0 0 10px 0;">Error Message:</p>'
-        . '<p style="color:#856404;margin:0;">{{error_message}}</p></div>';
-    /**
-     * @var string HTML template for common body with attributes table
-     */
-    private string|array $commonBody = '<span style="font-size:14pt;"><b>Hello {{greeting_name}},</b></span><br/>'
-        . '<p style="font-weight:bold;font-size:14pt;margin-left:1%;">ATTRIBUTES RECEIVED:</p>'
-        . '<table style="border-collapse:collapse;border-spacing:0; display:table;width:100%;'
-        . 'font-size:14pt;background-color:#EDEDED;">'
-        . '<tr style="text-align:center;">'
-        . '<td style="font-weight:bold;border:2px solid #949090;padding:2%;">ATTRIBUTE NAME</td>'
-        . '<td style="font-weight:bold;padding:2%;border:2px solid #949090; '
-        . 'word-wrap:break-word;">ATTRIBUTE VALUE</td>'
-        . '</tr>{{tablecontent}}</table>';
-    /**
-     * @var string HTML template for footer with Done button
-     */
-    private string $footer = '<div style="margin:3%;display:block;text-align:center;">'
-        . '<input style="padding:1%;width:100px;background: #0091CD none repeat scroll 0% 0%;cursor: pointer;'
-        . 'font-size:15px;border-width: 1px;border-style: solid;border-radius: 3px;white-space: nowrap;'
-        . 'box-sizing: border-box;border-color: #0073AA;'
-        . 'box-shadow: 0px 1px 0px rgba(120, 200, 230, 0.6) inset;'
-        . 'color: #FFF;" type="button" value="Done" onClick="window.close();"></div>';
-
-    /**
-     * @var string HTML template for table row content
-     */
-    private string $tableContent = "<tr><td style='font-weight:bold;border:2px solid #949090;padding:2%;'>{{key}}</td>"
-        . "<td style='padding:2%;border:2px solid #949090; word-wrap:break-word;'>{{value}}</td></tr>";
+    private string $templatePath = '';
 
     /**
      * Initialize ShowTestResults action.
@@ -139,16 +75,21 @@ class ShowTestResults extends Action
         \Magento\Customer\Model\Session $customerSession,
         \Magento\Framework\Escaper $escaper
     ) {
-        $this->oauthUtility = $oauthUtility;
-        $this->scopeConfig = $scopeConfig;
-        $this->request = $request;
+        $this->oauthUtility   = $oauthUtility;
+        $this->scopeConfig    = $scopeConfig;
+        $this->request        = $request;
         $this->customerSession = $customerSession;
-        $this->escaper = $escaper;
+        $this->escaper        = $escaper;
+        // Absolute path to PHTML template (two dirs up from Controller/Actions/)
+        // phpcs:disable Magento2.Functions.DiscouragedFunction.DiscouragedWithAlternative
+        $this->templatePath   = dirname(__DIR__, 2)
+            . '/view/frontend/templates/test_results.phtml';
+        // phpcs:enable Magento2.Functions.DiscouragedFunction.DiscouragedWithAlternative
         parent::__construct($context);
     }
 
     /**
-     * Hauptfunktion: Daten aus der Session holen (mit Key), anzeigen und Body ausgeben.
+     * Main entry point: load test data from session, render PHTML template, and return it.
      */
     #[\Override]
     public function execute(): \Magento\Framework\Controller\ResultInterface
@@ -159,7 +100,7 @@ class ShowTestResults extends Action
             return $this->handleOidcError($oidcError);
         }
 
-        // Test-Key aus URL lesen
+        // Read the session key from the URL parameter
         $key = $this->request->getParam('key');
         $testResults = $this->customerSession->getData('mooauth_test_results');
         $attrs = (is_array($testResults) && isset($testResults[$key])) ? $testResults[$key] : null;
@@ -180,31 +121,13 @@ class ShowTestResults extends Action
         }
         $this->oauthUtility->customlog("ShowTestResultsAction: execute");
 
-        $this->processTemplateHeader();
-        if (!$this->hasExceptionOccurred) {
-            $this->processTemplateContent();
-        }
-        $this->processTemplateFooter();
+        $this->status = $this->oauthUtility->isBlank($this->userEmail) ? "TEST FAILED" : "TEST SUCCESSFUL";
 
-        $userEmail = $this->oauthUtility->getStoreConfig(OAuthConstants::ADMINEMAIL);
-        if (empty($userEmail)) {
-            $userEmail = "No Email Found";
-        }
-        if (empty($this->status)) {
-            $this->status = "TEST FAILED";
-        }
-
-        $data = $this->template;
-        if ($data === '' || $data === '0') {
-            $data = "No attribute found";
-        }
-
-        // Tracking für MiniOrange
+        // Track first-use timestamp for MiniOrange telemetry
         $timeStamp = $this->oauthUtility->getStoreConfig(OAuthConstants::TIME_STAMP);
         if ($timeStamp === null) {
             $timeStamp = time();
             $this->oauthUtility->setStoreConfig(OAuthConstants::TIME_STAMP, $timeStamp);
-
             $this->oauthUtility->flushCache();
         }
         $this->oauthUtility->getBaseUrl();
@@ -213,30 +136,28 @@ class ShowTestResults extends Action
         $this->oauthUtility->getProductVersion();
         $this->oauthUtility->getCurrentDate();
         $this->oauthUtility->getStoreConfig(OAuthConstants::APP_NAME);
-
-        if ($this->status == "TEST FAILED") {
-            $testFailed = json_encode($this->attrs);
-            $testSuccessful = '';
-        } else {
-            $testSuccessful = json_encode($this->attrs);
-            $testFailed = '';
-        }
-
         $this->oauthUtility->setStoreConfig(OAuthConstants::SEND_EMAIL_CORE_CONFIG_DATA, 1);
         $this->oauthUtility->flushCache();
 
-        /**
- * @var RawResult $result
-*/
+        $data = $this->renderTemplate([
+            'status'       => $this->status,
+            'attrs'        => $this->attrs,
+            'greetingName' => $this->greetingName ?? '',
+            'rightImage'   => $this->oauthUtility->getImageUrl(OAuthConstants::IMAGE_RIGHT),
+            'wrongImage'   => $this->oauthUtility->getImageUrl(OAuthConstants::IMAGE_WRONG),
+            'errorMessage' => '',
+        ]);
+
+        /** @var RawResult $result */
         $result = $this->resultFactory->create(ResultFactory::TYPE_RAW);
         $result->setContents($data);
         return $result;
     }
 
     /**
-     * Handle OIDC error and display TEST UNSUCCESSFUL page
+     * Handle OIDC error and display the TEST UNSUCCESSFUL page.
      *
-     * @param  string $encodedError
+     * @param  string $encodedError Base64-encoded error message from the query string
      */
     private function handleOidcError(string $encodedError): \Magento\Framework\Controller\ResultInterface
     {
@@ -247,97 +168,38 @@ class ShowTestResults extends Action
 
         $errorMessage = $this->oauthUtility->decodeBase64($encodedError);
         $this->status = "TEST UNSUCCESSFUL";
-        $this->hasExceptionOccurred = true;
 
-        // Build the error template
-        $header = $this->unsuccessfulHeader;
-        $header = str_replace("{{wrong}}", $this->oauthUtility->getImageUrl(OAuthConstants::IMAGE_WRONG), $header);
-        $this->template = str_replace("{{header}}", $header, $this->template);
+        $data = $this->renderTemplate([
+            'status'       => $this->status,
+            'attrs'        => null,
+            'greetingName' => '',
+            'rightImage'   => $this->oauthUtility->getImageUrl(OAuthConstants::IMAGE_RIGHT),
+            'wrongImage'   => $this->oauthUtility->getImageUrl(OAuthConstants::IMAGE_WRONG),
+            'errorMessage' => $this->escaper->escapeHtml($errorMessage),
+        ]);
 
-        // Add error body
-        $escapedError = $this->escaper->escapeHtml($errorMessage);
-        $errorBodyContent = str_replace("{{error_message}}", $escapedError, $this->errorBody);
-        $this->template = str_replace("{{commonbody}}", $errorBodyContent, $this->template);
-
-        // Add footer
-        $this->template = str_replace("{{footer}}", $this->footer, $this->template);
-
-        /**
- * @var RawResult $result
-*/
+        /** @var RawResult $result */
         $result = $this->resultFactory->create(ResultFactory::TYPE_RAW);
-        $result->setContents($this->template);
+        $result->setContents($data);
         return $result;
     }
 
     /**
-     * Process the template header based on test result status.
-     */
-    private function processTemplateHeader(): void
-    {
-        $header = $this->oauthUtility->isBlank($this->userEmail) ? $this->errorHeader : $this->successHeader;
-        $this->status = $this->oauthUtility->isBlank($this->userEmail) ? "TEST FAILED" : "TEST SUCCESSFUL";
-        $header = str_replace("{{right}}", $this->oauthUtility->getImageUrl(OAuthConstants::IMAGE_RIGHT), $header);
-        $header = str_replace("{{wrong}}", $this->oauthUtility->getImageUrl(OAuthConstants::IMAGE_WRONG), $header);
-        $this->template = str_replace("{{header}}", $header, $this->template);
-    }
-
-    /**
-     * Process the template content with user greeting and attributes.
-     */
-    private function processTemplateContent(): void
-    {
-        $greet = $this->greetingName ?? '';
-        $greetEscaped = $this->escaper->escapeHtml($greet);
-        $this->commonBody = str_replace("{{greeting_name}}", $greetEscaped, $this->commonBody);
-        $tableContent = array_filter($this->attrs ?? []) ? $this->getTableContent() : "No Attributes Received.";
-        //$this->oauthUtility->customlog("ShowTestResultsAction: attribute" . json_encode($this->attrs));
-        $this->commonBody = str_replace("{{tablecontent}}", $tableContent, $this->commonBody);
-        $this->template = str_replace("{{commonbody}}", (string) $this->commonBody, $this->template);
-    }
-
-    /**
-     * Build HTML table content from user attributes.
+     * Render the test_results PHTML template with the given variables.
      *
-     * @return string
+     * Uses output buffering so the template can use plain PHP/HTML without
+     * being constrained to Magento's full block/layout rendering stack.
+     *
+     * @param  array $vars Associative array of variables to extract into the template scope
+     * @return string Rendered HTML
      */
-    private function getTableContent()
+    private function renderTemplate(array $vars): string
     {
-        $tableContent = '';
-        if (is_array($this->attrs)) {
-            foreach ($this->attrs as $key => $value) {
-                if (!is_array($value)) {
-                    $value = [$value];
-                }
-                if (!in_array(null, $value)) {
-                    $escapedKey = $this->escaper->escapeHtml((string) $key);
-                    $escapedValues = array_map(
-                        function ($v): string {
-                            return (string) $this->escaper->escapeHtml((string) $v);
-                        },
-                        $value
-                    );
-                    $tableContent .= str_replace(
-                        "{{key}}",
-                        $escapedKey,
-                        str_replace(
-                            "{{value}}",
-                            implode("<br/>", $escapedValues),
-                            $this->tableContent
-                        )
-                    );
-                }
-            }
-        }
-        return $tableContent;
-    }
-
-    /**
-     * Process the template footer section.
-     */
-    private function processTemplateFooter(): void
-    {
-        $this->template = str_replace("{{footer}}", $this->footer, $this->template);
+        $escaper = $this->escaper; // made available to template via extract()
+        extract($vars); // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
+        ob_start(); // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
+        include $this->templatePath; // phpcs:ignore Magento2.Security.IncludeFile.FoundIncludeFile
+        return (string) ob_get_clean();
     }
 
     /**
@@ -377,10 +239,11 @@ class ShowTestResults extends Action
      *
      * @param  bool $hasExceptionOccurred
      */
+    // phpcs:disable Magento2.CodeAnalysis.EmptyBlock.DetectedFunction
     public function setHasExceptionOccurred($hasExceptionOccurred): void
     {
-        $this->hasExceptionOccurred = $hasExceptionOccurred;
     }
+    // phpcs:enable Magento2.CodeAnalysis.EmptyBlock.DetectedFunction
 
     /**
      * Set greeting name with fallback logic: firstName -> username -> email.

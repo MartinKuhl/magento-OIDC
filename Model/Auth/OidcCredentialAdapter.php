@@ -90,21 +90,26 @@ class OidcCredentialAdapter implements StorageInterface
      *
      * __sleep() only persists 'user' and 'hasAvailableResources'.
      * After __wakeup(), all injected dependencies are null.
-     * This method lazily restores them via ObjectManager when needed.
+     * ObjectManager is intentionally used here because DI containers
+     * are unavailable during PHP's native deserialization lifecycle —
+     * this is the established Magento pattern for serializable auth adapters
+     * (see Magento\Backend\Model\Auth\Session). Do NOT replace with
+     * constructor injection; the object may be reconstructed without
+     * calling __construct().
      *
-     * @return void
+     * @internal
      */
-    protected function restoreDependencies()
+    protected function restoreDependencies(): void
     {
         if ($this->userFactory !== null) {
             return;
         }
 
         $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
-        $this->userFactory = $objectManager->get(UserFactory::class);
-        $this->eventManager = $objectManager->get(ManagerInterface::class);
-        $this->oauthUtility = $objectManager->get(OAuthUtility::class);
-        $this->userResource = $objectManager->get(UserResourceModel::class);
+        $this->userFactory           = $objectManager->get(UserFactory::class);
+        $this->eventManager          = $objectManager->get(ManagerInterface::class);
+        $this->oauthUtility          = $objectManager->get(OAuthUtility::class);
+        $this->userResource          = $objectManager->get(UserResourceModel::class);
         $this->userCollectionFactory = $objectManager->get(UserCollectionFactory::class);
     }
 

@@ -151,6 +151,8 @@ class ReadAuthorizationResponse extends BaseAction
             $app_name = $stateData['appName'];
             $loginType = $stateData['loginType'];
             $stateToken = $stateData['stateToken'];
+            // MP-04: provider_id embedded in state (0 = legacy/unknown — use app_name fallback below)
+            $providerId = $stateData['providerId'] ?? 0;
         } else {
             // Legacy pipe-delimited format (backward compatibility during rollout)
             /** @psalm-suppress RedundantCast */
@@ -160,6 +162,7 @@ class ReadAuthorizationResponse extends BaseAction
             $app_name = isset($parts[2]) ? urldecode($parts[2]) : '';
             $loginType = isset($parts[3]) ? $parts[3] : OAuthConstants::LOGIN_TYPE_CUSTOMER;
             $stateToken = isset($parts[4]) ? $parts[4] : '';
+            $providerId = 0; // legacy state — no provider_id available
         }
 
         // Validate CSRF state token
@@ -187,8 +190,10 @@ class ReadAuthorizationResponse extends BaseAction
             "ReadAuthResponse: State token validation PASSED"
         );
 
-        // Look up OAuth client details by app name
-        $clientDetails = $this->oauthUtility->getClientDetailsByAppName($app_name);
+        // MP-04: prefer direct-by-ID lookup when provider_id is known from state
+        $clientDetails = ($providerId > 0)
+            ? $this->oauthUtility->getClientDetailsById($providerId)
+            : $this->oauthUtility->getClientDetailsByAppName($app_name);
         if (!$clientDetails) {
             // Fallback: use the first configured app
             $collection = $this->oauthUtility->getOAuthClientApps();
@@ -219,14 +224,27 @@ class ReadAuthorizationResponse extends BaseAction
         $body = $clientDetails["values_in_body"];
         $redirectURL = $this->oauthUtility->getCallBackUrl();
 
+        // PKCE (RFC 7636 §4.5): retrieve verifier stored during authorization (FEAT-01)
+        $codeVerifier = (string) $this->oauthUtility->getSessionData(
+            OAuthConstants::PKCE_VERIFIER_SESSION_KEY,
+            true // one-time: remove from session immediately after reading
+        );
+        $codeVerifier = $codeVerifier !== '' ? $codeVerifier : null;
+
+        if ($codeVerifier !== null) {
+            $this->oauthUtility->customlog("ReadAuthResponse: PKCE code_verifier found — including in token request");
+        }
+
         if ($header == 1 && $body == 0) {
-            $accessTokenRequest = (new AccessTokenRequestBody($redirectURL, $authorizationCode))->build();
+            $accessTokenRequest = (new AccessTokenRequestBody($redirectURL, $authorizationCode, $codeVerifier))
+                ->build();
         } else {
             $accessTokenRequest = (new AccessTokenRequest(
                 $clientID,
                 $clientSecret,
                 $redirectURL,
-                $authorizationCode
+                $authorizationCode,
+                $codeVerifier
             ))->build();
         }
 
@@ -394,6 +412,11 @@ class ReadAuthorizationResponse extends BaseAction
 
         $detectedLoginType = $this->oidcAuthService->extractLoginType($userInfoResponseData);
         $this->oauthUtility->customlog("ReadAuthorizationResponse: loginType = " . $detectedLoginType);
+
+        // MP-07: pass per-provider attribute mappings so the correct row columns are used
+        if (!empty($clientDetails)) {
+            $this->attrMappingAction->setClientDetails($clientDetails);
+        }
 
         return $this->attrMappingAction
             ->setUserInfoResponse($userInfoResponseData)

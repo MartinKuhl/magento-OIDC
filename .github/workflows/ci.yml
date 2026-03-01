@@ -2,7 +2,7 @@ name: Magento OIDC CI
 
 on:
   push:
-    branches: [ "main", "dev" ]
+    branches: [ "dev" ]
   pull_request:
     branches: [ "main", "dev" ]
 
@@ -280,5 +280,171 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: rector-reports
+          path: reports/
+          retention-days: 7
+
+
+  # -----------------------------------------------------
+  # UNIT TESTS JOB
+  # -----------------------------------------------------
+  unit-tests:
+    name: Unit Tests (PHP ${{ matrix.php-version }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: [8.2, 8.3, 8.4]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          tools: composer
+
+      - name: Cache vendor dependencies
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: unit-vendor-${{ runner.os }}-php${{ matrix.php-version }}-${{ hashFiles('.github/workflows/*.yml') }}
+          restore-keys: |
+            unit-vendor-${{ runner.os }}-php${{ matrix.php-version }}-
+
+      - name: Create temporary composer.json for PHPUnit
+        run: |
+          if [ -f composer.json ]; then
+            cp composer.json composer.json.bak
+          fi
+          cat > composer.json <<'EOF'
+          {
+            "require-dev": {
+              "phpunit/phpunit": "^10.5"
+            },
+            "minimum-stability": "stable",
+            "prefer-stable": true
+          }
+          EOF
+
+      - name: Install PHPUnit
+        run: composer install --no-interaction --no-progress
+
+      - name: Restore original composer.json
+        run: |
+          if [ -f composer.json.bak ]; then
+            mv composer.json.bak composer.json
+          else
+            rm -f composer.json
+          fi
+
+      - name: Create reports directory
+        run: mkdir -p reports
+
+      - name: Run Unit Tests
+        run: |
+          set -o pipefail
+          vendor/bin/phpunit --configuration phpunit.xml \
+            --testsuite "MiniOrange OIDC Unit Tests" \
+            --log-junit reports/phpunit-unit-php${{ matrix.php-version }}.xml \
+            2>&1 | tee reports/phpunit-unit-php${{ matrix.php-version }}.txt
+
+      - name: Upload Unit Test Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-reports-php${{ matrix.php-version }}
+          path: reports/
+          retention-days: 7
+
+
+  # -----------------------------------------------------
+  # INTEGRATION TESTS JOB (requires Dex OIDC provider)
+  # -----------------------------------------------------
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          tools: composer
+
+      - name: Cache vendor dependencies
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: integration-vendor-${{ runner.os }}-${{ hashFiles('.github/workflows/*.yml') }}
+          restore-keys: |
+            integration-vendor-${{ runner.os }}-
+
+      - name: Create temporary composer.json for PHPUnit
+        run: |
+          if [ -f composer.json ]; then
+            cp composer.json composer.json.bak
+          fi
+          cat > composer.json <<'EOF'
+          {
+            "require-dev": {
+              "phpunit/phpunit": "^10.5"
+            },
+            "minimum-stability": "stable",
+            "prefer-stable": true
+          }
+          EOF
+
+      - name: Install PHPUnit
+        run: composer install --no-interaction --no-progress
+
+      - name: Restore original composer.json
+        run: |
+          if [ -f composer.json.bak ]; then
+            mv composer.json.bak composer.json
+          else
+            rm -f composer.json
+          fi
+
+      - name: Add dex.local to /etc/hosts
+        run: echo "127.0.0.1 dex.local" | sudo tee -a /etc/hosts
+
+      - name: Start Dex OIDC Provider
+        run: docker compose -f docker-compose.test.yml up -d dex
+
+      - name: Wait for Dex to be healthy
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://dex.local:5556/dex/.well-known/openid-configuration > /dev/null; then
+              echo "Dex is healthy"
+              break
+            fi
+            echo "Waiting for Dex... ($i/30)"
+            sleep 2
+          done
+
+      - name: Create reports directory
+        run: mkdir -p reports
+
+      - name: Run Integration Tests
+        run: |
+          set -o pipefail
+          vendor/bin/phpunit --configuration phpunit.xml \
+            --testsuite "MiniOrange OIDC Integration Tests" \
+            --log-junit reports/phpunit-integration.xml \
+            2>&1 | tee reports/phpunit-integration.txt
+
+      - name: Stop Dex OIDC Provider
+        if: always()
+        run: docker compose -f docker-compose.test.yml down -v
+
+      - name: Upload Integration Test Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-reports
           path: reports/
           retention-days: 7

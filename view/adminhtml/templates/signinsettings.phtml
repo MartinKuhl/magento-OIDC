@@ -14,7 +14,6 @@ $disableNonOidcCustomerLogin = $block->isNonOidcCustomerLoginDisabled()
     ? 'checked' : '';
 $isOAuthConfigured = $block->isOAuthConfigured() && $block->isEnabled();
 $disabled = $isOAuthConfigured ? '' : 'disabled title="Disabled. Configure your Service Provider"';
-$logoutUrl = $block->getAdminLogoutUrl();
 $enableDebugLog = $block->isDebugLogEnable() ? 'checked' : '';
 // Lockout-Prevention: OIDC-only checkboxes require Show-OIDC to be checked
 $disableOidcOnlyAdmin = ($adminLink !== 'checked') ? 'disabled' : '';
@@ -112,24 +111,10 @@ $disableOidcOnlyCustomer = ($customerLink !== 'checked') ? 'disabled' : '';
                                        <?= $escaper->escapeHtmlAttr($enableLoginRedirect) ?>
                                        value="true"
                                        disabled="true"
-                                       onchange="togglePostLogoutUrl()">
+>
                                 Check this option to auto redirect users to IDP
                                 from admin login page (if not logged in).
                                 <br><br>
-                                <div id="post_logout_url_container"
-                                     style="<?= $enableLoginRedirect ? '' : 'opacity: 0.5;' ?>">
-                                    <strong>Post-Logout URL for admin user:</strong>
-                                    <span style="color: red;">*</span>
-                                    <br>
-                                    <input type="text"
-                                           name="mo_oauth_logout_redirect_url"
-                                           id="mo_oauth_logout_redirect_url"
-                                           value="<?= $escaper->escapeHtmlAttr($logoutUrl) ?>"
-                                           style="width: 300px; margin-top: 5px;"
-                                           <?= $enableLoginRedirect ? 'required' : 'disabled' ?>>
-                                    <br>
-                                    <small style="color: #666;">Required when auto redirect is enabled.</small>
-                                </div>
                             </div>
                         </td>
                     </tr>
@@ -229,20 +214,3 @@ $disableOidcOnlyCustomer = ($customerLink !== 'checked') ? 'disabled' : '';
 
 
 
-<script>
-function togglePostLogoutUrl() {
-    var checkbox = document.getElementById('mo_oauth_enable_login_redirect');
-    var urlInput = document.getElementById('mo_oauth_logout_redirect_url');
-    var container = document.getElementById('post_logout_url_container');
-
-    if (checkbox.checked) {
-        urlInput.disabled = false;
-        urlInput.required = true;
-        container.style.opacity = '1';
-    } else {
-        urlInput.disabled = true;
-        urlInput.required = false;
-        container.style.opacity = '0.5';
-    }
-}
-</script>

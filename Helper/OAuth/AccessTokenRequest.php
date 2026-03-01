@@ -37,39 +37,47 @@ class AccessTokenRequest
     private $code;
 
     /**
+     * @var string|null PKCE code_verifier (RFC 7636 §4.5) — null when PKCE is disabled (FEAT-01)
+     */
+    private readonly ?string $codeVerifier;
+
+    /**
      * Initialize access token request.
      *
-     * @param string $clientID
-     * @param string $clientSecret
-     * @param string $redirectURL
-     * @param string $code
+     * @param string      $clientID
+     * @param string      $clientSecret
+     * @param string      $redirectURL
+     * @param string      $code
+     * @param string|null $codeVerifier PKCE code_verifier; null when PKCE is not in use
      */
-    public function __construct($clientID, $clientSecret, $redirectURL, $code)
+    public function __construct($clientID, $clientSecret, $redirectURL, $code, ?string $codeVerifier = null)
     {
-        // all values required in the authn request are set here
-        $this->clientID = $clientID;
+        $this->clientID     = $clientID;
         $this->clientSecret = $clientSecret;
-        $this->redirectURL = $redirectURL;
-        $this->code = $code;
+        $this->redirectURL  = $redirectURL;
+        $this->code         = $code;
+        $this->codeVerifier = $codeVerifier;
     }
 
-    /*
-     *
-     *
-     */
     /**
      * Build the access token request as an associative array.
      */
     private function generateRequest(): array
     {
-
-        return [
-            'redirect_uri' => $this->redirectURL,
-            'grant_type' => OAuthConstants::GRANT_TYPE,
-            'client_id' => $this->clientID,
+        $body = [
+            'redirect_uri'  => $this->redirectURL,
+            'grant_type'    => OAuthConstants::GRANT_TYPE,
+            'client_id'     => $this->clientID,
             'client_secret' => $this->clientSecret,
-            'code' => $this->code
+            'code'          => $this->code,
         ];
+
+        // PKCE (RFC 7636 §4.5): include code_verifier when PKCE is enabled (FEAT-01)
+        if ($this->codeVerifier !== null && $this->codeVerifier !== '') {
+            $body['code_verifier'] = $this->codeVerifier;
+        }
+
+        return $body;
     }
 
     /**

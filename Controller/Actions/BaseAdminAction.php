@@ -62,9 +62,11 @@ abstract class BaseAdminAction extends \Magento\Backend\App\Action
         //You can use dependency injection to get any class this observer may need.
         $this->oauthUtility = $oauthUtility;
         $this->resultPageFactory = $resultPageFactory;
-        $this->messageManager = $messageManager;
         $this->logger = $logger;
         parent::__construct($context);
+        // Override after parent::__construct so the DI-injected instance wins
+        // over what the parent sets from $context->getMessageManager().
+        $this->messageManager = $messageManager;
     }
 
     /**
