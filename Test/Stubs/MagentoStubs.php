@@ -204,7 +204,7 @@ namespace Magento\Backend\App {
         abstract public function execute();
 
         /** Subclasses override this to check ACL permissions. */
-        protected function _isAllowed(): bool
+        protected function _isAllowed()
         {
             return true;
         }
