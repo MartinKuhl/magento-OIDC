@@ -146,7 +146,8 @@ jobs:
               "magento/module-authorization": "*",
               "magento/module-user": "*",
               "magento/module-directory": "*",
-              "vimeo/psalm": "*"
+              "vimeo/psalm": "*",
+              "phpunit/phpunit": "^10.5"
             },
             "repositories": [
               {
