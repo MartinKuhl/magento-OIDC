@@ -2,3 +2,4 @@ composer.phar
 /vendor/
 Code-Review.md
 Dev-Doc.md
+.phpunit.result.cache
