@@ -18,7 +18,7 @@ if ($providerData !== null) {
     $activeProvName = $providerData['display_name'] ?: ($providerData['app_name'] ?? '');
 }
 ?>
-<div style="padding: 0 1%;">
+<div style="padding: 0 1%; margin-bottom: 2%;">
     <div class="topnav" id="myTopnav">
         <a class="<?= $escaper->escapeHtmlAttr($tabClass('provider')) ?>"
            href="<?= $escaper->escapeUrl($provider) ?>">

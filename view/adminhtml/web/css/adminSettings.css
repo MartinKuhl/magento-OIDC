@@ -695,7 +695,7 @@ table td {
 .topnav {
     background-color: #333;
     overflow: hidden;
-    margin-bottom:2%;
+    margin-bottom: 0;
 }
 
 /* Style the links inside the navigation bar */
