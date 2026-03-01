@@ -206,6 +206,15 @@ namespace Magento\Framework\Model {
 namespace Magento\Framework\Model\ResourceModel\Db {
     abstract class AbstractDb
     {
+        /** Subclasses override this to call _init(). */
+        protected function _construct(): void
+        {
+        }
+
+        protected function _init(string $mainTable, string $idFieldName): void
+        {
+        }
+
         public function load($object, $value, $field = null): void
         {
         }
