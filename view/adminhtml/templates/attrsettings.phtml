@@ -97,7 +97,6 @@ $usernameSelected = $oauth_am_account_matcher == 'username' ? 'selected="selecte
                     <?= $escaper->escapeHtml(__('Back to provider list')) ?>
                 </a>
             </div>
-            <?php endif; ?>
 
             <!-- Attribute Mapping Form -->
             <form name="f" method="post" action="">
@@ -595,6 +594,19 @@ selected="selected"
                     </tr>
                 </table>
             </form>
+
+            <?php else: ?>
+            <div style="background:#fff3cd; border:1px solid #ffc107; padding:14px;
+                        border-radius:4px; color:#856404; margin-top:10px;">
+                <?= $escaper->escapeHtml(
+                    __('No provider selected. Please open this page via Manage Providers → Edit.')
+                ) ?>
+                <br><br>
+                <a href="<?= $escaper->escapeUrl($block->getUrl('mooauth/provider/index')) ?>">
+                    <?= $escaper->escapeHtml(__('Go to Manage Providers')) ?>
+                </a>
+            </div>
+            <?php endif; ?>
         </div>
     </div>
 </div>

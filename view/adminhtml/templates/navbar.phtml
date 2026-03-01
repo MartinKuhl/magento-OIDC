@@ -33,17 +33,15 @@ if ($providerData !== null) {
            href="<?= $escaper->escapeUrl($oauthsettings) ?>">
             OAuth Settings
         </a>
-        <?php endif; ?>
-        <a class="<?= $escaper->escapeHtmlAttr($tabClass('signinsettings')) ?>"
-           href="<?= $escaper->escapeUrl($signinsettings) ?>">
-            Sign In Settings
-        </a>
-        <?php if ($hasProviders): ?>
         <a class="<?= $escaper->escapeHtmlAttr($tabClass('attrsettings')) ?>"
            href="<?= $escaper->escapeUrl($attrsettings) ?>">
             Attribute Mapping
         </a>
         <?php endif; ?>
+        <a class="<?= $escaper->escapeHtmlAttr($tabClass('signinsettings')) ?>"
+           href="<?= $escaper->escapeUrl($signinsettings) ?>">
+            Sign In Settings
+        </a>
     </div>
     <?php if ($providerData !== null): ?>
     <div style="background:#1a5276; color:#fff; padding:5px 16px; font-size:12px;
