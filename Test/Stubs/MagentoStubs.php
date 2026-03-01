@@ -42,6 +42,60 @@ namespace Psr\Log {
 
 // ─── Interfaces ────────────────────────────────────────────────────────────────
 
+namespace Magento\Framework\App\Action {
+    /** Marker interface — controller accepts GET requests. */
+    interface HttpGetActionInterface
+    {
+    }
+
+    /** Marker interface — controller accepts POST requests. */
+    interface HttpPostActionInterface
+    {
+    }
+}
+
+namespace Magento\Framework\GraphQl\Config\Element {
+    /** Stub for the Field config object passed to GraphQL resolvers. */
+    class Field
+    {
+    }
+}
+
+namespace Magento\Framework\GraphQl\Exception {
+    class GraphQlInputException extends \RuntimeException
+    {
+    }
+
+    class GraphQlNoSuchEntityException extends \RuntimeException
+    {
+    }
+}
+
+namespace Magento\Framework\GraphQl\Schema\Type {
+    /** Stub for the ResolveInfo object passed to GraphQL resolvers. */
+    class ResolveInfo
+    {
+    }
+}
+
+namespace Magento\Framework\GraphQl\Query {
+    interface ResolverInterface
+    {
+        /**
+         * @param  array<mixed>|null $value
+         * @param  array<mixed>|null $args
+         * @return mixed
+         */
+        public function resolve(
+            \Magento\Framework\GraphQl\Config\Element\Field $field,
+            $context,
+            \Magento\Framework\GraphQl\Schema\Type\ResolveInfo $info,
+            ?array $value = null,
+            ?array $args = null
+        );
+    }
+}
+
 namespace Magento\Framework\Message {
     interface ManagerInterface
     {
