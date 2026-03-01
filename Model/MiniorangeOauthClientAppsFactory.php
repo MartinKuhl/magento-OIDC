@@ -19,7 +19,7 @@ use Magento\Framework\ObjectManagerInterface;
 class MiniorangeOauthClientAppsFactory
 {
     /** @var ObjectManagerInterface */
-    private ObjectManagerInterface $objectManager;
+    private readonly ObjectManagerInterface $objectManager;
 
     /**
      * @param ObjectManagerInterface $objectManager
@@ -33,7 +33,6 @@ class MiniorangeOauthClientAppsFactory
      * Create a new MiniorangeOauthClientApps instance.
      *
      * @param  array<string,mixed> $data
-     * @return MiniorangeOauthClientApps
      */
     public function create(array $data = []): MiniorangeOauthClientApps
     {

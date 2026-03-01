@@ -17,6 +17,29 @@ declare(strict_types=1);
  * test failure proves they are needed.
  */
 
+// ─── PSR interfaces ──────────────────────────────────────────────────────────
+
+namespace Psr\Log {
+    /**
+     * PSR-3 logger interface stub.
+     * CI only installs phpunit/phpunit (no psr/log), so we provide this minimal
+     * definition so that PHPUnit can create mock objects for LoggerInterface.
+     */
+    interface LoggerInterface
+    {
+        public function emergency(string|\Stringable $message, array $context = []): void;
+        public function alert(string|\Stringable $message, array $context = []): void;
+        public function critical(string|\Stringable $message, array $context = []): void;
+        public function error(string|\Stringable $message, array $context = []): void;
+        public function warning(string|\Stringable $message, array $context = []): void;
+        public function notice(string|\Stringable $message, array $context = []): void;
+        public function info(string|\Stringable $message, array $context = []): void;
+        public function debug(string|\Stringable $message, array $context = []): void;
+        /** @param mixed $level */
+        public function log($level, string|\Stringable $message, array $context = []): void;
+    }
+}
+
 // ─── Interfaces ────────────────────────────────────────────────────────────────
 
 namespace Magento\Framework\Message {
@@ -32,6 +55,17 @@ namespace Magento\Framework\Event {
     interface ManagerInterface
     {
         public function dispatch($eventName, array $data = []);
+    }
+}
+
+namespace Magento\Framework\App {
+    interface CacheInterface
+    {
+        /** @return string|bool */
+        public function load(string $identifier);
+        public function save(string $data, string $identifier, array $tags = [], ?int $lifeTime = null): bool;
+        public function remove(string $identifier): bool;
+        public function clean(array $tags = []): bool;
     }
 }
 

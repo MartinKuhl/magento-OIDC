@@ -196,15 +196,14 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
 
 
 ### FIX ###:
-- No provider selected. Please open this page via Manage Providers → Edit. for all sections! --> align banner
+
 - Display Name: <> Display Name <> OAuth Provider Name
-- Editing provider: Authelia banner postion and size
+- Editing provider: Authelia banner postion and size (Attribute mapping)
 - End Session (Logout) Endpoint style
-- sign in settings to last position
 - User Auto Redirect Settings:
+- Sign In Settings are also Provider dependent 
 - im und export?
 
-- please check if Integration and/or unit tests needs to be adjusted
 
 - NOT Magento UI Grid
 - side bar ordering (Left and top)

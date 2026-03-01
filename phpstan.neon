@@ -10,6 +10,9 @@ parameters:
         analyseAndScan:
             - vendor (?)
             - .github
+            # Stub file defines minimal class skeletons for CI-only PHPUnit use;
+            # scanning it would override PHPStan's real Magento type knowledge.
+            - Test/Stubs
         analyse:
             - psalm-stubs.stub
             - rector.php
