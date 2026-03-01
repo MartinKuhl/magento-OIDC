@@ -32,7 +32,12 @@ namespace {
          */
         function __(string $text, mixed ...$args): string
         {
-            return $args ? vsprintf($text, $args) : $text;
+            // Magento uses %1, %2, … placeholders, not printf format specifiers.
+            // vsprintf() would throw ValueError on strings like 'value "%1"'.
+            foreach ($args as $i => $arg) {
+                $text = str_replace('%' . ($i + 1), (string) $arg, $text);
+            }
+            return $text;
         }
     }
 }

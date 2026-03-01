@@ -56,7 +56,8 @@ staticClients:
       redirectURIs:
           - "http://localhost/mooauth/actions/readauthresponse"
           - "http://localhost/mooauth/actions/backchannel-logout"
-      # Grant types for token refresh tests
+      # Grant types — password is required for the ROPC flow used by integration tests
       grantTypes:
           - authorization_code
           - refresh_token
+          - password
