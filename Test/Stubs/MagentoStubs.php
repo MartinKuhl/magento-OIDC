@@ -157,7 +157,7 @@ namespace Magento\Backend\App {
      * Stub for the admin-controller base class.
      * BaseAdminAction extends this and calls parent::__construct($context).
      */
-    class Action
+    abstract class Action
     {
         /** @var mixed */
         protected $_authorization;
@@ -178,13 +178,10 @@ namespace Magento\Backend\App {
         }
 
         /**
-         * Declared here so that #[\Override] on BaseAdminAction::execute() resolves.
+         * Abstract so BaseAdminAction can redeclare it as abstract too.
          * @return mixed
          */
-        public function execute()
-        {
-            return null;
-        }
+        abstract public function execute();
     }
 }
 
