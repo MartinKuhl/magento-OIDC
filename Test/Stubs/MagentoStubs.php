@@ -17,6 +17,26 @@ declare(strict_types=1);
  * test failure proves they are needed.
  */
 
+// ─── Global Magento helpers ───────────────────────────────────────────────────
+
+namespace {
+    if (!function_exists('__')) {
+        /**
+         * Magento translation stub: returns the first argument unchanged.
+         * The real __() returns a Phrase object; returning a plain string is
+         * sufficient for CI tests that only pass the result to mocked methods.
+         *
+         * @param  string $text
+         * @param  mixed  ...$args
+         * @return string
+         */
+        function __(string $text, mixed ...$args): string
+        {
+            return $args ? vsprintf($text, $args) : $text;
+        }
+    }
+}
+
 // ─── PSR interfaces ──────────────────────────────────────────────────────────
 
 namespace Psr\Log {
