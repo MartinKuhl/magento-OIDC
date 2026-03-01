@@ -47,14 +47,6 @@
             Parent Menu Item is the miniOrange OAuth menu item mentioned above.
             Action is the controllerAction to be called when menu item is clicked.
         -->
-        <add id="MiniOrange_OAuth::signin_settings"
-            title="Sign In Settings"
-            module="MiniOrange_OAuth"
-            sortOrder="3"
-            parent="MiniOrange_OAuth::OAuth"
-            action="mooauth/signinsettings"
-            resource="MiniOrange_OAuth::signin_settings"/>
-
         <!--
             Adding a Attribute / Role Mapping sub menu item to handle Role Mapping settings
             Parent Menu Item is the miniOrange OAuth menu item mentioned above.
@@ -63,10 +55,18 @@
         <add id="MiniOrange_OAuth::attr_settings"
             title="Attribute Mapping"
             module="MiniOrange_OAuth"
-            sortOrder="4"
+            sortOrder="3"
             parent="MiniOrange_OAuth::OAuth"
             action="mooauth/attrsettings"
             resource="MiniOrange_OAuth::attr_settings"/>
+
+        <add id="MiniOrange_OAuth::signin_settings"
+            title="Sign In Settings"
+            module="MiniOrange_OAuth"
+            sortOrder="4"
+            parent="MiniOrange_OAuth::OAuth"
+            action="mooauth/signinsettings"
+            resource="MiniOrange_OAuth::signin_settings"/>
 
     </menu>
 </config>
