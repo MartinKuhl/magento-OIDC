@@ -11,6 +11,7 @@
         </testsuite>
         <testsuite name="MiniOrange OIDC Integration Tests">
             <directory>Test/Integration</directory>
+            <exclude>Test/Integration/AbstractOidcIntegrationTest.php</exclude>
         </testsuite>
     </testsuites>
 
