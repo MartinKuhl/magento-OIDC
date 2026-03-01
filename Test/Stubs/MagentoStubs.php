@@ -208,6 +208,15 @@ namespace Magento\Backend\App {
 namespace Magento\Framework\Model {
     abstract class AbstractModel
     {
+        /** Subclasses override this to call _init(). */
+        protected function _construct(): void
+        {
+        }
+
+        protected function _init(string $resourceModel): void
+        {
+        }
+
         /** @return mixed */
         public function getId()
         {
