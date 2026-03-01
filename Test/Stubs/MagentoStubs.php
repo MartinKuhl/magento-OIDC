@@ -162,8 +162,28 @@ namespace Magento\Backend\App {
         /** @var mixed */
         protected $_authorization;
 
+        /** @var \Magento\Backend\App\Action\Context|null */
+        private $context;
+
         public function __construct($context = null)
         {
+            $this->context = $context;
+        }
+
+        /** Delegates to the Context mock so tests can wire the request object. */
+        /** @return mixed */
+        public function getRequest()
+        {
+            return $this->context ? $this->context->getRequest() : null;
+        }
+
+        /**
+         * Declared here so that #[\Override] on BaseAdminAction::execute() resolves.
+         * @return mixed
+         */
+        public function execute()
+        {
+            return null;
         }
     }
 }
