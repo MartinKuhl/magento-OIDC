@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    UI Grid component definition for the OIDC Provider management list.
+    Data source: miniorange_oauth_client_apps table via Collection.
+    Route: mooauth/provider/index
+-->
+<listing xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+
+    <argument name="data" xsi:type="array">
+        <item name="js_config" xsi:type="array">
+            <item name="provider" xsi:type="string">
+                mooauth_provider_listing.mooauth_provider_listing_data_source
+            </item>
+        </item>
+    </argument>
+
+    <settings>
+        <buttons>
+            <button name="add">
+                <url path="mooauth/provider/edit"/>
+                <class>primary</class>
+                <label translate="true">Add New Provider</label>
+            </button>
+        </buttons>
+        <spinner>mooauth_provider_columns</spinner>
+        <deps>
+            <dep>mooauth_provider_listing.mooauth_provider_listing_data_source</dep>
+        </deps>
+    </settings>
+
+    <dataSource name="mooauth_provider_listing_data_source"
+                component="Magento_Ui/js/grid/provider">
+        <settings>
+            <storageConfig>
+                <param name="indexField" xsi:type="string">id</param>
+            </storageConfig>
+            <updateUrl path="mui/index/render"/>
+        </settings>
+        <aclResource>MiniOrange_OAuth::oauth_settings</aclResource>
+        <dataProvider class="MooauthProviderListingDataProvider"
+                      name="mooauth_provider_listing_data_source">
+            <settings>
+                <requestFieldName>id</requestFieldName>
+                <primaryFieldName>id</primaryFieldName>
+            </settings>
+        </dataProvider>
+    </dataSource>
+
+    <listingToolbar name="listing_top">
+        <settings>
+            <sticky>true</sticky>
+        </settings>
+        <bookmark name="bookmarks"/>
+        <columnsControls name="columns_controls"/>
+        <filters name="listing_filters"/>
+        <paging name="listing_paging"/>
+    </listingToolbar>
+
+    <columns name="mooauth_provider_columns">
+
+        <column name="id">
+            <settings>
+                <filter>textRange</filter>
+                <label translate="true">ID</label>
+                <sorting>asc</sorting>
+            </settings>
+        </column>
+
+        <column name="display_name">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Provider Name</label>
+            </settings>
+        </column>
+
+        <column name="clientID">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Client ID</label>
+            </settings>
+        </column>
+
+        <column name="login_type">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Login Type</label>
+            </settings>
+        </column>
+
+        <column name="is_active" component="Magento_Ui/js/grid/columns/select">
+            <settings>
+                <options class="Magento\Config\Model\Config\Source\Yesno"/>
+                <filter>select</filter>
+                <dataType>select</dataType>
+                <label translate="true">Status</label>
+            </settings>
+        </column>
+
+        <column name="sort_order">
+            <settings>
+                <filter>textRange</filter>
+                <label translate="true">Sort Order</label>
+            </settings>
+        </column>
+
+        <actionsColumn name="actions"
+                       class="MiniOrange\OAuth\Ui\Component\Listing\Column\Actions">
+            <settings>
+                <indexField>id</indexField>
+                <label translate="true">Actions</label>
+            </settings>
+        </actionsColumn>
+
+    </columns>
+
+</listing>

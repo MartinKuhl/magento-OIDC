@@ -9,12 +9,8 @@
         Calls our Admin Block for some common functionality.
         -->
         <referenceContainer name="content">
-            <!-- This adds the navbar to the phtml file for easy navigation -->
-            <block class="MiniOrange\OAuth\Block\OAuth" 
-                name="miniorange.oauth.navbar" 
-                template="navbar.phtml" />
-            <block class="MiniOrange\OAuth\Block\OAuth" 
-                name="miniorange.oauth.admin.oauthsettings" 
+            <block class="MiniOrange\OAuth\Block\OAuth"
+                name="miniorange.oauth.admin.oauthsettings"
                 template="oauthsettings.phtml" />
         </referenceContainer>
         <!-- 

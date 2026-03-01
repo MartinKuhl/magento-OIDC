@@ -1,0 +1,252 @@
+<!--
+    OAuth Settings tab — Section B: OAuth / OIDC endpoint configuration.
+    Rendered inside the Widget\Tabs form on the mooauth/provider/edit page.
+    The enclosing <form> and hidden fields are provided by the Edit container block.
+-->
+<?php
+/** @var \MiniOrange\OAuth\Block\Adminhtml\Provider\Edit\Tab\OAuthSettings $block */
+/** @var \Magento\Framework\Escaper $escaper */
+
+$data      = $block->getProviderData();
+$isEditMode = !empty($data['id']);
+$val       = static function (string $key, $default = '') use ($data) {
+    return $data[$key] ?? $default;
+};
+$grantType = (string) $val('grant_type', 'authorization_code');
+$inHeader  = (bool)(int) $val('values_in_header', 0);
+$inBody    = (bool)(int) $val('values_in_body', 0);
+?>
+<div class="admin__fieldset-wrapper">
+    <div class="admin__fieldset-wrapper-title">
+        <span class="admin__fieldset-wrapper-title-text">
+            <?= $escaper->escapeHtml(__('OAuth / OIDC Configuration')) ?>
+        </span>
+        <p class="admin__field-note" style="font-style:italic; margin-top:8px;">
+            <?= $escaper->escapeHtml(
+                __('Provide a Discovery URL to auto-discover endpoints, or enter them manually below.')
+            ) ?>
+        </p>
+    </div>
+
+    <table class="admin__table-primary" style="width:100%; margin-top:16px;">
+        <tbody>
+            <tr>
+                <td style="width:220px;">
+                    <label for="clientID">
+                        <strong>
+                            <?= $escaper->escapeHtml(__('Client ID')) ?>
+                            <span style="color:red">*</span>
+                        </strong>
+                    </label>
+                </td>
+                <td>
+                    <input type="text"
+                           id="clientID"
+                           name="clientID"
+                           required
+                           class="admin__control-text"
+                           value="<?= $escaper->escapeHtmlAttr($val('clientID')) ?>"
+                           style="width:100%;">
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="client_secret">
+                        <strong>
+                            <?= $escaper->escapeHtml(__('Client Secret')) ?>
+                            <?php if (!$isEditMode): ?>
+                            <span style="color:red">*</span>
+                            <?php endif; ?>
+                        </strong>
+                    </label>
+                </td>
+                <td>
+                    <input type="password"
+                           id="client_secret"
+                           name="client_secret"
+                           class="admin__control-text"
+                           <?= !$isEditMode ? 'required' : '' ?>
+                           autocomplete="new-password"
+                           value=""
+                           style="width:100%;">
+                    <?php if ($isEditMode): ?>
+                    <small class="admin__field-note">
+                        <?= $escaper->escapeHtml(__('Leave blank to keep the existing secret.')) ?>
+                    </small>
+                    <?php endif; ?>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="scope">
+                        <strong><?= $escaper->escapeHtml(__('Scope')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <input type="text"
+                           id="scope"
+                           name="scope"
+                           class="admin__control-text"
+                           placeholder="openid profile email"
+                           value="<?= $escaper->escapeHtmlAttr($val('scope', 'openid profile email')) ?>"
+                           style="width:100%;">
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="grant_type">
+                        <strong><?= $escaper->escapeHtml(__('Grant Type')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <select id="grant_type" name="grant_type" class="admin__control-select" style="width:100%;">
+                        <option value="authorization_code"
+                            <?= $grantType === 'authorization_code' ? 'selected="selected"' : '' ?>>
+                            <?= $escaper->escapeHtml(__('Authorization Code')) ?>
+                        </option>
+                        <option value="implicit"
+                            <?= $grantType === 'implicit' ? 'selected="selected"' : '' ?>>
+                            <?= $escaper->escapeHtml(__('Implicit')) ?>
+                        </option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label>
+                        <strong><?= $escaper->escapeHtml(__('Send Credentials')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <label>
+                        <input type="checkbox"
+                               name="values_in_header"
+                               class="admin__control-checkbox"
+                               value="1"
+                               <?= $inHeader ? 'checked="checked"' : '' ?>>
+                        <?= $escaper->escapeHtml(__('In Authorization Header')) ?>
+                    </label>
+                    &nbsp;&nbsp;
+                    <label>
+                        <input type="checkbox"
+                               name="values_in_body"
+                               class="admin__control-checkbox"
+                               value="1"
+                               <?= $inBody ? 'checked="checked"' : '' ?>>
+                        <?= $escaper->escapeHtml(__('In Request Body')) ?>
+                    </label>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="well_known_config_url">
+                        <strong><?= $escaper->escapeHtml(__('Discovery URL')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <input type="url"
+                           id="well_known_config_url"
+                           name="well_known_config_url"
+                           class="admin__control-text"
+                           placeholder="https://your-idp/.well-known/openid-configuration"
+                           value="<?= $escaper->escapeHtmlAttr($val('well_known_config_url')) ?>"
+                           style="width:100%;">
+                    <small class="admin__field-note">
+                        <?= $escaper->escapeHtml(__('Optional — overrides manual endpoint fields on save.')) ?>
+                    </small>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="authorize_endpoint">
+                        <strong><?= $escaper->escapeHtml(__('Authorization Endpoint')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <input type="url"
+                           id="authorize_endpoint"
+                           name="authorize_endpoint"
+                           class="admin__control-text"
+                           value="<?= $escaper->escapeHtmlAttr($val('authorize_endpoint')) ?>"
+                           style="width:100%;">
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="access_token_endpoint">
+                        <strong><?= $escaper->escapeHtml(__('Access Token Endpoint')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <input type="url"
+                           id="access_token_endpoint"
+                           name="access_token_endpoint"
+                           class="admin__control-text"
+                           value="<?= $escaper->escapeHtmlAttr($val('access_token_endpoint')) ?>"
+                           style="width:100%;">
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="user_info_endpoint">
+                        <strong><?= $escaper->escapeHtml(__('UserInfo Endpoint')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <input type="url"
+                           id="user_info_endpoint"
+                           name="user_info_endpoint"
+                           class="admin__control-text"
+                           value="<?= $escaper->escapeHtmlAttr($val('user_info_endpoint')) ?>"
+                           style="width:100%;">
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="jwks_endpoint">
+                        <strong><?= $escaper->escapeHtml(__('JWKS Endpoint')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <input type="url"
+                           id="jwks_endpoint"
+                           name="jwks_endpoint"
+                           class="admin__control-text"
+                           value="<?= $escaper->escapeHtmlAttr($val('jwks_endpoint')) ?>"
+                           style="width:100%;">
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="endsession_endpoint">
+                        <strong><?= $escaper->escapeHtml(__('End Session Endpoint')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <input type="url"
+                           id="endsession_endpoint"
+                           name="endsession_endpoint"
+                           class="admin__control-text"
+                           value="<?= $escaper->escapeHtmlAttr($val('endsession_endpoint')) ?>"
+                           style="width:100%;">
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="issuer">
+                        <strong><?= $escaper->escapeHtml(__('Issuer')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <input type="text"
+                           id="issuer"
+                           name="issuer"
+                           class="admin__control-text"
+                           placeholder="https://your-idp"
+                           value="<?= $escaper->escapeHtmlAttr($val('issuer')) ?>"
+                           style="width:100%;">
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>

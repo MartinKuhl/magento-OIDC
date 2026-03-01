@@ -1,0 +1,114 @@
+<!--
+    Attribute Mapping tab — Section C: OIDC claim → Magento field mapping.
+    Rendered inside the Widget\Tabs form on the mooauth/provider/edit page.
+    The enclosing <form> and hidden fields are provided by the Edit container block.
+-->
+<?php
+/** @var \MiniOrange\OAuth\Block\Adminhtml\Provider\Edit\Tab\AttributeMapping $block */
+/** @var \Magento\Framework\Escaper $escaper */
+
+$data = $block->getProviderData();
+$val  = static function (string $key, $default = '') use ($data) {
+    return $data[$key] ?? $default;
+};
+?>
+<div class="admin__fieldset-wrapper">
+    <div class="admin__fieldset-wrapper-title">
+        <span class="admin__fieldset-wrapper-title-text">
+            <?= $escaper->escapeHtml(__('Attribute Mapping')) ?>
+        </span>
+        <p class="admin__field-note" style="font-style:italic; margin-top:8px;">
+            <?= $escaper->escapeHtml(
+                __('Map OIDC token claims to Magento user fields. Enter the exact claim name your provider returns.')
+            ) ?>
+        </p>
+    </div>
+
+    <table class="admin__table-primary" style="width:100%; margin-top:16px;">
+        <tbody>
+            <tr>
+                <td style="width:220px;">
+                    <label for="email_attribute">
+                        <strong><?= $escaper->escapeHtml(__('Email Claim')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <input type="text"
+                           id="email_attribute"
+                           name="email_attribute"
+                           class="admin__control-text"
+                           placeholder="email"
+                           value="<?= $escaper->escapeHtmlAttr($val('email_attribute', 'email')) ?>"
+                           style="width:100%;">
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="username_attribute">
+                        <strong><?= $escaper->escapeHtml(__('Username Claim')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <input type="text"
+                           id="username_attribute"
+                           name="username_attribute"
+                           class="admin__control-text"
+                           placeholder="preferred_username"
+                           value="<?= $escaper->escapeHtmlAttr($val('username_attribute', 'preferred_username')) ?>"
+                           style="width:100%;">
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="firstname_attribute">
+                        <strong><?= $escaper->escapeHtml(__('First Name Claim')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <input type="text"
+                           id="firstname_attribute"
+                           name="firstname_attribute"
+                           class="admin__control-text"
+                           placeholder="given_name"
+                           value="<?= $escaper->escapeHtmlAttr($val('firstname_attribute', 'given_name')) ?>"
+                           style="width:100%;">
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="lastname_attribute">
+                        <strong><?= $escaper->escapeHtml(__('Last Name Claim')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <input type="text"
+                           id="lastname_attribute"
+                           name="lastname_attribute"
+                           class="admin__control-text"
+                           placeholder="family_name"
+                           value="<?= $escaper->escapeHtmlAttr($val('lastname_attribute', 'family_name')) ?>"
+                           style="width:100%;">
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="group_attribute">
+                        <strong><?= $escaper->escapeHtml(__('Group / Role Claim')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <input type="text"
+                           id="group_attribute"
+                           name="group_attribute"
+                           class="admin__control-text"
+                           placeholder="groups"
+                           value="<?= $escaper->escapeHtmlAttr($val('group_attribute')) ?>"
+                           style="width:100%;">
+                    <small class="admin__field-note">
+                        <?= $escaper->escapeHtml(__('Used for admin role and customer group mapping.')) ?>
+                    </small>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>

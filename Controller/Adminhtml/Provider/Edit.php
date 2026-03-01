@@ -8,9 +8,11 @@ use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpGetActionInterface;
 use Magento\Framework\Controller\Result\Redirect;
+use Magento\Framework\Registry;
 use Magento\Framework\View\Result\Page;
 use Magento\Framework\View\Result\PageFactory;
-use MiniOrange\OAuth\Helper\OAuthUtility;
+use MiniOrange\OAuth\Model\MiniorangeOauthClientAppsFactory;
+use MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps as AppResource;
 
 /**
  * Admin controller — Edit / Add OIDC Provider form (MP-06).
@@ -18,6 +20,8 @@ use MiniOrange\OAuth\Helper\OAuthUtility;
  * Route: GET /admin/mooauth/provider/edit[/id/<providerId>]
  *
  * When `id` is absent or 0 the form opens in "Add new provider" mode.
+ * When `id` is present the provider is loaded and stored in the Core Registry
+ * so Block\Adminhtml\Provider\Edit and its tab children can pre-populate fields.
  */
 class Edit extends Action implements HttpGetActionInterface
 {
@@ -26,23 +30,33 @@ class Edit extends Action implements HttpGetActionInterface
     /** @var PageFactory */
     private readonly PageFactory $pageFactory;
 
-    /** @var OAuthUtility */
-    private readonly OAuthUtility $oauthUtility;
+    /** @var Registry */
+    private readonly Registry $registry;
+
+    /** @var MiniorangeOauthClientAppsFactory */
+    private readonly MiniorangeOauthClientAppsFactory $clientAppsFactory;
+
+    /** @var AppResource */
+    private readonly AppResource $appResource;
 
     /**
-     * Initialize provider edit controller.
-     *
-     * @param Context      $context
-     * @param PageFactory  $pageFactory
-     * @param OAuthUtility $oauthUtility
+     * @param Context                          $context
+     * @param PageFactory                      $pageFactory
+     * @param Registry                         $registry
+     * @param MiniorangeOauthClientAppsFactory $clientAppsFactory
+     * @param AppResource                      $appResource
      */
     public function __construct(
         Context $context,
         PageFactory $pageFactory,
-        OAuthUtility $oauthUtility
+        Registry $registry,
+        MiniorangeOauthClientAppsFactory $clientAppsFactory,
+        AppResource $appResource
     ) {
-        $this->pageFactory  = $pageFactory;
-        $this->oauthUtility = $oauthUtility;
+        $this->pageFactory       = $pageFactory;
+        $this->registry          = $registry;
+        $this->clientAppsFactory = $clientAppsFactory;
+        $this->appResource       = $appResource;
         parent::__construct($context);
     }
 
@@ -55,12 +69,16 @@ class Edit extends Action implements HttpGetActionInterface
         $providerId = (int) $this->getRequest()->getParam('id', 0);
 
         if ($providerId > 0) {
-            $provider = $this->oauthUtility->getClientDetailsById($providerId);
-            if ($provider === null) {
+            $model = $this->clientAppsFactory->create();
+            $this->appResource->load($model, $providerId);
+
+            if (!$model->getId()) {
                 $this->messageManager->addErrorMessage((string) __('Provider not found.'));
-                return $this->resultRedirectFactory->create()
-                    ->setPath('*/*/index');
+                return $this->resultRedirectFactory->create()->setPath('*/*/index');
             }
+
+            // Share the loaded model with Block\Adminhtml\Provider\Edit and its tabs.
+            $this->registry->register('current_oidc_provider', $model);
         }
 
         $page = $this->pageFactory->create();

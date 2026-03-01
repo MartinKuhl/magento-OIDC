@@ -203,7 +203,7 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
 - User Auto Redirect Settings:
 - Sign In Settings are also Provider dependent 
 - im und export?
-
+- remove double "Editing provider info bix"
 
 - NOT Magento UI Grid
 - side bar ordering (Left and top)
@@ -222,7 +222,3 @@ Psalm:   Level 3
 
 
 please check the screenshot. Here is the menu of creating a new customer and the customer overview where the Magento UI Grid is used. Please adjust the OIDC plugin so that for the overview of all providers the Magento UI Grid is used (Screenshot 2). The process of creating a new provider should look like in screenshot one. Here the provider settings should be added first. Than as a sub menu on the left site OAuth settings and Attribute Mapping. This should also apply for the editing of an existing provider like in screenshot 3. THe Sign in Settings should be accessable from provider overview site. Please use the standard magento components like in the screenshots for creating the UI. Please adjust the top navigation bar and the left magento menu accordingly. 
-
-first Plan: Connect "Edit" button to provider context-mode tabs + navbar indicator
-
-Second write implementation plan
