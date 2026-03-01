@@ -27,3 +27,11 @@ spl_autoload_register(static function (string $class) use ($moduleRoot): void {
         require_once $file;
     }
 });
+
+// Load minimal Magento class stubs when the full Magento framework is not
+// installed (e.g. in CI environments that only install phpunit/phpunit).
+// The check triggers the registered autoloaders; if none of them can provide
+// AbstractHelper we know Magento is absent and load our hand-written stubs.
+if (!class_exists(\Magento\Framework\App\Helper\AbstractHelper::class, true)) {
+    require_once __DIR__ . '/Stubs/MagentoStubs.php';
+}

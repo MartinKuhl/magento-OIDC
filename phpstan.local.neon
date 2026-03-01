@@ -8,5 +8,8 @@ parameters:
     excludePaths:
         analyseAndScan:
             - .github
+            # Stub file defines minimal Magento class skeletons for CI-only use;
+            # scanning it would override PHPStan's real Magento type knowledge.
+            - Test/Stubs
         analyse:
             - psalm-stubs.stub

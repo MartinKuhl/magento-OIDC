@@ -33,6 +33,9 @@
     <exclude-pattern>vendor/*</exclude-pattern>
     <exclude-pattern>node_modules/*</exclude-pattern>
     <exclude-pattern>*/.github/*</exclude-pattern>
+    <!-- Test stubs use multi-namespace block syntax (one file / many classes) which
+         is intentional for minimal CI fixtures — not subject to PSR-1 class rules -->
+    <exclude-pattern>Test/Stubs/*</exclude-pattern>
 
     <!-- Minimum supported PHP version (8.2+) -->
     <config name="testVersion" value="8.2-"/>
