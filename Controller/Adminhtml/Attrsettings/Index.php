@@ -121,10 +121,10 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
             $model->setData('default_role', trim((string) ($params['oauth_am_default_role'] ?? '')));
 
             // Role mappings as JSON
-            $roleMappings = array_values(array_filter(
+            $roleMappings = array_filter(
                 $params['oauth_role_mapping'] ?? [],
                 static fn ($m): bool => !empty($m['group']) && !empty($m['role'])
-            ));
+            );
             $model->setData('oauth_admin_role_mapping', json_encode($roleMappings));
 
             $this->appResource->save($model);

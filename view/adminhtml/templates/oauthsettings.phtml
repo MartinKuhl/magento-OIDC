@@ -137,14 +137,15 @@ $scope          = $clientDetails['scope'] ?? '';
                             <label><strong>Client Secret<span style="color:red;">*</span>:</strong></label>
                         </td>
                         <td>
+                            <?php $secretPlaceholder = $escaper->escapeHtmlAttr(
+                                __('Leave empty to keep existing secret')
+                            ); ?>
                             <input type="password"
                                    name="mo_oauth_client_secret"
                                    style="width: 100%;"
                                    autocomplete="new-password"
                                    value=""
-                                   placeholder="<?= $escaper->escapeHtmlAttr(
-                                       __('Leave empty to keep existing secret')
-                                   ) ?>"
+                                   placeholder="<?= $secretPlaceholder // phpcs:ignore ?>"
                                    <?= $activeProviderId > 0 ? '' : 'required' ?>>
                         </td>
                     </tr>
