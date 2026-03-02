@@ -98,6 +98,11 @@ class ProcessUserAction
      */
     private $countryAttribute;
 
+    /**
+     * @var int|null Per-provider auto-create customer flag (null = fall back to global config)
+     */
+    private ?int $providerAutoCreateCustomer = null;
+
     /** @var \MiniOrange\OAuth\Controller\Actions\CustomerLoginAction */
     private readonly \MiniOrange\OAuth\Controller\Actions\CustomerLoginAction $customerLoginAction;
 
@@ -249,7 +254,9 @@ class ProcessUserAction
         if (!$user) {
             $this->oauthUtility->customlog("User not found. Checking auto-create configuration");
 
-            $autoCreateEnabled = $this->oauthUtility->getStoreConfig(OAuthConstants::AUTO_CREATE_CUSTOMER);
+            // Per-provider auto-create flag takes precedence over global config
+            $autoCreateEnabled = $this->providerAutoCreateCustomer
+                ?? $this->oauthUtility->getStoreConfig(OAuthConstants::AUTO_CREATE_CUSTOMER);
 
             if (!$autoCreateEnabled) {
                 $this->oauthUtility->customlog("Auto Create Customer is disabled. Rejecting login.");
@@ -406,6 +413,17 @@ class ProcessUserAction
     public function setUserEmail($userEmail): static
     {
         $this->userEmail = $userEmail;
+        return $this;
+    }
+
+    /**
+     * Override auto-create customer with a per-provider value.
+     *
+     * @param int|null $value 1 = enabled, 0 = disabled, null = use global config
+     */
+    public function setAutoCreateCustomer(?int $value): static
+    {
+        $this->providerAutoCreateCustomer = $value;
         return $this;
     }
 

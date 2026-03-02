@@ -19,6 +19,8 @@
                            name="mooauth.provider.tab.oauth"/>
                     <block class="MiniOrange\OAuth\Block\Adminhtml\Provider\Edit\Tab\AttributeMapping"
                            name="mooauth.provider.tab.attrs"/>
+                    <block class="MiniOrange\OAuth\Block\Adminhtml\Provider\Edit\Tab\LoginOptions"
+                           name="mooauth.provider.tab.loginoptions"/>
                 </block>
             </block>
         </referenceContainer>

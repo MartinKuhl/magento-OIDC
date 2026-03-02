@@ -58,6 +58,12 @@
       <column xsi:type="text" name="oauth_am_billingandshipping" nullable="false" comment="enable billing and shipping address" />
       <column xsi:type="text" name="oauth_am_sameasbilling" nullable="false" comment="Same as billing address" />
 
+      <!-- Per-provider login options (migrated from core_config_data) -->
+      <column xsi:type="text" name="dob_attribute" nullable="true" comment="OIDC claim name for date of birth" />
+      <column xsi:type="text" name="gender_attribute" nullable="true" comment="OIDC claim name for gender" />
+      <column xsi:type="text" name="mo_disable_non_oidc_admin_login" nullable="false" default="0" comment="Block non-OIDC admin login for this provider (1=enabled)" />
+      <column xsi:type="text" name="mo_disable_non_oidc_customer_login" nullable="false" default="0" comment="Block non-OIDC customer login for this provider (1=enabled)" />
+
       <!-- FEAT-04: Claims-based access control rules (Sprint 7) -->
       <column xsi:type="text" name="access_control_rules" nullable="true" comment="JSON access control rules array [{claim,operator,value,deny_message}]" />
 

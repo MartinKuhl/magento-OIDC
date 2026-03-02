@@ -60,6 +60,15 @@ class Tabs extends \Magento\Backend\Block\Widget\Tabs
             ]
         );
 
+        $this->addTab(
+            'login_options',
+            [
+                'label'   => __('Login Options'),
+                'title'   => __('Login Options'),
+                'content' => $this->getChildHtml('mooauth.provider.tab.loginoptions'),
+            ]
+        );
+
         return parent::_beforeToHtml();
     }
 }

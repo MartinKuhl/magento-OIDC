@@ -19,9 +19,10 @@ use Psr\Log\LoggerInterface;
 
 /**
  * This class handles the action for endpoint: mooauth/signinsettings/Index
- * Extends the \Magento\Backend\App\Action for Admin Actions which
- * inturn extends the \Magento\Framework\App\Action\Action class necessary
- * for each Controller class
+ * (Miscellaneous page — Debug Logs only).
+ *
+ * Login / Logout Options have moved to the per-provider Login Options tab
+ * in Manage Providers → Edit Provider.
  *
  * @psalm-suppress ImplicitToStringCast Magento's __() returns Phrase with __toString()
  */
@@ -65,9 +66,9 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
     }
 
     /**
-     * Main controller entry-point for Sign-in settings page.
+     * Main controller entry-point for Miscellaneous page (Debug Logs only).
      *
-     * Handles saving, debug log toggling, clearing and downloading logs.
+     * Handles debug log toggling, clearing and downloading logs.
      *
      * @return \Magento\Framework\View\Result\Page|\Magento\Framework\App\ResponseInterface
      */
@@ -79,12 +80,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
 
             // check if form options are being saved
             if ($this->isFormOptionBeingSaved($params)) {
-                if ($params['option'] == 'saveSignInSettings') {
-                    $this->processValuesAndSaveData($params);
-                    $this->oauthUtility->flushCache();
-                    $this->messageManager->addSuccessMessage(OAuthMessages::SETTINGS_SAVED);
-                    $this->oauthUtility->reinitConfig();
-                } elseif ($params['option'] == 'enable_debug_log') {
+                if ($params['option'] == 'enable_debug_log') {
                     $debug_log_on = isset($params['debug_log_on']) ? 1 : 0;
                     $log_file_time = time();
                     $this->oauthUtility->setStoreConfig(OAuthConstants::ENABLE_DEBUG_LOG, $debug_log_on);
@@ -115,7 +111,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         }
         // generate page
         $resultPage = $this->resultPageFactory->create();
-        $resultPage->getConfig()->getTitle()->prepend(__('MiniOrange OAuth'));
+        $resultPage->getConfig()->getTitle()->prepend(__('OIDC Miscellaneous Settings'));
         return $resultPage;
     }
 
@@ -158,9 +154,9 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
             return;
         }
 
-        $showCustomerLink = $this->oauthUtility->getStoreConfig(
-            OAuthConstants::SHOW_CUSTOMER_LINK
-        );
+        // Prefer per-provider value; fall back to global config for backwards compatibility
+        $showCustomerLink = $clientDetails['show_customer_link']
+            ?? $this->oauthUtility->getStoreConfig(OAuthConstants::SHOW_CUSTOMER_LINK);
         $attributeEmail = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_EMAIL);
         $attributeUsername = $this->oauthUtility->getStoreConfig(
             OAuthConstants::MAP_USERNAME
@@ -202,82 +198,6 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         } else {
             $this->messageManager->addSuccessMessage('Logs Have Already Been Removed');
         }
-    }
-
-    /**
-     * Process Values being submitted and save data in the database.
-     *
-     * @param array $params
-     */
-    private function processValuesAndSaveData(array $params): void
-    {
-        $mo_oauth_show_customer_link = isset($params['mo_oauth_show_customer_link']) ? 1 : 0;
-        $mo_oauth_show_admin_link = isset($params['mo_oauth_show_admin_link']) ? 1 : 0;
-        $mo_sso_auto_create_admin = isset($params['mo_sso_auto_create_admin']) ? 1 : 0;
-        $mo_sso_auto_create_customer = isset($params['mo_sso_auto_create_customer']) ? 1 : 0;
-        $mo_oauth_enable_login_redirect = isset($params['mo_oauth_enable_login_redirect']) ? 1 : 0;
-        $mo_disable_non_oidc_admin_login = isset($params['mo_disable_non_oidc_admin_login']) ? 1 : 0;
-        $mo_disable_non_oidc_customer_login = isset(
-            $params['mo_disable_non_oidc_customer_login']
-        ) ? 1 : 0;
-
-        $this->oauthUtility->customlog(
-            "SignInSettings: Saving customer link setting: " . $mo_oauth_show_customer_link
-        );
-        $this->oauthUtility->customlog(
-            "SignInSettings: Saving admin link setting: " . $mo_oauth_show_admin_link
-        );
-        $this->oauthUtility->customlog(
-            "SignInSettings: Saving auto create admin setting: " . $mo_sso_auto_create_admin
-        );
-        $this->oauthUtility->customlog(
-            "SignInSettings: Saving auto create customer setting: " . $mo_sso_auto_create_customer
-        );
-        $this->oauthUtility->customlog(
-            "SignInSettings: Saving login redirect setting: " . $mo_oauth_enable_login_redirect
-        );
-        $this->oauthUtility->customlog(
-            "SignInSettings: Saving disable non-OIDC admin login: " . $mo_disable_non_oidc_admin_login
-        );
-        $this->oauthUtility->customlog(
-            "SignInSettings: Saving disable non-OIDC customer login: "
-            . $mo_disable_non_oidc_customer_login
-        );
-
-        // ── Lockout-Prevention: OIDC-only requires Show-OIDC ──
-        if ($mo_oauth_show_admin_link === 0 && $mo_disable_non_oidc_admin_login === 1) {
-            $mo_disable_non_oidc_admin_login = 0;
-            $this->messageManager->addWarningMessage(
-                __(
-                    'Admin OIDC-only login was automatically disabled because the OIDC login button '
-                    . 'is not shown on the admin login page.'
-                )
-            );
-        }
-
-        if ($mo_oauth_show_customer_link === 0 && $mo_disable_non_oidc_customer_login === 1) {
-            $mo_disable_non_oidc_customer_login = 0;
-            $this->messageManager->addWarningMessage(
-                __(
-                    'Customer OIDC-only login was automatically disabled because the OIDC login button '
-                    . 'is not shown on the customer login page.'
-                )
-            );
-        }
-
-        $this->oauthUtility->setStoreConfig(OAuthConstants::SHOW_CUSTOMER_LINK, $mo_oauth_show_customer_link);
-        $this->oauthUtility->setStoreConfig(OAuthConstants::SHOW_ADMIN_LINK, $mo_oauth_show_admin_link);
-        $this->oauthUtility->setStoreConfig(OAuthConstants::AUTO_CREATE_ADMIN, $mo_sso_auto_create_admin);
-        $this->oauthUtility->setStoreConfig(OAuthConstants::AUTO_CREATE_CUSTOMER, $mo_sso_auto_create_customer);
-        $this->oauthUtility->setStoreConfig(OAuthConstants::ENABLE_LOGIN_REDIRECT, $mo_oauth_enable_login_redirect);
-        $this->oauthUtility->setStoreConfig(
-            OAuthConstants::DISABLE_NON_OIDC_ADMIN_LOGIN,
-            $mo_disable_non_oidc_admin_login
-        );
-        $this->oauthUtility->setStoreConfig(
-            OAuthConstants::DISABLE_NON_OIDC_CUSTOMER_LOGIN,
-            $mo_disable_non_oidc_customer_login
-        );
     }
 
     /**

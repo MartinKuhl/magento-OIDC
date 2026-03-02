@@ -77,6 +77,16 @@ class CheckAttributeMappingAction extends BaseAction
      */
     private ?array $accessControlRules = null;
 
+    /**
+     * @var int|null Per-provider auto-create admin flag (null = fall back to global config)
+     */
+    private ?int $providerAutoCreateAdmin = null;
+
+    /**
+     * @var int|null Per-provider auto-create customer flag (null = fall back to global config)
+     */
+    private ?int $providerAutoCreateCustomer = null;
+
     /** @var \MiniOrange\OAuth\Helper\TestResults */
     private readonly \MiniOrange\OAuth\Helper\TestResults $testResults;
 
@@ -266,8 +276,9 @@ class CheckAttributeMappingAction extends BaseAction
                 return $this->resultRedirectFactory->create()->setUrl($adminCallbackUrl);
             } else {
                 // User tried to login as admin but has no admin account
-                // Check if auto-create admin is enabled
-                $autoCreateAdmin = $this->oauthUtility->getStoreConfig(OAuthConstants::AUTO_CREATE_ADMIN);
+                // Check if auto-create admin is enabled (per-provider first, then global config)
+                $autoCreateAdmin = $this->providerAutoCreateAdmin
+                    ?? $this->oauthUtility->getStoreConfig(OAuthConstants::AUTO_CREATE_ADMIN);
                 $autoCreateMsg = "Auto-create admin setting: ";
                 $autoCreateMsg .= ($autoCreateAdmin ? 'ENABLED' : 'DISABLED');
                 $this->oauthUtility->customlog($autoCreateMsg);
@@ -444,6 +455,7 @@ class CheckAttributeMappingAction extends BaseAction
                 ->setFlattenedAttrs($flattenedattrs)
                 ->setAttrs($attrs)
                 ->setUserEmail($email)
+                ->setAutoCreateCustomer($this->providerAutoCreateCustomer)
                 ->execute();
         }
     }
@@ -623,6 +635,18 @@ class CheckAttributeMappingAction extends BaseAction
         if ($rulesJson !== '') {
             $decoded = json_decode($rulesJson, true);
             $this->accessControlRules = is_array($decoded) ? $decoded : null;
+        }
+
+        // Per-provider auto-create flags (override global config when set in the provider row)
+        if (isset($clientDetails['mo_oauth_auto_create_admin'])
+            && $clientDetails['mo_oauth_auto_create_admin'] !== ''
+        ) {
+            $this->providerAutoCreateAdmin = (int) $clientDetails['mo_oauth_auto_create_admin'];
+        }
+        if (isset($clientDetails['mo_oauth_auto_create_customer'])
+            && $clientDetails['mo_oauth_auto_create_customer'] !== ''
+        ) {
+            $this->providerAutoCreateCustomer = (int) $clientDetails['mo_oauth_auto_create_customer'];
         }
 
         return $this;

@@ -13,8 +13,12 @@ use Psr\Log\LoggerInterface;
 /**
  * Plugin to restrict non-OIDC admin logins when the setting is enabled.
  *
- * Includes a safety net: if OIDC-only mode is enabled but the OIDC
- * button is hidden, normal login is allowed to prevent lockout.
+ * Reads per-provider `mo_disable_non_oidc_admin_login` from the
+ * miniorange_oauth_client_apps table. Blocks non-OIDC logins when ANY
+ * active admin provider has this restriction enabled.
+ *
+ * Safety net: if no active provider shows the OIDC button, allow normal
+ * login to prevent complete lockout.
  */
 class AdminLoginRestrictionPlugin
 {
@@ -41,8 +45,8 @@ class AdminLoginRestrictionPlugin
     /**
      * Block non-OIDC authentication attempts when the restriction is enabled.
      *
-     * Safety net: if OIDC-only is enabled but the OIDC button is NOT shown,
-     * allow normal login to prevent complete lockout.
+     * Safety net: if OIDC-only is enabled but the OIDC button is NOT shown
+     * on any provider, allow normal login to prevent complete lockout.
      *
      * @param  Auth   $subject
      * @param  string $username
@@ -51,28 +55,47 @@ class AdminLoginRestrictionPlugin
      */
     public function beforeLogin(Auth $subject, string $username, $password): null
     {
-        $isDisabled = $this->oauthUtility->getStoreConfig(
-            OAuthConstants::DISABLE_NON_OIDC_ADMIN_LOGIN
-        );
-
-        if (!$isDisabled) {
-            return null;
-        }
-
         // Allow OIDC-authenticated logins (token marker from OidcCallback)
         if ($password === \MiniOrange\OAuth\Model\Auth\OidcCredentialAdapter::OIDC_TOKEN_MARKER) {
             return null;
         }
 
-        // Safety net: if OIDC button is hidden, do NOT block normal login
-        $showAdminLink = $this->oauthUtility->getStoreConfig(
-            OAuthConstants::SHOW_ADMIN_LINK
-        );
+        $adminProviders = $this->oauthUtility->getAllActiveProviders('admin');
 
-        if (!$showAdminLink) {
+        // Check if ANY active admin provider has the restriction enabled
+        $anyRestricted = false;
+        $anyButtonShown = false;
+        foreach ($adminProviders as $provider) {
+            if (!empty($provider['mo_disable_non_oidc_admin_login'])) {
+                $anyRestricted = true;
+            }
+            if (!empty($provider['show_admin_link'])) {
+                $anyButtonShown = true;
+            }
+        }
+
+        // Also fall back to global config for backwards compatibility
+        if (!$anyRestricted) {
+            $anyRestricted = (bool) $this->oauthUtility->getStoreConfig(
+                OAuthConstants::DISABLE_NON_OIDC_ADMIN_LOGIN
+            );
+        }
+
+        if (!$anyRestricted) {
+            return null;
+        }
+
+        // Safety net: if no provider shows the OIDC button, fall back to global config
+        if (!$anyButtonShown) {
+            $anyButtonShown = (bool) $this->oauthUtility->getStoreConfig(
+                OAuthConstants::SHOW_ADMIN_LINK
+            );
+        }
+
+        if (!$anyButtonShown) {
             $this->logger->warning(
-                'MiniOrange OIDC: OIDC-only admin login is enabled but the OIDC '
-                . 'button is hidden. Allowing normal login to prevent lockout. '
+                'MiniOrange OIDC: OIDC-only admin login is enabled but no OIDC '
+                . 'button is shown. Allowing normal login to prevent lockout. '
                 . 'User: ' . $username
             );
             return null;

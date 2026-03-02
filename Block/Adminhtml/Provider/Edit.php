@@ -9,8 +9,7 @@ use Magento\Backend\Block\Widget\Form\Container;
 use Magento\Framework\Data\Form\FormKey;
 use Magento\Framework\Phrase;
 use Magento\Framework\Registry;
-use MiniOrange\OAuth\Model\MiniorangeOauthClientAppsFactory;
-use MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps as AppResource;
+use MiniOrange\OAuth\Helper\OAuthConstants;
 
 /**
  * Admin edit-form container for the OIDC Provider.
@@ -21,51 +20,40 @@ use MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps as AppResourc
  */
 class Edit extends Container
 {
-    /**
-     * Override mode so _prepareLayout() does not auto-create a 'form' child block.
-     * The three tabs are registered via layout XML instead.
-     *
-     * @var string
-     */
-    protected $_mode = 'tabs';
-
     /** @var Registry */
     private Registry $registry;
-
-    /** @var MiniorangeOauthClientAppsFactory */
-    private MiniorangeOauthClientAppsFactory $clientAppsFactory;
-
-    /** @var AppResource */
-    private AppResource $appResource;
 
     /** @var FormKey */
     private FormKey $formKeyHelper;
 
     /**
-     * @param Context                          $context
-     * @param Registry                         $registry
-     * @param MiniorangeOauthClientAppsFactory $clientAppsFactory
-     * @param AppResource                      $appResource
-     * @param FormKey                          $formKey
-     * @param array                            $data
+     * @param Context  $context
+     * @param Registry $registry
+     * @param FormKey  $formKey
+     * @param array    $data
      */
     public function __construct(
         Context $context,
         Registry $registry,
-        MiniorangeOauthClientAppsFactory $clientAppsFactory,
-        AppResource $appResource,
         FormKey $formKey,
         array $data = []
     ) {
-        $this->registry          = $registry;
-        $this->clientAppsFactory = $clientAppsFactory;
-        $this->appResource       = $appResource;
-        $this->formKeyHelper     = $formKey;
+        $this->registry      = $registry;
+        $this->formKeyHelper = $formKey;
         parent::__construct($context, $data);
     }
 
     /**
-     * Set block identifiers, configure buttons, and load the provider into the registry.
+     * Set block identifiers and configure buttons.
+     *
+     * The provider model is loaded and registered in the Core Registry by
+     * Controller/Adminhtml/Provider/Edit before any block is instantiated, so
+     * we must not re-register it here (would throw a RuntimeException).
+     *
+     * After parent::_construct() we clear $_blockGroup so that
+     * Widget\Form\Container::_prepareLayout() skips auto-creating a non-existent
+     * Form child block, while still letting Widget\Container::_prepareLayout()
+     * run and push buttons to the toolbar.
      */
     protected function _construct(): void
     {
@@ -73,24 +61,16 @@ class Edit extends Container
         $this->_blockGroup = 'MiniOrange_OAuth';
         $this->_controller = 'adminhtml_provider';
 
+        // Adds Save/Back/Reset; adds Delete only when the id URL param is > 0.
         parent::_construct();
 
-        $providerId = (int) $this->getRequest()->getParam('id', 0);
+        // Prevent Widget\Form\Container::_prepareLayout() from auto-creating
+        // MiniOrange\OAuth\Block\Adminhtml\Provider\Tabs\Edit\Form (does not exist).
+        // Clearing _blockGroup makes the guard condition false while still letting
+        // Widget\Container::_prepareLayout() run to push buttons into the toolbar.
+        $this->_blockGroup = '';
 
-        if ($providerId > 0) {
-            // Load the provider model and share it with tab blocks via Core Registry.
-            $model = $this->clientAppsFactory->create();
-            $this->appResource->load($model, $providerId);
-
-            if ($model->getId()) {
-                $this->registry->register('current_oidc_provider', $model);
-            }
-        } else {
-            // No delete button when creating a new provider.
-            $this->buttonList->remove('delete');
-        }
-
-        // Add "Save and Continue Edit" button (sets back=edit and submits the form).
+        // Add "Save and Continue Edit" button.
         $this->buttonList->add(
             'save_and_continue',
             [
@@ -100,18 +80,27 @@ class Edit extends Container
                            . "document.getElementById('edit_form').submit();",
             ]
         );
-    }
 
-    /**
-     * Skip Widget\Form\Container::_prepareLayout() which would try to auto-instantiate
-     * MiniOrange\OAuth\Block\Adminhtml\Provider\Tabs\Edit\Form (does not exist).
-     * Tab blocks are registered in the layout XML instead.
-     *
-     * @return $this
-     */
-    protected function _prepareLayout(): self
-    {
-        return $this;
+        // Add "Test OIDC Flow" button — only shown when editing an existing provider.
+        $provider = $this->registry->registry('current_oidc_provider');
+        if ($provider && $provider->getId()) {
+            $appName = (string) $provider->getData('app_name');
+            if ($appName) {
+                $testUrl = $this->getUrl(
+                    'mooauth/actions/sendAuthorizationRequest',
+                    ['app_name' => $appName, 'option' => OAuthConstants::TEST_CONFIG_OPT]
+                );
+                $this->buttonList->add(
+                    'test_oidc_flow',
+                    [
+                        'label'   => __('Test OIDC Flow'),
+                        'class'   => 'action-default scalable',
+                        'onclick' => "window.open('" . $this->escapeJs($testUrl) . "', '_blank');",
+                        'sort_order' => 40,
+                    ]
+                );
+            }
+        }
     }
 
     /**

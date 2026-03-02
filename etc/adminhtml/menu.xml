@@ -27,12 +27,12 @@
             resource="MiniOrange_OAuth::oauth_settings"/>
 
         <!--
-            Provider Settings, OAuth Settings, and Attribute Mapping are now tabs
+            Provider Settings, OAuth Settings, Attribute Mapping, and Login Options are now tabs
             within the Add / Edit Provider form (mooauth/provider/edit).
-            Only Manage Providers and Sign In Settings remain as top-level menu items.
+            Only Manage Providers and Miscellaneous (debug logs) remain as top-level menu items.
         -->
         <add id="MiniOrange_OAuth::signin_settings"
-            title="Sign In Settings"
+            title="Miscellaneous"
             module="MiniOrange_OAuth"
             sortOrder="1"
             parent="MiniOrange_OAuth::OAuth"

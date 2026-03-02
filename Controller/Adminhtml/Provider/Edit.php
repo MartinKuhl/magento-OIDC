@@ -85,8 +85,11 @@ class Edit extends Action implements HttpGetActionInterface
         /** @var \Magento\Backend\Model\View\Result\Page $page */
         $page->setActiveMenu('MiniOrange_OAuth::provider_management');
 
+        $providerName = $providerId > 0
+            ? ($model->getData('display_name') ?: $model->getData('app_name') ?: (string) $providerId)
+            : '';
         $title = $providerId > 0
-            ? __('Edit OIDC Provider (ID: %1)', $providerId)
+            ? __('Edit OIDC Provider (%1)', $providerName)
             : __('Add New OIDC Provider');
 
         $page->getConfig()->getTitle()->prepend((string) $title);

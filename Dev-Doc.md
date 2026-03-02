@@ -204,9 +204,19 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
 - Sign In Settings are also Provider dependent 
 - im und export?
 - remove double "Editing provider info bix"
-
-- NOT Magento UI Grid
 - side bar ordering (Left and top)
+
+NEW UI
+- misc section (miscellaneous)
+- db store?
+- Sign In Settings are also Provider dependent 
+
+- dropdown of received OIDC claims
+- start test flow from Provider overview
+
+- make sub headings more visiable
+- im und export?
+- add customer (Customer View) and admin user (User Info) information 
 
 ### LATER - complex ###:
 - Rename: --> Authelia OIDC (in Code)
@@ -219,6 +229,3 @@ Psalm:   Level 4
 Langfristig (Ziel für sauberen Code):
 PHPStan: Level 6
 Psalm:   Level 3
-
-
-please check the screenshot. Here is the menu of creating a new customer and the customer overview where the Magento UI Grid is used. Please adjust the OIDC plugin so that for the overview of all providers the Magento UI Grid is used (Screenshot 2). The process of creating a new provider should look like in screenshot one. Here the provider settings should be added first. Than as a sub menu on the left site OAuth settings and Attribute Mapping. This should also apply for the editing of an existing provider like in screenshot 3. THe Sign in Settings should be accessable from provider overview site. Please use the standard magento components like in the screenshots for creating the UI. Please adjust the top navigation bar and the left magento menu accordingly. 

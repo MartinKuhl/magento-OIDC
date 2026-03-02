@@ -47,6 +47,11 @@ $inBody    = (bool)(int) $val('values_in_body', 0);
                            class="admin__control-text"
                            value="<?= $escaper->escapeHtmlAttr($val('clientID')) ?>"
                            style="width:100%;">
+                    <small class="admin__field-note">
+                        <?= $escaper->escapeHtml(
+                            __('Unique identifier for your OAuth application registered with the identity provider.')
+                        ) ?>
+                    </small>
                 </td>
             </tr>
             <tr>
@@ -69,11 +74,15 @@ $inBody    = (bool)(int) $val('values_in_body', 0);
                            autocomplete="new-password"
                            value=""
                            style="width:100%;">
-                    <?php if ($isEditMode): ?>
                     <small class="admin__field-note">
-                        <?= $escaper->escapeHtml(__('Leave blank to keep the existing secret.')) ?>
+                        <?php if ($isEditMode): ?>
+                            <?= $escaper->escapeHtml(__('Leave blank to keep the existing secret.')) ?>
+                        <?php else: ?>
+                            <?= $escaper->escapeHtml(
+                                __('The secret key issued by your identity provider for this application.')
+                            ) ?>
+                        <?php endif; ?>
                     </small>
-                    <?php endif; ?>
                 </td>
             </tr>
             <tr>
@@ -90,6 +99,11 @@ $inBody    = (bool)(int) $val('values_in_body', 0);
                            placeholder="openid profile email"
                            value="<?= $escaper->escapeHtmlAttr($val('scope', 'openid profile email')) ?>"
                            style="width:100%;">
+                    <small class="admin__field-note">
+                        <?= $escaper->escapeHtml(
+                            __('Space-separated scopes to request. Must include "openid" for OIDC.')
+                        ) ?>
+                    </small>
                 </td>
             </tr>
             <tr>
@@ -109,6 +123,11 @@ $inBody    = (bool)(int) $val('values_in_body', 0);
                             <?= $escaper->escapeHtml(__('Implicit')) ?>
                         </option>
                     </select>
+                    <small class="admin__field-note">
+                        <?= $escaper->escapeHtml(
+                            __('Authorization Code is recommended for server-side applications.')
+                        ) ?>
+                    </small>
                 </td>
             </tr>
             <tr>
@@ -118,23 +137,33 @@ $inBody    = (bool)(int) $val('values_in_body', 0);
                     </label>
                 </td>
                 <td>
-                    <label>
+                    <div>
                         <input type="checkbox"
+                               id="values_in_header"
                                name="values_in_header"
                                class="admin__control-checkbox"
                                value="1"
                                <?= $inHeader ? 'checked="checked"' : '' ?>>
-                        <?= $escaper->escapeHtml(__('In Authorization Header')) ?>
-                    </label>
-                    &nbsp;&nbsp;
-                    <label>
+                        <label class="admin__control-checkbox-label" for="values_in_header">
+                            <?= $escaper->escapeHtml(__('In Authorization Header')) ?>
+                        </label>
+                    </div>
+                    <div style="margin-top:6px;">
                         <input type="checkbox"
+                               id="values_in_body"
                                name="values_in_body"
                                class="admin__control-checkbox"
                                value="1"
                                <?= $inBody ? 'checked="checked"' : '' ?>>
-                        <?= $escaper->escapeHtml(__('In Request Body')) ?>
-                    </label>
+                        <label class="admin__control-checkbox-label" for="values_in_body">
+                            <?= $escaper->escapeHtml(__('In Request Body')) ?>
+                        </label>
+                    </div>
+                    <small class="admin__field-note">
+                        <?= $escaper->escapeHtml(
+                            __('How client credentials are sent to the token endpoint.')
+                        ) ?>
+                    </small>
                 </td>
             </tr>
             <tr>
@@ -169,6 +198,11 @@ $inBody    = (bool)(int) $val('values_in_body', 0);
                            class="admin__control-text"
                            value="<?= $escaper->escapeHtmlAttr($val('authorize_endpoint')) ?>"
                            style="width:100%;">
+                    <small class="admin__field-note">
+                        <?= $escaper->escapeHtml(
+                            __('URL where users are redirected to authenticate. Auto-filled from Discovery URL.')
+                        ) ?>
+                    </small>
                 </td>
             </tr>
             <tr>
@@ -184,6 +218,11 @@ $inBody    = (bool)(int) $val('values_in_body', 0);
                            class="admin__control-text"
                            value="<?= $escaper->escapeHtmlAttr($val('access_token_endpoint')) ?>"
                            style="width:100%;">
+                    <small class="admin__field-note">
+                        <?= $escaper->escapeHtml(
+                            __('URL to exchange an authorization code for tokens. Auto-filled from Discovery URL.')
+                        ) ?>
+                    </small>
                 </td>
             </tr>
             <tr>
@@ -199,6 +238,11 @@ $inBody    = (bool)(int) $val('values_in_body', 0);
                            class="admin__control-text"
                            value="<?= $escaper->escapeHtmlAttr($val('user_info_endpoint')) ?>"
                            style="width:100%;">
+                    <small class="admin__field-note">
+                        <?= $escaper->escapeHtml(
+                            __('URL to fetch user profile claims from the identity provider. Auto-filled.')
+                        ) ?>
+                    </small>
                 </td>
             </tr>
             <tr>
@@ -214,6 +258,11 @@ $inBody    = (bool)(int) $val('values_in_body', 0);
                            class="admin__control-text"
                            value="<?= $escaper->escapeHtmlAttr($val('jwks_endpoint')) ?>"
                            style="width:100%;">
+                    <small class="admin__field-note">
+                        <?= $escaper->escapeHtml(
+                            __('URL for public keys used to verify token signatures. Auto-filled from Discovery URL.')
+                        ) ?>
+                    </small>
                 </td>
             </tr>
             <tr>
@@ -229,6 +278,11 @@ $inBody    = (bool)(int) $val('values_in_body', 0);
                            class="admin__control-text"
                            value="<?= $escaper->escapeHtmlAttr($val('endsession_endpoint')) ?>"
                            style="width:100%;">
+                    <small class="admin__field-note">
+                        <?= $escaper->escapeHtml(
+                            __('URL to trigger single logout from the identity provider. Auto-filled.')
+                        ) ?>
+                    </small>
                 </td>
             </tr>
             <tr>
@@ -242,9 +296,13 @@ $inBody    = (bool)(int) $val('values_in_body', 0);
                            id="issuer"
                            name="issuer"
                            class="admin__control-text"
-                           placeholder="https://your-idp"
                            value="<?= $escaper->escapeHtmlAttr($val('issuer')) ?>"
                            style="width:100%;">
+                    <small class="admin__field-note">
+                        <?= $escaper->escapeHtml(
+                            __('Expected "iss" claim in tokens, used for validation. Auto-filled from Discovery URL.')
+                        ) ?>
+                    </small>
                 </td>
             </tr>
         </tbody>

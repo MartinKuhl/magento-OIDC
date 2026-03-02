@@ -1,0 +1,229 @@
+<!--
+    Login Options tab — per-provider SSO button visibility, auto-creation, and login restrictions.
+    Rendered inside the Widget\Tabs form on the mooauth/provider/edit page.
+    The enclosing <form> and hidden fields are provided by the Edit container block.
+-->
+<?php
+/** @var \MiniOrange\OAuth\Block\Adminhtml\Provider\Edit\Tab\LoginOptions $block */
+/** @var \Magento\Framework\Escaper $escaper */
+
+$data = $block->getProviderData();
+$val  = static function (string $key, $default = '') use ($data) {
+    return $data[$key] ?? $default;
+};
+
+$showAdminLink    = (bool)(int) $val('show_admin_link', 0);
+$showCustomerLink = (bool)(int) $val('show_customer_link', 0);
+$autoCreateAdmin  = (bool)(int) $val('mo_oauth_auto_create_admin', 0);
+$autoCreateCustomer = (bool)(int) $val('mo_oauth_auto_create_customer', 0);
+$autoredirect     = (bool)(int) $val('autoredirect', 0);
+$disableNonOidcAdmin    = (bool)(int) $val('mo_disable_non_oidc_admin_login', 0);
+$disableNonOidcCustomer = (bool)(int) $val('mo_disable_non_oidc_customer_login', 0);
+?>
+
+<!-- ── SSO Button Display ─────────────────────────────────────────────────── -->
+<div class="admin__fieldset-wrapper">
+    <div class="admin__fieldset-wrapper-title">
+        <span class="admin__fieldset-wrapper-title-text">
+            <?= $escaper->escapeHtml(__('SSO Button Display')) ?>
+        </span>
+        <p class="admin__field-note" style="font-style:italic; margin-top:8px;">
+            <?= $escaper->escapeHtml(
+                __('Control where the OIDC login button is shown for this provider.')
+            ) ?>
+        </p>
+    </div>
+
+    <table class="admin__table-primary" style="width:100%; margin-top:16px;">
+        <tbody>
+            <tr>
+                <td style="width:220px; vertical-align:top; padding-top:6px;">
+                    <label>
+                        <strong><?= $escaper->escapeHtml(__('Button Visibility')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <label style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                        <input type="checkbox"
+                               id="loginopt_show_admin_link"
+                               name="show_admin_link"
+                               value="1"
+                               <?= $showAdminLink ? 'checked="checked"' : '' ?>>
+                        <?= $escaper->escapeHtml(__('Show OIDC login button on the admin login page')) ?>
+                    </label>
+                    <label style="display:flex; align-items:center; gap:8px;">
+                        <input type="checkbox"
+                               id="loginopt_show_customer_link"
+                               name="show_customer_link"
+                               value="1"
+                               <?= $showCustomerLink ? 'checked="checked"' : '' ?>>
+                        <?= $escaper->escapeHtml(__('Show OIDC login button on the customer login page')) ?>
+                    </label>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- ── User Auto-Creation ────────────────────────────────────────────────── -->
+<div class="admin__fieldset-wrapper" style="margin-top:24px;">
+    <div class="admin__fieldset-wrapper-title">
+        <span class="admin__fieldset-wrapper-title-text">
+            <?= $escaper->escapeHtml(__('User Auto-Creation')) ?>
+        </span>
+        <p class="admin__field-note" style="font-style:italic; margin-top:8px;">
+            <?= $escaper->escapeHtml(
+                __('Automatically create Magento accounts during SSO when the user does not yet exist.')
+            ) ?>
+        </p>
+    </div>
+
+    <table class="admin__table-primary" style="width:100%; margin-top:16px;">
+        <tbody>
+            <tr>
+                <td style="width:220px; vertical-align:top; padding-top:6px;">
+                    <label>
+                        <strong><?= $escaper->escapeHtml(__('Auto-Create Settings')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <label style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                        <input type="checkbox"
+                               name="mo_oauth_auto_create_admin"
+                               value="1"
+                               <?= $autoCreateAdmin ? 'checked="checked"' : '' ?>>
+                        <?= $escaper->escapeHtml(__('Auto-create admin users on SSO (if they do not exist)')) ?>
+                    </label>
+                    <label style="display:flex; align-items:center; gap:8px;">
+                        <input type="checkbox"
+                               name="mo_oauth_auto_create_customer"
+                               value="1"
+                               <?= $autoCreateCustomer ? 'checked="checked"' : '' ?>>
+                        <?= $escaper->escapeHtml(__('Auto-create customers on SSO (if they do not exist)')) ?>
+                    </label>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- ── Login Restrictions ────────────────────────────────────────────────── -->
+<div class="admin__fieldset-wrapper" style="margin-top:24px;">
+    <div class="admin__fieldset-wrapper-title">
+        <span class="admin__fieldset-wrapper-title-text">
+            <?= $escaper->escapeHtml(__('Login Restrictions')) ?>
+        </span>
+        <p class="admin__field-note" style="font-style:italic; margin-top:8px;">
+            <?= $escaper->escapeHtml(
+                __('Force OIDC-only authentication. Requires the corresponding SSO button to be shown above '
+                    . 'to avoid locking users out.')
+            ) ?>
+        </p>
+    </div>
+
+    <table class="admin__table-primary" style="width:100%; margin-top:16px;">
+        <tbody>
+            <tr>
+                <td style="width:220px; vertical-align:top; padding-top:6px;">
+                    <label>
+                        <strong><?= $escaper->escapeHtml(__('OIDC-Only Mode')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <label style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                        <input type="checkbox"
+                               id="loginopt_disable_admin"
+                               name="mo_disable_non_oidc_admin_login"
+                               value="1"
+                               <?= $disableNonOidcAdmin ? 'checked="checked"' : '' ?>
+                               <?= !$showAdminLink ? 'disabled="disabled"' : '' ?>>
+                        <?= $escaper->escapeHtml(__('Disable non-OIDC login for admins (OIDC login only)')) ?>
+                    </label>
+                    <label style="display:flex; align-items:center; gap:8px;">
+                        <input type="checkbox"
+                               id="loginopt_disable_customer"
+                               name="mo_disable_non_oidc_customer_login"
+                               value="1"
+                               <?= $disableNonOidcCustomer ? 'checked="checked"' : '' ?>
+                               <?= !$showCustomerLink ? 'disabled="disabled"' : '' ?>>
+                        <?= $escaper->escapeHtml(__('Disable non-OIDC login for customers (OIDC login only)')) ?>
+                    </label>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- ── Auto Redirect ─────────────────────────────────────────────────────── -->
+<div class="admin__fieldset-wrapper" style="margin-top:24px;">
+    <div class="admin__fieldset-wrapper-title">
+        <span class="admin__fieldset-wrapper-title-text">
+            <?= $escaper->escapeHtml(__('Auto Redirect')) ?>
+        </span>
+        <p class="admin__field-note" style="font-style:italic; margin-top:8px;">
+            <?= $escaper->escapeHtml(
+                __('Automatically redirect users to this provider\'s IdP when they visit the login page.')
+            ) ?>
+        </p>
+    </div>
+
+    <table class="admin__table-primary" style="width:100%; margin-top:16px;">
+        <tbody>
+            <tr>
+                <td style="width:220px; vertical-align:top; padding-top:6px;">
+                    <label>
+                        <strong><?= $escaper->escapeHtml(__('Auto Redirect to IdP')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <label style="display:flex; align-items:center; gap:8px;">
+                        <input type="checkbox"
+                               name="autoredirect"
+                               value="1"
+                               <?= $autoredirect ? 'checked="checked"' : '' ?>>
+                        <?= $escaper->escapeHtml(
+                            __('Redirect users automatically to this IdP from the login page (if not logged in).')
+                        ) ?>
+                    </label>
+                    <small class="admin__field-note" style="display:block; margin-top:4px;">
+                        <?= $escaper->escapeHtml(
+                            __('Note: when multiple providers are active, only the first provider with this '
+                                . 'option enabled triggers the redirect.')
+                        ) ?>
+                    </small>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+(function () {
+    'use strict';
+
+    function bindOidcDependency(showId, restrictId) {
+        var showCb    = document.getElementById(showId);
+        var restrictCb = document.getElementById(restrictId);
+        if (!showCb || !restrictCb) {
+            return;
+        }
+
+        function syncState() {
+            if (!showCb.checked) {
+                restrictCb.checked  = false;
+                restrictCb.disabled = true;
+            } else {
+                restrictCb.disabled = false;
+            }
+        }
+
+        showCb.addEventListener('change', syncState);
+        syncState();
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        bindOidcDependency('loginopt_show_admin_link', 'loginopt_disable_admin');
+        bindOidcDependency('loginopt_show_customer_link', 'loginopt_disable_customer');
+    });
+}());
+</script>

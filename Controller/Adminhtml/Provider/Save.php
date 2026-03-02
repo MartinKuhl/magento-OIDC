@@ -95,9 +95,17 @@ class Save extends Action implements HttpPostActionInterface
                     'authorize_endpoint', 'access_token_endpoint',
                     'user_info_endpoint', 'jwks_endpoint', 'well_known_config_url',
                     'endsession_endpoint', 'issuer',
-                    // Attribute mapping
+                    // Attribute mapping — basic claims
                     'email_attribute', 'username_attribute',
                     'firstname_attribute', 'lastname_attribute', 'group_attribute',
+                    // Attribute mapping — customer data
+                    'dob_attribute', 'gender_attribute',
+                    'billing_address_attribute', 'billing_zip_attribute',
+                    'billing_city_attribute', 'billing_state_attribute',
+                    'billing_country_attribute', 'billing_phone_attribute',
+                    'shipping_address_attribute', 'shipping_zip_attribute',
+                    'shipping_city_attribute', 'shipping_state_attribute',
+                    'shipping_country_attribute', 'shipping_phone_attribute',
                 ] as $field) {
                 if (isset($data[$field])) {
                     $model->setData($field, $this->sanitizeString($data[$field]));
@@ -105,9 +113,58 @@ class Save extends Action implements HttpPostActionInterface
             }
 
             // Checkbox fields — absent in POST means unchecked (0)
-            foreach (['values_in_header', 'values_in_body'] as $checkbox) {
+            foreach ([
+                'values_in_header',
+                'values_in_body',
+                // Login options
+                'show_admin_link',
+                'show_customer_link',
+                'mo_oauth_auto_create_admin',
+                'mo_oauth_auto_create_customer',
+                'autoredirect',
+                'mo_disable_non_oidc_admin_login',
+                'mo_disable_non_oidc_customer_login',
+                'oauth_am_sameasbilling',
+            ] as $checkbox) {
                 $model->setData($checkbox, isset($data[$checkbox]) ? 1 : 0);
             }
+
+            // Lockout-prevention: OIDC-only requires the SSO button to be shown
+            if (!isset($data['show_admin_link']) && isset($data['mo_disable_non_oidc_admin_login'])) {
+                $model->setData('mo_disable_non_oidc_admin_login', 0);
+                $this->messageManager->addWarningMessage(
+                    (string) __(
+                        'Admin OIDC-only login was automatically disabled because the OIDC '
+                        . 'login button is not shown on the admin login page.'
+                    )
+                );
+            }
+
+            if (!isset($data['show_customer_link']) && isset($data['mo_disable_non_oidc_customer_login'])) {
+                $model->setData('mo_disable_non_oidc_customer_login', 0);
+                $this->messageManager->addWarningMessage(
+                    (string) __(
+                        'Customer OIDC-only login was automatically disabled because the OIDC '
+                        . 'login button is not shown on the customer login page.'
+                    )
+                );
+            }
+
+            // Default admin role
+            $model->setData('default_role', $this->sanitizeString($data['default_role'] ?? ''));
+
+            // Admin role mappings: oauth_role_mapping[N][group/role] → JSON → oauth_admin_role_mapping
+            $roleMappings = [];
+            if (!empty($data['oauth_role_mapping']) && is_array($data['oauth_role_mapping'])) {
+                foreach ($data['oauth_role_mapping'] as $row) {
+                    $group = $this->sanitizeString($row['group'] ?? '');
+                    $role  = $this->sanitizeString($row['role'] ?? '');
+                    if ($group !== '' && $role !== '') {
+                        $roleMappings[] = ['group' => $group, 'role' => $role];
+                    }
+                }
+            }
+            $model->setData('oauth_admin_role_mapping', json_encode($roleMappings));
 
             // Encrypt client secret only when a new value is provided
             if (!empty($data['client_secret'])) {

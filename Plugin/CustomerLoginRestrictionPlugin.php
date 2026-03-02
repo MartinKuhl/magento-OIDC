@@ -6,8 +6,12 @@ declare(strict_types=1);
  * Customer Login Restriction Plugin
  *
  * Restricts password-based customer logins when OIDC-only mode is
- * enabled. Includes safety net to prevent lockout when OIDC button
- * is hidden.
+ * enabled. Reads per-provider `mo_disable_non_oidc_customer_login` from
+ * the miniorange_oauth_client_apps table.  Blocks login when ANY active
+ * customer provider has this restriction enabled.
+ *
+ * Safety net: if no provider shows the customer OIDC button, allow normal
+ * login to prevent complete lockout.
  */
 namespace MiniOrange\OAuth\Plugin;
 
@@ -42,7 +46,7 @@ class CustomerLoginRestrictionPlugin
     /**
      * Block non-OIDC authentication attempts when enabled.
      *
-     * Safety net: if OIDC button is hidden, allow normal login.
+     * Safety net: if no active provider shows the OIDC button, allow normal login.
      *
      * @param  AccountManagementInterface $subject
      * @param  string                     $email
@@ -54,23 +58,42 @@ class CustomerLoginRestrictionPlugin
         string $email,
         $password
     ): null {
-        $isDisabled = $this->oauthUtility->getStoreConfig(
-            OAuthConstants::DISABLE_NON_OIDC_CUSTOMER_LOGIN
-        );
+        $customerProviders = $this->oauthUtility->getAllActiveProviders('customer');
 
-        if (!$isDisabled) {
+        // Check if ANY active customer provider has the restriction enabled
+        $anyRestricted = false;
+        $anyButtonShown = false;
+        foreach ($customerProviders as $provider) {
+            if (!empty($provider['mo_disable_non_oidc_customer_login'])) {
+                $anyRestricted = true;
+            }
+            if (!empty($provider['show_customer_link'])) {
+                $anyButtonShown = true;
+            }
+        }
+
+        // Fall back to global config for backwards compatibility
+        if (!$anyRestricted) {
+            $anyRestricted = (bool) $this->oauthUtility->getStoreConfig(
+                OAuthConstants::DISABLE_NON_OIDC_CUSTOMER_LOGIN
+            );
+        }
+
+        if (!$anyRestricted) {
             return null;
         }
 
-        // Safety net: if OIDC button is hidden, do NOT block normal login
-        $showCustomerLink = $this->oauthUtility->getStoreConfig(
-            OAuthConstants::SHOW_CUSTOMER_LINK
-        );
+        // Safety net: if no provider shows the OIDC button, do NOT block normal login
+        if (!$anyButtonShown) {
+            $anyButtonShown = (bool) $this->oauthUtility->getStoreConfig(
+                OAuthConstants::SHOW_CUSTOMER_LINK
+            );
+        }
 
-        if (!$showCustomerLink) {
+        if (!$anyButtonShown) {
             $this->logger->warning(
-                'MiniOrange OIDC: OIDC-only customer login is enabled but the '
-                . 'OIDC button is hidden. Allowing normal login to prevent '
+                'MiniOrange OIDC: OIDC-only customer login is enabled but no '
+                . 'OIDC button is shown. Allowing normal login to prevent '
                 . 'lockout. Email: ' . $email
             );
             return null;

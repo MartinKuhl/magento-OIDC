@@ -5,7 +5,7 @@
     </head>
     <body>
         <!--
-        Defining our block and phtml file for Sign In settings.
+        Defining our block and phtml file for Miscellaneous settings (debug logs only).
         Calls our Admin Block for some common functionality.
         -->
         <referenceContainer name="content">

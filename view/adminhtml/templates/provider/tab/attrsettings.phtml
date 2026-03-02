@@ -7,19 +7,34 @@
 /** @var \MiniOrange\OAuth\Block\Adminhtml\Provider\Edit\Tab\AttributeMapping $block */
 /** @var \Magento\Framework\Escaper $escaper */
 
-$data = $block->getProviderData();
-$val  = static function (string $key, $default = '') use ($data) {
+$data       = $block->getProviderData();
+$roles      = $block->getAllRoles();
+$oidcClaims = $block->getOidcClaims();
+$val        = static function (string $key, $default = '') use ($data) {
     return $data[$key] ?? $default;
 };
+
+$rawMappings  = (string) $val('oauth_admin_role_mapping', '[]');
+$decoded      = json_decode($rawMappings, true);
+$roleMappings = is_array($decoded) ? $decoded : [];
 ?>
+<!-- Datalist of known OIDC claims — populated from standard spec + last Test OIDC Flow result -->
+<datalist id="oidc-claims-datalist">
+    <?php foreach ($oidcClaims as $claim): ?>
+        <option value="<?= $escaper->escapeHtmlAttr($claim) ?>">
+    <?php endforeach; ?>
+</datalist>
 <div class="admin__fieldset-wrapper">
-    <div class="admin__fieldset-wrapper-title">
-        <span class="admin__fieldset-wrapper-title-text">
+    <div class="admin__fieldset-wrapper-title" style="border-left:4px solid #eb5202; padding-left:12px;">
+        <span class="admin__fieldset-wrapper-title-text" style="font-size:15px; font-weight:700; color:#1a1a1a; letter-spacing:0.2px;">
             <?= $escaper->escapeHtml(__('Attribute Mapping')) ?>
         </span>
         <p class="admin__field-note" style="font-style:italic; margin-top:8px;">
             <?= $escaper->escapeHtml(
-                __('Map OIDC token claims to Magento user fields. Enter the exact claim name your provider returns.')
+                __('Map OIDC token claims to Magento user fields. '
+                    . 'Each field accepts the exact claim name your provider returns. '
+                    . 'Use the "Test OIDC Flow" button to populate the autocomplete suggestions '
+                    . 'with the actual claims from your IdP.')
             ) ?>
         </p>
     </div>
@@ -37,6 +52,7 @@ $val  = static function (string $key, $default = '') use ($data) {
                            id="email_attribute"
                            name="email_attribute"
                            class="admin__control-text"
+                           list="oidc-claims-datalist"
                            placeholder="email"
                            value="<?= $escaper->escapeHtmlAttr($val('email_attribute', 'email')) ?>"
                            style="width:100%;">
@@ -53,6 +69,7 @@ $val  = static function (string $key, $default = '') use ($data) {
                            id="username_attribute"
                            name="username_attribute"
                            class="admin__control-text"
+                           list="oidc-claims-datalist"
                            placeholder="preferred_username"
                            value="<?= $escaper->escapeHtmlAttr($val('username_attribute', 'preferred_username')) ?>"
                            style="width:100%;">
@@ -69,6 +86,7 @@ $val  = static function (string $key, $default = '') use ($data) {
                            id="firstname_attribute"
                            name="firstname_attribute"
                            class="admin__control-text"
+                           list="oidc-claims-datalist"
                            placeholder="given_name"
                            value="<?= $escaper->escapeHtmlAttr($val('firstname_attribute', 'given_name')) ?>"
                            style="width:100%;">
@@ -85,6 +103,7 @@ $val  = static function (string $key, $default = '') use ($data) {
                            id="lastname_attribute"
                            name="lastname_attribute"
                            class="admin__control-text"
+                           list="oidc-claims-datalist"
                            placeholder="family_name"
                            value="<?= $escaper->escapeHtmlAttr($val('lastname_attribute', 'family_name')) ?>"
                            style="width:100%;">
@@ -101,6 +120,7 @@ $val  = static function (string $key, $default = '') use ($data) {
                            id="group_attribute"
                            name="group_attribute"
                            class="admin__control-text"
+                           list="oidc-claims-datalist"
                            placeholder="groups"
                            value="<?= $escaper->escapeHtmlAttr($val('group_attribute')) ?>"
                            style="width:100%;">
@@ -112,3 +132,380 @@ $val  = static function (string $key, $default = '') use ($data) {
         </tbody>
     </table>
 </div>
+
+<div class="admin__fieldset-wrapper" style="margin-top:24px;">
+    <div class="admin__fieldset-wrapper-title" style="border-left:4px solid #eb5202; padding-left:12px;">
+        <span class="admin__fieldset-wrapper-title-text" style="font-size:15px; font-weight:700; color:#1a1a1a; letter-spacing:0.2px;">
+            <?= $escaper->escapeHtml(__('Admin Role Mapping')) ?>
+        </span>
+        <p class="admin__field-note" style="font-style:italic; margin-top:8px;">
+            <?= $escaper->escapeHtml(
+                __('Configure how OIDC group claim values map to Magento admin roles when auto-creating admin users.')
+            ) ?>
+        </p>
+    </div>
+
+    <table class="admin__table-primary" style="width:100%; margin-top:16px;">
+        <tbody>
+            <tr>
+                <td style="width:220px;">
+                    <label for="default_role">
+                        <strong><?= $escaper->escapeHtml(__('Default Admin Role')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <select id="default_role"
+                            name="default_role"
+                            class="admin__control-select"
+                            style="width:100%;">
+                        <option value="">-- <?= $escaper->escapeHtml(__('None')) ?> --</option>
+                        <?php foreach ($roles as $role): ?>
+                            <option value="<?= $escaper->escapeHtmlAttr($role['value']) ?>"
+                                <?= ($val('default_role') == $role['value']) ? 'selected="selected"' : '' ?>>
+                                <?= $escaper->escapeHtml($role['label']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <small class="admin__field-note">
+                        <?= $escaper->escapeHtml(__('Assigned when no group-to-role mapping matches.')) ?>
+                    </small>
+                </td>
+            </tr>
+            <tr>
+                <td style="vertical-align:top; padding-top:8px;">
+                    <label>
+                        <strong><?= $escaper->escapeHtml(__('Role Mappings')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <div id="mooauth-role-mappings">
+                        <?php
+                        $displayMappings = !empty($roleMappings) ? $roleMappings : [['group' => '', 'role' => '']];
+                        foreach ($displayMappings as $index => $mapping):
+                            ?>
+                        <div class="mooauth-mapping-row" style="margin-bottom:8px; display:flex; align-items:center;">
+                            <input type="text"
+                                   name="oauth_role_mapping[<?= (int) $index ?>][group]"
+                                   placeholder="<?= $escaper->escapeHtmlAttr(__('OIDC Group Name')) ?>"
+                                   class="admin__control-text"
+                                   value="<?= $escaper->escapeHtmlAttr($mapping['group'] ?? '') ?>"
+                                   style="width:200px;">
+                            <span style="margin:0 10px;">&rarr;</span>
+                            <select name="oauth_role_mapping[<?= (int) $index ?>][role]"
+                                    class="admin__control-select"
+                                    style="width:220px;">
+                                <option value="">-- <?= $escaper->escapeHtml(__('Select Role')) ?> --</option>
+                                <?php foreach ($roles as $role): ?>
+                                    <option value="<?= $escaper->escapeHtmlAttr($role['value']) ?>"
+                                        <?= (isset($mapping['role']) && $mapping['role'] == $role['value'])
+                                            ? 'selected="selected"' : '' ?>>
+                                        <?= $escaper->escapeHtml($role['label']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <button type="button"
+                                    class="action-delete mooauth-remove-mapping"
+                                    style="margin-left:10px;">
+                                <?= $escaper->escapeHtml(__('Remove')) ?>
+                            </button>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <button type="button"
+                            id="mooauth-add-mapping"
+                            class="action-default"
+                            style="margin-top:4px;">
+                        + <?= $escaper->escapeHtml(__('Add Mapping')) ?>
+                    </button>
+                    <small class="admin__field-note" style="display:block; margin-top:4px;">
+                        <?= $escaper->escapeHtml(__('Map OIDC group names to Magento admin roles.')) ?>
+                    </small>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- ── Customer Data Mapping ─────────────────────────────────────────────── -->
+<div class="admin__fieldset-wrapper" style="margin-top:24px;">
+    <div class="admin__fieldset-wrapper-title" style="border-left:4px solid #eb5202; padding-left:12px;">
+        <span class="admin__fieldset-wrapper-title-text" style="font-size:15px; font-weight:700; color:#1a1a1a; letter-spacing:0.2px;">
+            <?= $escaper->escapeHtml(__('Customer Data Mapping')) ?>
+        </span>
+        <p class="admin__field-note" style="font-style:italic; margin-top:8px;">
+            <?= $escaper->escapeHtml(
+                __('Map OIDC claims to customer profile and address fields used during auto-creation.')
+            ) ?>
+        </p>
+    </div>
+
+    <table class="admin__table-primary" style="width:100%; margin-top:16px;">
+        <tbody>
+            <tr>
+                <td style="width:220px;">
+                    <label for="dob_attribute">
+                        <strong><?= $escaper->escapeHtml(__('Date of Birth Claim')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <input type="text"
+                           id="dob_attribute"
+                           name="dob_attribute"
+                           class="admin__control-text"
+                           list="oidc-claims-datalist"
+                           placeholder="birthdate"
+                           value="<?= $escaper->escapeHtmlAttr($val('dob_attribute', '')) ?>"
+                           style="width:100%;">
+                    <small class="admin__field-note">
+                        <?= $escaper->escapeHtml(__('Expected format from IdP: YYYY-MM-DD')) ?>
+                    </small>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="gender_attribute">
+                        <strong><?= $escaper->escapeHtml(__('Gender Claim')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <input type="text"
+                           id="gender_attribute"
+                           name="gender_attribute"
+                           class="admin__control-text"
+                           list="oidc-claims-datalist"
+                           placeholder="gender"
+                           value="<?= $escaper->escapeHtmlAttr($val('gender_attribute', '')) ?>"
+                           style="width:100%;">
+                    <small class="admin__field-note">
+                        <?= $escaper->escapeHtml(__('Accepted values: male/m/1 or female/f/2')) ?>
+                    </small>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="billing_phone_attribute">
+                        <strong><?= $escaper->escapeHtml(__('Phone Number Claim')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <input type="text"
+                           id="billing_phone_attribute"
+                           name="billing_phone_attribute"
+                           class="admin__control-text"
+                           list="oidc-claims-datalist"
+                           placeholder="phone_number"
+                           value="<?= $escaper->escapeHtmlAttr($val('billing_phone_attribute', '')) ?>"
+                           style="width:100%;">
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div style="display:flex; align-items:center; margin:24px 0 8px; padding:7px 12px; background:#f5f5f5; border-left:4px solid #eb5202; font-weight:700; font-size:13px; color:#333; text-transform:uppercase; letter-spacing:0.5px;">
+        <?= $escaper->escapeHtml(__('Billing Address')) ?>
+    </div>
+    <table class="admin__table-primary" style="width:100%;">
+        <tbody>
+            <tr>
+                <td style="width:220px;">
+                    <label for="billing_address_attribute">
+                        <strong><?= $escaper->escapeHtml(__('Street')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <input type="text" id="billing_address_attribute" name="billing_address_attribute"
+                           class="admin__control-text" list="oidc-claims-datalist"
+                           placeholder="address.street_address"
+                           value="<?= $escaper->escapeHtmlAttr($val('billing_address_attribute', '')) ?>"
+                           style="width:100%;">
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="billing_zip_attribute">
+                        <strong><?= $escaper->escapeHtml(__('ZIP / Postal Code')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <input type="text" id="billing_zip_attribute" name="billing_zip_attribute"
+                           class="admin__control-text" list="oidc-claims-datalist"
+                           placeholder="address.postal_code"
+                           value="<?= $escaper->escapeHtmlAttr($val('billing_zip_attribute', '')) ?>"
+                           style="width:100%;">
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="billing_city_attribute">
+                        <strong><?= $escaper->escapeHtml(__('City')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <input type="text" id="billing_city_attribute" name="billing_city_attribute"
+                           class="admin__control-text" list="oidc-claims-datalist"
+                           placeholder="address.locality"
+                           value="<?= $escaper->escapeHtmlAttr($val('billing_city_attribute', '')) ?>"
+                           style="width:100%;">
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="billing_state_attribute">
+                        <strong><?= $escaper->escapeHtml(__('State / Region')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <input type="text" id="billing_state_attribute" name="billing_state_attribute"
+                           class="admin__control-text" list="oidc-claims-datalist"
+                           placeholder="address.region"
+                           value="<?= $escaper->escapeHtmlAttr($val('billing_state_attribute', '')) ?>"
+                           style="width:100%;">
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="billing_country_attribute">
+                        <strong><?= $escaper->escapeHtml(__('Country')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <input type="text" id="billing_country_attribute" name="billing_country_attribute"
+                           class="admin__control-text" list="oidc-claims-datalist"
+                           placeholder="address.country"
+                           value="<?= $escaper->escapeHtmlAttr($val('billing_country_attribute', '')) ?>"
+                           style="width:100%;">
+                    <small class="admin__field-note">
+                        <?= $escaper->escapeHtml(
+                            __('ISO 3166-1 alpha-2 code (e.g. US, DE, GB) or full country name')
+                        ) ?>
+                    </small>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div style="display:flex; align-items:center; margin:24px 0 8px; padding:7px 12px; background:#f5f5f5; border-left:4px solid #eb5202; font-weight:700; font-size:13px; color:#333; text-transform:uppercase; letter-spacing:0.5px;">
+        <?= $escaper->escapeHtml(__('Shipping Address')) ?>
+    </div>
+    <table class="admin__table-primary" style="width:100%;">
+        <tbody>
+            <tr>
+                <td style="width:220px;" colspan="2">
+                    <label style="display:flex; align-items:center; gap:8px;">
+                        <input type="checkbox"
+                               id="mooauth_sameasbilling"
+                               name="oauth_am_sameasbilling"
+                               value="1"
+                               <?= ((int) $val('oauth_am_sameasbilling', 0) === 1)
+                                   ? 'checked="checked"' : '' ?>>
+                        <strong><?= $escaper->escapeHtml(__('Shipping address same as billing')) ?></strong>
+                    </label>
+                </td>
+            </tr>
+            <tr id="mooauth-shipping-fields"
+                <?= ((int) $val('oauth_am_sameasbilling', 0) === 1) ? 'style="display:none;"' : '' ?>>
+                <td colspan="2">
+                    <table class="admin__table-primary" style="width:100%;">
+                        <tbody>
+                            <?php
+                            $shippingFields = [
+                                'shipping_address_attribute' => [__('Street'),  'address.street_address'],
+                                'shipping_zip_attribute'     => [__('ZIP / Postal Code'), 'address.postal_code'],
+                                'shipping_city_attribute'    => [__('City'),    'address.locality'],
+                                'shipping_state_attribute'   => [__('State / Region'), 'address.region'],
+                                'shipping_country_attribute' => [__('Country'), 'address.country'],
+                            ];
+                            foreach ($shippingFields as $fieldName => [$label, $placeholder]):
+                            ?>
+                            <tr>
+                                <td style="width:220px;">
+                                    <label for="<?= $escaper->escapeHtmlAttr($fieldName) ?>">
+                                        <strong><?= $escaper->escapeHtml($label) ?></strong>
+                                    </label>
+                                </td>
+                                <td>
+                                    <input type="text"
+                                           id="<?= $escaper->escapeHtmlAttr($fieldName) ?>"
+                                           name="<?= $escaper->escapeHtmlAttr($fieldName) ?>"
+                                           class="admin__control-text"
+                                           list="oidc-claims-datalist"
+                                           placeholder="<?= $escaper->escapeHtmlAttr($placeholder) ?>"
+                                           value="<?= $escaper->escapeHtmlAttr($val($fieldName, '')) ?>"
+                                           style="width:100%;">
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+(function () {
+    'use strict';
+    var sameCb = document.getElementById('mooauth_sameasbilling');
+    var shippingRows = document.getElementById('mooauth-shipping-fields');
+    if (sameCb && shippingRows) {
+        sameCb.addEventListener('change', function () {
+            shippingRows.style.display = sameCb.checked ? 'none' : '';
+        });
+    }
+}());
+</script>
+
+<script>
+(function () {
+    'use strict';
+
+    var rolesHtml = <?= /* @noEscape */ json_encode(
+        array_reduce(
+            $roles,
+            static function (string $carry, array $role) use ($escaper): string {
+                return $carry
+                    . '<option value="' . $escaper->escapeHtmlAttr($role['value']) . '">'
+                    . $escaper->escapeHtml($role['label'])
+                    . '</option>';
+            },
+            '<option value="">-- ' . $escaper->escapeHtml(__('Select Role')) . ' --</option>'
+        )
+    ) ?>;
+
+    var mappingIndex = <?= count($roleMappings) > 0 ? count($roleMappings) : 1 ?>;
+
+    document.getElementById('mooauth-add-mapping').addEventListener('click', function () {
+        var container = document.getElementById('mooauth-role-mappings');
+        var row = document.createElement('div');
+        row.className = 'mooauth-mapping-row';
+        row.style.cssText = 'margin-bottom:8px; display:flex; align-items:center;';
+        row.innerHTML =
+            '<input type="text" name="oauth_role_mapping[' + mappingIndex + '][group]"'
+            + ' placeholder="OIDC Group Name" class="admin__control-text" style="width:200px;">'
+            + '<span style="margin:0 10px;">&rarr;</span>'
+            + '<select name="oauth_role_mapping[' + mappingIndex + '][role]"'
+            + ' class="admin__control-select" style="width:220px;">' + rolesHtml + '</select>'
+            + '<button type="button" class="action-delete mooauth-remove-mapping"'
+            + ' style="margin-left:10px;"><?= $escaper->escapeJs(__('Remove')) ?></button>';
+        container.appendChild(row);
+        mappingIndex++;
+        bindRemove(row.querySelector('.mooauth-remove-mapping'));
+    });
+
+    function bindRemove(btn) {
+        btn.addEventListener('click', function () {
+            var container = document.getElementById('mooauth-role-mappings');
+            var rows = container.querySelectorAll('.mooauth-mapping-row');
+            if (rows.length > 1) {
+                btn.parentElement.remove();
+            } else {
+                btn.parentElement.querySelector('input').value = '';
+                btn.parentElement.querySelector('select').selectedIndex = 0;
+            }
+        });
+    }
+
+    document.querySelectorAll('.mooauth-remove-mapping').forEach(bindRemove);
+}());
+</script>

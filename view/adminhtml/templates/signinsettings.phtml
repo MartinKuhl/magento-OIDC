@@ -1,142 +1,17 @@
 <!--
-    This template file is for the Sign In settings.
-    File acts as a view file for our Sign In settings.
+    Miscellaneous settings page — Debug Logs only.
+    Login / Logout Options have moved to the per-provider Login Options tab
+    in Manage Providers → Edit Provider.
 -->
 <?php
-// Initialize all values
-$customerLink = $block->showCustomerLink() ? 'checked' : '';
-$adminLink = $block->showAdminLink() ? 'checked' : '';
-$autoCreateAdmin = $block->autoCreateAdmin() ? 'checked' : '';
-$autoCreateCustomer = $block->autoCreateCustomer() ? 'checked' : '';
-$enableLoginRedirect = $block->isLoginRedirectEnabled() ? 'checked' : '';
-$disableNonOidcAdminLogin = $block->isNonOidcAdminLoginDisabled() ? 'checked' : '';
-$disableNonOidcCustomerLogin = $block->isNonOidcCustomerLoginDisabled()
-    ? 'checked' : '';
-$isOAuthConfigured = $block->isOAuthConfigured() && $block->isEnabled();
-$disabled = $isOAuthConfigured ? '' : 'disabled title="Disabled. Configure your Service Provider"';
 $enableDebugLog = $block->isDebugLogEnable() ? 'checked' : '';
-// Lockout-Prevention: OIDC-only checkboxes require Show-OIDC to be checked
-$disableOidcOnlyAdmin = ($adminLink !== 'checked') ? 'disabled' : '';
-$disableOidcOnlyCustomer = ($customerLink !== 'checked') ? 'disabled' : '';
 ?>
 
 <div class="row">
     <div class="col-sm-7 page_margin">
         <div class="page" id="samlsettings">
-            <div class="mosp_table_layout">
-                <h3>LOGIN / LOGOUT OPTIONS</h3>
-                <hr>
-                <p style="font-style: italic; color: #666; margin-top: 10px;">
-                    Configure OIDC login visibility, user auto-creation, and redirect settings.
-                </p>
-            </div>
-
-            <!-- Sign In Settings Form -->
-            <form id="signInSettings" method="post" action="">
-                <input name="form_key" type="hidden" value="<?= $escaper->escapeHtmlAttr($block->getFormKey()) ?>">
-                <input type="hidden" name="option" value="saveSignInSettings">
-
-                <table>
-                    <!-- Show OIDC Login on Default Login Page -->
-                    <tr>
-                        <td>
-                            <label><strong>Show OIDC Login Option on Default Login Page:</strong></label>
-                            <div style="margin-left:17px; margin-top:2%;">
-                                <input type="checkbox"
-                                       name="mo_oauth_show_admin_link"
-                                       id="mo_oauth_show_admin_link"
-                                       <?= $escaper->escapeHtmlAttr($adminLink) ?>
-                                       value="true">
-                                Show the OIDC-Login Option on the default admin login page.
-                                <br><br>
-                                <input type="checkbox"
-                                       name="mo_oauth_show_customer_link"
-                                       id="mo_oauth_show_customer_link"
-                                       <?= $escaper->escapeHtmlAttr($customerLink) ?>
-                                       value="true">
-                                Show the OIDC-Login Option on the default customer login page.
-                                <br><br>
-                                <input type="checkbox"
-                                       name="mo_disable_non_oidc_admin_login"
-                                       id="mo_disable_non_oidc_admin_login"
-                                       <?= $escaper->escapeHtmlAttr($disableNonOidcAdminLogin) ?>
-                                       <?= $escaper->escapeHtmlAttr($disabled) ?>
-                                       <?= $escaper->escapeHtmlAttr($disableOidcOnlyAdmin) ?>
-                                       value="true">
-                                Disable non-OIDC Login for Admins (OIDC login only)
-                                <br><br>
-                                <input type="checkbox"
-                                    name="mo_disable_non_oidc_customer_login"
-                                    id="mo_disable_non_oidc_customer_login"
-                                    <?= $escaper->escapeHtmlAttr($disableNonOidcCustomerLogin) ?>
-                                    <?= $escaper->escapeHtmlAttr($disabled) ?>
-                                    <?= $escaper->escapeHtmlAttr($disableOidcOnlyCustomer) ?>
-                                    value="true">
-                                Disable non-OIDC Login for Customers
-                                (OIDC login only)
-                            </div>
-                        </td>
-                    </tr>
-
-                    <!-- User Auto Create Settings -->
-                    <tr>
-                        <td>
-                            <label><strong>User Auto Create Settings</strong></label>
-                            <div style="margin-left:17px; margin-top:2%; width:100%;">
-                                <input type="checkbox"
-                                       name="mo_sso_auto_create_admin"
-                                       id="mo_sso_auto_create_admin"
-                                       <?= $escaper->escapeHtmlAttr($autoCreateAdmin) ?>
-                                       value="true">
-                                Auto Create Admin users while SSO, if they do not exist.
-                                <br><br>
-                                <input type="checkbox"
-                                       name="mo_sso_auto_create_customer"
-                                       id="mo_sso_auto_create_customer"
-                                       <?= $escaper->escapeHtmlAttr($autoCreateCustomer) ?>
-                                       value="true">
-                                Auto Create Customer while SSO, if they do not exist.
-                            </div>
-                        </td>
-                    </tr>
-
-                    <!-- User Auto Redirect Settings -->
-                    <tr>
-                        <td>
-                            <label><strong>User Auto Redirect Settings:</strong></label>
-                            <div style="margin-left:17px; margin-top:2%; width:100%;">
-                                <input type="checkbox"
-                                       name="mo_oauth_enable_login_redirect"
-                                       id="mo_oauth_enable_login_redirect"
-                                       <?= $escaper->escapeHtmlAttr($enableLoginRedirect) ?>
-                                       value="true"
-                                       disabled="true"
->
-                                Check this option to auto redirect users to IDP
-                                from admin login page (if not logged in).
-                                <br><br>
-                            </div>
-                        </td>
-                    </tr>
-
-                    <!-- Save Button -->
-                    <tr>
-                        <td>
-                            <br>
-                            <input type="button"
-                                   class="btn-round"
-                                   name="link_setup"
-                                   title="You can only make changes if you have configured your SP"
-                                   onclick="document.getElementById('signInSettings').submit();"
-                                   value="Save"
-                                   style="width:150px">
-                        </td>
-                    </tr>
-                </table>
-            </form>
 
             <!-- Debug Logs Section -->
-            <br><br><br>
             <div class="mosp_table_layout">
                 <h3>DEBUG LOGS</h3>
                 <hr>
@@ -184,33 +59,7 @@ $disableOidcOnlyCustomer = ($customerLink !== 'checked') ? 'disabled' : '';
                            style="width:150px; margin-left:10px">
                 </div>
             </form>
-            <script>
-                document.addEventListener('DOMContentLoaded', function () {
-                    function bindOidcDependency(showId, oidcOnlyId) {
-                        var showCb = document.getElementById(showId);
-                        var oidcOnlyCb = document.getElementById(oidcOnlyId);
-                        if (!showCb || !oidcOnlyCb) return;
 
-                        function syncState() {
-                            if (!showCb.checked) {
-                                oidcOnlyCb.checked = false;
-                                oidcOnlyCb.disabled = true;
-                            } else {
-                                oidcOnlyCb.disabled = false;
-                            }
-                        }
-
-                        showCb.addEventListener('change', syncState);
-                        syncState(); // Initial state on page load
-                    }
-
-                    bindOidcDependency('mo_oauth_show_admin_link', 'mo_disable_non_oidc_admin_login');
-                    bindOidcDependency('mo_oauth_show_customer_link', 'mo_disable_non_oidc_customer_login');
-                });
-                </script>
         </div>
     </div>
 </div>
-
-
-

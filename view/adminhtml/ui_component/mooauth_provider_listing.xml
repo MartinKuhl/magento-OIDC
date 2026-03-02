@@ -67,18 +67,16 @@
             </settings>
         </column>
 
-        <column name="display_name">
+        <column name="display_name" component="Magento_Ui/js/grid/columns/link">
             <settings>
                 <filter>text</filter>
                 <label translate="true">Provider Name</label>
             </settings>
-        </column>
-
-        <column name="clientID">
-            <settings>
-                <filter>text</filter>
-                <label translate="true">Client ID</label>
-            </settings>
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="link" xsi:type="string">edit_url</item>
+                </item>
+            </argument>
         </column>
 
         <column name="login_type">
@@ -105,7 +103,8 @@
         </column>
 
         <actionsColumn name="actions"
-                       class="MiniOrange\OAuth\Ui\Component\Listing\Column\Actions">
+                       class="MiniOrange\OAuth\Ui\Component\Listing\Column\Actions"
+                       component="MiniOrange_OAuth/js/grid/columns/provider-actions">
             <settings>
                 <indexField>id</indexField>
                 <label translate="true">Actions</label>

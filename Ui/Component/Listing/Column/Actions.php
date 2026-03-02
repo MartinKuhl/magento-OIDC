@@ -52,6 +52,9 @@ class Actions extends Column
         foreach ($dataSource['data']['items'] as &$item) {
             $id = (int) ($item['id'] ?? 0);
 
+            $item['edit_url']   = $this->urlBuilder->getUrl('mooauth/provider/edit', ['id' => $id]);
+            $item['delete_url'] = $this->urlBuilder->getUrl('mooauth/provider/delete', ['id' => $id]);
+
             $item[$this->getData('name')] = [
                 'edit' => [
                     'href'  => $this->urlBuilder->getUrl('mooauth/provider/edit', ['id' => $id]),
