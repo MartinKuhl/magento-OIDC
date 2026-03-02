@@ -207,16 +207,18 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
 - side bar ordering (Left and top)
 
 NEW UI
-- misc section (miscellaneous)
-- db store?
-- Sign In Settings are also Provider dependent 
-
-- dropdown of received OIDC claims
+- clean up table columns
 - start test flow from Provider overview
 
 - make sub headings more visiable
-- im und export?
+    - OAuth / OIDC Configuration
+    - Provider Identity
+- add import and export option to misc
 - add customer (Customer View) and admin user (User Info) information 
+
+compare old configuration flow with the new one. Are all config options migrated, which ones are missing
+
+you mark the section in case changes were made, extend this so that the concrete data field is highlighted
 
 ### LATER - complex ###:
 - Rename: --> Authelia OIDC (in Code)
