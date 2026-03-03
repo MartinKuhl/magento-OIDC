@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace MiniOrange\OAuth\Plugin\Customer\Block;
 
-use Magento\Customer\Block\Adminhtml\Edit\Tab\View\PersonalInfo;
+use Magento\Customer\Block\Adminhtml\Edit\Tab\View;
 use Magento\Framework\App\RequestInterface;
 use MiniOrange\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
 
@@ -12,7 +12,7 @@ use MiniOrange\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
  * Injects an "OIDC Provider" row into the Personal Information table
  * on the Magento admin Customer View tab.
  *
- * Targets: Magento\Customer\Block\Adminhtml\Edit\Tab\View\PersonalInfo
+ * Targets: Magento\Customer\Block\Adminhtml\Edit\Tab\View
  */
 class OidcInfoPlugin
 {
@@ -28,10 +28,10 @@ class OidcInfoPlugin
     }
 
     /**
-     * After PersonalInfo is rendered, append an OIDC Provider row
+     * After the Customer View tab is rendered, append an OIDC Provider row
      * to the Personal Information table.
      */
-    public function afterToHtml(PersonalInfo $subject, string $result): string
+    public function afterToHtml(View $subject, string $result): string
     {
         $customerId = (int) $this->request->getParam('id', 0);
         if ($customerId === 0) {
