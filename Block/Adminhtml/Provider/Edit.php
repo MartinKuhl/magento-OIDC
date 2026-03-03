@@ -51,16 +51,11 @@ class Edit extends Container
     }
 
     /**
-     * Set block identifiers and configure buttons.
-     *
-     * The provider model is loaded and registered in the Core Registry by
-     * Controller/Adminhtml/Provider/Edit before any block is instantiated, so
-     * we must not re-register it here (would throw a RuntimeException).
+     * Set block identifiers and configure action buttons.
      *
      * After parent::_construct() we clear $_blockGroup so that
-     * Widget\Form\Container::_prepareLayout() skips auto-creating a non-existent
-     * Form child block, while still letting Widget\Container::_prepareLayout()
-     * run and push buttons to the toolbar.
+     * Widget\Form\Container::_prepareLayout() skips auto-creating
+     * a non-existent Form child block.
      */
     protected function _construct(): void
     {
@@ -68,16 +63,12 @@ class Edit extends Container
         $this->_blockGroup = 'MiniOrange_OAuth';
         $this->_controller = 'adminhtml_provider';
 
-        // Adds Save/Back/Reset; adds Delete only when the id URL param is > 0.
         parent::_construct();
 
-        // Prevent Widget\Form\Container::_prepareLayout() from auto-creating
-        // MiniOrange\OAuth\Block\Adminhtml\Provider\Tabs\Edit\Form (does not exist).
-        // Clearing _blockGroup makes the guard condition false while still letting
-        // Widget\Container::_prepareLayout() run to push buttons into the toolbar.
+        // Prevent Widget\Form\Container from auto-creating a Form child block
         $this->_blockGroup = '';
 
-        // Add "Save and Continue Edit" button.
+        // "Save and Continue Edit" button
         $this->buttonList->add(
             'save_and_continue',
             [
@@ -88,28 +79,95 @@ class Edit extends Container
             ]
         );
 
-        // Add "Save & Test OIDC Flow" button — only shown when editing an existing provider.
-        // Submits the form with back=test so changes are saved before the test flow starts.
+        // "Test OIDC Flow" button — only for existing, saved providers.
+        // Triggered directly by user click → no popup blocker issues.
+        $this->addTestOidcFlowButton();
+    }
+
+    /**
+     * Add the "Test OIDC Flow" button for existing providers.
+     *
+     * Opens the OIDC test flow directly in a popup window via user click.
+     * No save is performed — the provider must already be saved before testing.
+     */
+    private function addTestOidcFlowButton(): void
+    {
         $provider = $this->registry->registry('current_oidc_provider');
-        if ($provider && $provider->getId()) {
-            $appName = (string) $provider->getData('app_name');
-            if ($appName) {
-                $this->buttonList->add(
-                    'test_oidc_flow',
-                    [
-                        'label'      => __('Save & Test OIDC Flow'),
-                        'class'      => 'save',
-                        'onclick'    => "document.getElementById('back').value='test';"
-                                     . "jQuery('#edit_form').trigger('save');",
-                        'sort_order' => 40,
-                    ]
-                );
-            }
+
+        if (!$provider || !$provider->getId() || !$provider->getData('app_name')) {
+            return;
         }
+
+        $testUrl = $this->buildTestFlowUrl($provider);
+
+        $this->buttonList->add(
+            'test_oidc_flow',
+            [
+                'label'      => __('Test OIDC Flow'),
+                'class'      => 'action-secondary',
+                // Direct user-click triggers window.open → popup blockers won't interfere
+                'onclick'    => sprintf(
+                    "window.open(%s, 'TEST_OIDC', 'scrollbars=1,width=800,height=600'); return false;",
+                    json_encode($testUrl)
+                ),
+                'sort_order' => 42,
+            ]
+        );
+    }
+
+    /**
+     * Build the frontend URL for the OIDC test flow.
+     *
+     * Uses the showTestResults URL + TEST_RELAYSTATE marker as relayState so that:
+     * - SendAuthorizationRequest recognises the test mode via TEST_RELAYSTATE
+     * - ReadAuthorizationResponse redirects to ShowTestResults after the callback
+     *
+     * @param \Magento\Framework\DataObject $provider
+     * @return string
+     */
+    private function buildTestFlowUrl(\Magento\Framework\DataObject $provider): string
+    {
+        $store = $this->storeManager->getStore();
+
+        // Combine showTestResults URL with TEST_RELAYSTATE marker ("testvalidate")
+        // so ReadAuthorizationResponse reliably detects test mode via strpos()
+        $relayState = $store->getUrl('mooauth/actions/showTestResults')
+            . OAuthConstants::TEST_RELAYSTATE;
+
+        return $store->getUrl(
+            'mooauth/actions/sendAuthorizationRequest',
+            [
+                'option'      => OAuthConstants::TEST_CONFIG_OPT,
+                'app_name'    => $provider->getData('app_name'),
+                'provider_id' => (int) $provider->getId(),
+                'relayState'  => $relayState,
+            ]
+        );
+    }
+
+    /**
+     * Return the page header text.
+     *
+     * @return Phrase|string
+     */
+    public function getHeaderText(): Phrase|string
+    {
+        $provider = $this->registry->registry('current_oidc_provider');
+
+        if ($provider && $provider->getId()) {
+            $name = (string) ($provider->getData('display_name') ?: $provider->getData('app_name'));
+            return __("Edit Provider '%1'", $this->escapeHtml($name));
+        }
+
+        return __('New OIDC Provider');
     }
 
     /**
      * Render the <form> element wrapping the Widget\Tabs child block.
+     *
+     * Widget\Form\Container expects a Form child block, but we use Widget\Tabs
+     * instead. We override getFormHtml() to render the form manually so that
+     * the hidden "back" field is available for Save / Save & Continue.
      *
      * @return string
      */
@@ -128,58 +186,5 @@ class Edit extends Container
              . '<input type="hidden" name="id" value="' . $providerId . '">'
              . $this->getChildHtml('mooauth_provider_edit_tabs')
              . '</form>';
-    }
-
-    /**
-     * Return the page header text (used by the container template).
-     *
-     * @return Phrase|string
-     */
-    public function getHeaderText(): Phrase|string
-    {
-        $provider = $this->registry->registry('current_oidc_provider');
-
-        if ($provider && $provider->getId()) {
-            $name = (string) ($provider->getData('display_name') ?: $provider->getData('app_name'));
-            return __("Edit Provider '%1'", $this->escapeHtml($name));
-        }
-
-        return __('New OIDC Provider');
-    }
-
-    /**
-     * Append popup-opening JS when the page was reached via "Save & Test OIDC Flow".
-     *
-     * After Save.php redirects back here with pending_test=1, the page reloads
-     * normally while this script opens the OIDC test flow in a popup window.
-     * The frontend URL is used because SendAuthorizationRequest is a frontend controller.
-     */
-    #[\Override]
-    protected function _toHtml(): string
-    {
-        $html = parent::_toHtml();
-
-        if (!$this->getRequest()->getParam('pending_test')) {
-            return $html;
-        }
-
-        $provider = $this->registry->registry('current_oidc_provider');
-        if (!$provider || !$provider->getData('app_name')) {
-            return $html;
-        }
-
-        $testUrl = $this->storeManager->getStore()->getUrl(
-            'mooauth/actions/sendAuthorizationRequest',
-            [
-                'app_name' => $provider->getData('app_name'),
-                'option'   => OAuthConstants::TEST_CONFIG_OPT,
-            ]
-        );
-
-        $html .= '<script>window.open('
-               . json_encode($testUrl)
-               . ', "TEST_OIDC", "scrollbars=1,width=800,height=600");</script>';
-
-        return $html;
     }
 }

@@ -1,3 +1,4 @@
+xml
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
     UI Grid component definition for the OIDC Provider management list.
@@ -102,25 +103,54 @@
             </settings>
         </column>
 
-        <column name="last_test_status">
+        <!-- Test-Status: success / failed as filterable select dropdown -->
+        <column name="last_test_status" component="Magento_Ui/js/grid/columns/select">
             <settings>
-                <label translate="true">Last Test</label>
-                <filter>text</filter>
-            </settings>
-        </column>
-
-        <column name="last_test_at">
-            <settings>
-                <label translate="true">Tested At</label>
-                <filter>dateRange</filter>
-                <dataType>date</dataType>
-            </settings>
-        </column>
-
-        <column name="users_created">
-            <settings>
-                <label translate="true">Users Created</label>
+                <options class="MiniOrange\OAuth\Ui\Component\Listing\Column\TestStatusOptions"/>
+                <filter>select</filter>
+                <dataType>select</dataType>
+                <label translate="true">Test Status</label>
                 <sortable>true</sortable>
+            </settings>
+        </column>
+
+        <!-- Last tested timestamp with date-range filter -->
+        <column name="tested_at"
+                class="Magento\Ui\Component\Listing\Columns\Date"
+                component="Magento_Ui/js/grid/columns/date">
+            <settings>
+                <filter>dateRange</filter>
+                <label translate="true">Last Tested</label>
+                <dataType>date</dataType>
+                <sortable>true</sortable>
+            </settings>
+        </column>
+
+        <!-- Active Admin Users: live count via JOIN on admin_user -->
+        <column name="active_admin_users"
+                class="MiniOrange\OAuth\Ui\Component\Listing\Column\ActiveUserCount">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="user_type" xsi:type="string">admin</item>
+                </item>
+            </argument>
+            <settings>
+                <label translate="true">Active Admin Users</label>
+                <sortable>false</sortable>
+            </settings>
+        </column>
+
+        <!-- Active Customers: live count via JOIN on customer_entity -->
+        <column name="active_customers"
+                class="MiniOrange\OAuth\Ui\Component\Listing\Column\ActiveUserCount">
+            <argument name="data" xsi:type="array">
+                <item name="config" xsi:type="array">
+                    <item name="user_type" xsi:type="string">customer</item>
+                </item>
+            </argument>
+            <settings>
+                <label translate="true">Active Customers</label>
+                <sortable>false</sortable>
             </settings>
         </column>
 
@@ -130,6 +160,7 @@
             <settings>
                 <indexField>id</indexField>
                 <label translate="true">Actions</label>
+                <sortOrder>200</sortOrder>
             </settings>
         </actionsColumn>
 

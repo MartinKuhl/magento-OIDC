@@ -208,18 +208,12 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
 
 NEW UI
 - clean up table columns
+
 - start test flow from Provider overview
 
-- make sub headings more visiable
-    - OAuth / OIDC Configuration
-    - Provider Identity
-- add import and export option to misc (github/OIDC/Console/Command/ExportOidcConfig.php and github/OIDC/Console/Command/ImportOidcConfig.php)
-
-- add customer (Customer View) and admin user (User Info) information 
+- current OIDC user statt registriert
 
 - you mark the section in case changes were made, extend this so that the concrete data field is highlighted
-
-
 
 ### LATER - complex ###:
 - Rename: --> Authelia OIDC (in Code)

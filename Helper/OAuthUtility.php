@@ -754,4 +754,42 @@ class OAuthUtility extends Data
             'last'  => ucfirst(strtolower($parts[1] ?? '')),
         ];
     }
+
+    /**
+     * Persist the OIDC test result to the provider record.
+     *
+     * Called by ShowTestResults after a test flow completes.
+     * Writes last_test_status ('success'|'failed'|'unsuccessful') and
+     * last_test_at (current UTC datetime) to the miniorange_oauth_client_apps table.
+     *
+     * @param string $appName The app_name of the provider
+     * @param string $status  'success', 'failed', or 'unsuccessful'
+     */
+    public function saveTestStatus(string $appName, string $status): void
+    {
+        if ($appName === '') {
+            $this->customlog('saveTestStatus: skipped — empty app_name');
+            return;
+        }
+
+        // Load provider by app_name
+        $provider = $this->miniorangeOauthClientAppsFactory->create();
+        $this->appResource->load($provider, $appName, 'app_name');
+
+        if (!$provider->getId()) {
+            $this->customlog('saveTestStatus: provider not found for app_name: ' . $appName);
+            return;
+        }
+
+        $provider->setData('last_test_status', $status);
+        $provider->setData('last_test_at', (new \DateTime('now', new \DateTimeZone('UTC')))->format('Y-m-d H:i:s'));
+
+        try {
+            $this->appResource->save($provider);
+            $this->customlog("saveTestStatus: saved '{$status}' for provider '{$appName}'");
+        } catch (\Exception $e) {
+            $this->customlog('saveTestStatus: failed to save — ' . $e->getMessage());
+        }
+    }
+    
 }
