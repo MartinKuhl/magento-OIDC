@@ -16,7 +16,7 @@ $isActive  = isset($data['id']) ? (bool)(int) $val('is_active', 1) : true;
 $btnColor  = (string) $val('button_color', '#eb5202');
 ?>
 <div class="admin__fieldset-wrapper">
-    <div class="admin__fieldset-wrapper-title" style="border-left:4px solid #eb5202; padding-left:12px;">
+    <div class="admin__fieldset-wrapper-title" style="margin-bottom:12px;">
         <span class="admin__fieldset-wrapper-title-text" style="font-size:15px; font-weight:700; color:#1a1a1a; letter-spacing:0.2px;">
             <?= $escaper->escapeHtml(__('Provider Identity')) ?>
         </span>
