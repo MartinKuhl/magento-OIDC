@@ -207,9 +207,11 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
 - side bar ordering (Left and top)
 
 NEW UI
-- clean up table columns
+
 
 - you mark the section in case changes were made, extend this so that the concrete data field is highlighted
+
+- logout
 
 ### LATER - complex ###:
 - Rename: --> Authelia OIDC (in Code)
