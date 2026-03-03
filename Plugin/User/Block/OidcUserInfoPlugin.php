@@ -50,10 +50,10 @@ class OidcUserInfoPlugin
         $providerText = $info
             ? htmlspecialchars($info['display_name'], ENT_QUOTES, 'UTF-8')
               . ' (' . htmlspecialchars($info['created_at'], ENT_QUOTES, 'UTF-8') . ')'
-            : '—';
+            : 'none';
 
         $fieldset = $form->getElement('base_fieldset');
-        if ($fieldset) {
+        if ($fieldset && !$form->getElement('oidc_provider_info')) {
             $fieldset->addField(
                 'oidc_provider_info',
                 'note',
@@ -61,7 +61,7 @@ class OidcUserInfoPlugin
                     'label' => __('OIDC Provider'),
                     'text'  => $providerText,
                 ],
-                'expiration' // position: immediately after the Expiration Date field
+                'expiration'
             );
         }
 
