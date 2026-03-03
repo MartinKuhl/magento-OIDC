@@ -115,7 +115,7 @@ xml
         </column>
 
         <!-- Last tested timestamp with date-range filter -->
-        <column name="tested_at"
+        <column name="last_test_at"
                 class="Magento\Ui\Component\Listing\Columns\Date"
                 component="Magento_Ui/js/grid/columns/date">
             <settings>

@@ -209,10 +209,6 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
 NEW UI
 - clean up table columns
 
-- start test flow from Provider overview
-
-- current OIDC user statt registriert
-
 - you mark the section in case changes were made, extend this so that the concrete data field is highlighted
 
 ### LATER - complex ###:
