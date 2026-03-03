@@ -104,13 +104,13 @@ class Edit extends Container
             'test_oidc_flow',
             [
                 'label'      => __('Test OIDC Flow'),
-                'class'      => 'action-secondary',
+                'class'      => 'save',
                 // Direct user-click triggers window.open → popup blockers won't interfere
                 'onclick'    => sprintf(
                     "window.open(%s, 'TEST_OIDC', 'scrollbars=1,width=800,height=600'); return false;",
                     json_encode($testUrl)
                 ),
-                'sort_order' => 42,
+                'sort_order' => 25,
             ]
         );
     }
