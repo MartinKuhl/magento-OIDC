@@ -772,8 +772,8 @@ class OAuthUtility extends Data
 
         try {
             /** @var \MiniOrange\OAuth\Model\MiniOrangeOauthClientApps $model */
-            $model = $this->clientAppsFactory->create();
-            $model->load($providerId);
+            $model = $this->miniorangeOauthClientAppsFactory->create();
+            $this->appResource->load($model, $providerId);
 
             if (!$model->getId()) {
                 $this->customlog('saveReceivedOidcClaims: provider ID=' . $providerId . ' not found.');
@@ -781,7 +781,7 @@ class OAuthUtility extends Data
             }
 
             $model->setData('received_oidc_claims', json_encode($claimKeys));
-            $model->save();
+            $this->appResource->save($model);
 
             $this->customlog('saveReceivedOidcClaims: saved ' . count($claimKeys) . ' claims for provider ID=' . $providerId);
         } catch (\Exception $e) {
