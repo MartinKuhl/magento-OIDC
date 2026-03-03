@@ -305,16 +305,37 @@ class ShowTestResults extends Action
      * @param  array $attrs
      * @return string[] Sorted list of unique claim key names
      */
-    private function extractClaimKeys(array $attrs): array
+    private function extractClaimKeys($attrs, int|string $prefix = ''): array
     {
-        $keys = array_keys($attrs);
-        foreach ($attrs as $value) {
-            if (is_array($value)) {
-                $keys = array_merge($keys, array_keys($value));
+        $keys = [];
+        if (!is_array($attrs)) {
+            return $keys;
+        }
+
+        foreach ($attrs as $key => $value) {
+            // Skip numeric array indices (e.g., groups: [0, 1])
+            if (is_int($key)) {
+                continue;
+            }
+
+            $fullKey = $prefix !== '' ? $prefix . '.' . $key : $key;
+
+            if (is_array($value) && !$this->isIndexedArray($value)) {
+                // Nested object: only add dotted sub-keys, NOT the parent key alone
+                $keys = array_merge($keys, $this->extractClaimKeys($value, $fullKey));
+            } else {
+                $keys[] = $fullKey;
             }
         }
-        $keys = array_unique($keys);
-        sort($keys);
+
         return $keys;
+    }
+
+    /**
+     * Check if array is numerically indexed (list) vs associative (object)
+     */
+    private function isIndexedArray(array $arr): bool
+    {
+        return array_keys($arr) === range(0, count($arr) - 1);
     }
 }
