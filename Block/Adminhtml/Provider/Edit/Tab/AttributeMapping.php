@@ -9,29 +9,52 @@ use Magento\Backend\Block\Template;
 use Magento\Backend\Block\Template\Context;
 use Magento\Backend\Block\Widget\Tab\TabInterface;
 use Magento\Framework\Phrase;
+use Magento\Framework\Registry;
 use MiniOrange\OAuth\Helper\OAuthConstants;
 use MiniOrange\OAuth\Helper\OAuthUtility;
 
 /**
- * Attribute Mapping tab in the provider edit form.
+ * Attribute Mapping tab — OIDC claim to Magento field mapping.
  */
 class AttributeMapping extends Template implements TabInterface
 {
-    /** @var OAuthUtility */
-    private readonly OAuthUtility $oauthUtility;
+    /** @var string */
+    protected $_template = 'MiniOrange_OAuth::provider/tab/attrsettings.phtml';
+
+    /** @var Registry */
+    private Registry $registry;
 
     /** @var RoleCollectionFactory */
     private readonly RoleCollectionFactory $roleCollectionFactory;
 
+    /** @var OAuthUtility */
+    private readonly OAuthUtility $oauthUtility;
+
     public function __construct(
         Context $context,
-        OAuthUtility $oauthUtility,
+        Registry $registry,
         RoleCollectionFactory $roleCollectionFactory,
+        OAuthUtility $oauthUtility,
         array $data = []
     ) {
-        $this->oauthUtility = $oauthUtility;
+        $this->registry              = $registry;
         $this->roleCollectionFactory = $roleCollectionFactory;
+        $this->oauthUtility          = $oauthUtility;
         parent::__construct($context, $data);
+    }
+
+    /**
+     * Return the current provider data, or an empty array for new providers.
+     *
+     * @return array
+     */
+    public function getProviderData(): array
+    {
+        $provider = $this->registry->registry('current_provider');
+        if ($provider === null) {
+            return [];
+        }
+        return is_array($provider) ? $provider : $provider->getData();
     }
 
     /**
@@ -60,9 +83,7 @@ class AttributeMapping extends Template implements TabInterface
      */
     public function getOidcClaims(): array
     {
-        // Try to load per-provider claims
-        $providerData = $this->getData('provider_data');
-        $providerId = is_array($providerData) ? (int) ($providerData['id'] ?? 0) : 0;
+        $providerId = (int) $this->getRequest()->getParam('id', 0);
 
         if ($providerId > 0) {
             $details = $this->oauthUtility->getClientDetailsById($providerId);
@@ -75,37 +96,29 @@ class AttributeMapping extends Template implements TabInterface
             }
         }
 
-        // Before first test: fall back to standard OIDC spec claims as a reference
+        // Before first test: fall back to standard OIDC spec claims
         return OAuthConstants::OIDC_STANDARD_CLAIMS;
     }
 
-    /**
-     * @inheritDoc
-     */
+    /** @inheritDoc */
     public function getTabLabel(): Phrase|string
     {
         return __('Attribute Mapping');
     }
 
-    /**
-     * @inheritDoc
-     */
+    /** @inheritDoc */
     public function getTabTitle(): Phrase|string
     {
         return __('Attribute Mapping');
     }
 
-    /**
-     * @inheritDoc
-     */
+    /** @inheritDoc */
     public function canShowTab(): bool
     {
         return true;
     }
 
-    /**
-     * @inheritDoc
-     */
+    /** @inheritDoc */
     public function isHidden(): bool
     {
         return false;
