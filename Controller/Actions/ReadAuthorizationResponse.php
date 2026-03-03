@@ -378,13 +378,14 @@ class ReadAuthorizationResponse extends BaseAction
                         $this->customerSession->setData('mooauth_test_results', $testResults);
                     }
 
-                    // MP-04: persist provider ID in session so ShowTestResults can call
-                    // saveTestStatusById() instead of the legacy saveTestStatus(app_name) fallback.
-                    // This is the single source of truth for multi-provider test flows.
-                    if ($providerId > 0) {
-                        $this->customerSession->setData('mooauth_provider_id', $providerId);
+                    // MP-04: Append provider_id as URL parameter to the relayState URL.
+                    // Session-based approach removed — sessions are unreliable across
+                    // cross-domain OIDC redirects (SameSite cookies, session regeneration).
+                    if ($providerId > 0 && strpos((string) $relayState, 'showTestResults') !== false) {
+                        $separator = (strpos((string) $relayState, '?') !== false) ? '&' : '?';
+                        $relayState .= $separator . 'provider_id=' . (int) $providerId;
                         $this->oauthUtility->customlog(
-                            'ReadAuthResponse: stored mooauth_provider_id=' . $providerId . ' in session'
+                            'ReadAuthResponse: appended provider_id=' . $providerId . ' to relayState URL'
                         );
                     }
 

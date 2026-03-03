@@ -206,16 +206,17 @@ class ShowTestResults extends Action
     /**
      * Persist the test status to the provider record.
      *
-     * Tries saveTestStatusById() first (multi-provider safe, uses numeric ID
-     * from OAuth state stored in session key 'mooauth_provider_id').
-     * Falls back to saveTestStatus() using app_name from session.
+     * Priority:
+     *   1. provider_id from URL parameter (redirect-safe, set by ReadAuthorizationResponse)
+     *   2. app_name from customer session (legacy fallback)
      *
      * @param string $status 'success' | 'failed' | 'unsuccessful'
      */
     private function persistTestStatus(string $status): void
     {
-        // Preferred: numeric provider ID embedded in OAuth state during test flow
-        $providerId = (int) $this->oauthUtility->getSessionData('mooauth_provider_id');
+        // 1. Preferred: provider_id from URL parameter (redirect-safe)
+        $providerId = (int) $this->request->getParam('provider_id');
+
         if ($providerId > 0) {
             $this->oauthUtility->customlog(
                 'ShowTestResults: persisting status "' . $status . '" via provider ID=' . $providerId
