@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MiniOrange\OAuth\Plugin\User\Block;
 
 use Closure;
+use Magento\Framework\Registry;
 use Magento\User\Block\User\Edit\Tab\Main;
 use MiniOrange\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
 
@@ -12,26 +13,26 @@ use MiniOrange\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
  * Adds a read-only "OIDC Provider" note field directly after the Expiration Date
  * field in the Account Information fieldset on the admin User edit page.
  *
- * Uses aroundGetFormHtml so that $proceed() triggers _prepareForm() first,
- * ensuring the user model is fully loaded before we access it.
- *
- * Targets: Magento\User\Block\User\Edit\Tab\Main
+ * Uses aroundGetFormHtml + Registry to ensure the user is fully loaded.
  */
 class OidcUserInfoPlugin
 {
     private readonly UserProviderResource $userProviderResource;
+    private readonly Registry $registry;
 
-    public function __construct(UserProviderResource $userProviderResource)
-    {
+    public function __construct(
+        UserProviderResource $userProviderResource,
+        Registry $registry
+    ) {
         $this->userProviderResource = $userProviderResource;
+        $this->registry = $registry;
     }
 
     /**
      * Around getFormHtml — inject OIDC Provider note after the form is prepared.
      *
-     * $proceed() calls parent::getFormHtml() which triggers _prepareForm(),
-     * loading the user from the registry and calling setValues().
-     * After $proceed(), getUser() returns the real admin user.
+     * The admin user is loaded from the registry key 'permissions_user',
+     * which is set by the Edit controller before block rendering.
      */
     public function aroundGetFormHtml(Main $subject, Closure $proceed): string
     {
@@ -47,8 +48,10 @@ class OidcUserInfoPlugin
             return $result;
         }
 
-        $user   = $subject->getUser();
+        // Registry is the reliable source — getUser() returns null at this stage
+        $user   = $this->registry->registry('permissions_user');
         $userId = $user ? (int) $user->getId() : 0;
+        error_log('aroundGetFormHtml: userId=' . $userId . ' user_class=' . ($user ? get_class($user) : 'null'));
 
         $info = $userId > 0
             ? $this->userProviderResource->getProviderInfo('admin', $userId)
