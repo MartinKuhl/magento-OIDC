@@ -151,20 +151,13 @@ class ShowTestResults extends Action
         $testStatus = ($this->status === 'TEST SUCCESSFUL') ? 'success' : 'failed';
         $this->persistTestStatus($testStatus);
 
-        // Track first-use timestamp for MiniOrange telemetry
-        $timeStamp = $this->oauthUtility->getStoreConfig(OAuthConstants::TIME_STAMP);
-        if ($timeStamp === null) {
-            $timeStamp = time();
-            $this->oauthUtility->setStoreConfig(OAuthConstants::TIME_STAMP, $timeStamp);
-            $this->oauthUtility->flushCache();
-        }
+        
         $this->oauthUtility->getBaseUrl();
         $this->oauthUtility->getStoreConfig(OAuthConstants::CUSTOMER_EMAIL);
         $this->oauthUtility->getEdition();
         $this->oauthUtility->getProductVersion();
         $this->oauthUtility->getCurrentDate();
         $this->oauthUtility->getStoreConfig(OAuthConstants::APP_NAME);
-        $this->oauthUtility->setStoreConfig(OAuthConstants::SEND_EMAIL_CORE_CONFIG_DATA, 1);
         $this->oauthUtility->flushCache();
 
         $data = $this->renderTemplate([

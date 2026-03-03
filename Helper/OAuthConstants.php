@@ -160,9 +160,7 @@ class OAuthConstants
     public const ENABLE_DEBUG_LOG = 'debug_log';
     public const LOG_FILE_TIME = 'log_file_time';
     public const SEND_EMAIL = 'send_email';
-    public const SEND_EMAIL_CORE_CONFIG_DATA = 'send_email_config_data';
     public const ADMINEMAIL = 'admin_email';
     public const PLUGIN_VERSION = 'v4.2.0';
-    public const TIME_STAMP = 'time_stamp';
     public const CUSTOMER_EMAIL = 'email';
 }

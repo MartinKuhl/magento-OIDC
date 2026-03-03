@@ -213,9 +213,11 @@ NEW UI
 
 - logout
 
+- scope handling
+
 ### LATER - complex ###:
 - Rename: --> Authelia OIDC (in Code)
-- scope handling
+
 
 Nächster Schritt (nach Stabilisierung):
 PHPStan: Level 4

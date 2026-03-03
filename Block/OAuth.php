@@ -880,15 +880,6 @@ class OAuth extends \Magento\Framework\View\Element\Template
     {
         return $this->oauthUtility->getCurrentDate();
     }
-    /**
-     * Retrieve the stored timestamp.
-     *
-     * @return string|null
-     */
-    public function getTimeStamp()
-    {
-        return $this->oauthUtility->getStoreConfig(OAuthConstants::TIME_STAMP);
-    }
 
     /**
      * Get OIDC error message from URL parameter
