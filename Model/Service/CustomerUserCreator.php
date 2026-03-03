@@ -13,6 +13,7 @@ use Magento\Directory\Model\ResourceModel\Country\CollectionFactory as CountryCo
 use Magento\Directory\Helper\Data as DirectoryData;
 use Magento\Framework\Stdlib\DateTime\DateTime;
 use Magento\Customer\Api\Data\CustomerInterface;
+use MiniOrange\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
 
 /**
  * Service class for creating Customer Users via OAuth/OIDC
@@ -79,6 +80,9 @@ class CustomerUserCreator
     /** @var \Magento\Customer\Api\CustomerRepositoryInterface */
     private readonly \Magento\Customer\Api\CustomerRepositoryInterface $customerRepository;
 
+    /** @var \MiniOrange\OAuth\Model\ResourceModel\UserProvider */
+    private readonly UserProviderResource $userProviderResource;
+
     /**
      * Initialize customer user creator service.
      *
@@ -92,6 +96,7 @@ class CustomerUserCreator
      * @param DateTime $dateTime
      * @param DirectoryData $directoryData
      * @param \Magento\Customer\Api\CustomerRepositoryInterface $customerRepository
+     * @param UserProviderResource $userProviderResource
      */
     public function __construct(
         CustomerFactory $customerFactory,
@@ -103,7 +108,8 @@ class CustomerUserCreator
         CountryCollectionFactory $countryCollectionFactory,
         DateTime $dateTime,
         DirectoryData $directoryData,
-        \Magento\Customer\Api\CustomerRepositoryInterface $customerRepository
+        \Magento\Customer\Api\CustomerRepositoryInterface $customerRepository,
+        UserProviderResource $userProviderResource
     ) {
         $this->customerFactory = $customerFactory;
         $this->addressFactory = $addressFactory;
@@ -115,6 +121,7 @@ class CustomerUserCreator
         $this->dateTime = $dateTime;
         $this->directoryData = $directoryData;
         $this->customerRepository = $customerRepository;
+        $this->userProviderResource = $userProviderResource;
 
         $this->initializeAttributeMapping();
     }
@@ -162,6 +169,7 @@ class CustomerUserCreator
      * @param  string $lastName
      * @param  array  $flattenedAttrs
      * @param  array  $rawAttrs
+     * @param  int    $providerId OIDC provider ID (0 = unknown / not tracked)
      */
     public function createCustomer(
         string $email,
@@ -169,7 +177,8 @@ class CustomerUserCreator
         string $firstName,
         string $lastName,
         array $flattenedAttrs,
-        array $rawAttrs
+        array $rawAttrs,
+        int $providerId = 0
     ): ?CustomerInterface {
         $this->oauthUtility->customlog("CustomerUserCreator: Starting creation for " . $email);
 
@@ -228,6 +237,15 @@ class CustomerUserCreator
             $this->oauthUtility->customlog(
                 "CustomerUserCreator: Customer created with ID: " . (string)$savedCustomer->getId()
             );
+
+            // Track which OIDC provider created this customer
+            if ($providerId > 0 && $savedCustomer->getId()) {
+                $this->userProviderResource->saveMapping('customer', (int) $savedCustomer->getId(), $providerId);
+                $this->oauthUtility->customlog(
+                    "CustomerUserCreator: Provider mapping saved (customer ID "
+                    . $savedCustomer->getId() . " → provider ID " . $providerId . ")"
+                );
+            }
 
             // Create customer address
             $this->createCustomerAddress($savedCustomer, $firstName, $lastName, $flattenedAttrs, $rawAttrs);

@@ -296,6 +296,11 @@ class ReadAuthorizationResponse extends BaseAction
                         $encodedError = base64_encode(
                             'ID token verification failed. Please contact the administrator.'
                         );
+                        // Test mode: show error on showTestResults instead of admin login
+                        if (strpos((string) $relayState, 'showTestResults') !== false) {
+                            $errorUrl = rtrim((string) $relayState, '/') . '?oidc_error=' . urlencode($encodedError);
+                            return $this->_redirect($errorUrl);
+                        }
                         $query = ['_query' => ['oidc_error' => $encodedError]];
                         if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
                             $loginUrl = $this->_url->getUrl('admin', $query);
@@ -311,6 +316,11 @@ class ReadAuthorizationResponse extends BaseAction
                         'OIDC configuration error: JWKS endpoint is required for id_token verification.'
                         . ' Please configure it in the OAuth settings.'
                     );
+                    // Test mode: show error on showTestResults instead of admin login
+                    if (strpos((string) $relayState, 'showTestResults') !== false) {
+                        $errorUrl = rtrim((string) $relayState, '/') . '?oidc_error=' . urlencode($encodedError);
+                        return $this->_redirect($errorUrl);
+                    }
                     $query = ['_query' => ['oidc_error' => $encodedError]];
                     if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
                         $loginUrl = $this->_url->getUrl('admin', $query);
@@ -323,6 +333,11 @@ class ReadAuthorizationResponse extends BaseAction
         } else {
             $this->oauthUtility->customlog("ERROR: Invalid token response - no access_token or id_token");
             $encodedError = base64_encode('Invalid response from OAuth provider. Please try again.');
+            // Test mode: show error on showTestResults instead of admin login
+            if (strpos((string) $relayState, 'showTestResults') !== false) {
+                $errorUrl = rtrim((string) $relayState, '/') . '?oidc_error=' . urlencode($encodedError);
+                return $this->_redirect($errorUrl);
+            }
             $query = ['_query' => ['oidc_error' => $encodedError]];
             if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
                 $loginUrl = $this->_url->getUrl('admin', $query);
@@ -335,6 +350,11 @@ class ReadAuthorizationResponse extends BaseAction
         if (empty($userInfoResponseData)) {
             $this->oauthUtility->customlog("ERROR: Empty user info response data");
             $encodedError = base64_encode('Invalid response from OAuth provider. Please try again.');
+            // Test mode: show error on showTestResults instead of admin login
+            if (strpos((string) $relayState, 'showTestResults') !== false) {
+                $errorUrl = rtrim((string) $relayState, '/') . '?oidc_error=' . urlencode($encodedError);
+                return $this->_redirect($errorUrl);
+            }
             $query = ['_query' => ['oidc_error' => $encodedError]];
             if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
                 $loginUrl = $this->_url->getUrl('admin', $query);

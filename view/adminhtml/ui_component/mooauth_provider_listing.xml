@@ -102,6 +102,28 @@
             </settings>
         </column>
 
+        <column name="last_test_status">
+            <settings>
+                <label translate="true">Last Test</label>
+                <filter>text</filter>
+            </settings>
+        </column>
+
+        <column name="last_test_at">
+            <settings>
+                <label translate="true">Tested At</label>
+                <filter>dateRange</filter>
+                <dataType>date</dataType>
+            </settings>
+        </column>
+
+        <column name="users_created">
+            <settings>
+                <label translate="true">Users Created</label>
+                <sortable>true</sortable>
+            </settings>
+        </column>
+
         <actionsColumn name="actions"
                        class="MiniOrange\OAuth\Ui\Component\Listing\Column\Actions"
                        component="MiniOrange_OAuth/js/grid/columns/provider-actions">

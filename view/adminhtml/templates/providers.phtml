@@ -36,6 +36,7 @@ foreach ($collection as $item) {
                     <th class="data-grid-th"><?= $escaper->escapeHtml(__('Client ID')) ?></th>
                     <th class="data-grid-th"><?= $escaper->escapeHtml(__('Login Type')) ?></th>
                     <th class="data-grid-th"><?= $escaper->escapeHtml(__('Status')) ?></th>
+                    <th class="data-grid-th"><?= $escaper->escapeHtml(__('Last Test')) ?></th>
                     <th class="data-grid-th"><?= $escaper->escapeHtml(__('Sort Order')) ?></th>
                     <th class="data-grid-th"><?= $escaper->escapeHtml(__('Actions')) ?></th>
                 </tr>
@@ -71,6 +72,31 @@ foreach ($collection as $item) {
                                 <span style="color:#b30000;">
                                     <?= $escaper->escapeHtml(__('Inactive')) ?>
                                 </span>
+                            <?php endif; ?>
+                        </td>
+                        <?php
+                        $testStatus = $provider['last_test_status'] ?? null;
+                        $testAt     = $provider['last_test_at'] ?? null;
+                        $testLabel  = match($testStatus) {
+                            'success'      => __('Passed'),
+                            'failed'       => __('Failed'),
+                            'unsuccessful' => __('Error'),
+                            default        => __('—'),
+                        };
+                        $testColor  = ($testStatus === 'success') ? '#185b00' : '#b30000';
+                        ?>
+                        <td>
+                            <?php if ($testStatus !== null): ?>
+                                <span style="color:<?= $escaper->escapeHtmlAttr($testColor) ?>; font-weight:600;">
+                                    <?= $escaper->escapeHtml($testLabel) ?>
+                                </span>
+                                <?php if ($testAt): ?>
+                                    <br><small style="color:#666;">
+                                        <?= $escaper->escapeHtml($testAt) ?>
+                                    </small>
+                                <?php endif; ?>
+                            <?php else: ?>
+                                <span style="color:#999;"><?= $escaper->escapeHtml(__('—')) ?></span>
                             <?php endif; ?>
                         </td>
                         <td><?= $escaper->escapeHtml((string) $sortOrder) ?></td>

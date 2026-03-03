@@ -176,6 +176,12 @@ class Save extends Action implements HttpPostActionInterface
             $this->messageManager->addSuccessMessage((string) __('Provider saved successfully.'));
             $this->dataPersistor->clear('oidc_provider');
 
+            if (isset($data['back']) && $data['back'] === 'test') {
+                return $redirect->setPath('*/*/edit', [
+                    'id'           => $model->getId(),
+                    'pending_test' => '1',
+                ]);
+            }
             if (isset($data['back']) && $data['back'] === 'edit') {
                 return $redirect->setPath('*/*/edit', ['id' => $model->getId()]);
             }

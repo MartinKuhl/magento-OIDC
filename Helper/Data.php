@@ -262,6 +262,24 @@ class Data extends AbstractHelper
     }
 
     /**
+     * Persist the last test run result for a provider.
+     *
+     * @param  string $appName  Provider app_name
+     * @param  string $status   'success', 'failed', or 'unsuccessful'
+     */
+    public function saveTestStatus(string $appName, string $status): void
+    {
+        $collection = $this->clientCollectionFactory->create();
+        $collection->addFieldToFilter('app_name', $appName);
+        $model = $collection->getFirstItem();
+        if ($model->getId()) {
+            $model->setData('last_test_status', $status);
+            $model->setData('last_test_at', date('Y-m-d H:i:s'));
+            $this->appResource->save($model);
+        }
+    }
+
+    /**
      * Return all active provider records for a given login type, ordered by sort_order.
      *
      * MP-03: Powers multi-provider SSO button rendering and provider selection UI.

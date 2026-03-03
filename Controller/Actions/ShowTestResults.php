@@ -123,6 +123,13 @@ class ShowTestResults extends Action
 
         $this->status = $this->oauthUtility->isBlank($this->userEmail) ? "TEST FAILED" : "TEST SUCCESSFUL";
 
+        // Persist last test status to provider record
+        $appName = (string) $this->oauthUtility->getSessionData(OAuthConstants::APP_NAME);
+        if ($appName !== '') {
+            $testStatus = ($this->status === 'TEST SUCCESSFUL') ? 'success' : 'failed';
+            $this->oauthUtility->saveTestStatus($appName, $testStatus);
+        }
+
         // Track first-use timestamp for MiniOrange telemetry
         $timeStamp = $this->oauthUtility->getStoreConfig(OAuthConstants::TIME_STAMP);
         if ($timeStamp === null) {
@@ -168,6 +175,12 @@ class ShowTestResults extends Action
 
         $errorMessage = $this->oauthUtility->decodeBase64($encodedError);
         $this->status = "TEST UNSUCCESSFUL";
+
+        // Persist last test status to provider record
+        $appName = (string) $this->oauthUtility->getSessionData(OAuthConstants::APP_NAME);
+        if ($appName !== '') {
+            $this->oauthUtility->saveTestStatus($appName, 'unsuccessful');
+        }
 
         $data = $this->renderTemplate([
             'status'       => $this->status,

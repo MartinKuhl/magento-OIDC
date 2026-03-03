@@ -1,0 +1,71 @@
+<?php
+
+declare(strict_types=1);
+
+namespace MiniOrange\OAuth\Model\ResourceModel;
+
+use Magento\Framework\Model\ResourceModel\Db\AbstractDb;
+
+/**
+ * Resource model for the miniorange_oauth_user_provider mapping table.
+ * Provides helpers for saving and retrieving the OIDC provider that created a user.
+ */
+class UserProvider extends AbstractDb
+{
+    /**
+     * @inheritDoc
+     */
+    protected function _construct(): void
+    {
+        $this->_init('miniorange_oauth_user_provider', 'id');
+    }
+
+    /**
+     * Persist (or update) the OIDC provider that created a user.
+     *
+     * Uses INSERT ON DUPLICATE KEY UPDATE so that re-created users get
+     * their provider_id refreshed without violating the UNIQUE constraint.
+     *
+     * @param string $userType  'customer' or 'admin'
+     * @param int    $userId    Magento entity_id / user_id
+     * @param int    $providerId miniorange_oauth_client_apps.id
+     */
+    public function saveMapping(string $userType, int $userId, int $providerId): void
+    {
+        $this->getConnection()->insertOnDuplicate(
+            $this->getMainTable(),
+            [
+                'user_type'   => $userType,
+                'user_id'     => $userId,
+                'provider_id' => $providerId,
+            ],
+            ['provider_id'] // on duplicate key: update provider_id only
+        );
+    }
+
+    /**
+     * Return OIDC provider info for a given user, or null if not created via OIDC.
+     *
+     * @param  string     $userType 'customer' or 'admin'
+     * @param  int        $userId
+     * @return array{display_name: string, created_at: string}|null
+     */
+    public function getProviderInfo(string $userType, int $userId): ?array
+    {
+        $connection = $this->getConnection();
+        $select = $connection->select()
+            ->from(['up' => $this->getMainTable()], ['created_at'])
+            ->join(
+                ['p' => $this->getTable('miniorange_oauth_client_apps')],
+                'up.provider_id = p.id',
+                ['display_name']
+            )
+            ->where('up.user_type = ?', $userType)
+            ->where('up.user_id = ?', $userId)
+            ->limit(1);
+
+        /** @var array{display_name: string, created_at: string}|false $row */
+        $row = $connection->fetchRow($select);
+        return $row ?: null;
+    }
+}

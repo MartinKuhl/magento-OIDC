@@ -4,6 +4,7 @@ namespace MiniOrange\OAuth\Model\Service;
 
 use MiniOrange\OAuth\Helper\OAuthConstants;
 use MiniOrange\OAuth\Helper\OAuthUtility;
+use MiniOrange\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
 use Magento\User\Model\UserFactory;
 use Magento\User\Model\ResourceModel\User\CollectionFactory as UserCollectionFactory;
 use Magento\Framework\Math\Random;
@@ -28,6 +29,9 @@ class AdminUserCreator
     /** @var UserCollectionFactory */
     private readonly UserCollectionFactory $userCollectionFactory;
 
+    /** @var \MiniOrange\OAuth\Model\ResourceModel\UserProvider */
+    private readonly UserProviderResource $userProviderResource;
+
     /**
      * Initialize admin user creator.
      *
@@ -36,19 +40,22 @@ class AdminUserCreator
      * @param Random                                 $randomUtility
      * @param \Magento\User\Model\ResourceModel\User $userResource
      * @param UserCollectionFactory                  $userCollectionFactory
+     * @param UserProviderResource                   $userProviderResource
      */
     public function __construct(
         UserFactory $userFactory,
         OAuthUtility $oauthUtility,
         Random $randomUtility,
         \Magento\User\Model\ResourceModel\User $userResource,
-        UserCollectionFactory $userCollectionFactory
+        UserCollectionFactory $userCollectionFactory,
+        UserProviderResource $userProviderResource
     ) {
         $this->userFactory = $userFactory;
         $this->oauthUtility = $oauthUtility;
         $this->randomUtility = $randomUtility;
         $this->userResource = $userResource;
         $this->userCollectionFactory = $userCollectionFactory;
+        $this->userProviderResource = $userProviderResource;
     }
 
     /**
@@ -59,9 +66,10 @@ class AdminUserCreator
      * @param  string|null $firstName
      * @param  string|null $lastName
      * @param  array       $userGroups
+     * @param  int         $providerId OIDC provider ID (0 = unknown / not tracked)
      * @return \Magento\User\Model\User|null
      */
-    public function createAdminUser(string $email, $userName, $firstName, $lastName, array $userGroups)
+    public function createAdminUser(string $email, $userName, $firstName, $lastName, array $userGroups, int $providerId = 0)
     {
         $this->oauthUtility->customlog("AdminUserCreator: Starting creation for " . $email);
 
@@ -76,7 +84,7 @@ class AdminUserCreator
             return null;
         }
 
-        return $this->saveAdminUser($userName, $email, $firstName, $lastName, $roleId);
+        return $this->saveAdminUser($userName, $email, $firstName, $lastName, $roleId, $providerId);
     }
 
     /**
@@ -87,9 +95,10 @@ class AdminUserCreator
      * @param  mixed  $firstName
      * @param  mixed  $lastName
      * @param  int    $roleId
+     * @param  int    $providerId OIDC provider ID (0 = not tracked)
      * @return \Magento\User\Model\User|null
      */
-    private function saveAdminUser($userName, string $email, $firstName, $lastName, int $roleId)
+    private function saveAdminUser($userName, string $email, $firstName, $lastName, int $roleId, int $providerId = 0)
     {
         // Generate a 32-char password and shuffle to avoid predictable character-class ordering (SEC-12).
         $randomPassword = str_shuffle(
@@ -117,6 +126,15 @@ class AdminUserCreator
             $this->oauthUtility->customlog(
                 "AdminUserCreator: Role " . $roleId . " assigned to user ID: " . $user->getId()
             );
+
+            // Track which OIDC provider created this admin user (inside transaction)
+            if ($providerId > 0 && $user->getId()) {
+                $this->userProviderResource->saveMapping('admin', (int) $user->getId(), $providerId);
+                $this->oauthUtility->customlog(
+                    "AdminUserCreator: Provider mapping saved (admin ID "
+                    . $user->getId() . " → provider ID " . $providerId . ")"
+                );
+            }
 
             $connection->commit();
             return $user;

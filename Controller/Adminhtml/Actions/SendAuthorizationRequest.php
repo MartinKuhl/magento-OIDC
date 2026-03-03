@@ -133,6 +133,21 @@ class SendAuthorizationRequest extends BaseAction
         $responseType = OAuthConstants::CODE;
         $redirectURL = $this->oauthUtility->getCallBackUrl();
 
+        // PKCE (RFC 7636) — generate verifier when provider has S256 configured (FEAT-01)
+        $codeChallenge = null;
+        $pkceFlow      = $clientDetails['pkce_flow'] ?? '';
+        if ($pkceFlow === OAuthConstants::PKCE_METHOD_S256) {
+            $codeVerifier  = $this->securityHelper->generateCodeVerifier();
+            $codeChallenge = $this->securityHelper->computeCodeChallenge($codeVerifier);
+            // Store verifier so ReadAuthorizationResponse can include it in the token request
+            $this->oauthUtility->setSessionData(OAuthConstants::PKCE_VERIFIER_SESSION_KEY, $codeVerifier);
+            if ($chk_enable_log !== 0) {
+                $this->oauthUtility->customlog(
+                    "SendAuthorizationRequest (admin): PKCE S256 enabled — challenge generated"
+                );
+            }
+        }
+
         // Build relayState with login type for admin, with redirect validation
         $rawRelayState = $isFromPopup
             ? $this->oauthUtility->getBaseUrl() . "checkout"
@@ -179,7 +194,8 @@ class SendAuthorizationRequest extends BaseAction
             $responseType,
             $redirectURL,
             $relayState,
-            $params
+            $params,
+            $codeChallenge
         ))->build();
 
         if ($chk_enable_log !== 0) {

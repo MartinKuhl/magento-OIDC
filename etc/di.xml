@@ -144,10 +144,21 @@
     </type>
 
     <!-- Plugin to remove required validation from identity field for OIDC users (User Edit) -->
+    <!-- Also registers OidcUserInfoPlugin which adds the OIDC Provider note field -->
     <type name="Magento\User\Block\User\Edit\Tab\Main">
         <plugin name="oidc_identity_field_user"
                 type="MiniOrange\OAuth\Plugin\User\Block\OidcIdentityFieldPlugin"
                 sortOrder="20"/>
+        <plugin name="oidc_user_info_provider"
+                type="MiniOrange\OAuth\Plugin\User\Block\OidcUserInfoPlugin"
+                sortOrder="30"/>
+    </type>
+
+    <!-- Plugin to display OIDC Provider in admin Customer View → Personal Information table -->
+    <type name="Magento\Customer\Block\Adminhtml\Edit\Tab\View">
+        <plugin name="oidc_customer_info_provider"
+                type="MiniOrange\OAuth\Plugin\Customer\Block\OidcInfoPlugin"
+                sortOrder="10"/>
     </type>
 
     <!-- Plugin to remove required validation from identity field for OIDC users (Role Edit) -->

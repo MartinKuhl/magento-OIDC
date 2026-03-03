@@ -545,6 +545,14 @@ $pageTitle = $isEditMode
                            style="width:150px;"
                            value="<?= $escaper->escapeHtmlAttr(__('Save Provider')) ?>">
                     &nbsp;&nbsp;
+                    <button class="btn-round"
+                            type="submit"
+                            name="back"
+                            value="test"
+                            style="width:200px;">
+                        <?= $escaper->escapeHtml(__('Save & Test OIDC Flow')) ?>
+                    </button>
+                    &nbsp;&nbsp;
                     <a href="<?= $escaper->escapeUrl($listUrl) ?>">
                         <?= $escaper->escapeHtml(__('Back to List')) ?>
                     </a>

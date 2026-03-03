@@ -87,6 +87,11 @@ class CheckAttributeMappingAction extends BaseAction
      */
     private ?int $providerAutoCreateCustomer = null;
 
+    /**
+     * @var int OIDC provider ID (from miniorange_oauth_client_apps.id) used to track user creation
+     */
+    private int $providerId = 0;
+
     /** @var \MiniOrange\OAuth\Helper\TestResults */
     private readonly \MiniOrange\OAuth\Helper\TestResults $testResults;
 
@@ -317,7 +322,8 @@ class CheckAttributeMappingAction extends BaseAction
                         $adminUserName,
                         $adminFirstName,
                         $adminLastName,
-                        $userGroups
+                        $userGroups,
+                        $this->providerId
                     );
 
                     if ($adminUser && $adminUser->getId()) {
@@ -456,6 +462,7 @@ class CheckAttributeMappingAction extends BaseAction
                 ->setAttrs($attrs)
                 ->setUserEmail($email)
                 ->setAutoCreateCustomer($this->providerAutoCreateCustomer)
+                ->setProviderId($this->providerId)
                 ->execute();
         }
     }
@@ -629,6 +636,8 @@ class CheckAttributeMappingAction extends BaseAction
         if ($providerId > 0) {
             $this->customerSession->setData('oidc_provider_id', $providerId);
         }
+        // Store provider ID for user-creation tracking (written to miniorange_oauth_user_provider)
+        $this->providerId = $providerId;
 
         // FEAT-04: load access control rules from the provider row
         $rulesJson = (string) ($clientDetails['access_control_rules'] ?? '');

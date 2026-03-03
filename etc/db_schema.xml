@@ -75,6 +75,10 @@
       <column xsi:type="varchar" name="button_label" length="100" nullable="true" comment="Override text shown on the SSO button" />
       <column xsi:type="varchar" name="button_color" length="7" nullable="true" comment="Hex colour for SSO button (#rrggbb)" />
 
+      <!-- Last test result tracking -->
+      <column xsi:type="varchar" name="last_test_status" length="20" nullable="true" comment="Status of last test run: success, failed, or unsuccessful" />
+      <column xsi:type="datetime" name="last_test_at" nullable="true" comment="Timestamp of the last test run" />
+
       <constraint xsi:type="primary" referenceId="PRIMARY">
          <column name="id" />
       </constraint>
@@ -84,6 +88,31 @@
          <column name="is_active" />
          <column name="login_type" />
          <column name="sort_order" />
+      </index>
+   </table>
+
+   <!-- Tracks which OIDC provider created each Magento user (customer or admin) -->
+   <table name="miniorange_oauth_user_provider" resource="default" engine="innodb"
+          comment="Tracks which OIDC provider created each Magento user">
+      <column xsi:type="int" name="id" padding="10" unsigned="true" nullable="false"
+              identity="true" comment="ID"/>
+      <column xsi:type="varchar" name="user_type" nullable="false" length="10"
+              comment="User type: customer or admin"/>
+      <column xsi:type="int" name="user_id" padding="10" unsigned="true" nullable="false"
+              comment="Magento user ID (customer entity_id or admin user_id)"/>
+      <column xsi:type="smallint" name="provider_id" padding="7" unsigned="true" nullable="false"
+              comment="OIDC Provider ID (references miniorange_oauth_client_apps.id)"/>
+      <column xsi:type="timestamp" name="created_at" nullable="false"
+              default="CURRENT_TIMESTAMP" comment="Timestamp when the user was created via OIDC"/>
+      <constraint xsi:type="primary" referenceId="PRIMARY">
+         <column name="id"/>
+      </constraint>
+      <constraint xsi:type="unique" referenceId="MOOAUTH_USER_PROVIDER_TYPE_USER_ID">
+         <column name="user_type"/>
+         <column name="user_id"/>
+      </constraint>
+      <index referenceId="MOOAUTH_USER_PROVIDER_PROVIDER_ID" indexType="btree">
+         <column name="provider_id"/>
       </index>
    </table>
 </schema>

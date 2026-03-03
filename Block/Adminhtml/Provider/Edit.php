@@ -9,6 +9,7 @@ use Magento\Backend\Block\Widget\Form\Container;
 use Magento\Framework\Data\Form\FormKey;
 use Magento\Framework\Phrase;
 use Magento\Framework\Registry;
+use Magento\Store\Model\StoreManagerInterface;
 use MiniOrange\OAuth\Helper\OAuthConstants;
 
 /**
@@ -26,20 +27,26 @@ class Edit extends Container
     /** @var FormKey */
     private FormKey $formKeyHelper;
 
+    /** @var StoreManagerInterface */
+    private readonly StoreManagerInterface $storeManager;
+
     /**
-     * @param Context  $context
-     * @param Registry $registry
-     * @param FormKey  $formKey
-     * @param array    $data
+     * @param Context               $context
+     * @param Registry              $registry
+     * @param FormKey               $formKey
+     * @param StoreManagerInterface $storeManager
+     * @param array                 $data
      */
     public function __construct(
         Context $context,
         Registry $registry,
         FormKey $formKey,
+        StoreManagerInterface $storeManager,
         array $data = []
     ) {
         $this->registry      = $registry;
         $this->formKeyHelper = $formKey;
+        $this->storeManager  = $storeManager;
         parent::__construct($context, $data);
     }
 
@@ -77,25 +84,23 @@ class Edit extends Container
                 'label'   => __('Save and Continue Edit'),
                 'class'   => 'save',
                 'onclick' => "document.getElementById('back').value='edit';"
-                           . "document.getElementById('edit_form').submit();",
+                           . "jQuery('#edit_form').trigger('save');",
             ]
         );
 
-        // Add "Test OIDC Flow" button — only shown when editing an existing provider.
+        // Add "Save & Test OIDC Flow" button — only shown when editing an existing provider.
+        // Submits the form with back=test so changes are saved before the test flow starts.
         $provider = $this->registry->registry('current_oidc_provider');
         if ($provider && $provider->getId()) {
             $appName = (string) $provider->getData('app_name');
             if ($appName) {
-                $testUrl = $this->getUrl(
-                    'mooauth/actions/sendAuthorizationRequest',
-                    ['app_name' => $appName, 'option' => OAuthConstants::TEST_CONFIG_OPT]
-                );
                 $this->buttonList->add(
                     'test_oidc_flow',
                     [
-                        'label'   => __('Test OIDC Flow'),
-                        'class'   => 'action-default scalable',
-                        'onclick' => "window.open('" . $this->escapeJs($testUrl) . "', '_blank');",
+                        'label'      => __('Save & Test OIDC Flow'),
+                        'class'      => 'save',
+                        'onclick'    => "document.getElementById('back').value='test';"
+                                     . "jQuery('#edit_form').trigger('save');",
                         'sort_order' => 40,
                     ]
                 );
@@ -140,5 +145,41 @@ class Edit extends Container
         }
 
         return __('New OIDC Provider');
+    }
+
+    /**
+     * Append popup-opening JS when the page was reached via "Save & Test OIDC Flow".
+     *
+     * After Save.php redirects back here with pending_test=1, the page reloads
+     * normally while this script opens the OIDC test flow in a popup window.
+     * The frontend URL is used because SendAuthorizationRequest is a frontend controller.
+     */
+    #[\Override]
+    protected function _toHtml(): string
+    {
+        $html = parent::_toHtml();
+
+        if (!$this->getRequest()->getParam('pending_test')) {
+            return $html;
+        }
+
+        $provider = $this->registry->registry('current_oidc_provider');
+        if (!$provider || !$provider->getData('app_name')) {
+            return $html;
+        }
+
+        $testUrl = $this->storeManager->getStore()->getUrl(
+            'mooauth/actions/sendAuthorizationRequest',
+            [
+                'app_name' => $provider->getData('app_name'),
+                'option'   => OAuthConstants::TEST_CONFIG_OPT,
+            ]
+        );
+
+        $html .= '<script>window.open('
+               . json_encode($testUrl)
+               . ', "TEST_OIDC", "scrollbars=1,width=800,height=600");</script>';
+
+        return $html;
     }
 }

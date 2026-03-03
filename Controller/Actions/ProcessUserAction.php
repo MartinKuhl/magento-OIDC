@@ -103,6 +103,11 @@ class ProcessUserAction
      */
     private ?int $providerAutoCreateCustomer = null;
 
+    /**
+     * @var int OIDC provider ID to record when a new customer is created (0 = not tracked)
+     */
+    private int $providerId = 0;
+
     /** @var \MiniOrange\OAuth\Controller\Actions\CustomerLoginAction */
     private readonly \MiniOrange\OAuth\Controller\Actions\CustomerLoginAction $customerLoginAction;
 
@@ -353,7 +358,8 @@ class ProcessUserAction
             $firstName,
             $lastName,
             $this->flattenedattrs,
-            $this->attrs
+            $this->attrs,
+            $this->providerId
         );
 
         if (!$customer instanceof \Magento\Customer\Api\Data\CustomerInterface) {
@@ -424,6 +430,17 @@ class ProcessUserAction
     public function setAutoCreateCustomer(?int $value): static
     {
         $this->providerAutoCreateCustomer = $value;
+        return $this;
+    }
+
+    /**
+     * Set the OIDC provider ID to record when a new customer is created.
+     *
+     * @param int $providerId miniorange_oauth_client_apps.id (0 = not tracked)
+     */
+    public function setProviderId(int $providerId): static
+    {
+        $this->providerId = $providerId;
         return $this;
     }
 
