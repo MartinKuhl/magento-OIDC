@@ -112,12 +112,24 @@ class ShowTestResults extends Action
         $this->setUserEmail($attrs['email'] ?? null);
         $this->setGreetingName($attrs);
 
-        // Store received OIDC claims for dropdown selection in Attribute Mapping
+        // Store received OIDC claims per-provider for dropdown selection in Attribute Mapping
         if (!empty($attrs)) {
             $claimKeys = $this->extractClaimKeys($attrs);
-            $this->oauthUtility->setStoreConfig(OAuthConstants::RECEIVED_OIDC_CLAIMS, json_encode($claimKeys), true);
+            $providerId = (int) $this->request->getParam('provider_id');
+
+            if ($providerId > 0) {
+                // Per-provider: save to miniorange_oauth_client_apps.received_oidc_claims
+                $this->oauthUtility->saveReceivedOidcClaims($providerId, $claimKeys);
+                $this->oauthUtility->customlog(
+                    'Stored received OIDC claims for provider ID=' . $providerId . ': ' . json_encode($claimKeys)
+                );
+            } else {
+                $this->oauthUtility->customlog(
+                    'WARNING: Could not store OIDC claims – no provider_id in request.'
+                );
+            }
+
             $this->oauthUtility->flushCache();
-            $this->oauthUtility->customlog('Stored received OIDC claims: ' . json_encode($claimKeys));
         }
 
         if (ob_get_length()) {
@@ -244,15 +256,12 @@ class ShowTestResults extends Action
     /**
      * Render the test_results PHTML template with the given variables.
      *
-     * Uses output buffering so the template can use plain PHP/HTML without
-     * being constrained to Magento's full block/layout rendering stack.
-     *
      * @param  array  $vars Associative array of variables to extract into the template scope
      * @return string Rendered HTML
      */
     private function renderTemplate(array $vars): string
     {
-        $escaper = $this->escaper; // made available to template via extract()
+        $escaper = $this->escaper;
         extract($vars); // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
         ob_start();    // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
         include $this->templatePath; // phpcs:ignore Magento2.Security.IncludeFile.FoundIncludeFile
@@ -298,12 +307,14 @@ class ShowTestResults extends Action
     }
 
     /**
-     * Extract top-level claim keys from the OIDC attribute array.
+     * Extract claim keys from the OIDC attribute array.
      *
-     * Flattens one level of nesting so nested objects also contribute keys.
+     * Flattens nested objects using dot-notation (e.g. address.locality).
+     * Skips numeric array indices to avoid entries like "0", "1".
      *
-     * @param  array $attrs
-     * @return string[] Sorted list of unique claim key names
+     * @param  array      $attrs  OIDC attributes
+     * @param  int|string $prefix Dot-notation prefix for recursion
+     * @return string[]   Flat list of claim key names
      */
     private function extractClaimKeys($attrs, int|string $prefix = ''): array
     {
@@ -313,7 +324,7 @@ class ShowTestResults extends Action
         }
 
         foreach ($attrs as $key => $value) {
-            // Skip numeric array indices (e.g., groups: [0, 1])
+            // Skip numeric array indices (e.g., groups: ["admin", "user"] → 0, 1)
             if (is_int($key)) {
                 continue;
             }
@@ -321,7 +332,7 @@ class ShowTestResults extends Action
             $fullKey = $prefix !== '' ? $prefix . '.' . $key : $key;
 
             if (is_array($value) && !$this->isIndexedArray($value)) {
-                // Nested object: only add dotted sub-keys, NOT the parent key alone
+                // Nested associative object: only add dotted sub-keys, NOT the parent key
                 $keys = array_merge($keys, $this->extractClaimKeys($value, $fullKey));
             } else {
                 $keys[] = $fullKey;
@@ -332,7 +343,7 @@ class ShowTestResults extends Action
     }
 
     /**
-     * Check if array is numerically indexed (list) vs associative (object)
+     * Check if array is numerically indexed (list) vs associative (object).
      */
     private function isIndexedArray(array $arr): bool
     {

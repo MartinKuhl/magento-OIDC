@@ -127,9 +127,6 @@ class OAuthConstants
         'address.country'
     ];
 
-    // Stores received OIDC claims from Test Configuration
-    public const RECEIVED_OIDC_CLAIMS = 'receivedOidcClaims';
-
     //URLs
     public const OAUTH_LOGIN_URL = 'mooauth/actions/sendAuthorizationRequest';
 

@@ -1,0 +1,98 @@
+{
+    "miniorange_oauth_client_apps": {
+        "column": {
+            "id": true,
+            "app_name": true,
+            "callback_uri": true,
+            "clientID": true,
+            "client_secret": true,
+            "scope": true,
+            "endsession_endpoint": true,
+            "authorize_endpoint": true,
+            "access_token_endpoint": true,
+            "user_info_endpoint": true,
+            "jwks_endpoint": true,
+            "values_in_header": true,
+            "values_in_body": true,
+            "grant_type": true,
+            "pkce_flow": true,
+            "well_known_config_url": true,
+            "issuer": true,
+            "post_logout_url": true,
+            "email_attribute": true,
+            "username_attribute": true,
+            "firstname_attribute": true,
+            "lastname_attribute": true,
+            "group_attribute": true,
+            "billing_city_attribute": true,
+            "billing_state_attribute": true,
+            "billing_country_attribute": true,
+            "billing_address_attribute": true,
+            "billing_phone_attribute": true,
+            "billing_zip_attribute": true,
+            "shipping_city_attribute": true,
+            "shipping_state_attribute": true,
+            "shipping_country_attribute": true,
+            "shipping_address_attribute": true,
+            "shipping_phone_attribute": true,
+            "shipping_zip_attribute": true,
+            "default_group": true,
+            "default_role": true,
+            "oauth_customer_group_mapping": true,
+            "oauth_admin_role_mapping": true,
+            "mo_oauth_auto_create_customer": true,
+            "mo_oauth_auto_create_admin": true,
+            "show_customer_link": true,
+            "show_admin_link": true,
+            "autoredirect": true,
+            "all_page_autoredirect": true,
+            "mo_oauth_dont_create_user_if_role_not_mapped": true,
+            "mo_oauth_create_user_in_magento_by_using": true,
+            "update_backend_roles_on_sso": true,
+            "update_frontend_groups_on_sso": true,
+            "groups_mapped": true,
+            "roles_mapped": true,
+            "custom_tablename": true,
+            "custom_attributes": true,
+            "update_attributes_on_login": true,
+            "oauth_am_billingandshipping": true,
+            "oauth_am_sameasbilling": true,
+            "dob_attribute": true,
+            "gender_attribute": true,
+            "mo_disable_non_oidc_admin_login": true,
+            "mo_disable_non_oidc_customer_login": true,
+            "access_control_rules": true,
+            "display_name": true,
+            "is_active": true,
+            "login_type": true,
+            "sort_order": true,
+            "button_label": true,
+            "button_color": true,
+            "last_test_status": true,
+            "last_test_at": true,
+            "received_oidc_claims": true
+        },
+        "index": {
+            "MINIORANGE_OAUTH_CLIENT_APPS_IS_ACTIVE_LOGIN_TYPE_SORT_ORDER": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
+    "miniorange_oauth_user_provider": {
+        "column": {
+            "id": true,
+            "user_type": true,
+            "user_id": true,
+            "provider_id": true,
+            "created_at": true
+        },
+        "index": {
+            "MINIORANGE_OAUTH_USER_PROVIDER_PROVIDER_ID": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "MINIORANGE_OAUTH_USER_PROVIDER_USER_TYPE_USER_ID": true
+        }
+    }
+}

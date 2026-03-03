@@ -280,50 +280,48 @@ class OAuth extends \Magento\Framework\View\Element\Template
     }
 
     /**
-     * Get OIDC claims for dropdown selection
+     * Get OIDC claims for dropdown selection.
      *
-     * Returns claims received from last test configuration, filtered to remove technical claims
+     * Loads claims per-provider from the miniorange_oauth_client_apps table.
+     * Falls back to the static OIDC_STANDARD_CLAIMS list if no test was run yet.
      *
-     * @psalm-return list<mixed>
+     * @return string[]
      */
     public function getOidcStandardClaims(): array
     {
-        // Technical claims to exclude from dropdown (tokens, timestamps, identifiers)
+        // Technical claims to exclude from dropdown
         $excludedClaims = [
-            'sub',
-            'iat',
-            'rat',
-            'at_hash',
-            'updated_at',
-            'exp',
-            'nbf',
-            'aud',
-            'iss',
-            'azp',
-            'nonce',
-            'auth_time',
-            'acr',
-            'amr',
-            'sid'
+            'sub', 'iat', 'rat', 'at_hash', 'updated_at',
+            'exp', 'nbf', 'aud', 'iss', 'azp',
+            'nonce', 'auth_time', 'acr', 'amr', 'sid'
         ];
 
-        $storedClaims = $this->oauthUtility->getStoreConfig(OAuthConstants::RECEIVED_OIDC_CLAIMS);
-        if (!$this->oauthUtility->isBlank($storedClaims)) {
-            $claims = json_decode((string) $storedClaims, true);
-            if (is_array($claims) && $claims !== []) {
-                // Filter out technical claims
-                return array_values(
-                    array_filter(
-                        $claims,
-                        function ($claim) use ($excludedClaims): bool {
-                            return !in_array($claim, $excludedClaims);
-                        }
-                    )
-                );
+        $claims = [];
+
+        // Try to load per-provider claims
+        $providerId = $this->getActiveProviderId();
+        if ($providerId > 0) {
+            $providerData = $this->oauthUtility->getClientDetailsById($providerId);
+            if ($providerData !== null && !empty($providerData['received_oidc_claims'])) {
+                $decoded = json_decode((string) $providerData['received_oidc_claims'], true);
+                if (is_array($decoded) && $decoded !== []) {
+                    $claims = $decoded;
+                }
             }
         }
-        // Return empty array if no test was run yet
-        return [];
+
+        // Fallback: static standard claims if no provider-specific claims available
+        if ($claims === []) {
+            $claims = OAuthConstants::OIDC_STANDARD_CLAIMS;
+        }
+
+        // Filter out technical claims
+        return array_values(
+            array_filter(
+                $claims,
+                fn($claim) => !in_array($claim, $excludedClaims, true)
+            )
+        );
     }
 
     /**

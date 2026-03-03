@@ -756,6 +756,41 @@ class OAuthUtility extends Data
     }
 
     /**
+     * Save received OIDC claims to the provider record.
+     *
+     * Persists the extracted claim keys as JSON to the
+     * received_oidc_claims column in miniorange_oauth_client_apps.
+     *
+     * @param int      $providerId Provider row ID
+     * @param string[] $claimKeys  Array of claim key names
+     */
+    public function saveReceivedOidcClaims(int $providerId, array $claimKeys): void
+    {
+        if ($providerId <= 0) {
+            return;
+        }
+
+        try {
+            /** @var \MiniOrange\OAuth\Model\MiniOrangeOauthClientApps $model */
+            $model = $this->clientAppsFactory->create();
+            $model->load($providerId);
+
+            if (!$model->getId()) {
+                $this->customlog('saveReceivedOidcClaims: provider ID=' . $providerId . ' not found.');
+                return;
+            }
+
+            $model->setData('received_oidc_claims', json_encode($claimKeys));
+            $model->save();
+
+            $this->customlog('saveReceivedOidcClaims: saved ' . count($claimKeys) . ' claims for provider ID=' . $providerId);
+        } catch (\Exception $e) {
+            $this->customlog('saveReceivedOidcClaims ERROR: ' . $e->getMessage());
+        }
+    }
+
+
+    /**
      * Persist the OIDC test result to the provider record.
      *
      * Called by ShowTestResults after a test flow completes.
