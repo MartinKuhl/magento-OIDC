@@ -332,6 +332,43 @@ class Data extends AbstractHelper
     }
 
     /**
+     * Save received OIDC claims to the provider record.
+     *
+     * Persists the extracted claim keys as JSON to the
+     * received_oidc_claims column in miniorange_oauth_client_apps.
+     *
+     * @param int      $providerId Provider row ID
+     * @param string[] $claimKeys  Array of claim key names
+     */
+    public function saveReceivedOidcClaims(int $providerId, array $claimKeys): void
+    {
+        if ($providerId <= 0) {
+            return;
+        }
+
+        $model = $this->clientAppsFactory->create();
+        $this->appResource->load($model, $providerId);
+
+        if (!$model->getId()) {
+            $this->logger->warning(
+                'saveReceivedOidcClaims: no provider found for id=' . $providerId
+            );
+            return;
+        }
+
+        try {
+            $model->setData('received_oidc_claims', json_encode($claimKeys));
+            $this->appResource->save($model);
+        } catch (\Exception $e) {
+            $this->logger->error(
+                'saveReceivedOidcClaims failed: ' . $e->getMessage(),
+                ['exception' => $e]
+            );
+        }
+    }
+
+
+    /**
      * Return all active provider records for a given login type, ordered by sort_order.
      *
      * MP-03: Powers multi-provider SSO button rendering and provider selection UI.
