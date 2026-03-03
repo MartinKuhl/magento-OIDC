@@ -154,12 +154,16 @@ class SendAuthorizationRequest extends BaseAction
             : (isset($params['relayState']) ? $params['relayState'] : '/');
         $relayState = $this->securityHelper->validateRedirectUrl($rawRelayState, '/');
         $stateToken = $this->securityHelper->createStateToken($currentSessionId);
+        
+        $providerId = (int) ($clientDetails['id'] ?? 0);
+        
         $relayState = $this->securityHelper->encodeRelayState(
             $relayState,
             $currentSessionId,
             $app_name,
             OAuthConstants::LOGIN_TYPE_ADMIN,
-            $stateToken
+            $stateToken,
+            $providerId
         );
 
         $isTest = (
@@ -175,13 +179,14 @@ class SendAuthorizationRequest extends BaseAction
             $this->oauthUtility->customlog(
                 "SendAuthorizationRequest: Test-Flow, setting relayState to: " . $testRelayState
             );
-            // Rebuild combined state preserving sessionId, appName, loginType, stateToken
+            // Rebuild combined state preserving sessionId, appName, loginType, stateToken, providerId
             $relayState = $this->securityHelper->encodeRelayState(
                 $testRelayState,
                 $currentSessionId,
                 $app_name,
                 OAuthConstants::LOGIN_TYPE_ADMIN,
-                $stateToken
+                $stateToken,
+                $providerId
             );
         }
 
