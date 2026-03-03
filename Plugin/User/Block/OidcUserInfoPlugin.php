@@ -11,37 +11,45 @@ use MiniOrange\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
  * Adds a read-only "OIDC Provider" note field directly after the Expiration Date
  * field in the Account Information fieldset on the admin User edit page.
  *
- * Targets: Magento\User\Block\User\Edit\Tab\Main (same block as OidcIdentityFieldPlugin)
+ * Uses afterGetFormHtml to ensure the user model is fully loaded and setValues()
+ * has already run, so $subject->getUser() returns the actual admin user.
+ *
+ * Targets: Magento\User\Block\User\Edit\Tab\Main
  */
 class OidcUserInfoPlugin
 {
-    /** @var \MiniOrange\OAuth\Model\ResourceModel\UserProvider */
     private readonly UserProviderResource $userProviderResource;
 
-    /**
-     * @param UserProviderResource $userProviderResource
-     */
     public function __construct(UserProviderResource $userProviderResource)
     {
         $this->userProviderResource = $userProviderResource;
     }
 
     /**
-     * After setForm — add an OIDC Provider note below the Expiration Date field.
+     * After getFormHtml — add an OIDC Provider note below the Expiration Date field.
      *
-     * @param  Main $subject
-     * @param  Main $result
-     * @return Main
+     * At this point the user model is guaranteed to be loaded on the block,
+     * so $subject->getUser()->getId() returns the real admin user ID.
+     *
+     * @param  Main   $subject
+     * @param  string $result  The rendered form HTML
+     * @return string
      */
-    public function afterSetForm(Main $subject, Main $result): Main
+    public function afterGetFormHtml(Main $subject, string $result): string
     {
         $form = $subject->getForm();
         if (!$form) {
             return $result;
         }
 
+        // Guard: field already added (e.g. multiple render passes)
+        if ($form->getElement('oidc_provider_info')) {
+            return $result;
+        }
+
         $user   = $subject->getUser();
         $userId = $user ? (int) $user->getId() : 0;
+        error_log('OidcUserInfoPlugin: userId=' . $userId);
 
         $info = $userId > 0
             ? $this->userProviderResource->getProviderInfo('admin', $userId)
@@ -53,7 +61,7 @@ class OidcUserInfoPlugin
             : 'none';
 
         $fieldset = $form->getElement('base_fieldset');
-        if ($fieldset && !$form->getElement('oidc_provider_info')) {
+        if ($fieldset) {
             $fieldset->addField(
                 'oidc_provider_info',
                 'note',
@@ -65,6 +73,7 @@ class OidcUserInfoPlugin
             );
         }
 
-        return $result;
+        // Re-render the form with the new field included
+        return $form->toHtml();
     }
 }
