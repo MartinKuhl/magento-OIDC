@@ -78,22 +78,22 @@ class Data extends AbstractHelper
     /**
      * Initialize Data helper.
      *
-     * @param Context                          $context
-     * @param UserFactory                      $adminFactory
-     * @param CustomerFactory                  $customerFactory
-     * @param UrlInterface                     $urlInterface
-     * @param WriterInterface                  $configWriter
-     * @param AssetRepository                  $assetRepo
-     * @param BackendHelper                    $helperBackend
-     * @param Url                              $frontendUrl
+     * @param Context $context
+     * @param UserFactory $adminFactory
+     * @param CustomerFactory $customerFactory
+     * @param UrlInterface $urlInterface
+     * @param WriterInterface $configWriter
+     * @param AssetRepository $assetRepo
+     * @param BackendHelper $helperBackend
+     * @param Url $frontendUrl
      * @param MiniorangeOauthClientAppsFactory $clientAppsFactory
-     * @param ClientCollectionFactory          $clientCollectionFactory
-     * @param AppResource                      $appResource
-     * @param UserResource                     $userResource
-     * @param CustomerResource                 $customerResource
-     * @param EncryptorInterface               $encryptor
-     * @param Escaper                          $escaper
-     * @param LoggerInterface                  $logger
+     * @param ClientCollectionFactory $clientCollectionFactory
+     * @param AppResource $appResource
+     * @param UserResource $userResource
+     * @param CustomerResource $customerResource
+     * @param EncryptorInterface $encryptor
+     * @param Escaper $escaper
+     * @param LoggerInterface $logger
      */
     public function __construct(
         Context $context,
@@ -114,39 +114,39 @@ class Data extends AbstractHelper
         LoggerInterface $logger
     ) {
         parent::__construct($context);
-        $this->adminFactory = $adminFactory;
-        $this->customerFactory = $customerFactory;
-        $this->urlInterface = $urlInterface;
-        $this->configWriter = $configWriter;
-        $this->assetRepo = $assetRepo;
-        $this->helperBackend = $helperBackend;
-        $this->frontendUrl = $frontendUrl;
-        $this->clientAppsFactory = $clientAppsFactory;
-        $this->clientCollectionFactory = $clientCollectionFactory;
-        $this->appResource = $appResource;
-        $this->userResource = $userResource;
-        $this->customerResource = $customerResource;
-        $this->encryptor = $encryptor;
-        $this->escaper = $escaper;
-        $this->logger = $logger;
+        $this->adminFactory             = $adminFactory;
+        $this->customerFactory          = $customerFactory;
+        $this->urlInterface             = $urlInterface;
+        $this->configWriter             = $configWriter;
+        $this->assetRepo                = $assetRepo;
+        $this->helperBackend            = $helperBackend;
+        $this->frontendUrl              = $frontendUrl;
+        $this->clientAppsFactory        = $clientAppsFactory;
+        $this->clientCollectionFactory  = $clientCollectionFactory;
+        $this->appResource              = $appResource;
+        $this->userResource             = $userResource;
+        $this->customerResource         = $customerResource;
+        $this->encryptor                = $encryptor;
+        $this->escaper                  = $escaper;
+        $this->logger                   = $logger;
     }
 
     /**
      * Set the entry in the OAuthClientApp table.
      *
-     * @param  string $appName
-     * @param  string $clientId
-     * @param  string $clientSecret
-     * @param  string $scope
-     * @param  string $authorizeUrl
-     * @param  string $accessTokenUrl
-     * @param  string $userInfoUrl
-     * @param  string $wellKnownConfigUrl
-     * @param  string $grantType
-     * @param  bool   $sendHeader
-     * @param  bool   $sendBody
-     * @param  string $issuer
-     * @param  string $endSessionUrl
+     * @param string $appName
+     * @param string $clientId
+     * @param string $clientSecret
+     * @param string $scope
+     * @param string $authorizeUrl
+     * @param string $accessTokenUrl
+     * @param string $userInfoUrl
+     * @param string $wellKnownConfigUrl
+     * @param string $grantType
+     * @param bool   $sendHeader
+     * @param bool   $sendBody
+     * @param string $issuer
+     * @param string $endSessionUrl
      * @throws \Exception
      */
     public function setOAuthClientApps(
@@ -167,22 +167,20 @@ class Data extends AbstractHelper
         $model = $this->clientAppsFactory->create();
         $model->addData(
             [
-                "app_name" => $this->sanitize($appName),
-                "callback_uri" => '',
-                "clientID" => $this->sanitize($clientId),
-                "client_secret" => $this->encryptor->encrypt(
-                    $this->sanitize($clientSecret)
-                ),
-                "scope" => $this->sanitize($scope),
-                "authorize_endpoint" => $this->sanitize($authorizeUrl),
-                "access_token_endpoint" => $this->sanitize($accessTokenUrl),
-                "user_info_endpoint" => $this->sanitize($userInfoUrl),
-                "well_known_config_url" => $this->sanitize($wellKnownConfigUrl),
-                "issuer" => $this->sanitize($issuer),
-                "endsession_endpoint" => $this->sanitize($endSessionUrl),
-                "grant_type" => $this->sanitize($grantType),
-                "values_in_header" => $sendHeader,
-                "values_in_body" => $sendBody
+                'app_name'              => $this->sanitize($appName),
+                'callback_uri'          => '',
+                'clientID'              => $this->sanitize($clientId),
+                'client_secret'         => $this->encryptor->encrypt($this->sanitize($clientSecret)),
+                'scope'                 => $this->sanitize($scope),
+                'authorize_endpoint'    => $this->sanitize($authorizeUrl),
+                'access_token_endpoint' => $this->sanitize($accessTokenUrl),
+                'user_info_endpoint'    => $this->sanitize($userInfoUrl),
+                'well_known_config_url' => $this->sanitize($wellKnownConfigUrl),
+                'issuer'                => $this->sanitize($issuer),
+                'endsession_endpoint'   => $this->sanitize($endSessionUrl),
+                'grant_type'            => $this->sanitize($grantType),
+                'values_in_header'      => $sendHeader,
+                'values_in_body'        => $sendBody,
             ]
         );
         $this->appResource->save($model);
@@ -229,7 +227,7 @@ class Data extends AbstractHelper
             if (preg_match('/^\d+:\d+:/', (string) $data['client_secret'])) {
                 $data['client_secret'] = $this->encryptor->decrypt($data['client_secret']);
             }
-            // Otherwise keep as-is (plaintext — will be encrypted on next admin save)
+            // Otherwise keep as-is (plaintext will be encrypted on next admin save)
         }
 
         return $data;
@@ -241,7 +239,7 @@ class Data extends AbstractHelper
      * MP-03: Direct lookup by primary key. Used when `providerId` is available
      * from the decoded OAuth state parameter (Sprint 5).
      *
-     * @param  int $providerId  Row `id` of the provider record (must be > 0)
+     * @param  int $providerId Row `id` of the provider record (must be > 0)
      * @return array|null Client details array or null if not found
      */
     public function getClientDetailsById(int $providerId): ?array
@@ -262,20 +260,74 @@ class Data extends AbstractHelper
     }
 
     /**
-     * Persist the last test run result for a provider.
+     * Persist the last test run result for a provider – lookup by app_name.
      *
-     * @param  string $appName  Provider app_name
-     * @param  string $status   'success', 'failed', or 'unsuccessful'
+     * Kept for backward compatibility. Prefer saveTestStatusById() when the
+     * numeric provider ID is available (multi-provider safe).
+     *
+     * @param string $appName Provider app_name
+     * @param string $status  'success', 'failed', or 'unsuccessful'
      */
     public function saveTestStatus(string $appName, string $status): void
     {
+        $allowed = ['success', 'failed', 'unsuccessful'];
+        if (!in_array($status, $allowed, true)) {
+            $this->logger->warning('saveTestStatus: invalid status value "' . $status . '"');
+            return;
+        }
+
         $collection = $this->clientCollectionFactory->create();
         $collection->addFieldToFilter('app_name', $appName);
         $model = $collection->getFirstItem();
-        if ($model->getId()) {
+
+        if (!$model->getId()) {
+            $this->logger->warning('saveTestStatus: no provider found for app_name "' . $appName . '"');
+            return;
+        }
+
+        try {
             $model->setData('last_test_status', $status);
             $model->setData('last_test_at', date('Y-m-d H:i:s'));
             $this->appResource->save($model);
+        } catch (\Exception $e) {
+            $this->logger->error('saveTestStatus failed: ' . $e->getMessage(), ['exception' => $e]);
+        }
+    }
+
+    /**
+     * Persist the last test run result for a provider – lookup by primary key.
+     *
+     * Preferred over saveTestStatus() in multi-provider setups because it uses
+     * the numeric ID from the OAuth state parameter instead of app_name from
+     * the customer session (which may be empty after a redirect).
+     *
+     * @param int    $providerId Row `id` of the provider record (must be > 0)
+     * @param string $status     'success', 'failed', or 'unsuccessful'
+     */
+    public function saveTestStatusById(int $providerId, string $status): void
+    {
+        $allowed = ['success', 'failed', 'unsuccessful'];
+        if ($providerId <= 0 || !in_array($status, $allowed, true)) {
+            $this->logger->warning(
+                'saveTestStatusById: invalid arguments – providerId=' . $providerId . ', status=' . $status
+            );
+            return;
+        }
+
+        $model = $this->clientAppsFactory->create();
+        $this->appResource->load($model, $providerId);
+
+        if (!$model->getId()) {
+            $this->logger->warning('saveTestStatusById: no provider found for id=' . $providerId);
+            return;
+        }
+
+        try {
+            $model->setData('last_test_status', $status);
+            $model->setData('last_test_at', date('Y-m-d H:i:s'));
+            $this->appResource->save($model);
+        } catch (\Exception $e) {
+            $this->logger->error('saveTestStatusById failed: ' . $e->getMessage(), ['exception' => $e]);
         }
     }
 
@@ -284,7 +336,7 @@ class Data extends AbstractHelper
      *
      * MP-03: Powers multi-provider SSO button rendering and provider selection UI.
      *
-     * @param  string $loginType  'customer', 'admin', or 'both'
+     * @param  string $loginType 'customer', 'admin', or 'both'
      * @return array  Array of provider data arrays (may be empty)
      */
     public function getAllActiveProviders(string $loginType = 'customer'): array
@@ -327,9 +379,9 @@ class Data extends AbstractHelper
     /**
      * Store data in the store config table.
      *
-     * @param  string $config
-     * @param  mixed  $value
-     * @param  bool   $skipSanitize
+     * @param string $config
+     * @param mixed  $value
+     * @param bool   $skipSanitize
      */
     public function setStoreConfig(string $config, $value, bool $skipSanitize = false): void
     {
@@ -364,10 +416,10 @@ class Data extends AbstractHelper
      *
      * Decides which user type (admin or customer) to update.
      *
-     * @param  string     $url
-     * @param  mixed      $value
-     * @param  int|string $id
-     * @param  bool       $admin
+     * @param string     $url
+     * @param mixed      $value
+     * @param int|string $id
+     * @param bool       $admin
      * @throws \Exception
      */
     public function saveConfig(string $url, $value, $id, bool $admin): void
@@ -392,14 +444,14 @@ class Data extends AbstractHelper
     /**
      * Save admin attributes to the database.
      *
-     * @param  string     $url
-     * @param  mixed      $value
-     * @param  int|string $id
+     * @param string     $url
+     * @param mixed      $value
+     * @param int|string $id
      * @throws \Exception
      */
     private function saveAdminStoreConfig(string $url, $value, $id): void
     {
-        $data = [$url => $value];
+        $data  = [$url => $value];
         $model = $this->adminFactory->create();
         $this->userResource->load($model, $id);
         $model->addData($data);
@@ -424,14 +476,14 @@ class Data extends AbstractHelper
     /**
      * Save customer attributes to the database.
      *
-     * @param  string     $url
-     * @param  mixed      $value
-     * @param  int|string $id
+     * @param string     $url
+     * @param mixed      $value
+     * @param int|string $id
      * @throws \Exception
      */
     private function saveCustomerStoreConfig(string $url, $value, $id): void
     {
-        $data = [$url => $value];
+        $data  = [$url => $value];
         $model = $this->customerFactory->create();
         $this->customerResource->load($model, $id);
         $model->addData($data);
@@ -458,8 +510,8 @@ class Data extends AbstractHelper
     /**
      * Get a URL based on the given path and parameters.
      *
-     * @param  string $url
-     * @param  array  $params
+     * @param string $url
+     * @param array  $params
      */
     public function getUrl(string $url, array $params = []): string
     {
@@ -469,8 +521,8 @@ class Data extends AbstractHelper
     /**
      * Get a frontend URL for the given path and parameters.
      *
-     * @param  string $url
-     * @param  array  $params
+     * @param string $url
+     * @param array  $params
      */
     public function getFrontendUrl(string $url, array $params = []): string
     {
@@ -488,7 +540,7 @@ class Data extends AbstractHelper
     /**
      * Get the image URL for a module asset.
      *
-     * @param  string $image
+     * @param string $image
      */
     public function getImageUrl(string $image): string
     {
@@ -500,13 +552,10 @@ class Data extends AbstractHelper
     /**
      * Get admin CSS URL.
      *
-     * @param  string $css
+     * @param string $css
      */
     public function getAdminCssUrl(string $css): string
     {
-        /**
-         * @psalm-suppress TooManyArguments
-         */
         // @phpstan-ignore-next-line
         return $this->assetRepo->getUrl(
             OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_CSS . $css,
@@ -517,13 +566,10 @@ class Data extends AbstractHelper
     /**
      * Get admin JS URL.
      *
-     * @param  string $js
+     * @param string $js
      */
     public function getAdminJSUrl(string $js): string
     {
-        /**
-         * @psalm-suppress TooManyArguments
-         */
         // @phpstan-ignore-next-line
         return $this->assetRepo->getUrl(
             OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_JS . $js,
@@ -536,126 +582,11 @@ class Data extends AbstractHelper
      */
     public function getMetadataUrl(): string
     {
-        /**
-         * @psalm-suppress TooManyArguments
-         */
         // @phpstan-ignore-next-line
         return $this->assetRepo->getUrl(
             OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_METADATA,
             ['area' => 'adminhtml']
         );
-    }
-
-    /**
-     * Get admin metadata file path.
-     */
-    public function getMetadataFilePath(): string
-    {
-        return $this->assetRepo->createAsset(
-            OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_METADATA,
-            ['area' => 'adminhtml']
-        )->getSourceFile();
-    }
-
-    /**
-     * Get the resource as a file path instead of a URL.
-     *
-     * @param  string $key
-     */
-    public function getResourcePath(string $key): string
-    {
-        return $this->assetRepo
-            ->createAsset(
-                OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_CERTS . $key,
-                ['area' => 'adminhtml']
-            )
-            ->getSourceFile();
-    }
-
-    /**
-     * Get the admin base/home page URL.
-     */
-    public function getAdminBaseUrl(): string
-    {
-        return $this->helperBackend->getHomePageUrl();
-    }
-
-    /**
-     * Sanitize input data to prevent XSS and other injection attacks.
-     *
-     * Guards against memory exhaustion from deeply nested or oversized arrays
-     * by capping recursion depth at 10 and array length at 500 (SEC-14).
-     *
-     * @param  mixed $value
-     * @param  int   $depth Current recursion depth (internal use only)
-     */
-    public function sanitize($value, int $depth = 0): mixed
-    {
-        // SEC-14: abort recursion beyond 10 levels to prevent stack exhaustion.
-        if ($depth > 10) {
-            return '';
-        }
-
-        if (is_array($value)) {
-            // SEC-14: truncate arrays larger than 500 elements to prevent memory exhaustion.
-            if (count($value) > 500) {
-                $value = array_slice($value, 0, 500, true);
-            }
-            foreach ($value as $key => $val) {
-                $value[$key] = $this->sanitize($val, $depth + 1);
-            }
-            return $value;
-        }
-
-        if (is_string($value)) {
-            $clean = strip_tags(trim($value));
-            return $this->escaper->escapeHtml($clean);
-        }
-
-        return $value;
-    }
-
-    /**
-     * Get the admin URL for the site based on the path passed.
-     *
-     * @param  string $url
-     * @param  array  $params
-     */
-    public function getAdminUrl(string $url, array $params = []): string
-    {
-        return $this->helperBackend->getUrl($url, ['_query' => $params]);
-    }
-
-    /**
-     * Get the admin secure URL for the site based on the path passed.
-     *
-     * @param  string $url
-     * @param  array  $params
-     */
-    public function getAdminSecureUrl(string $url, array $params = []): string
-    {
-        return $this->helperBackend->getUrl($url, ['_secure' => true, '_query' => $params]);
-    }
-
-    /**
-     * Get the SP-initiated URL for frontend/customer OIDC login.
-     *
-     * @param  string|null $relayState
-     * @param  string|null $appName
-     */
-    public function getSPInitiatedUrl(?string $relayState = null, ?string $appName = null): string
-    {
-        $relayState = $relayState ?? $this->getCurrentUrl();
-
-        // If app_name is not set, try to retrieve it from the configuration
-        if ($appName === null || $appName === '' || $appName === '0') {
-            $appName = $this->getStoreConfig(OAuthConstants::APP_NAME);
-        }
-
-        return $this->getFrontendUrl(
-            OAuthConstants::OAUTH_LOGIN_URL,
-            ["relayState" => $relayState]
-        ) . "&app_name=" . $appName;
     }
 
     /**
@@ -683,8 +614,8 @@ class Data extends AbstractHelper
      *
      * Uses the admin controller which sets loginType=admin.
      *
-     * @param  string|null $relayState
-     * @param  string|null $appName
+     * @param string|null $relayState
+     * @param string|null $appName
      */
     public function getAdminSPInitiatedUrl(?string $relayState = null, ?string $appName = null): string
     {
@@ -694,10 +625,9 @@ class Data extends AbstractHelper
             $appName = $this->getStoreConfig(OAuthConstants::APP_NAME);
         }
 
-        // Use admin URL to route to admin SendAuthorizationRequest controller
         return $this->getAdminUrl(
             OAuthConstants::OAUTH_LOGIN_URL,
-            ["relayState" => $relayState, "app_name" => $appName]
+            ['relayState' => $relayState, 'app_name' => $appName]
         );
     }
 
@@ -725,4 +655,14 @@ class Data extends AbstractHelper
         return $this->appResource;
     }
 
+    /**
+     * Sanitize a string value.
+     *
+     * @param  mixed $value
+     * @return string
+     */
+    protected function sanitize($value): string
+    {
+        return $this->escaper->escapeHtml((string) $value);
+    }
 }

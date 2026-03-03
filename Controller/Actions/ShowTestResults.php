@@ -14,6 +14,10 @@ use Magento\Framework\Controller\ResultFactory;
 
 /**
  * Displays the OIDC attributes received during a test authentication in the frontend.
+ *
+ * Persists last_test_status and last_test_at to the provider record via
+ * saveTestStatusById() (preferred, uses numeric ID from OAuth state) with
+ * fallback to saveTestStatus() (legacy, uses app_name from customer session).
  */
 class ShowTestResults extends Action
 {
@@ -33,7 +37,7 @@ class ShowTestResults extends Action
     private $greetingName;
 
     /**
-     * @var string|null Status of the test (TEST SUCCESSFUL / TEST FAILED)
+     * @var string|null Status of the test (TEST SUCCESSFUL / TEST FAILED / TEST UNSUCCESSFUL)
      */
     protected $status;
 
@@ -60,12 +64,12 @@ class ShowTestResults extends Action
     /**
      * Initialize ShowTestResults action.
      *
-     * @param Context $context
-     * @param OAuthUtility $oauthUtility
-     * @param \Magento\Framework\App\Request\Http $request
-     * @param ScopeConfigInterface $scopeConfig
-     * @param \Magento\Customer\Model\Session $customerSession
-     * @param \Magento\Framework\Escaper $escaper
+     * @param Context                                    $context
+     * @param OAuthUtility                               $oauthUtility
+     * @param \Magento\Framework\App\Request\Http        $request
+     * @param ScopeConfigInterface                       $scopeConfig
+     * @param \Magento\Customer\Model\Session            $customerSession
+     * @param \Magento\Framework\Escaper                 $escaper
      */
     public function __construct(
         Context $context,
@@ -75,14 +79,14 @@ class ShowTestResults extends Action
         \Magento\Customer\Model\Session $customerSession,
         \Magento\Framework\Escaper $escaper
     ) {
-        $this->oauthUtility   = $oauthUtility;
-        $this->scopeConfig    = $scopeConfig;
-        $this->request        = $request;
+        $this->oauthUtility  = $oauthUtility;
+        $this->scopeConfig   = $scopeConfig;
+        $this->request       = $request;
         $this->customerSession = $customerSession;
-        $this->escaper        = $escaper;
+        $this->escaper       = $escaper;
         // Absolute path to PHTML template (two dirs up from Controller/Actions/)
         // phpcs:disable Magento2.Functions.DiscouragedFunction.DiscouragedWithAlternative
-        $this->templatePath   = dirname(__DIR__, 2)
+        $this->templatePath  = dirname(__DIR__, 2)
             . '/view/frontend/templates/test_results.phtml';
         // phpcs:enable Magento2.Functions.DiscouragedFunction.DiscouragedWithAlternative
         parent::__construct($context);
@@ -101,9 +105,9 @@ class ShowTestResults extends Action
         }
 
         // Read the session key from the URL parameter
-        $key = $this->request->getParam('key');
+        $key        = $this->request->getParam('key');
         $testResults = $this->customerSession->getData('mooauth_test_results');
-        $attrs = (is_array($testResults) && isset($testResults[$key])) ? $testResults[$key] : null;
+        $attrs      = (is_array($testResults) && isset($testResults[$key])) ? $testResults[$key] : null;
         $this->setAttrs($attrs);
         $this->setUserEmail($attrs['email'] ?? null);
         $this->setGreetingName($attrs);
@@ -113,22 +117,27 @@ class ShowTestResults extends Action
             $claimKeys = $this->extractClaimKeys($attrs);
             $this->oauthUtility->setStoreConfig(OAuthConstants::RECEIVED_OIDC_CLAIMS, json_encode($claimKeys), true);
             $this->oauthUtility->flushCache();
-            $this->oauthUtility->customlog("Stored received OIDC claims: " . json_encode($claimKeys));
+            $this->oauthUtility->customlog('Stored received OIDC claims: ' . json_encode($claimKeys));
         }
 
         if (ob_get_length()) {
             ob_end_clean();
         }
-        $this->oauthUtility->customlog("ShowTestResultsAction: execute");
+        $this->oauthUtility->customlog('ShowTestResultsAction: execute');
 
-        $this->status = $this->oauthUtility->isBlank($this->userEmail) ? "TEST FAILED" : "TEST SUCCESSFUL";
+        $this->status = $this->oauthUtility->isBlank($this->userEmail) ? 'TEST FAILED' : 'TEST SUCCESSFUL';
 
-        // Persist last test status to provider record
-        $appName = (string) $this->oauthUtility->getSessionData(OAuthConstants::APP_NAME);
-        if ($appName !== '') {
-            $testStatus = ($this->status === 'TEST SUCCESSFUL') ? 'success' : 'failed';
-            $this->oauthUtility->saveTestStatus($appName, $testStatus);
-        }
+        // ------------------------------------------------------------------
+        // Persist last test status to provider record.
+        //
+        // Strategy (multi-provider safe):
+        //   1. Prefer saveTestStatusById() using the numeric provider ID that
+        //      was embedded in the OAuth state parameter and stored in session.
+        //   2. Fall back to saveTestStatus() using app_name from session
+        //      (legacy single-provider path).
+        // ------------------------------------------------------------------
+        $testStatus = ($this->status === 'TEST SUCCESSFUL') ? 'success' : 'failed';
+        $this->persistTestStatus($testStatus);
 
         // Track first-use timestamp for MiniOrange telemetry
         $timeStamp = $this->oauthUtility->getStoreConfig(OAuthConstants::TIME_STAMP);
@@ -164,23 +173,20 @@ class ShowTestResults extends Action
     /**
      * Handle OIDC error and display the TEST UNSUCCESSFUL page.
      *
-     * @param  string $encodedError Base64-encoded error message from the query string
+     * @param string $encodedError Base64-encoded error message from the query string
      */
     private function handleOidcError(string $encodedError): \Magento\Framework\Controller\ResultInterface
     {
         if (ob_get_length()) {
             ob_end_clean();
         }
-        $this->oauthUtility->customlog("ShowTestResultsAction: handleOidcError");
+        $this->oauthUtility->customlog('ShowTestResultsAction: handleOidcError');
 
         $errorMessage = $this->oauthUtility->decodeBase64($encodedError);
-        $this->status = "TEST UNSUCCESSFUL";
+        $this->status = 'TEST UNSUCCESSFUL';
 
-        // Persist last test status to provider record
-        $appName = (string) $this->oauthUtility->getSessionData(OAuthConstants::APP_NAME);
-        if ($appName !== '') {
-            $this->oauthUtility->saveTestStatus($appName, 'unsuccessful');
-        }
+        // Persist unsuccessful status
+        $this->persistTestStatus('unsuccessful');
 
         $data = $this->renderTemplate([
             'status'       => $this->status,
@@ -198,19 +204,56 @@ class ShowTestResults extends Action
     }
 
     /**
+     * Persist the test status to the provider record.
+     *
+     * Tries saveTestStatusById() first (multi-provider safe, uses numeric ID
+     * from OAuth state stored in session key 'mooauth_provider_id').
+     * Falls back to saveTestStatus() using app_name from session.
+     *
+     * @param string $status 'success' | 'failed' | 'unsuccessful'
+     */
+    private function persistTestStatus(string $status): void
+    {
+        // Preferred: numeric provider ID embedded in OAuth state during test flow
+        $providerId = (int) $this->oauthUtility->getSessionData('mooauth_provider_id');
+        if ($providerId > 0) {
+            $this->oauthUtility->customlog(
+                'ShowTestResults: persisting status "' . $status . '" via provider ID=' . $providerId
+            );
+            $this->oauthUtility->saveTestStatusById($providerId, $status);
+            return;
+        }
+
+        // Fallback: app_name from customer session (legacy single-provider path)
+        $appName = (string) $this->oauthUtility->getSessionData(OAuthConstants::APP_NAME);
+        if ($appName !== '') {
+            $this->oauthUtility->customlog(
+                'ShowTestResults: persisting status "' . $status . '" via app_name="' . $appName . '"'
+            );
+            $this->oauthUtility->saveTestStatus($appName, $status);
+            return;
+        }
+
+        $this->oauthUtility->customlog(
+            'ShowTestResults: WARNING – could not persist test status, '
+            . 'neither provider ID nor app_name found in session.'
+        );
+    }
+
+    /**
      * Render the test_results PHTML template with the given variables.
      *
      * Uses output buffering so the template can use plain PHP/HTML without
      * being constrained to Magento's full block/layout rendering stack.
      *
-     * @param  array $vars Associative array of variables to extract into the template scope
+     * @param  array  $vars Associative array of variables to extract into the template scope
      * @return string Rendered HTML
      */
     private function renderTemplate(array $vars): string
     {
         $escaper = $this->escaper; // made available to template via extract()
         extract($vars); // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
-        ob_start(); // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
+        ob_start();    // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
         include $this->templatePath; // phpcs:ignore Magento2.Security.IncludeFile.FoundIncludeFile
         return (string) ob_get_clean();
     }
@@ -218,7 +261,7 @@ class ShowTestResults extends Action
     /**
      * Set the user attributes for display.
      *
-     * @param  array $attrs
+     * @param array|null $attrs
      */
     public function setAttrs($attrs): void
     {
@@ -226,144 +269,51 @@ class ShowTestResults extends Action
     }
 
     /**
-     * Set the OAuth exception instance.
+     * Set the user email from the OIDC attributes.
      *
-     * @param  \Exception|null $exception
+     * @param string|null $email
      */
-    // phpcs:disable Magento2.CodeAnalysis.EmptyBlock.DetectedFunction
-    public function setOAuthException($exception): void
+    public function setUserEmail($email): void
     {
-        // intentionally empty — exception display is handled via hasExceptionOccurred flag
-    }
-    // phpcs:enable Magento2.CodeAnalysis.EmptyBlock.DetectedFunction
-
-    /**
-     * Set the user email address.
-     *
-     * @param  string|null $userEmail
-     */
-    public function setUserEmail($userEmail): void
-    {
-        $this->userEmail = $userEmail;
+        $this->userEmail = $email;
     }
 
     /**
-     * Set whether an exception has occurred.
+     * Derive a greeting name from the OIDC attributes and store it.
      *
-     * @param  bool $hasExceptionOccurred
+     * @param array|null $attrs
      */
-    // phpcs:disable Magento2.CodeAnalysis.EmptyBlock.DetectedFunction
-    public function setHasExceptionOccurred($hasExceptionOccurred): void
+    public function setGreetingName($attrs): void
     {
-    }
-    // phpcs:enable Magento2.CodeAnalysis.EmptyBlock.DetectedFunction
-
-    /**
-     * Set greeting name with fallback logic: firstName -> username -> email.
-     *
-     * Uses configured attribute mappings with fallback to common OIDC claim names.
-     *
-     * @param  array|null $attrs
-     */
-    private function setGreetingName($attrs): void
-    {
-        if (empty($attrs)) {
-            $this->greetingName = '';
+        if (!is_array($attrs)) {
+            $this->greetingName = null;
             return;
         }
-
-        // Try to get firstName (configured -> default -> common alternatives)
-        $firstName = $this->getAttributeValue(
-            $attrs,
-            OAuthConstants::MAP_FIRSTNAME,
-            [OAuthConstants::DEFAULT_MAP_FN, 'given_name', 'first_name']
-        );
-
-        // Try to get username (configured -> default -> common alternatives)
-        $username = $this->getAttributeValue(
-            $attrs,
-            OAuthConstants::MAP_USERNAME,
-            [OAuthConstants::DEFAULT_MAP_USERN, 'preferred_username', 'name', 'username']
-        );
-
-        // Try to get email (configured -> default -> common alternatives)
-        $email = $this->getAttributeValue(
-            $attrs,
-            OAuthConstants::MAP_EMAIL,
-            [OAuthConstants::DEFAULT_MAP_EMAIL, 'mail', 'emailAddress', 'email']
-        );
-
-        // Fallback logic: firstName -> username -> email
-        if (!$this->oauthUtility->isBlank($firstName)) {
-            $this->greetingName = $firstName;
-        } elseif (!$this->oauthUtility->isBlank($username)) {
-            $this->greetingName = $username;
-        } else {
-            $this->greetingName = $email ?? '';
-        }
+        $this->greetingName = $attrs['name']
+            ?? $attrs['given_name']
+            ?? $attrs['preferred_username']
+            ?? $attrs['email']
+            ?? null;
     }
 
     /**
-     * Get attribute value using configured mapping with fallback to common claim names
+     * Extract top-level claim keys from the OIDC attribute array.
      *
-     * @param array    $attrs        User attributes from OIDC provider
-     * @param string   $configKey    Configuration key for attribute mapping
-     * @param string[] $fallbackKeys Fallback claim names to try
+     * Flattens one level of nesting so nested objects also contribute keys.
      *
-     * @psalm-param 'amEmail'|'amFirstName'|'amUsername' $configKey
-     * @psalm-param list{0: 'email'|'firstName'|'username',
-     *     1: 'given_name'|'mail'|'preferred_username',
-     *     2: 'emailAddress'|'first_name'|'name', 3?: 'email'|'username'} $fallbackKeys
+     * @param  array $attrs
+     * @return string[] Sorted list of unique claim key names
      */
-    private function getAttributeValue(array $attrs, string $configKey, array $fallbackKeys)
+    private function extractClaimKeys(array $attrs): array
     {
-        // First try configured attribute name
-        $configuredAttr = $this->oauthUtility->getStoreConfig($configKey);
-        if (!$this->oauthUtility->isBlank($configuredAttr)) {
-            $value = $attrs[$configuredAttr] ?? null;
-            if (!$this->oauthUtility->isBlank($value)) {
-                return is_array($value) ? $value[0] : $value;
+        $keys = array_keys($attrs);
+        foreach ($attrs as $value) {
+            if (is_array($value)) {
+                $keys = array_merge($keys, array_keys($value));
             }
         }
-
-        // Fallback: try common claim names
-        foreach ($fallbackKeys as $key) {
-            $value = $attrs[$key] ?? null;
-            if (!$this->oauthUtility->isBlank($value)) {
-                return is_array($value) ? $value[0] : $value;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Extract all claim keys from OIDC response, including nested paths (e.g., address.locality)
-     *
-     * @param  mixed  $attrs  The OIDC attributes array
-     * @param  string $prefix The prefix for nested keys
-     * @return array Array of claim keys
-     */
-    private function extractClaimKeys($attrs, int|string $prefix = ''): array
-    {
-        $keys = [];
-        if (!is_array($attrs)) {
-            return $keys;
-        }
-
-        foreach ($attrs as $key => $value) {
-            $fullKey = $prefix ? $prefix . '.' . $key : $key;
-            $keys[] = $fullKey;
-
-            // If value is an array/object (associative array), recurse to get nested keys
-            // Skip indexed arrays (like arrays of values)
-            if (is_array($value) && $value !== [] && !isset($value[0])) {
-                $nestedKeys = $this->extractClaimKeys($value, $fullKey);
-                foreach ($nestedKeys as $nk) {
-                    $keys[] = $nk;
-                }
-            }
-        }
+        $keys = array_unique($keys);
+        sort($keys);
         return $keys;
     }
 }
