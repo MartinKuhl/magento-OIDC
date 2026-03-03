@@ -700,4 +700,29 @@ class Data extends AbstractHelper
             ["relayState" => $relayState, "app_name" => $appName]
         );
     }
+
+    /**
+     * Expose encryptor for use in controllers (e.g. config import/export).
+     */
+    public function getEncryptor(): EncryptorInterface
+    {
+        return $this->encryptor;
+    }
+
+    /**
+     * Expose client apps factory for use in controllers (e.g. config import).
+     */
+    public function getClientAppsFactory(): MiniorangeOauthClientAppsFactory
+    {
+        return $this->clientAppsFactory;
+    }
+
+    /**
+     * Expose app resource model for use in controllers (e.g. config import).
+     */
+    public function getAppResource(): AppResource
+    {
+        return $this->appResource;
+    }
+
 }

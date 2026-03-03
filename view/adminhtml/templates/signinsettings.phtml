@@ -1,5 +1,5 @@
 <!--
-    Miscellaneous settings page — Debug Logs only.
+    Miscellaneous settings page — Debug Logs + Configuration Import/Export.
     Login / Logout Options have moved to the per-provider Login Options tab
     in Manage Providers → Edit Provider.
 -->
@@ -57,6 +57,61 @@ $enableDebugLog = $block->isDebugLogEnable() ? 'checked' : '';
                            name="clear_logs"
                            value="Clear Logs"
                            style="width:150px; margin-left:10px">
+                </div>
+            </form>
+
+            <!-- ═══════════════════════════════════════════════════════ -->
+            <!-- Configuration Import / Export Section                   -->
+            <!-- ═══════════════════════════════════════════════════════ -->
+            <div class="mosp_table_layout" style="margin-top: 30px;">
+                <h3>CONFIGURATION IMPORT / EXPORT</h3>
+                <hr>
+                <p style="font-style: italic; color: #666; margin-top: 10px;">
+                    Export or import OIDC provider configurations as JSON.
+                    Sensitive fields (e.g. client_secret) are encrypted in the export file.
+                </p>
+            </div>
+
+            <!-- Export Configuration -->
+            <form id="export_oidc_config" method="post" action="">
+                <input name="form_key" type="hidden"
+                       value="<?= $escaper->escapeHtmlAttr($block->getFormKey()) ?>">
+                <input type="hidden" name="option" value="export_oidc_config">
+                <br>
+                <div style="margin-bottom: 20px;">
+                    <label style="font-weight: bold;">Export Configuration</label>
+                    <p style="color: #666; font-size: 0.9em; margin: 5px 0;">
+                        Downloads all provider configurations as a JSON file.
+                    </p>
+                    <input type="button"
+                           class="btn-round"
+                           value="Export"
+                           onclick="document.getElementById('export_oidc_config').submit();"
+                           style="width: 150px;">
+                </div>
+            </form>
+
+            <!-- Import Configuration -->
+            <form id="import_oidc_config" method="post" action="" enctype="multipart/form-data">
+                <input name="form_key" type="hidden"
+                       value="<?= $escaper->escapeHtmlAttr($block->getFormKey()) ?>">
+                <input type="hidden" name="option" value="import_oidc_config">
+                <div style="margin-bottom: 20px;">
+                    <label style="font-weight: bold;">Import Configuration</label>
+                    <p style="color: #666; font-size: 0.9em; margin: 5px 0;">
+                        Upload a previously exported JSON file. Existing providers (same app_name) are skipped.
+                    </p>
+                    <input type="file"
+                           name="import_config_file"
+                           accept=".json"
+                           required
+                           style="margin-bottom: 10px;">
+                    <br>
+                    <input type="button"
+                           class="btn-round"
+                           value="Import"
+                           onclick="document.getElementById('import_oidc_config').submit();"
+                           style="width: 150px;">
                 </div>
             </form>
 

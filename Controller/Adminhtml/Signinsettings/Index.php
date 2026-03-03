@@ -19,7 +19,7 @@ use Psr\Log\LoggerInterface;
 
 /**
  * This class handles the action for endpoint: mooauth/signinsettings/Index
- * (Miscellaneous page — Debug Logs only).
+ * (Miscellaneous page — Debug Logs + Import/Export).
  *
  * Login / Logout Options have moved to the per-provider Login Options tab
  * in Manage Providers → Edit Provider.
@@ -33,6 +33,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
 
     /** @var \Magento\Store\Model\StoreManagerInterface */
     protected \Magento\Store\Model\StoreManagerInterface $_storeManager;
+
     /** @var \Magento\Framework\App\ProductMetadataInterface */
     private readonly \Magento\Framework\App\ProductMetadataInterface $productMetadata;
 
@@ -58,7 +59,6 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         \Magento\Store\Model\StoreManagerInterface $storeManager,
         \Magento\Framework\App\ProductMetadataInterface $productMetadata
     ) {
-        //You can use dependency injection to get any class this observer may need.
         parent::__construct($context, $resultPageFactory, $oauthUtility, $messageManager, $logger);
         $this->_storeManager = $storeManager;
         $this->fileFactory = $fileFactory;
@@ -66,9 +66,10 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
     }
 
     /**
-     * Main controller entry-point for Miscellaneous page (Debug Logs only).
+     * Main controller entry-point for Miscellaneous page.
      *
-     * Handles debug log toggling, clearing and downloading logs.
+     * Handles debug log toggling, clearing, downloading logs,
+     * and OIDC configuration import/export.
      *
      * @return \Magento\Framework\View\Result\Page|\Magento\Framework\App\ResponseInterface
      */
@@ -76,9 +77,8 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
     public function execute()
     {
         try {
-            $params = $this->getRequest()->getParams(); //get params
+            $params = $this->getRequest()->getParams();
 
-            // check if form options are being saved
             if ($this->isFormOptionBeingSaved($params)) {
                 if ($params['option'] == 'enable_debug_log') {
                     $debug_log_on = isset($params['debug_log_on']) ? 1 : 0;
@@ -102,17 +102,159 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
                     } elseif (isset($params['clear_logs'])) {
                         $this->handleClearLogs();
                     }
+                } elseif ($params['option'] === 'export_oidc_config') {
+                    $result = $this->handleExportConfig();
+                    if ($result !== null) {
+                        return $result;
+                    }
+                } elseif ($params['option'] === 'import_oidc_config') {
+                    $this->handleImportConfig();
                 }
-
             }
         } catch (\Exception $e) {
             $this->messageManager->addErrorMessage($e->getMessage());
             $this->oauthUtility->customlog($e->getMessage());
         }
-        // generate page
+
         $resultPage = $this->resultPageFactory->create();
         $resultPage->getConfig()->getTitle()->prepend(__('OIDC Miscellaneous Settings'));
         return $resultPage;
+    }
+
+    /**
+     * Export all OIDC provider configurations as a JSON file download.
+     *
+     * Sensitive fields (client_secret) are re-encrypted for safe transport.
+     *
+     * @return \Magento\Framework\App\ResponseInterface|null
+     */
+    private function handleExportConfig(): ?\Magento\Framework\App\ResponseInterface
+    {
+        $collection = $this->oauthUtility->getOAuthClientApps();
+
+        if ($collection->getSize() === 0) {
+            $this->messageManager->addErrorMessage(__('No providers found to export.'));
+            return null;
+        }
+
+        $encryptor = $this->oauthUtility->getEncryptor();
+
+        $exportData = [
+            'exported_at'    => (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format(\DATE_ATOM),
+            'module_version' => OAuthConstants::VERSION,
+            'providers'      => [],
+        ];
+
+        foreach ($collection as $provider) {
+            $data = $provider->getData();
+            // Remove internal DB primary key
+            unset($data['id']);
+            // Re-encrypt sensitive fields for safe transport
+            if (!empty($data['client_secret'])) {
+                $data['client_secret'] = $encryptor->encrypt($data['client_secret']);
+            }
+            $exportData['providers'][] = $data;
+        }
+
+        $json = json_encode(
+            $exportData,
+            JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
+        );
+        $fileName = 'oidc_config_' . date('Ymd_His') . '.json';
+
+        return $this->fileFactory->create(
+            $fileName,
+            $json,
+            DirectoryList::VAR_DIR,
+            'application/json'
+        );
+    }
+
+    /**
+     * Import OIDC provider configurations from an uploaded JSON file.
+     *
+     * Existing providers (matched by app_name) are skipped to prevent duplicates.
+     * Encrypted client_secret values are decrypted and stored via Magento's encryptor.
+     */
+    private function handleImportConfig(): void
+    {
+        $files = $this->getRequest()->getFiles();
+        $file  = $files['import_config_file'] ?? null;
+
+        if (!$file || empty($file['tmp_name']) || $file['error'] !== UPLOAD_ERR_OK) {
+            $this->messageManager->addErrorMessage(__('Please select a valid JSON file.'));
+            return;
+        }
+
+        // Validate file extension
+        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        if ($ext !== 'json') {
+            $this->messageManager->addErrorMessage(__('Only .json files are allowed.'));
+            return;
+        }
+
+        $content = file_get_contents($file['tmp_name']);
+        if ($content === false) {
+            $this->messageManager->addErrorMessage(__('Could not read uploaded file.'));
+            return;
+        }
+
+        try {
+            $data = json_decode($content, true, 512, JSON_THROW_ON_ERROR);
+        } catch (\JsonException $e) {
+            $this->messageManager->addErrorMessage(__('Invalid JSON: %1', $e->getMessage()));
+            return;
+        }
+
+        if (!isset($data['providers']) || !is_array($data['providers'])) {
+            $this->messageManager->addErrorMessage(__('Invalid format: "providers" key missing.'));
+            return;
+        }
+
+        $encryptor   = $this->oauthUtility->getEncryptor();
+        $appFactory  = $this->oauthUtility->getClientAppsFactory();
+        $appResource = $this->oauthUtility->getAppResource();
+        $imported    = 0;
+        $skipped     = 0;
+
+        foreach ($data['providers'] as $providerData) {
+            if (empty($providerData['app_name'])) {
+                $skipped++;
+                continue;
+            }
+
+            // Check if provider already exists — skip to avoid duplicates
+            $existing = $this->oauthUtility->getOAuthClientApps()
+                ->addFieldToFilter('app_name', $providerData['app_name'])
+                ->getFirstItem();
+
+            if ($existing && $existing->getId()) {
+                $skipped++;
+                continue;
+            }
+
+            // Decrypt sensitive fields if they are in Magento encryption format
+            if (!empty($providerData['client_secret'])) {
+                if (preg_match('/^\d+:\d+:/', (string) $providerData['client_secret'])) {
+                    $decrypted = $encryptor->decrypt($providerData['client_secret']);
+                    $providerData['client_secret'] = $decrypted ?: $providerData['client_secret'];
+                }
+                // Re-encrypt for storage
+                $providerData['client_secret'] = $encryptor->encrypt($providerData['client_secret']);
+            }
+
+            // Remove DB-specific fields
+            unset($providerData['id']);
+
+            $model = $appFactory->create();
+            $model->setData($providerData);
+            $appResource->save($model);
+            $imported++;
+        }
+
+        $this->messageManager->addSuccessMessage(
+            __('Import complete: %1 provider(s) imported, %2 skipped.', $imported, $skipped)
+        );
     }
 
     /**
@@ -154,7 +296,6 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
             return;
         }
 
-        // Prefer per-provider value; fall back to global config for backwards compatibility
         $showCustomerLink = $clientDetails['show_customer_link']
             ?? $this->oauthUtility->getStoreConfig(OAuthConstants::SHOW_CUSTOMER_LINK);
         $attributeEmail = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_EMAIL);
