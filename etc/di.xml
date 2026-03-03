@@ -162,7 +162,7 @@
     </type>
 
     <!-- Plugin to display OIDC Provider info into Customer View Personal Information table -->
-    <type name="Magento\Customer\Block\Adminhtml\Edit\Tab\View">
+    <type name="Magento\Customer\Block\Adminhtml\Edit\Tab\View\PersonalInfo">
         <plugin name="oidc_customer_info"
                 type="MiniOrange\OAuth\Plugin\Customer\Block\OidcInfoPlugin"
                 sortOrder="10"/>

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace MiniOrange\OAuth\Plugin\Customer\Block;
 
-use Magento\Customer\Block\Adminhtml\Edit\Tab\View;
+use Magento\Customer\Block\Adminhtml\Edit\Tab\View\PersonalInfo;
 use Magento\Framework\App\RequestInterface;
 use MiniOrange\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
 
@@ -12,7 +12,7 @@ use MiniOrange\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
  * Injects an "OIDC Provider" row into the Personal Information table
  * on the Magento admin Customer View tab.
  *
- * Targets: Magento\Customer\Block\Adminhtml\Edit\Tab\View
+ * Targets: Magento\Customer\Block\Adminhtml\Edit\Tab\View\PersonalInfo
  */
 class OidcInfoPlugin
 {
@@ -28,14 +28,10 @@ class OidcInfoPlugin
     }
 
     /**
-     * After the Customer View tab is rendered, inject an OIDC Provider row
-     * into the Personal Information table.
-     *
-     * @param  View   $subject
-     * @param  string $result  Rendered HTML of the tab
-     * @return string
+     * After PersonalInfo is rendered, append an OIDC Provider row
+     * to the Personal Information table.
      */
-    public function afterToHtml(View $subject, string $result): string
+    public function afterToHtml(PersonalInfo $subject, string $result): string
     {
         $customerId = (int) $this->request->getParam('id', 0);
         if ($customerId === 0) {
@@ -50,11 +46,13 @@ class OidcInfoPlugin
 
         $label = __('OIDC Provider');
         $row = '<tr>'
-            . '<td class="label"><span>' . htmlspecialchars((string) $label, ENT_QUOTES, 'UTF-8') . '</span></td>'
+            . '<td class="label"><span>'
+            . htmlspecialchars((string) $label, ENT_QUOTES, 'UTF-8')
+            . '</span></td>'
             . '<td class="value">' . $providerText . '</td>'
             . '</tr>';
 
-        $needle = '</tbody></table>';
+        $needle = '</tbody>';
         $pos    = strrpos($result, $needle);
         if ($pos !== false) {
             $result = substr_replace($result, $row . $needle, $pos, strlen($needle));
