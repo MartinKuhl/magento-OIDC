@@ -53,7 +53,6 @@ $roleMappings = is_array($decoded) ? $decoded : [];
                            name="email_attribute"
                            class="admin__control-text"
                            list="oidc-claims-datalist"
-                           placeholder="email"
                            value="<?= $escaper->escapeHtmlAttr($val('email_attribute', 'email')) ?>"
                            style="width:100%;">
                 </td>
@@ -70,7 +69,6 @@ $roleMappings = is_array($decoded) ? $decoded : [];
                            name="username_attribute"
                            class="admin__control-text"
                            list="oidc-claims-datalist"
-                           placeholder="preferred_username"
                            value="<?= $escaper->escapeHtmlAttr($val('username_attribute', 'preferred_username')) ?>"
                            style="width:100%;">
                 </td>
@@ -87,7 +85,6 @@ $roleMappings = is_array($decoded) ? $decoded : [];
                            name="firstname_attribute"
                            class="admin__control-text"
                            list="oidc-claims-datalist"
-                           placeholder="given_name"
                            value="<?= $escaper->escapeHtmlAttr($val('firstname_attribute', 'given_name')) ?>"
                            style="width:100%;">
                 </td>
@@ -104,7 +101,6 @@ $roleMappings = is_array($decoded) ? $decoded : [];
                            name="lastname_attribute"
                            class="admin__control-text"
                            list="oidc-claims-datalist"
-                           placeholder="family_name"
                            value="<?= $escaper->escapeHtmlAttr($val('lastname_attribute', 'family_name')) ?>"
                            style="width:100%;">
                 </td>
@@ -121,7 +117,6 @@ $roleMappings = is_array($decoded) ? $decoded : [];
                            name="group_attribute"
                            class="admin__control-text"
                            list="oidc-claims-datalist"
-                           placeholder="groups"
                            value="<?= $escaper->escapeHtmlAttr($val('group_attribute')) ?>"
                            style="width:100%;">
                     <small class="admin__field-note">
@@ -186,7 +181,6 @@ $roleMappings = is_array($decoded) ? $decoded : [];
                         <div class="mooauth-mapping-row" style="margin-bottom:8px; display:flex; align-items:center;">
                             <input type="text"
                                    name="oauth_role_mapping[<?= (int) $index ?>][group]"
-                                   placeholder="<?= $escaper->escapeHtmlAttr(__('OIDC Group Name')) ?>"
                                    class="admin__control-text"
                                    value="<?= $escaper->escapeHtmlAttr($mapping['group'] ?? '') ?>"
                                    style="width:200px;">
@@ -253,7 +247,6 @@ $roleMappings = is_array($decoded) ? $decoded : [];
                            name="dob_attribute"
                            class="admin__control-text"
                            list="oidc-claims-datalist"
-                           placeholder="birthdate"
                            value="<?= $escaper->escapeHtmlAttr($val('dob_attribute', '')) ?>"
                            style="width:100%;">
                     <small class="admin__field-note">
@@ -273,7 +266,6 @@ $roleMappings = is_array($decoded) ? $decoded : [];
                            name="gender_attribute"
                            class="admin__control-text"
                            list="oidc-claims-datalist"
-                           placeholder="gender"
                            value="<?= $escaper->escapeHtmlAttr($val('gender_attribute', '')) ?>"
                            style="width:100%;">
                     <small class="admin__field-note">
@@ -293,7 +285,6 @@ $roleMappings = is_array($decoded) ? $decoded : [];
                            name="billing_phone_attribute"
                            class="admin__control-text"
                            list="oidc-claims-datalist"
-                           placeholder="phone_number"
                            value="<?= $escaper->escapeHtmlAttr($val('billing_phone_attribute', '')) ?>"
                            style="width:100%;">
                 </td>
@@ -315,7 +306,6 @@ $roleMappings = is_array($decoded) ? $decoded : [];
                 <td>
                     <input type="text" id="billing_address_attribute" name="billing_address_attribute"
                            class="admin__control-text" list="oidc-claims-datalist"
-                           placeholder="address.street_address"
                            value="<?= $escaper->escapeHtmlAttr($val('billing_address_attribute', '')) ?>"
                            style="width:100%;">
                 </td>
@@ -329,7 +319,6 @@ $roleMappings = is_array($decoded) ? $decoded : [];
                 <td>
                     <input type="text" id="billing_zip_attribute" name="billing_zip_attribute"
                            class="admin__control-text" list="oidc-claims-datalist"
-                           placeholder="address.postal_code"
                            value="<?= $escaper->escapeHtmlAttr($val('billing_zip_attribute', '')) ?>"
                            style="width:100%;">
                 </td>
@@ -343,7 +332,6 @@ $roleMappings = is_array($decoded) ? $decoded : [];
                 <td>
                     <input type="text" id="billing_city_attribute" name="billing_city_attribute"
                            class="admin__control-text" list="oidc-claims-datalist"
-                           placeholder="address.locality"
                            value="<?= $escaper->escapeHtmlAttr($val('billing_city_attribute', '')) ?>"
                            style="width:100%;">
                 </td>
@@ -357,7 +345,6 @@ $roleMappings = is_array($decoded) ? $decoded : [];
                 <td>
                     <input type="text" id="billing_state_attribute" name="billing_state_attribute"
                            class="admin__control-text" list="oidc-claims-datalist"
-                           placeholder="address.region"
                            value="<?= $escaper->escapeHtmlAttr($val('billing_state_attribute', '')) ?>"
                            style="width:100%;">
                 </td>
@@ -371,7 +358,6 @@ $roleMappings = is_array($decoded) ? $decoded : [];
                 <td>
                     <input type="text" id="billing_country_attribute" name="billing_country_attribute"
                            class="admin__control-text" list="oidc-claims-datalist"
-                           placeholder="address.country"
                            value="<?= $escaper->escapeHtmlAttr($val('billing_country_attribute', '')) ?>"
                            style="width:100%;">
                     <small class="admin__field-note">
