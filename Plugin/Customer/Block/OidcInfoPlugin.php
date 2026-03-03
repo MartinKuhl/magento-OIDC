@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MiniOrange\OAuth\Plugin\Customer\Block;
 
 use Magento\Customer\Block\Adminhtml\Edit\Tab\View;
+use Magento\Framework\App\RequestInterface;
 use MiniOrange\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
 
 /**
@@ -15,15 +16,15 @@ use MiniOrange\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
  */
 class OidcInfoPlugin
 {
-    /** @var \MiniOrange\OAuth\Model\ResourceModel\UserProvider */
     private readonly UserProviderResource $userProviderResource;
+    private readonly RequestInterface $request;
 
-    /**
-     * @param UserProviderResource $userProviderResource
-     */
-    public function __construct(UserProviderResource $userProviderResource)
-    {
+    public function __construct(
+        UserProviderResource $userProviderResource,
+        RequestInterface $request
+    ) {
         $this->userProviderResource = $userProviderResource;
+        $this->request = $request;
     }
 
     /**
@@ -36,16 +37,16 @@ class OidcInfoPlugin
      */
     public function afterToHtml(View $subject, string $result): string
     {
-        $customer = $subject->getCustomer();
-        if (!$customer || !$customer->getId()) {
+        $customerId = (int) $this->request->getParam('id', 0);
+        if ($customerId === 0) {
             return $result;
         }
 
-        $info = $this->userProviderResource->getProviderInfo('customer', (int) $customer->getId());
+        $info = $this->userProviderResource->getProviderInfo('customer', $customerId);
         $providerText = $info
             ? htmlspecialchars($info['display_name'], ENT_QUOTES, 'UTF-8')
               . ' (' . htmlspecialchars($info['created_at'], ENT_QUOTES, 'UTF-8') . ')'
-            : '—';
+            : 'none';
 
         $label = __('OIDC Provider');
         $row = '<tr>'
@@ -53,7 +54,6 @@ class OidcInfoPlugin
             . '<td class="value">' . $providerText . '</td>'
             . '</tr>';
 
-        // Inject the row before the last </tbody></table> — the Personal Information table
         $needle = '</tbody></table>';
         $pos    = strrpos($result, $needle);
         if ($pos !== false) {

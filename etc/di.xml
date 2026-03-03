@@ -161,6 +161,13 @@
                 sortOrder="10"/>
     </type>
 
+    <!-- Plugin to display OIDC Provider info into Customer View Personal Information table -->
+    <type name="Magento\Customer\Block\Adminhtml\Edit\Tab\View">
+        <plugin name="oidc_customer_info"
+                type="MiniOrange\OAuth\Plugin\Customer\Block\OidcInfoPlugin"
+                sortOrder="10"/>
+    </type>
+
     <!-- Plugin to remove required validation from identity field for OIDC users (Role Edit) -->
     <type name="Magento\User\Block\Role\Tab\Info">
         <plugin name="oidc_identity_field_role"
