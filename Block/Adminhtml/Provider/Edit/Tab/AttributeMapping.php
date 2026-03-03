@@ -50,7 +50,7 @@ class AttributeMapping extends Template implements TabInterface
      */
     public function getProviderData(): array
     {
-        $provider = $this->registry->registry('current_provider');
+        $provider = $this->registry->registry('current_oidc_provider');
         if ($provider === null) {
             return [];
         }
