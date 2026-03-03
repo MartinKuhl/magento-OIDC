@@ -9,56 +9,29 @@ use Magento\Backend\Block\Template;
 use Magento\Backend\Block\Template\Context;
 use Magento\Backend\Block\Widget\Tab\TabInterface;
 use Magento\Framework\Phrase;
-use Magento\Framework\Registry;
 use MiniOrange\OAuth\Helper\OAuthConstants;
 use MiniOrange\OAuth\Helper\OAuthUtility;
 
 /**
- * Attribute Mapping tab — OIDC claim to Magento field mapping.
+ * Attribute Mapping tab in the provider edit form.
  */
 class AttributeMapping extends Template implements TabInterface
 {
-    /** @var string */
-    protected $_template = 'MiniOrange_OAuth::provider/tab/attrsettings.phtml';
-
-    /** @var Registry */
-    private Registry $registry;
+    /** @var OAuthUtility */
+    private readonly OAuthUtility $oauthUtility;
 
     /** @var RoleCollectionFactory */
-    private RoleCollectionFactory $roleCollectionFactory;
+    private readonly RoleCollectionFactory $roleCollectionFactory;
 
-    /** @var OAuthUtility */
-    private OAuthUtility $oauthUtility;
-
-    /**
-     * @param Context               $context
-     * @param Registry              $registry
-     * @param RoleCollectionFactory $roleCollectionFactory
-     * @param OAuthUtility          $oauthUtility
-     * @param array                 $data
-     */
     public function __construct(
         Context $context,
-        Registry $registry,
-        RoleCollectionFactory $roleCollectionFactory,
         OAuthUtility $oauthUtility,
+        RoleCollectionFactory $roleCollectionFactory,
         array $data = []
     ) {
-        $this->registry              = $registry;
+        $this->oauthUtility = $oauthUtility;
         $this->roleCollectionFactory = $roleCollectionFactory;
-        $this->oauthUtility          = $oauthUtility;
         parent::__construct($context, $data);
-    }
-
-    /**
-     * Return the current provider data, or an empty array for new providers.
-     *
-     * @return array<string, mixed>
-     */
-    public function getProviderData(): array
-    {
-        $provider = $this->registry->registry('current_oidc_provider');
-        return $provider ? $provider->getData() : [];
     }
 
     /**
@@ -80,22 +53,28 @@ class AttributeMapping extends Template implements TabInterface
     /**
      * Return merged list of standard + received OIDC claims for datalist suggestions.
      *
-     * Standard claims are always available. Received claims are populated after the
-     * first successful Test OIDC Flow and stored in core_config_data.
+     * Loads claims per-provider from the miniorange_oauth_client_apps table.
+     * Falls back to static OIDC_STANDARD_CLAIMS if no test was run yet.
      *
      * @return string[]
      */
     public function getOidcClaims(): array
     {
-        $received = $this->oauthUtility->getStoreConfig(OAuthConstants::RECEIVED_OIDC_CLAIMS);
-        if (!empty($received)) {
-            $decoded = json_decode((string) $received, true);
-            if (is_array($decoded) && $decoded !== []) {
-                // After a test flow: show only the real claims received from the IdP
-                sort($decoded);
-                return $decoded;
+        // Try to load per-provider claims
+        $providerData = $this->getData('provider_data');
+        $providerId = is_array($providerData) ? (int) ($providerData['id'] ?? 0) : 0;
+
+        if ($providerId > 0) {
+            $details = $this->oauthUtility->getClientDetailsById($providerId);
+            if ($details !== null && !empty($details['received_oidc_claims'])) {
+                $decoded = json_decode((string) $details['received_oidc_claims'], true);
+                if (is_array($decoded) && $decoded !== []) {
+                    sort($decoded);
+                    return $decoded;
+                }
             }
         }
+
         // Before first test: fall back to standard OIDC spec claims as a reference
         return OAuthConstants::OIDC_STANDARD_CLAIMS;
     }
