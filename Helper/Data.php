@@ -632,6 +632,28 @@ class Data extends AbstractHelper
     }
 
     /**
+     * Get the admin URL for the site based on the path passed.
+     *
+     * @param  string $url
+     * @param  array  $params
+     */
+    public function getAdminUrl(string $url, array $params = []): string
+    {
+        return $this->helperBackend->getUrl($url, ['_query' => $params]);
+    }
+
+    /**
+     * Get the admin secure URL for the site based on the path passed.
+     *
+     * @param  string $url
+     * @param  array  $params
+     */
+    public function getAdminSecureUrl(string $url, array $params = []): string
+    {
+        return $this->helperBackend->getUrl($url, ['_secure' => true, '_query' => $params]);
+    }
+    
+    /**
      * Expose encryptor for use in controllers (e.g. config import/export).
      */
     public function getEncryptor(): EncryptorInterface
