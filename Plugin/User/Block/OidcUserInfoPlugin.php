@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MiniOrange\OAuth\Plugin\User\Block;
 
+use Closure;
 use Magento\User\Block\User\Edit\Tab\Main;
 use MiniOrange\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
 
@@ -11,8 +12,8 @@ use MiniOrange\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
  * Adds a read-only "OIDC Provider" note field directly after the Expiration Date
  * field in the Account Information fieldset on the admin User edit page.
  *
- * Uses afterGetFormHtml to ensure the user model is fully loaded and setValues()
- * has already run, so $subject->getUser() returns the actual admin user.
+ * Uses aroundGetFormHtml so that $proceed() triggers _prepareForm() first,
+ * ensuring the user model is fully loaded before we access it.
  *
  * Targets: Magento\User\Block\User\Edit\Tab\Main
  */
@@ -26,17 +27,16 @@ class OidcUserInfoPlugin
     }
 
     /**
-     * After getFormHtml — add an OIDC Provider note below the Expiration Date field.
+     * Around getFormHtml — inject OIDC Provider note after the form is prepared.
      *
-     * At this point the user model is guaranteed to be loaded on the block,
-     * so $subject->getUser()->getId() returns the real admin user ID.
-     *
-     * @param  Main   $subject
-     * @param  string $result  The rendered form HTML
-     * @return string
+     * $proceed() calls parent::getFormHtml() which triggers _prepareForm(),
+     * loading the user from the registry and calling setValues().
+     * After $proceed(), getUser() returns the real admin user.
      */
-    public function afterGetFormHtml(Main $subject, string $result): string
+    public function aroundGetFormHtml(Main $subject, Closure $proceed): string
     {
+        $result = $proceed();
+
         $form = $subject->getForm();
         if (!$form) {
             return $result;
@@ -49,7 +49,6 @@ class OidcUserInfoPlugin
 
         $user   = $subject->getUser();
         $userId = $user ? (int) $user->getId() : 0;
-        error_log('OidcUserInfoPlugin: userId=' . $userId);
 
         $info = $userId > 0
             ? $this->userProviderResource->getProviderInfo('admin', $userId)
@@ -73,7 +72,6 @@ class OidcUserInfoPlugin
             );
         }
 
-        // Re-render the form with the new field included
         return $form->toHtml();
     }
 }
