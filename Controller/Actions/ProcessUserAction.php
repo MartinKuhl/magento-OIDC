@@ -149,54 +149,6 @@ class ProcessUserAction
         RedirectFactory $resultRedirectFactory,
         ManagerInterface $messageManager
     ) {
-        $this->emailAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_EMAIL);
-        $this->emailAttribute = $oauthUtility->isBlank($this->emailAttribute)
-            ? OAuthConstants::DEFAULT_MAP_EMAIL
-            : $this->emailAttribute;
-        $this->usernameAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_USERNAME);
-        $this->usernameAttribute = $oauthUtility->isBlank($this->usernameAttribute)
-            ? OAuthConstants::DEFAULT_MAP_USERN
-            : $this->usernameAttribute;
-        $this->firstNameKey = $oauthUtility->getStoreConfig(OAuthConstants::MAP_FIRSTNAME);
-        $this->firstNameKey = $oauthUtility->isBlank($this->firstNameKey)
-            ? OAuthConstants::DEFAULT_MAP_FN
-            : $this->firstNameKey;
-        $this->lastNameKey = $oauthUtility->getStoreConfig(OAuthConstants::MAP_LASTNAME);
-        $this->lastNameKey = $oauthUtility->isBlank($this->lastNameKey)
-            ? OAuthConstants::DEFAULT_MAP_LN
-            : $this->lastNameKey;
-        $this->defaultRole = $oauthUtility->getStoreConfig(OAuthConstants::MAP_DEFAULT_ROLE);
-
-        // Initialize customer data mapping attributes
-        $this->dobAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_DOB);
-        $this->dobAttribute = $oauthUtility->isBlank($this->dobAttribute)
-            ? OAuthConstants::DEFAULT_MAP_DOB
-            : $this->dobAttribute;
-        $this->genderAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_GENDER);
-        $this->genderAttribute = $oauthUtility->isBlank($this->genderAttribute)
-            ? OAuthConstants::DEFAULT_MAP_GENDER
-            : $this->genderAttribute;
-        $this->phoneAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_PHONE);
-        $this->phoneAttribute = $oauthUtility->isBlank($this->phoneAttribute)
-            ? OAuthConstants::DEFAULT_MAP_PHONE
-            : $this->phoneAttribute;
-        $this->streetAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_STREET);
-        $this->streetAttribute = $oauthUtility->isBlank($this->streetAttribute)
-            ? OAuthConstants::DEFAULT_MAP_STREET
-            : $this->streetAttribute;
-        $this->zipAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_ZIP);
-        $this->zipAttribute = $oauthUtility->isBlank($this->zipAttribute)
-            ? OAuthConstants::DEFAULT_MAP_ZIP
-            : $this->zipAttribute;
-        $this->cityAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_CITY);
-        $this->cityAttribute = $oauthUtility->isBlank($this->cityAttribute)
-            ? OAuthConstants::DEFAULT_MAP_CITY
-            : $this->cityAttribute;
-        $this->countryAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_COUNTRY);
-        $this->countryAttribute = $oauthUtility->isBlank($this->countryAttribute)
-            ? OAuthConstants::DEFAULT_MAP_COUNTRY
-            : $this->countryAttribute;
-
         $this->customerRepository = $customerRepository;
         $this->storeManager = $storeManager;
         $this->customerLoginAction = $customerLoginAction;
@@ -207,10 +159,67 @@ class ProcessUserAction
     }
 
     /**
+     * Lazy-initialize attribute mappings from the active provider context.
+     *
+     * Must be called at the start of execute() — after setActiveProviderId()
+     * has been called on oauthUtility — so that getStoreConfig() resolves
+     * values from the correct provider row instead of core_config_data.
+     */
+    private bool $attributesInitialized = false;
+
+    private function initAttributeMappings(): void
+    {
+        if ($this->attributesInitialized) {
+            return;
+        }
+        $this->attributesInitialized = true;
+
+        $this->emailAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_EMAIL)
+            ?: OAuthConstants::DEFAULT_MAP_EMAIL;
+
+        $this->usernameAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_USERNAME)
+            ?: OAuthConstants::DEFAULT_MAP_USERN;
+
+        $this->firstNameKey = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_FIRSTNAME)
+            ?: OAuthConstants::DEFAULT_MAP_FN;
+
+        $this->lastNameKey = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_LASTNAME)
+            ?: OAuthConstants::DEFAULT_MAP_LN;
+
+        $this->defaultRole = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_DEFAULT_ROLE)
+            ?: OAuthConstants::DEFAULT_ROLE;
+
+        $this->dobAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_DOB)
+            ?: OAuthConstants::DEFAULT_MAP_DOB;
+
+        $this->genderAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_GENDER)
+            ?: OAuthConstants::DEFAULT_MAP_GENDER;
+
+        $this->phoneAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_PHONE)
+            ?: OAuthConstants::DEFAULT_MAP_PHONE;
+
+        $this->streetAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_STREET)
+            ?: OAuthConstants::DEFAULT_MAP_STREET;
+
+        $this->zipAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_ZIP)
+            ?: OAuthConstants::DEFAULT_MAP_ZIP;
+
+        $this->cityAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_CITY)
+            ?: OAuthConstants::DEFAULT_MAP_CITY;
+
+        $this->countryAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_COUNTRY)
+            ?: OAuthConstants::DEFAULT_MAP_COUNTRY;
+    }
+
+
+    /**
      * Execute the user processing action.
      */
     public function execute(): \Magento\Framework\Controller\Result\Redirect
     {
+
+        // MP-05: Initialize attribute mappings from active provider context
+        $this->initAttributeMappings();
         $this->oauthUtility->customlog("ProcessUserAction: execute");
         if (empty($this->attrs)) {
             $this->oauthUtility->customlog("No Attributes Received");

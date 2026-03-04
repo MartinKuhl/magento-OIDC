@@ -91,6 +91,8 @@ class SendAuthorizationRequest extends BaseAction
 
         // Determine provider: prefer numeric provider_id, fall back to app_name lookup (MP-04)
         $providerId = isset($params['provider_id']) ? (int) $params['provider_id'] : 0;
+        // MP-05: Set provider context — all getStoreConfig() calls resolve from correct provider row
+        $this->oauthUtility->setActiveProviderId($providerId);
 
         // Determine app name for authentication
         $app_name = isset($params['app_name'])

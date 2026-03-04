@@ -152,6 +152,8 @@ class ReadAuthorizationResponse extends BaseAction
                 $stateToken = $stateData['stateToken'];
                 // MP-04: provider_id embedded in state (0 = legacy/unknown — use app_name fallback below)
                 $providerId = $stateData['providerId'] ?? 0;
+                // MP-05: Set provider context — all getStoreConfig() calls resolve from correct provider row
+                $this->oauthUtility->setActiveProviderId($providerId);
             } else {
                 // Legacy pipe-delimited format (backward compatibility during rollout)
                 /** @psalm-suppress RedundantCast */

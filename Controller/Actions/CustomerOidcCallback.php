@@ -100,6 +100,9 @@ class CustomerOidcCallback extends BaseAction
     #[\Override]
     public function execute(): Redirect
     {
+        // MP-05: Set provider context
+        $providerId = (int) $this->getRequest()->getParam('provider_id', 0);
+        $this->oauthUtility->setActiveProviderId($providerId);
         $this->oauthUtility->customlog(
             "CustomerOidcCallback: Starting customer authentication"
         );

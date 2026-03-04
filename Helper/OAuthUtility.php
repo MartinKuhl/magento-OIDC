@@ -159,6 +159,175 @@ class OAuthUtility extends Data
         $this->directoryList = $directoryList;
     }
 
+    // =========================================================================
+    // MP-05: Provider-aware config resolution
+    // =========================================================================
+
+    /**
+     * Maps OAuthConstants config keys to miniorange_oauth_client_apps column names.
+     *
+     * Keys listed here are provider-specific and will be read from the app table.
+     * Keys NOT listed here are global and always read from core_config_data
+     * (e.g. ENABLE_DEBUG_LOG, IS_TEST, LOG_FILE_TIME).
+     */
+    private const CONFIG_TO_COLUMN = [
+        // App / Endpoints
+        'appName'                       => 'app_name',
+        'clientID'                      => 'clientID',
+        'clientSecret'                  => 'client_secret',
+        'scope'                         => 'scope',
+        'authorizeURL'                  => 'authorize_endpoint',
+        'accessTokenURL'                => 'access_token_endpoint',
+        'getUserInfoURL'                => 'user_info_endpoint',
+        'oauthLogoutURL'                => 'endsession_endpoint',
+        'endpoint_url'                  => 'well_known_config_url',
+        'jwks_url'                      => 'jwks_endpoint',
+        'samlIssuer'                    => 'issuer',
+
+        // Send flags
+        'header'                        => 'values_in_header',
+        'body'                          => 'values_in_body',
+
+        // Visibility / behaviour flags
+        'showadminlink'                 => 'show_admin_link',
+        'showcustomerlink'              => 'show_customer_link',
+        'autoCreateAdmin'               => 'mo_oauth_auto_create_admin',
+        'autoCreateCustomer'            => 'mo_oauth_auto_create_customer',
+        'enableLoginRedirect'           => 'autoredirect',
+        'buttonText'                    => 'button_label',
+        'disableNonOidcAdminLogin'      => 'mo_disable_non_oidc_admin_login',
+        'disableNonOidcCustomerLogin'   => 'mo_disable_non_oidc_customer_login',
+
+        // Attribute mappings
+        'amEmail'                       => 'email_attribute',
+        'amUsername'                    => 'username_attribute',
+        'amFirstName'                   => 'firstname_attribute',
+        'amLastName'                    => 'lastname_attribute',
+        'group'                         => 'group_attribute',
+        'defaultRole'                   => 'default_role',
+        'amDob'                         => 'dob_attribute',
+        'amGender'                      => 'gender_attribute',
+        'amPhone'                       => 'billing_phone_attribute',
+        'amStreet'                      => 'billing_address_attribute',
+        'amZip'                         => 'billing_zip_attribute',
+        'amCity'                        => 'billing_city_attribute',
+        'amState'                       => 'billing_state_attribute',
+        'amCountry'                     => 'billing_country_attribute',
+
+        // Role / group mapping
+        'adminRoleMapping'              => 'oauth_admin_role_mapping',
+        'amAccountMatcher'              => 'mo_oauth_create_user_in_magento_by_using',
+        'unlistedRole'                  => 'roles_mapped',
+        'createUserIfRoleNotMapped'     => 'mo_oauth_dont_create_user_if_role_not_mapped',
+    ];
+
+    /**
+     * Active provider ID for the current request.
+     * Set via setActiveProviderId() in the controller/action execute() method.
+     *
+     * @var int|null
+     */
+    private ?int $activeProviderId = null;
+
+    /**
+     * Cached provider row — invalidated when activeProviderId changes.
+     * Ensures at most one DB query per request.
+     *
+     * @var array<string,mixed>|null
+     */
+    private ?array $activeProviderCache = null;
+
+    /**
+     * Set the active provider context for this request.
+     *
+     * Must be called once per request (e.g. in execute()) before any
+     * getStoreConfig() call that reads provider-specific values.
+     * All subsequent getStoreConfig() calls resolve from the correct
+     * provider row automatically.
+     *
+     * @param int $providerId Row `id` from miniorange_oauth_client_apps (> 0)
+     */
+    public function setActiveProviderId(int $providerId): void
+    {
+        if ($this->activeProviderId !== $providerId) {
+            $this->activeProviderId = $providerId;
+            $this->activeProviderCache = null;
+        }
+    }
+
+    /**
+     * Return the currently active provider ID (or null if not set).
+     */
+    public function getActiveProviderId(): ?int
+    {
+        return $this->activeProviderId;
+    }
+
+    /**
+     * Lazy-load and cache the active provider row.
+     *
+     * Resolution order:
+     *  1. Explicit provider_id set via setActiveProviderId()
+     *  2. First active provider in the table (single-provider / legacy fallback)
+     *
+     * @return array<string,mixed> Provider data array or empty array if none found
+     */
+    private function resolveActiveProvider(): array
+    {
+        if ($this->activeProviderCache !== null) {
+            return $this->activeProviderCache;
+        }
+
+        if ($this->activeProviderId !== null && $this->activeProviderId > 0) {
+            $this->activeProviderCache = $this->getClientDetailsById($this->activeProviderId) ?: [];
+            return $this->activeProviderCache;
+        }
+
+        // Fallback: first active provider (covers single-provider installations)
+        $providers = $this->getAllActiveProviders();
+        $this->activeProviderCache = !empty($providers) ? reset($providers) : [];
+        return $this->activeProviderCache;
+    }
+
+    /**
+     * Read a config value — provider-specific keys from the app table,
+     * global keys from core_config_data.
+     *
+     * This override is the single migration point: all existing getStoreConfig()
+     * calls throughout the codebase automatically read from the provider table
+     * without any further changes to callers.
+     *
+     * Fallback behaviour: if the provider column is empty/null, falls back to
+     * core_config_data (legacy support during migration phase).
+     * Remove the fallback call once migration is complete.
+     *
+     * @param string $config OAuthConstants key (e.g. OAuthConstants::MAP_EMAIL)
+     * @return mixed
+     */
+    public function getStoreConfig(string $config)
+    {
+        if (isset(self::CONFIG_TO_COLUMN[$config])) {
+            $provider = $this->resolveActiveProvider();
+            $column   = self::CONFIG_TO_COLUMN[$config];
+
+            if (!empty($provider) && array_key_exists($column, $provider)) {
+                $value = $provider[$column];
+                // Only return if the column actually has a value
+                if ($value !== null && $value !== '') {
+                    return $value;
+                }
+            }
+
+            // Fallback: core_config_data (remove after migration is complete)
+            return parent::getStoreConfig($config);
+        }
+
+        // Global key — always read from core_config_data
+        return parent::getStoreConfig($config);
+    }
+
+
+
     /**
      * This function returns phone number as an obfuscated string for display to the user.
      *

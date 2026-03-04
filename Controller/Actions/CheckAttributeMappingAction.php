@@ -162,30 +162,6 @@ class CheckAttributeMappingAction extends BaseAction
         CookieManagerInterface $cookieManager,
         CookieMetadataFactory $cookieMetadataFactory
     ) {
-        // Initialize attribute mappings from configuration
-        $this->emailAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_EMAIL);
-        $this->emailAttribute = $oauthUtility->isBlank($this->emailAttribute)
-            ? OAuthConstants::DEFAULT_MAP_EMAIL
-            : $this->emailAttribute;
-
-        $this->usernameAttribute = $oauthUtility->getStoreConfig(OAuthConstants::MAP_USERNAME);
-        $this->usernameAttribute = $oauthUtility->isBlank($this->usernameAttribute)
-            ? OAuthConstants::DEFAULT_MAP_USERN
-            : $this->usernameAttribute;
-
-        $this->firstName = $oauthUtility->getStoreConfig(OAuthConstants::MAP_FIRSTNAME);
-        $this->firstName = $oauthUtility->isBlank($this->firstName)
-            ? OAuthConstants::DEFAULT_MAP_FN
-            : $this->firstName;
-
-        $this->lastName = $oauthUtility->getStoreConfig(OAuthConstants::MAP_LASTNAME);
-        $this->lastName = $oauthUtility->isBlank($this->lastName)
-            ? OAuthConstants::DEFAULT_MAP_LN
-            : $this->lastName;
-
-        $this->groupName = $oauthUtility->getStoreConfig(OAuthConstants::MAP_GROUP);
-        $this->groupName = $oauthUtility->isBlank($this->groupName) ? 'groups' : $this->groupName;
-
         $this->testResults = $testResults;
         $this->testAction = $testAction;
         $this->processUserAction = $processUserAction;
@@ -202,6 +178,38 @@ class CheckAttributeMappingAction extends BaseAction
     }
 
     /**
+     * Lazy-initialize attribute mappings from the active provider context.
+     *
+     * Called at the start of execute() after setActiveProviderId() has been
+     * set on oauthUtility. Ensures mappings come from the correct provider row.
+     */
+    private bool $attributesInitialized = false;
+
+    private function initAttributeMappings(): void
+    {
+        if ($this->attributesInitialized) {
+            return;
+        }
+        $this->attributesInitialized = true;
+
+        $this->emailAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_EMAIL)
+            ?: OAuthConstants::DEFAULT_MAP_EMAIL;
+
+        $this->usernameAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_USERNAME)
+            ?: OAuthConstants::DEFAULT_MAP_USERN;
+
+        $this->firstName = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_FIRSTNAME)
+            ?: OAuthConstants::DEFAULT_MAP_FN;
+
+        $this->lastName = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_LASTNAME)
+            ?: OAuthConstants::DEFAULT_MAP_LN;
+
+        $this->groupName = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_GROUP)
+            ?: 'groups';
+    }
+
+
+    /**
      * Execute attribute mapping and route users accordingly
      *
      * Admin users are redirected to a separate callback endpoint that handles
@@ -210,6 +218,9 @@ class CheckAttributeMappingAction extends BaseAction
     #[\Override]
     public function execute(): \Magento\Framework\Controller\ResultInterface
     {
+
+        // MP-05: Initialize attribute mappings from active provider context
+        $this->initAttributeMappings();
         $attrs = $this->userInfoResponse;
         $flattenedAttrs = $this->flattenedUserInfoResponse;
         $userEmail = $this->userEmail;
