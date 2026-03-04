@@ -414,6 +414,42 @@ class OAuthUtility extends Data
     }
 
     /**
+     * Return all active providers for the given login type.
+     *
+     * Queries the miniorange_oauth_client_apps table and filters by login_type.
+     * Each element is a plain data array (getData() on the model).
+     *
+     * @param  string $loginType 'customer' | 'admin' | 'both'
+     * @return array<int, array<string, mixed>>
+     */
+    public function getAllActiveProviders(string $loginType = 'customer'): array
+    {
+        $collection = $this->getOAuthClientApps();
+        $providers = [];
+
+        foreach ($collection as $item) {
+            $data = $item->getData();
+            $providerLoginType = $data['login_type'] ?? 'both';
+
+            // Match: exact type, 'both', or empty (legacy rows default to both)
+            if (
+                $providerLoginType === $loginType
+                || $providerLoginType === 'both'
+                || $providerLoginType === ''
+            ) {
+                $providers[] = $data;
+            }
+        }
+
+        // Sort by sort_order if present
+        usort($providers, function ($a, $b) {
+            return ((int) ($a['sort_order'] ?? 0)) <=> ((int) ($b['sort_order'] ?? 0));
+        });
+
+        return $providers;
+    }
+
+    /**
      * Check if there is an active user session for frontend or backend.
      */
     public function isUserLoggedIn(): bool
@@ -543,14 +579,18 @@ class OAuthUtility extends Data
     }
 
     /**
-     * Remove sign-in settings
+     * Remove sign-in settings for all providers.
      *
-     * @psalm-suppress PossiblyUnusedMethod – Called dynamically
+     * Updates the provider table directly instead of core_config_data.
      */
     public function removeSignInSettings(): void
     {
-        $this->setStoreConfig(OAuthConstants::SHOW_CUSTOMER_LINK, 0);
-        $this->setStoreConfig(OAuthConstants::SHOW_ADMIN_LINK, 0);
+        $collection = $this->getOAuthClientApps();
+        foreach ($collection as $item) {
+            $item->setData('show_customer_link', '0');
+            $item->setData('show_admin_link', '0');
+            $this->appResource->save($item);
+        }
     }
 
     /**

@@ -1,5 +1,6 @@
 <!--
-    This template shows a SSO box on the admin backend pages
+    This template shows SSO buttons on the admin backend login page.
+    Multi-provider: renders one button per admin provider with show_admin_link = 1.
 -->
 
 <?php
@@ -11,13 +12,20 @@ $oidcVisibility = $block->getData('oidc_visibility');
 <?php if ($oidcVisibility && $oidcVisibility->isAdminButtonVisible()): ?>
 
     <?php
-    $ssoUrl = $block->getAdminSPInitiatedUrl(null, $block->getAppName());
+    /**
+     * Multi-provider admin SSO button loop.
+     * Filters by show_admin_link so only providers with the flag enabled are rendered.
+     */
+    $adminProviders = array_filter(
+        $block->getActiveProviders('admin'),
+        fn($p) => (int) ($p['show_admin_link'] ?? 0) === 1
+    );
     ?>
 
 <div id="mo-sso-login-wrapper"
      style="display:none; text-align:center; width:100%;
             box-sizing:border-box; margin-top:15px;">
-    <?php if (!$block->isNonOidcAdminLoginDisabled()): ?>
+    <?php if (!$oidcVisibility->isNonOidcAdminLoginDisabled()): ?>
     <div style="display:flex; flex-direction:row; flex-wrap:nowrap;
                 align-items:center; width:100%; gap:10px; margin-bottom:10px;">
         <span style="flex:1 1 0%; height:1px; background-color:#969393;"></span>
@@ -25,14 +33,30 @@ $oidcVisibility = $block->getData('oidc_visibility');
         <span style="flex:1 1 0%; height:1px; background-color:#969393;"></span>
     </div>
     <?php endif; ?>
+
+    <?php foreach ($adminProviders as $provider):
+        $pid   = (int) ($provider['id'] ?? 0);
+        $name  = $escaper->escapeHtml($provider['display_name'] ?? $provider['app_name'] ?? '');
+        $label = $escaper->escapeHtml(
+            !empty($provider['button_label'])
+            ? $provider['button_label']
+            : __('Login with %1', $name)
+        );
+        $color = preg_match('/^#[0-9a-fA-F]{6}$/', (string) ($provider['button_color'] ?? ''))
+            ? $escaper->escapeHtmlAttr($provider['button_color'])
+            : '#eb5202';
+        $url   = $escaper->escapeUrl($block->getSPInitiatedUrlForProvider($pid));
+    ?>
     <button
         type="button"
         class="action-login action-primary"
-        style="padding:10px 14px; width:100%; text-align:center; box-sizing:border-box;"
-        onclick="window.location.href='<?= $escaper->escapeUrl($ssoUrl) ?>';"
-    >
-        <?= $escaper->escapeHtml($block->getSSOButtonText()) ?>
+        style="padding:10px 14px; width:100%; text-align:center;
+               box-sizing:border-box; margin-bottom:5px;
+               background-color:<?= $color /* @noEscape */ ?>;"
+        onclick="window.location.href='<?= $url /* @noEscape */ ?>';">
+        <?= $label /* @noEscape */ ?>
     </button>
+    <?php endforeach; ?>
 </div>
 
 <script>
@@ -46,7 +70,7 @@ $oidcVisibility = $block->getData('oidc_visibility');
     });
 </script>
 
-    <?php if ($block->isNonOidcAdminLoginDisabled()): ?>
+<?php if ($oidcVisibility->isNonOidcAdminLoginDisabled()): ?>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             var usernameField = document.querySelector('.field-username');

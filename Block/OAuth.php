@@ -557,23 +557,29 @@ class OAuth extends \Magento\Framework\View\Element\Template
     }
 
     /**
-     * Check if auto-create admin is enabled.
-     *
-     * @return string|null
+     * Check if auto-create admin is enabled for any active admin provider.
      */
-    public function autoCreateAdmin()
+    public function autoCreateAdmin(): bool
     {
-        return $this->oauthUtility->getStoreConfig(OAuthConstants::AUTO_CREATE_ADMIN);
+        foreach ($this->oauthUtility->getAllActiveProviders('admin') as $provider) {
+            if (!empty($provider['mo_oauth_auto_create_admin'])) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
-     * Check if auto-create customer is enabled.
-     *
-     * @return string|null
+     * Check if auto-create customer is enabled for any active customer provider.
      */
-    public function autoCreateCustomer()
+    public function autoCreateCustomer(): bool
     {
-        return $this->oauthUtility->getStoreConfig(OAuthConstants::AUTO_CREATE_CUSTOMER);
+        foreach ($this->oauthUtility->getAllActiveProviders('customer') as $provider) {
+            if (!empty($provider['mo_oauth_auto_create_customer'])) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -587,29 +593,52 @@ class OAuth extends \Magento\Framework\View\Element\Template
     }
 
     /**
-     * Check if the option to show SSO link on the Admin login page is enabled by the admin.
-     */
-    public function showAdminLink()
-    {
-        return $this->oauthUtility->getStoreConfig(OAuthConstants::SHOW_ADMIN_LINK);
-    }
-
-    /**
-     * Check if non-OIDC admin login is disabled
+     * Check if the SSO link should be shown on the Admin login page.
      *
-     * @return bool
+     * Aggregator: returns true if ANY active admin provider has show_admin_link = 1.
      */
-    public function isNonOidcAdminLoginDisabled()
+    public function showAdminLink(): bool
     {
-        return $this->oauthUtility->getStoreConfig(OAuthConstants::DISABLE_NON_OIDC_ADMIN_LOGIN);
+        foreach ($this->oauthUtility->getAllActiveProviders('admin') as $provider) {
+            if ((int) ($provider['show_admin_link'] ?? 0) === 1) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
-     * Check if the option to show SSO link on the Customer login page is enabled by the admin.
+     * Check if non-OIDC admin login is disabled.
+     *
+     * Aggregator: returns true if ANY active admin provider (with visible button)
+     * has mo_disable_non_oidc_admin_login = 1.
      */
-    public function showCustomerLink()
+    public function isNonOidcAdminLoginDisabled(): bool
     {
-        return $this->oauthUtility->getStoreConfig(OAuthConstants::SHOW_CUSTOMER_LINK);
+        foreach ($this->oauthUtility->getAllActiveProviders('admin') as $provider) {
+            if ((int) ($provider['show_admin_link'] ?? 0) !== 1) {
+                continue;
+            }
+            if ((int) ($provider['mo_disable_non_oidc_admin_login'] ?? 0) === 1) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Check if the SSO link should be shown on the Customer login page.
+     *
+     * Aggregator: returns true if ANY active customer provider has show_customer_link = 1.
+     */
+    public function showCustomerLink(): bool
+    {
+        foreach ($this->oauthUtility->getAllActiveProviders('customer') as $provider) {
+            if ((int) ($provider['show_customer_link'] ?? 0) === 1) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -907,16 +936,19 @@ class OAuth extends \Magento\Framework\View\Element\Template
     /**
      * Check if non-OIDC customer login is disabled.
      *
-     * Returns true if the configuration setting
-     * DISABLE_NON_OIDC_CUSTOMER_LOGIN is enabled, meaning customers
-     * can only log in via OIDC and password-based login is blocked.
-     *
-     * @return bool True if non-OIDC customer login is disabled
+     * Aggregator: returns true if ANY active customer provider (with visible button)
+     * has mo_disable_non_oidc_customer_login = 1.
      */
     public function isNonOidcCustomerLoginDisabled(): bool
     {
-        return (bool) $this->oauthUtility->getStoreConfig(
-            OAuthConstants::DISABLE_NON_OIDC_CUSTOMER_LOGIN
-        );
+        foreach ($this->oauthUtility->getAllActiveProviders('customer') as $provider) {
+            if ((int) ($provider['show_customer_link'] ?? 0) !== 1) {
+                continue;
+            }
+            if ((int) ($provider['mo_disable_non_oidc_customer_login'] ?? 0) === 1) {
+                return true;
+            }
+        }
+        return false;
     }
 }

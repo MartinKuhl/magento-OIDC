@@ -44,15 +44,17 @@ $oidcVisibility = $block->getData('oidc_visibility');
     </svg>
 </div>
     <?php
-/**
- * MP-05: Multi-provider SSO button loop.
- *
- * When multiple active providers are configured, renders one button per
- * provider using each provider's display_name, button_label, and
- * button_color. Falls back to the single-provider behaviour (app_name
- * lookup) for installations that have not yet run the migration patch.
- */
+    /**
+     * Multi-provider SSO button loop.
+     *
+     * Filters by show_customer_link so only providers that have the flag
+     * enabled in loginoptions.phtml are rendered.
+     */
     $activeProviders = $block->getActiveProviders('customer');
+    $activeProviders = array_filter(
+        $activeProviders,
+        fn($p) => (int) ($p['show_customer_link'] ?? 0) === 1
+    );
     ?>
     <?php if (!empty($activeProviders)): ?>
 <div class="sso-button-container sso-button-container--multi">
@@ -76,12 +78,6 @@ $oidcVisibility = $block->getData('oidc_visibility');
             <?= $label /* @noEscape */ ?>
     </a>
     <?php endforeach; ?>
-</div>
-    <?php else: ?>
-<div class="sso-button-container">
-    <a class="sso-button" href="<?= $escaper->escapeUrl($block->getSPInitiatedUrl(null, $block->getAppName())) ?>">
-        <?= $escaper->escapeHtml($block->getSSOButtonText()) ?>
-    </a>
 </div>
     <?php endif; ?>
 
@@ -166,7 +162,6 @@ $oidcVisibility = $block->getData('oidc_visibility');
 
     // Hide password login fields when OIDC-only mode enabled
     function hidePasswordFields() {
-        // Get the login block container
         var loginBlock = document.querySelector('.block-customer-login')
             || document.querySelector('.login-container')
             || document.querySelector('body');
@@ -188,26 +183,19 @@ $oidcVisibility = $block->getData('oidc_visibility');
             fieldset.style.display = 'none';
         });
 
-        // AGGRESSIVE: Hide demo box and any parent containers
+        // Hide demo box and any parent containers
         var allElements = loginBlock.querySelectorAll('*');
         allElements.forEach(function(el) {
             var text = (el.textContent || '').trim();
-
-            // Hide demo customer access box - check first 100 chars
             var shortText = text.substring(0, 100);
             if (shortText.includes('Try Demo') ||
                 shortText.includes('Demo Customer')) {
-
-                // Hide element and its parent
                 el.style.display = 'none';
                 if (el.parentElement) {
                     el.parentElement.style.display = 'none';
                 }
-
-                // Also hide grandparent if it exists
                 if (el.parentElement && el.parentElement.parentElement) {
                     var grandparent = el.parentElement.parentElement;
-                    // Only hide if it's not the whole login block
                     if (!grandparent.classList.contains('block-customer-login')) {
                         grandparent.style.display = 'none';
                     }
@@ -233,12 +221,8 @@ $oidcVisibility = $block->getData('oidc_visibility');
         }
     }
 
-    // Run when DOM is ready
     if (document.readyState === 'loading') {
-        document.addEventListener(
-            'DOMContentLoaded',
-            hidePasswordFields
-        );
+        document.addEventListener('DOMContentLoaded', hidePasswordFields);
     } else {
         hidePasswordFields();
     }

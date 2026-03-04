@@ -8,34 +8,23 @@ use Magento\Framework\View\Element\Block\ArgumentInterface;
 use Magento\User\Model\ResourceModel\User\CollectionFactory as AdminUserCollectionFactory;
 use Magento\Customer\Model\ResourceModel\Customer\CollectionFactory as CustomerCollectionFactory;
 use MiniOrange\OAuth\Helper\OAuthUtility;
-use MiniOrange\OAuth\Helper\OAuthConstants;
 
 /**
  * Determines whether the OIDC login button should be visible
  * on admin and customer login pages.
  *
- * Conditions for hiding the button:
- * - No valid OIDC configuration exists (missing endpoints, client ID, etc.)
- * - No matching OIDC user exists AND auto-create is disabled
+ * All checks are provider-based: iterates over active providers from
+ * miniorange_oauth_client_apps and evaluates per-provider flags
+ * (show_*_link, mo_disable_non_oidc_*, mo_oauth_auto_create_*).
+ *
+ * No core_config_data dependency for visibility/restriction decisions.
  */
 class OidcLoginVisibility implements ArgumentInterface
 {
-    /** @var OAuthUtility */
     private readonly OAuthUtility $oauthUtility;
-
-    /** @var AdminUserCollectionFactory */
     private readonly AdminUserCollectionFactory $adminUserCollectionFactory;
-
-    /** @var CustomerCollectionFactory */
     private readonly CustomerCollectionFactory $customerCollectionFactory;
 
-    /**
-     * Initialize OIDC login visibility view model.
-     *
-     * @param OAuthUtility               $oauthUtility
-     * @param AdminUserCollectionFactory $adminUserCollectionFactory
-     * @param CustomerCollectionFactory  $customerCollectionFactory
-     */
     public function __construct(
         OAuthUtility $oauthUtility,
         AdminUserCollectionFactory $adminUserCollectionFactory,
@@ -49,122 +38,111 @@ class OidcLoginVisibility implements ArgumentInterface
     /**
      * Check if the admin OIDC login button should be shown.
      *
-     * Button is hidden when:
-     * - OIDC is not configured (missing endpoints/credentials)
-     * - No admin users exist AND auto-create admin is disabled
+     * Returns true when at least one active admin provider has:
+     * - show_admin_link = 1
+     * - valid OIDC configuration (clientID, authorize_endpoint, access_token_endpoint)
+     * - either auto-create admin enabled OR at least one admin user exists
      */
     public function isAdminButtonVisible(): bool
     {
-        if (!$this->hasValidOidcConfiguration()) {
-            return false;
+        foreach ($this->oauthUtility->getAllActiveProviders('admin') as $provider) {
+            if ((int) ($provider['show_admin_link'] ?? 0) !== 1) {
+                continue;
+            }
+            if (!$this->isProviderConfigured($provider)) {
+                continue;
+            }
+            if (!empty($provider['mo_oauth_auto_create_admin'])) {
+                return true;
+            }
+            if ($this->hasAdminUsers()) {
+                return true;
+            }
         }
 
-        // If auto-create admin is enabled, always show the button
-        if ($this->isAutoCreateAdminEnabled()) {
-            return true;
-        }
-
-        // No auto-create: only show if at least one admin user exists
-        return $this->hasAdminUsers();
+        return false;
     }
 
     /**
      * Check if the customer OIDC login button should be shown.
      *
-     * Button is hidden when:
-     * - OIDC is not configured (missing endpoints/credentials)
-     * - No customers exist AND auto-create customer is disabled
+     * Returns true when at least one active customer provider has:
+     * - show_customer_link = 1
+     * - valid OIDC configuration
+     * - either auto-create customer enabled OR at least one customer exists
      */
     public function isCustomerButtonVisible(): bool
     {
-        if (!$this->hasValidOidcConfiguration()) {
-            return false;
-        }
-
-        // If auto-create customer is enabled, always show the button
-        if ($this->isAutoCreateCustomerEnabled()) {
-            return true;
-        }
-
-        // No auto-create: only show if at least one customer exists
-        return $this->hasCustomers();
-    }
-
-    /**
-     * Validate that all required OIDC configuration fields are present.
-     *
-     * Checks: app_name, client_id, authorize_endpoint, access_token_endpoint, user_info_endpoint
-     */
-    private function hasValidOidcConfiguration(): bool
-    {
-        // Nutze die bewährte Prüfung aus OAuthUtility
-        if (!$this->oauthUtility->isOAuthConfigured()) {
-            return false;
-        }
-
-        // Zusätzliche Validierung über die tatsächlichen DB-Werte
-        $appName = $this->oauthUtility->getStoreConfig(OAuthConstants::APP_NAME);
-        if ($this->oauthUtility->isBlank($appName)) {
-            return false;
-        }
-
-        try {
-            $clientDetails = $this->oauthUtility->getClientDetailsByAppName($appName);
-        } catch (\Exception $e) {
-            return false;
-        }
-
-        // Prüfe die tatsächlichen DB-Spaltennamen
-        $requiredFields = ['clientID', 'authorize_endpoint', 'access_token_endpoint'];
-
-        foreach ($requiredFields as $field) {
-            if (empty($clientDetails[$field] ?? null)) {
-                return false;
+        foreach ($this->oauthUtility->getAllActiveProviders('customer') as $provider) {
+            if ((int) ($provider['show_customer_link'] ?? 0) !== 1) {
+                continue;
+            }
+            if (!$this->isProviderConfigured($provider)) {
+                continue;
+            }
+            if (!empty($provider['mo_oauth_auto_create_customer'])) {
+                return true;
+            }
+            if ($this->hasCustomers()) {
+                return true;
             }
         }
 
-        return true;
+        return false;
     }
 
     /**
-     * Check if auto-create admin is enabled in configuration.
-     */
-    private function isAutoCreateAdminEnabled(): bool
-    {
-        $appName = $this->oauthUtility->getStoreConfig(OAuthConstants::APP_NAME);
-        if ($this->oauthUtility->isBlank($appName)) {
-            return false;
-        }
-        try {
-            $clientDetails = $this->oauthUtility->getClientDetailsByAppName($appName);
-            return !empty($clientDetails['mo_oauth_auto_create_admin'] ?? false);
-        } catch (\Exception $e) {
-            return false;
-        }
-    }
-
-    /**
-     * Check if auto-create customer is enabled in configuration.
-     */
-    private function isAutoCreateCustomerEnabled(): bool
-    {
-        $appName = $this->oauthUtility->getStoreConfig(OAuthConstants::APP_NAME);
-        if ($this->oauthUtility->isBlank($appName)) {
-            return false;
-        }
-        try {
-            $clientDetails = $this->oauthUtility->getClientDetailsByAppName($appName);
-            return !empty($clientDetails['mo_oauth_auto_create_customer'] ?? false);
-        } catch (\Exception $e) {
-            return false;
-        }
-    }
-
-    /**
-     * Check if at least one admin user exists in the system.
+     * Check if non-OIDC customer login is disabled.
      *
-     * Uses a COUNT query with LIMIT 1 for performance –
-     * we don't need the actual count, just existence.
+     * Returns true when ANY active customer provider with a visible button
+     * has mo_disable_non_oidc_customer_login = 1.
+     */
+    public function isNonOidcCustomerLoginDisabled(): bool
+    {
+        foreach ($this->oauthUtility->getAllActiveProviders('customer') as $provider) {
+            if ((int) ($provider['show_customer_link'] ?? 0) !== 1) {
+                continue;
+            }
+            if ((int) ($provider['mo_disable_non_oidc_customer_login'] ?? 0) === 1) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if non-OIDC admin login is disabled.
+     *
+     * Returns true when ANY active admin provider with a visible button
+     * has mo_disable_non_oidc_admin_login = 1.
+     */
+    public function isNonOidcAdminLoginDisabled(): bool
+    {
+        foreach ($this->oauthUtility->getAllActiveProviders('admin') as $provider) {
+            if ((int) ($provider['show_admin_link'] ?? 0) !== 1) {
+                continue;
+            }
+            if ((int) ($provider['mo_disable_non_oidc_admin_login'] ?? 0) === 1) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Validate that a provider row has the minimum required OIDC fields.
+     */
+    private function isProviderConfigured(array $provider): bool
+    {
+        return !empty($provider['clientID'])
+            && !empty($provider['authorize_endpoint'])
+            && !empty($provider['access_token_endpoint']);
+    }
+
+    /**
+     * Check if at least one admin user exists (COUNT with LIMIT 1).
      */
     private function hasAdminUsers(): bool
     {
@@ -174,29 +152,12 @@ class OidcLoginVisibility implements ArgumentInterface
     }
 
     /**
-     * Check if at least one customer exists in the system.
-     *
-     * Uses a COUNT query with LIMIT 1 for performance.
+     * Check if at least one customer exists (COUNT with LIMIT 1).
      */
     private function hasCustomers(): bool
     {
         $collection = $this->customerCollectionFactory->create();
         $collection->setPageSize(1);
         return $collection->getSize() > 0;
-    }
-
-    /**
-     * Check if non-OIDC customer login is disabled.
-     *
-     * Returns true if password-based customer login is disabled
-     * in configuration, meaning only OIDC authentication is allowed.
-     *
-     * @return bool True if non-OIDC customer login is disabled
-     */
-    public function isNonOidcCustomerLoginDisabled(): bool
-    {
-        return (bool) $this->oauthUtility->getStoreConfig(
-            OAuthConstants::DISABLE_NON_OIDC_CUSTOMER_LOGIN
-        );
     }
 }
