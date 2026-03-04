@@ -783,16 +783,21 @@ class OAuth extends \Magento\Framework\View\Element\Template
     /**
      * Build the SP-initiated authorization URL for a specific provider row.
      *
-     * MP-05: Generates the login URL that includes the numeric provider_id so that
-     * ReadAuthorizationResponse can load the correct provider on callback.
-     *
-     * @param  int         $providerId  Row `id` from miniorange_oauth_client_apps
-     * @param  string|null $relayState  Optional redirect target after login
-     * @return string URL to SendAuthorizationRequest with provider_id query param
+     * @param  int         $providerId
+     * @param  string|null $relayState
+     * @param  string      $loginType  'customer' or 'admin'
+     * @return string
      */
-    public function getSPInitiatedUrlForProvider(int $providerId, ?string $relayState = null): string
-    {
-        return $this->oauthUtility->getSPInitiatedUrlForProvider($providerId, $relayState);
+    public function getSPInitiatedUrlForProvider(
+        int $providerId,
+        ?string $relayState = null,
+        string $loginType = 'customer'
+    ): string {
+        return $this->oauthUtility->getSPInitiatedUrlForProvider(
+            $providerId,
+            $relayState,
+            $loginType
+        );
     }
 
     /**

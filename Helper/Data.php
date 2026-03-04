@@ -629,21 +629,27 @@ class Data extends AbstractHelper
     /**
      * Build the SP-initiated URL for a specific provider by its numeric ID.
      *
-     * MP-05: Used by the multi-provider SSO button loop. The URL includes
-     * `provider_id` so `SendAuthorizationRequest` can load the correct row
-     * without needing `app_name`.
-     *
      * @param  int         $providerId  Row `id` from miniorange_oauth_client_apps
      * @param  string|null $relayState  Optional post-login redirect URL
-     * @return string Frontend SSO URL with provider_id query parameter
+     * @param  string      $loginType   'customer' or 'admin'
+     * @return string Frontend SSO URL with provider_id + login_type query params
      */
-    public function getSPInitiatedUrlForProvider(int $providerId, ?string $relayState = null): string
-    {
+    public function getSPInitiatedUrlForProvider(
+        int $providerId,
+        ?string $relayState = null,
+        string $loginType = 'customer'
+    ): string {
         $relayState = $relayState ?? $this->getCurrentUrl();
+        $params = [
+            'relayState'  => $relayState,
+            'provider_id' => $providerId,
+            'login_type'  => $loginType,
+        ];
+
         return $this->getFrontendUrl(
             OAuthConstants::OAUTH_LOGIN_URL,
-            ['relayState' => $relayState]
-        ) . '&provider_id=' . $providerId;
+            $params
+        );
     }
 
     /**
