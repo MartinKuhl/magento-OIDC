@@ -66,7 +66,6 @@ class SendAuthorizationRequest extends BaseAction
             $chk_enable_log = 0;
             $this->oauthUtility->setStoreConfig(OAuthConstants::LOG_FILE_TIME, null);
             $this->oauthUtility->deleteCustomLogFile();
-            //$this->oauthUtility->flushCache(); // REMOVED for performance
         }
         if ($chk_enable_log !== 0) {
             $this->oauthUtility->customlog("SendAuthorizationRequest: execute");
@@ -97,6 +96,24 @@ class SendAuthorizationRequest extends BaseAction
         $app_name = isset($params['app_name'])
             ? $params['app_name']
             : $this->oauthUtility->getStoreConfig(OAuthConstants::APP_NAME);
+
+        // FIX: Resolve app_name from provider table when only provider_id is given
+        // This prevents null being passed to encodeRelayState() which requires string
+        $earlyProviderDetails = null;
+        if (empty($app_name) && $providerId > 0) {
+            $earlyProviderDetails = $this->oauthUtility->getClientDetailsById($providerId);
+            $app_name = $earlyProviderDetails['app_name'] ?? '';
+        }
+
+        // Fail-safe: abort with user-friendly error if app_name is still unresolvable
+        if (empty($app_name)) {
+            $errorRedirect = $this->oauthUtility->getBaseUrl() . 'customer/account/login';
+            $this->messageManager->addErrorMessage(
+                __('App name not found. Please contact the administrator for assistance.')
+            );
+            return $this->resultRedirectFactory->create()->setUrl($errorRedirect);
+        }
+
         $this->oauthUtility->customlog(
             "SendAuthorizationRequest: Using app_name: " . $app_name . " provider_id: " . $providerId
         );
@@ -107,7 +124,7 @@ class SendAuthorizationRequest extends BaseAction
             $relayState,
             $currentSessionId,
             $app_name,
-            OAuthConstants::LOGIN_TYPE_CUSTOMER,
+            isset($params['login_type']) ? $params['login_type'] : OAuthConstants::LOGIN_TYPE_CUSTOMER,
             $stateToken,
             $providerId > 0 ? $providerId : null
         );
@@ -115,23 +132,14 @@ class SendAuthorizationRequest extends BaseAction
 
         if (strpos($relayState, OAuthConstants::TEST_RELAYSTATE) !== false) {
             $this->oauthUtility->setStoreConfig(OAuthConstants::IS_TEST, true);
-            //$this->oauthUtility->flushCache(); // REMOVED for performance
         }
 
         $clientDetails = null;
-        // App name was already determined above
-        if (!$app_name) {
-            $errorRedirect = $this->oauthUtility->getBaseUrl() . 'customer/account/login';
-            $this->messageManager->addErrorMessage(
-                'App name not found. Please contact the administrator for assistance.'
-            );
-            return $this->resultRedirectFactory->create()->setUrl($errorRedirect);
-        }
         $this->oauthUtility->setSessionData(OAuthConstants::APP_NAME, $app_name);
 
-        // MP-04: when a numeric provider_id is known, load directly by PK (faster and unambiguous)
+        // MP-04: reuse early-loaded provider details to avoid duplicate DB call
         $clientDetails = $providerId > 0
-            ? $this->oauthUtility->getClientDetailsById($providerId)
+            ? ($earlyProviderDetails ?? $this->oauthUtility->getClientDetailsById($providerId))
             : $this->oauthUtility->getClientDetailsByAppName($app_name);
         if ($clientDetails === null || $clientDetails === []) {
             $errorRedirect = $this->oauthUtility->getBaseUrl() . 'customer/account/login';
