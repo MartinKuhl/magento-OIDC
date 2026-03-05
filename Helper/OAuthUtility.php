@@ -285,7 +285,7 @@ class OAuthUtility extends Data
 
         // Fallback: first active provider (covers single-provider installations)
         $providers = $this->getAllActiveProviders();
-        $this->activeProviderCache = !empty($providers) ? reset($providers) : [];
+        $this->activeProviderCache = $providers === [] ? [] : reset($providers);
         return $this->activeProviderCache;
     }
 
@@ -310,7 +310,7 @@ class OAuthUtility extends Data
             $provider = $this->resolveActiveProvider();
             $column   = self::CONFIG_TO_COLUMN[$config];
 
-            if (!empty($provider) && array_key_exists($column, $provider)) {
+            if ($provider !== [] && array_key_exists($column, $provider)) {
                 $value = $provider[$column];
                 // Only return if the column actually has a value
                 if ($value !== null && $value !== '') {
@@ -611,7 +611,7 @@ class OAuthUtility extends Data
         }
 
         // Sort by sort_order if present
-        usort($providers, function ($a, $b) {
+        usort($providers, function ($a, $b): int {
             return ((int) ($a['sort_order'] ?? 0)) <=> ((int) ($b['sort_order'] ?? 0));
         });
 

@@ -20,7 +20,7 @@ For each issue:
 
 Be harsh. I'd rather fix issues now than in production.
 
-Write an dupdate the exisiting review into @github/OIDC/Code-Review.md 
+Write an update the exisiting review into @github/OIDC/Code-Review.md 
 
 ################
 

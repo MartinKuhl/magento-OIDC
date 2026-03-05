@@ -724,7 +724,6 @@ class Data extends AbstractHelper
      * Sanitize a string value.
      *
      * @param  mixed $value
-     * @return string
      */
     protected function sanitize($value): string
     {

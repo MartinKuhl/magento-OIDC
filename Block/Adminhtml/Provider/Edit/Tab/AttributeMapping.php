@@ -22,7 +22,7 @@ class AttributeMapping extends Template implements TabInterface
     protected $_template = 'MiniOrange_OAuth::provider/tab/attrsettings.phtml';
 
     /** @var Registry */
-    private Registry $registry;
+    private readonly Registry $registry;
 
     /** @var RoleCollectionFactory */
     private readonly RoleCollectionFactory $roleCollectionFactory;
@@ -45,8 +45,6 @@ class AttributeMapping extends Template implements TabInterface
 
     /**
      * Return the current provider data, or an empty array for new providers.
-     *
-     * @return array
      */
     public function getProviderData(): array
     {

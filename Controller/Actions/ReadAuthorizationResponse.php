@@ -460,5 +460,6 @@ class ReadAuthorizationResponse extends BaseAction
                 return $this->_redirect($loginUrl);
             }
         }
+        return null;
     }
 }

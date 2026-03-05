@@ -19,7 +19,7 @@ class LoginOptions extends Template implements TabInterface
     protected $_template = 'MiniOrange_OAuth::provider/tab/loginoptions.phtml';
 
     /** @var Registry */
-    private Registry $registry;
+    private readonly Registry $registry;
 
     /**
      * @param Context  $context

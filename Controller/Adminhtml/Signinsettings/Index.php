@@ -104,7 +104,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
                     }
                 } elseif ($params['option'] === 'export_oidc_config') {
                     $result = $this->handleExportConfig();
-                    if ($result !== null) {
+                    if ($result instanceof \Magento\Framework\App\ResponseInterface) {
                         return $result;
                     }
                 } elseif ($params['option'] === 'import_oidc_config') {
@@ -125,8 +125,6 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
      * Export all OIDC provider configurations as a JSON file download.
      *
      * Sensitive fields (client_secret) are re-encrypted for safe transport.
-     *
-     * @return \Magento\Framework\App\ResponseInterface|null
      */
     private function handleExportConfig(): ?\Magento\Framework\App\ResponseInterface
     {
@@ -187,7 +185,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         }
 
         // Validate file extension
-        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $ext = strtolower(pathinfo((string) $file['name'], PATHINFO_EXTENSION));
         if ($ext !== 'json') {
             $this->messageManager->addErrorMessage(__('Only .json files are allowed.'));
             return;

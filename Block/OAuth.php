@@ -319,7 +319,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
         return array_values(
             array_filter(
                 $claims,
-                fn($claim) => !in_array($claim, $excludedClaims, true)
+                fn($claim): bool => !in_array($claim, $excludedClaims, true)
             )
         );
     }
@@ -786,7 +786,6 @@ class OAuth extends \Magento\Framework\View\Element\Template
      * @param  int         $providerId
      * @param  string|null $relayState
      * @param  string      $loginType  'customer' or 'admin'
-     * @return string
      */
     public function getSPInitiatedUrlForProvider(
         int $providerId,

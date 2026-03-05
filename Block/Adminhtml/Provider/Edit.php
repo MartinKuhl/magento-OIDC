@@ -22,10 +22,10 @@ use MiniOrange\OAuth\Helper\OAuthConstants;
 class Edit extends Container
 {
     /** @var Registry */
-    private Registry $registry;
+    private readonly Registry $registry;
 
     /** @var FormKey */
-    private FormKey $formKeyHelper;
+    private readonly FormKey $formKeyHelper;
 
     /** @var StoreManagerInterface */
     private readonly StoreManagerInterface $storeManager;
@@ -123,7 +123,6 @@ class Edit extends Container
      * - ReadAuthorizationResponse redirects to ShowTestResults after the callback
      *
      * @param \Magento\Framework\DataObject $provider
-     * @return string
      */
     private function buildTestFlowUrl(\Magento\Framework\DataObject $provider): string
     {
@@ -147,8 +146,6 @@ class Edit extends Container
 
     /**
      * Return the page header text.
-     *
-     * @return Phrase|string
      */
     public function getHeaderText(): Phrase|string
     {
@@ -168,8 +165,6 @@ class Edit extends Container
      * Widget\Form\Container expects a Form child block, but we use Widget\Tabs
      * instead. We override getFormHtml() to render the form manually so that
      * the hidden "back" field is available for Save / Save & Continue.
-     *
-     * @return string
      */
     public function getFormHtml(): string
     {
