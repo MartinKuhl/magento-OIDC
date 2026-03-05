@@ -747,22 +747,22 @@ function addRoleMapping() {
 }
 
 function addCustomerGroupMapping() {
-        var container = document.getElementById('customer-group-mappings');
-        var i = cgmIndex++;
-        var opts = '';
-        <?php foreach ($groups as $group): ?>
-        opts += '<option value="<?= $escaper->escapeJs($group['value']) ?>"><?= $escaper->escapeJs($group['label']) ?></option>';
-        <?php endforeach; ?>
+    var container = document.getElementById('customer-group-mappings');
+    var i = cgmIndex++;
+    var opts = '';
+    <?php foreach ($groups as $group): ?>
+    opts += '<option value="<?= $escaper->escapeJs($group['value']) ?>"><?= $escaper->escapeJs($group['label']) ?></option>';
+    <?php endforeach; ?>
 
-        var row = document.createElement('div');
-        row.className = 'cgm-row';
-        row.style.marginBottom = '10px';
-        row.innerHTML =
-            '<input type="text" name="oauth_customer_group_mapping[' + i + '][group]" placeholder="OIDC Group Name" style="width: 200px;">' +
-            ' <span>→</span> ' +
-            '<select name="oauth_customer_group_mapping[' + i + '][customerGroup]">' + opts + '</select>' +
-            ' <button type="button" onclick="this.closest(\'.cgm-row\').remove()" class="action-delete" title="Remove">✕</button>';
-        container.appendChild(row);
+    var row = document.createElement('div');
+    row.className = 'cgm-row';
+    row.style.marginBottom = '10px';
+    row.innerHTML =
+        '<input type="text" name="oauth_customer_group_mapping[' + i + '][group]" placeholder="OIDC Group Name" style="width: 200px;">' +
+        ' <span>→</span> ' +
+        '<select name="oauth_customer_group_mapping[' + i + '][customerGroup]">' + opts + '</select>' +
+        ' <button type="button" onclick="this.closest(\'.cgm-row\').remove()" class="action-delete" title="Remove">✕</button>';
+    container.appendChild(row);
 }
 
 function removeRoleMapping(button) {

@@ -215,6 +215,8 @@ NEW UI
 
 - scope handling
 
+- update customer and admin
+
 ### LATER - complex ###:
 - Rename: --> Authelia OIDC (in Code)
 
