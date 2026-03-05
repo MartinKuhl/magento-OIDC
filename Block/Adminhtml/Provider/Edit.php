@@ -53,9 +53,8 @@ class Edit extends Container
     /**
      * Set block identifiers and configure action buttons.
      *
-     * After parent::_construct() we clear $_blockGroup so that
-     * Widget\Form\Container::_prepareLayout() skips auto-creating
-     * a non-existent Form child block.
+     * Save / Save & Continue use hidden submit buttons inside the <form>
+     * triggered via onclick from the buttonList toolbar buttons.
      */
     protected function _construct(): void
     {
@@ -68,21 +67,28 @@ class Edit extends Container
         // Prevent Widget\Form\Container from auto-creating a Form child block
         $this->_blockGroup = '';
 
-        // "Save and Continue Edit" button
+        // Replace default "Save" with our own that triggers the hidden submit
+        $this->buttonList->remove('save');
+        $this->buttonList->add(
+            'save',
+            [
+                'label'   => __('Save'),
+                'class'   => 'save primary',
+                'onclick' => "document.getElementById('btn_save').click(); return false;",
+            ]
+        );
+
+        // "Save and Continue Edit" — triggers hidden submit with back=edit
         $this->buttonList->add(
             'save_and_continue',
             [
-
-                'label'          => __('Save and Continue Edit'),
-                'class'          => 'save',
-                'data_attribute' => [
-                    'role' => 'save-and-continue',
-                ],
+                'label'   => __('Save and Continue Edit'),
+                'class'   => 'save',
+                'onclick' => "document.getElementById('btn_save_continue').click(); return false;",
             ]
         );
 
         // "Test OIDC Flow" button — only for existing, saved providers.
-        // Triggered directly by user click → no popup blocker issues.
         $this->addTestOidcFlowButton();
     }
 
@@ -107,7 +113,6 @@ class Edit extends Container
             [
                 'label'      => __('Test OIDC Flow'),
                 'class'      => 'save',
-                // Direct user-click triggers window.open → popup blockers won't interfere
                 'onclick'    => sprintf(
                     "window.open(%s, 'TEST_OIDC', 'scrollbars=1,width=800,height=600'); return false;",
                     json_encode($testUrl)
@@ -120,18 +125,12 @@ class Edit extends Container
     /**
      * Build the frontend URL for the OIDC test flow.
      *
-     * Uses the showTestResults URL + TEST_RELAYSTATE marker as relayState so that:
-     * - SendAuthorizationRequest recognises the test mode via TEST_RELAYSTATE
-     * - ReadAuthorizationResponse redirects to ShowTestResults after the callback
-     *
      * @param \Magento\Framework\DataObject $provider
      */
     private function buildTestFlowUrl(\Magento\Framework\DataObject $provider): string
     {
         $store = $this->storeManager->getStore();
 
-        // Combine showTestResults URL with TEST_RELAYSTATE marker ("testvalidate")
-        // so ReadAuthorizationResponse reliably detects test mode via strpos()
         $relayState = $store->getUrl('mooauth/actions/showTestResults')
             . OAuthConstants::TEST_RELAYSTATE;
 
@@ -164,9 +163,9 @@ class Edit extends Container
     /**
      * Render the <form> element wrapping the Widget\Tabs child block.
      *
-     * Widget\Form\Container expects a Form child block, but we use Widget\Tabs
-     * instead. We override getFormHtml() to render the form manually so that
-     * the hidden "back" field is available for Save / Save & Continue.
+     * Hidden submit buttons inside the form carry the correct name/value
+     * for the "back" parameter. The visible toolbar buttons (buttonList)
+     * trigger these via onclick → consistent styling + reliable POST data.
      */
     public function getFormHtml(): string
     {
@@ -179,26 +178,11 @@ class Edit extends Container
             . ' method="post"'
             . ' enctype="multipart/form-data">'
             . '<input type="hidden" name="form_key" value="' . $formKey . '">'
-            . '<input type="hidden" id="back" name="back" value="">'
             . '<input type="hidden" name="id" value="' . $providerId . '">'
+            // Hidden submit buttons — triggered by toolbar onclick
+            . '<input type="submit" id="btn_save" name="back" value="" style="display:none">'
+            . '<input type="submit" id="btn_save_continue" name="back" value="edit" style="display:none">'
             . $this->getChildHtml('mooauth_provider_edit_tabs')
-            . '</form>'
-            . '<script>
-    (function () {
-        var btn = document.querySelector("[data-role=\'save-and-continue\']");
-        if (btn) {
-            btn.addEventListener("click", function (e) {
-                e.preventDefault();
-                var form = document.getElementById("edit_form");
-                var back = document.getElementById("back");
-                if (form && back) {
-                    back.value = "edit";
-                    form.submit();
-                }
-            });
-        }
-    })();
-    </script>';
+            . '</form>';
     }
-
 }
