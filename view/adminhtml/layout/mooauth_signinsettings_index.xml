@@ -11,7 +11,7 @@
         <referenceContainer name="content">
             <block class="MiniOrange\OAuth\Block\OAuth"
                 name="miniorange.oauth.admin.signinsettings"
-                template="signinsettings.phtml" />
+                template="misc.phtml" />
         </referenceContainer>
         <!--
         Defining our block and phtml file for adding common
