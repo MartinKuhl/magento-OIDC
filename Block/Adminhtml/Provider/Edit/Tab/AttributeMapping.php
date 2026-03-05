@@ -13,6 +13,8 @@ use Magento\Framework\Phrase;
 use Magento\Framework\Registry;
 use MiniOrange\OAuth\Helper\OAuthConstants;
 use MiniOrange\OAuth\Helper\OAuthUtility;
+use Magento\Customer\Api\GroupRepositoryInterface;
+use Magento\Framework\Api\SearchCriteriaBuilder;
 
 /**
  * Attribute Mapping tab — OIDC claim to Magento field mapping.
@@ -27,18 +29,26 @@ class AttributeMapping extends Template implements TabInterface
     private readonly GroupCollectionFactory $groupCollectionFactory;
     private readonly OAuthUtility $oauthUtility;
 
+    /** @var GroupRepositoryInterface */
+    private readonly GroupRepositoryInterface $groupRepository;
+
+    /** @var SearchCriteriaBuilder */
+    private readonly SearchCriteriaBuilder $searchCriteriaBuilder;
+
     public function __construct(
         Context $context,
         Registry $registry,
         RoleCollectionFactory $roleCollectionFactory,
-        GroupCollectionFactory $groupCollectionFactory,
         OAuthUtility $oauthUtility,
+        GroupRepositoryInterface $groupRepository,
+        SearchCriteriaBuilder $searchCriteriaBuilder,
         array $data = []
     ) {
         $this->registry               = $registry;
         $this->roleCollectionFactory  = $roleCollectionFactory;
-        $this->groupCollectionFactory = $groupCollectionFactory;
         $this->oauthUtility           = $oauthUtility;
+        $this->groupRepository        = $groupRepository;
+        $this->searchCriteriaBuilder  = $searchCriteriaBuilder;
         parent::__construct($context, $data);
     }
 
@@ -72,13 +82,16 @@ class AttributeMapping extends Template implements TabInterface
      */
     public function getAllGroups(): array
     {
+        $searchCriteria = $this->searchCriteriaBuilder->create();
         $groups = [];
-        foreach ($this->groupCollectionFactory->create() as $group) {
+
+        foreach ($this->groupRepository->getList($searchCriteria)->getItems() as $group) {
             $groups[] = [
                 'value' => (string) $group->getId(),
-                'label' => (string) $group->getCustomerGroupCode(),
+                'label' => (string) $group->getCode(),
             ];
         }
+
         return $groups;
     }
 

@@ -75,7 +75,7 @@ class Edit extends Container
                 'label'   => __('Save and Continue Edit'),
                 'class'   => 'save',
                 'onclick' => "document.getElementById('back').value='edit';"
-                           . "jQuery('#edit_form').trigger('save');",
+                           . "document.getElementById('edit_form').submit();",
             ]
         );
 

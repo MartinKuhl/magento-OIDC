@@ -48,7 +48,8 @@
       <column xsi:type="text" name="mo_oauth_dont_create_user_if_role_not_mapped" nullable="false" comment="Do not create users if role not mapped" />
       <column xsi:type="text" name="mo_oauth_dont_create_customer_if_group_not_mapped" nullable="false" comment="Do not create customers if group not mapped" />
       <column xsi:type="text" name="oauth_am_sameasbilling" nullable="false" comment="Same as billing address" />
-
+      <!-- Feature flag: re-evaluate customer group on every SSO login -->
+      <column xsi:type="text" name="update_frontend_groups_on_sso" nullable="false" default="0" comment="Update frontend user groups after each Customer SSO (1=enabled)" />
       <!-- Per-provider login options -->
       <column xsi:type="text" name="dob_attribute" nullable="true" comment="OIDC claim name for date of birth" />
       <column xsi:type="text" name="gender_attribute" nullable="true" comment="OIDC claim name for gender" />
