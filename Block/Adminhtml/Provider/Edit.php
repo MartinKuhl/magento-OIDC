@@ -72,10 +72,12 @@ class Edit extends Container
         $this->buttonList->add(
             'save_and_continue',
             [
-                'label'   => __('Save and Continue Edit'),
-                'class'   => 'save',
-                'onclick' => "document.getElementById('back').value='edit';"
-                           . "document.getElementById('edit_form').submit();",
+
+                'label'          => __('Save and Continue Edit'),
+                'class'          => 'save',
+                'data_attribute' => [
+                    'role' => 'save-and-continue',
+                ],
             ]
         );
 
@@ -173,13 +175,30 @@ class Edit extends Container
         $formKey    = $this->escapeHtmlAttr($this->formKeyHelper->getFormKey());
 
         return '<form id="edit_form"'
-             . ' action="' . $url . '"'
-             . ' method="post"'
-             . ' enctype="multipart/form-data">'
-             . '<input type="hidden" name="form_key" value="' . $formKey . '">'
-             . '<input type="hidden" id="back" name="back" value="">'
-             . '<input type="hidden" name="id" value="' . $providerId . '">'
-             . $this->getChildHtml('mooauth_provider_edit_tabs')
-             . '</form>';
+            . ' action="' . $url . '"'
+            . ' method="post"'
+            . ' enctype="multipart/form-data">'
+            . '<input type="hidden" name="form_key" value="' . $formKey . '">'
+            . '<input type="hidden" id="back" name="back" value="">'
+            . '<input type="hidden" name="id" value="' . $providerId . '">'
+            . $this->getChildHtml('mooauth_provider_edit_tabs')
+            . '</form>'
+            . '<script>
+    (function () {
+        var btn = document.querySelector("[data-role=\'save-and-continue\']");
+        if (btn) {
+            btn.addEventListener("click", function (e) {
+                e.preventDefault();
+                var form = document.getElementById("edit_form");
+                var back = document.getElementById("back");
+                if (form && back) {
+                    back.value = "edit";
+                    form.submit();
+                }
+            });
+        }
+    })();
+    </script>';
     }
+
 }

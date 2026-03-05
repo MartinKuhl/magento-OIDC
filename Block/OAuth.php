@@ -691,16 +691,6 @@ class OAuth extends \Magento\Framework\View\Element\Template
     }
 
     /**
-     * Fetch the setting which doesn't allow users to be created if roles are not mapped.
-     */
-    public function getDisallowUserCreationIfRoleNotMapped()
-    {
-        $disallowUserCreationIfRoleNotMapped = $this->oauthUtility->getStoreConfig(OAuthConstants::CREATEIFNOTMAP);
-        return $this->oauthUtility->isBlank($disallowUserCreationIfRoleNotMapped)
-            ? '' : $disallowUserCreationIfRoleNotMapped;
-    }
-
-    /**
      * Fetch the setting which decides what attribute should be mapped to the user's userName.
      */
     public function getUserNameMapping()
@@ -759,15 +749,6 @@ class OAuth extends \Magento\Framework\View\Element\Template
         return $this->oauthUtility->isBlank($group)
             ? OAuthConstants::DEFAULT_CUSTOMER_GROUP
             : (string) $group;
-    }
-
-    /**
-     * Check if customer creation is blocked when group is not mapped.
-     */
-    public function getDontCreateCustomerIfGroupNotMapped(): string
-    {
-        $val = $this->oauthUtility->getStoreConfig(OAuthConstants::CREATEIFNOTMAP_CUSTOMER);
-        return $this->oauthUtility->isBlank($val) ? '' : (string) $val;
     }
 
     /**

@@ -77,11 +77,9 @@ class OAuthConstants
     public const DEFAULT_ROLE = 'General';
     public const MAP_GROUP = 'group';
     public const UNLISTED_ROLE = 'unlistedRole';
-    public const CREATEIFNOTMAP = 'createUserIfRoleNotMapped';
     public const CUSTOMER_GROUP_MAPPING = 'customerGroupMapping';
     public const MAP_DEFAULT_CUSTOMER_GROUP = 'defaultCustomerGroup';
     public const DEFAULT_CUSTOMER_GROUP = 'General';
-    public const CREATEIFNOTMAP_CUSTOMER = 'createCustomerIfGroupNotMapped';
     public const UPDATE_FRONTEND_GROUPS_ON_SSO = 'updateFrontendGroupsOnSso';
 
     // Customer data attribute mapping constants

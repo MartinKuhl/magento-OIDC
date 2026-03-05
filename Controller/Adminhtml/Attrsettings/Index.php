@@ -135,10 +135,6 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
             $model->setData('oauth_customer_group_mapping', json_encode(array_values($customerGroupMappings)));
             $model->setData('default_group', trim((string) ($params['oauth_am_default_customer_group'] ?? '')));
             $model->setData('update_frontend_groups_on_sso',isset($params['update_frontend_groups_on_sso']) ? 1 : 0);
-            $model->setData(
-                'mo_oauth_dont_create_customer_if_group_not_mapped',
-                isset($params['dont_create_customer_if_group_not_mapped']) ? 'checked' : ''
-            );
 
             $this->appResource->save($model);
             $this->oauthUtility->customlog(
@@ -154,13 +150,6 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
 
         $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_FIRSTNAME, $params['oauth_am_first_name']);
         $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_LASTNAME, $params['oauth_am_last_name']);
-
-        if (isset($params['dont_create_user_if_role_not_mapped'])) {
-            $this->oauthUtility->setStoreConfig(
-                OAuthConstants::CREATEIFNOTMAP,
-                $params['dont_create_user_if_role_not_mapped']
-            );
-        }
 
         // Customer Group Mapping (global mode)
         if (isset($params['oauth_customer_group_mapping'])) {
@@ -179,13 +168,6 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
             $this->oauthUtility->setStoreConfig(
                 OAuthConstants::MAP_DEFAULT_CUSTOMER_GROUP,
                 $params['oauth_am_default_customer_group']
-            );
-        }
-
-        if (isset($params['dont_create_customer_if_group_not_mapped'])) {
-            $this->oauthUtility->setStoreConfig(
-                OAuthConstants::CREATEIFNOTMAP_CUSTOMER,
-                $params['dont_create_customer_if_group_not_mapped']
             );
         }
 
