@@ -134,6 +134,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
             );
             $model->setData('oauth_customer_group_mapping', json_encode(array_values($customerGroupMappings)));
             $model->setData('default_group', trim((string) ($params['oauth_am_default_customer_group'] ?? '')));
+            $model->setData('update_frontend_groups_on_sso',isset($params['update_frontend_groups_on_sso']) ? 1 : 0);
             $model->setData(
                 'mo_oauth_dont_create_customer_if_group_not_mapped',
                 isset($params['dont_create_customer_if_group_not_mapped']) ? 'checked' : ''
@@ -218,6 +219,11 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
             $logMsg = 'Saved admin role mappings: ' . $roleMappingsJson;
             $this->oauthUtility->customlog($logMsg);
         }
+
+        $this->oauthUtility->setStoreConfig(
+            OAuthConstants::UPDATE_FRONTEND_GROUPS_ON_SSO,
+            isset($params['update_frontend_groups_on_sso']) ? '1' : '0'
+        );
 
         // Save customer data mapping fields (directly from dropdown selection)
         $dobValue = $params['oauth_am_dob'] ?? '';
