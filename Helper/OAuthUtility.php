@@ -144,7 +144,7 @@ class OAuthUtility extends Data
             $escaper,
             $logger
         );
-        
+
         $this->adminSession = $adminSession;
         $this->customerSession = $customerSession;
         $this->authSession = $authSession;
@@ -293,13 +293,9 @@ class OAuthUtility extends Data
      * Read a config value — provider-specific keys from the app table,
      * global keys from core_config_data.
      *
-     * This override is the single migration point: all existing getStoreConfig()
-     * calls throughout the codebase automatically read from the provider table
-     * without any further changes to callers.
-     *
-     * Fallback behaviour: if the provider column is empty/null, falls back to
-     * core_config_data (legacy support during migration phase).
-     * Remove the fallback call once migration is complete.
+     * Provider-specific keys are read EXCLUSIVELY from the
+     * miniorange_oauth_client_apps table. No fallback to core_config_data.
+     * Returns null if the column is empty or the provider is not found.
      *
      * @param string $config OAuthConstants key (e.g. OAuthConstants::MAP_EMAIL)
      * @return mixed
@@ -312,21 +308,18 @@ class OAuthUtility extends Data
 
             if ($provider !== [] && array_key_exists($column, $provider)) {
                 $value = $provider[$column];
-                // Only return if the column actually has a value
                 if ($value !== null && $value !== '') {
                     return $value;
                 }
             }
 
-            // Fallback: core_config_data (remove after migration is complete)
-            return parent::getStoreConfig($config);
+            // No fallback — provider-specific values live exclusively in the app table
+            return null;
         }
 
         // Global key — always read from core_config_data
         return parent::getStoreConfig($config);
     }
-
-
 
     /**
      * This function returns phone number as an obfuscated string for display to the user.
@@ -353,9 +346,6 @@ class OAuthUtility extends Data
      * Log format:
      *   {"ts":"2026-01-01T12:00:00+00:00","level":"debug","message":"..."}
      *
-     * This replaces the previous plain-text format while keeping the same
-     * public signature so all existing call-sites continue to work unchanged.
-     *
      * @param string $txt Human-readable log message
      */
     public function customlog(string $txt): void
@@ -374,13 +364,6 @@ class OAuthUtility extends Data
      * Write a structured JSON log entry with additional context fields (FEAT-05).
      *
      * Sensitive context keys are automatically masked with "***".
-     *
-     * Example:
-     *   $this->oauthUtility->customlogContext('oidc.token.exchange', [
-     *       'user'        => 'user@example.com',
-     *       'provider'    => 'okta',
-     *       'duration_ms' => 142,
-     *   ]);
      *
      * @param string $event   Short dot-notation event name (e.g. "oidc.login.success")
      * @param array  $context Additional key-value context to include in the log entry
@@ -410,6 +393,7 @@ class OAuthUtility extends Data
         $entry = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
         $this->_logger->debug($entry !== false ? $entry : $event);
     }
+
     /**
      * This function check whether any custom log file exist or not.
      *
@@ -456,9 +440,6 @@ class OAuthUtility extends Data
 
     /**
      * This function checks if cURL has been installed or enabled on the site.
-     *
-     * Magento 2 uses \Magento\Framework\HTTP\Adapter\Curl for HTTP requests,
-     * but verifying curl_init availability is a standard check for the underlying library.
      */
     public function isCurlInstalled(): int
     {
@@ -468,7 +449,7 @@ class OAuthUtility extends Data
     /**
      * This function is used to obfuscate and return the email in question.
      *
-     * @param  string $email //refers to the email id to be obfuscated
+     * @param  string $email
      * @return string obfuscated email id.
      */
     public function getHiddenEmail($email): string
@@ -487,6 +468,7 @@ class OAuthUtility extends Data
 
         return $partialemail . $endemail;
     }
+
     /**
      * Get admin session instance.
      */
@@ -546,9 +528,6 @@ class OAuthUtility extends Data
     /**
      * Set session data for the currently logged-in user.
      *
-     * Detects whether the user is in the frontend or backend
-     * and stores the data in the appropriate session.
-     *
      * @param  string $key
      * @param  mixed  $value
      */
@@ -585,9 +564,6 @@ class OAuthUtility extends Data
     /**
      * Return all active providers for the given login type.
      *
-     * Queries the miniorange_oauth_client_apps table and filters by login_type.
-     * Each element is a plain data array (getData() on the model).
-     *
      * @param  string $loginType 'customer' | 'admin' | 'both'
      * @return array<int, array<string, mixed>>
      */
@@ -600,7 +576,6 @@ class OAuthUtility extends Data
             $data = $item->getData();
             $providerLoginType = $data['login_type'] ?? 'both';
 
-            // Match: exact type, 'both', or empty (legacy rows default to both)
             if (
                 $providerLoginType === $loginType
                 || $providerLoginType === 'both'
@@ -610,7 +585,6 @@ class OAuthUtility extends Data
             }
         }
 
-        // Sort by sort_order if present
         usort($providers, function ($a, $b): int {
             return ((int) ($a['sort_order'] ?? 0)) <=> ((int) ($b['sort_order'] ?? 0));
         });
@@ -636,7 +610,7 @@ class OAuthUtility extends Data
     }
 
     /**
-     * Get the Current Admin User who is logged in
+     * Get the Current Customer who is logged in
      */
     public function getCurrentUser(): \Magento\Customer\Model\Customer
     {
@@ -682,7 +656,6 @@ class OAuthUtility extends Data
      * Flush Magento Cache.
      *
      * @param string $from
-     * @psalm-suppress PossiblyUnusedParam – $from used for future logging
      */
     public function flushCache(string $from = ""): void
     {
@@ -700,9 +673,8 @@ class OAuthUtility extends Data
     /**
      * Get data in the file specified by the path
      *
-     * @param          string $file
-     * @return         string
-     * @psalm-suppress PossiblyUnusedMethod – Called dynamically
+     * @param  string $file
+     * @return string
      */
     public function getFileContents($file)
     {
@@ -712,9 +684,8 @@ class OAuthUtility extends Data
     /**
      * Put data in the file specified by the path
      *
-     * @param          string $file
-     * @param          string $data
-     * @psalm-suppress PossiblyUnusedMethod – Called dynamically
+     * @param string $file
+     * @param string $data
      */
     public function putFileContents($file, $data): void
     {
@@ -723,8 +694,6 @@ class OAuthUtility extends Data
 
     /**
      * Get the Current User's logout url
-     *
-     * @psalm-suppress PossiblyUnusedMethod – Called from templates
      */
     public function getLogoutUrl(): string
     {
@@ -739,8 +708,6 @@ class OAuthUtility extends Data
 
     /**
      * Get/Create Callback URL of the site
-     *
-     * @psalm-suppress PossiblyUnusedMethod – Called from templates
      */
     public function getCallBackUrl(): string
     {
@@ -764,8 +731,6 @@ class OAuthUtility extends Data
 
     /**
      * Reinitialize config
-     *
-     * @psalm-suppress PossiblyUnusedMethod – Called from admin actions
      */
     public function reinitConfig(): void
     {
@@ -785,7 +750,6 @@ class OAuthUtility extends Data
      *
      * @param string|object $msg Debug message to log
      * @param mixed|null    $obj Optional object to dump
-     * @psalm-suppress PossiblyUnusedMethod – Called dynamically
      */
     public function logDebug(string|object $msg = "", $obj = null): void
     {
@@ -801,52 +765,37 @@ class OAuthUtility extends Data
     }
 
     /**
-     * Get client details used in ShowTestResultsAction.
+     * Get client details — reads all values from the active provider row.
      *
-     * @psalm-suppress PossiblyUnusedMethod – Called dynamically
+     * All values come from the provider table via getStoreConfig() (which
+     * resolves provider-specific keys from miniorange_oauth_client_apps).
      *
-     * @return (mixed|null|string)[]
-     *
-     * @psalm-return list{string, mixed|null, mixed|null, mixed|null, mixed|null, mixed|null, mixed|null,
-     *               mixed|null, mixed|null, mixed|null, mixed, mixed, mixed, mixed}
+     * @return array
      */
     public function getClientDetails(): array
     {
-        $appName = $this->getStoreConfig(OAuthConstants::APP_NAME);
-        $clientDetails = $this->getClientDetailsByAppName($appName);
-        $clientID = $clientDetails["clientID"];
-        $clientSecret = $clientDetails["client_secret"];
-        $accesstoken_url = $clientDetails["access_token_endpoint"];
-        $scope = $clientDetails["scope"];
-        $header = $clientDetails["values_in_header"];
-        $body = $clientDetails["values_in_body"];
-        $getuserinfo_url = $clientDetails['user_info_endpoint'];
-        $authorize_url = $clientDetails['authorize_endpoint'];
-        $endpoint_url = $clientDetails['well_known_config_url'];
-        $show_customer_link = $this->getStoreConfig(OAuthConstants::SHOW_CUSTOMER_LINK);
-        $attribute_email = $this->getStoreConfig(OAuthConstants::MAP_EMAIL);
-        $attribute_username = $this->getStoreConfig(OAuthConstants::MAP_USERNAME);
-        $customer_email = $this->getStoreConfig(OAuthConstants::DEFAULT_MAP_EMAIL);
+        $provider = $this->resolveActiveProvider();
+
         return [
-            $appName,
-            $scope,
-            $clientID,
-            $clientSecret,
-            $authorize_url,
-            $accesstoken_url,
-            $getuserinfo_url,
-            $header,
-            $body,
-            $endpoint_url,
-            $show_customer_link,
-            $attribute_email,
-            $attribute_username,
-            $customer_email
+            $provider['app_name'] ?? null,
+            $provider['scope'] ?? null,
+            $provider['clientID'] ?? null,
+            $provider['client_secret'] ?? null,
+            $provider['authorize_endpoint'] ?? null,
+            $provider['access_token_endpoint'] ?? null,
+            $provider['user_info_endpoint'] ?? null,
+            $provider['values_in_header'] ?? null,
+            $provider['values_in_body'] ?? null,
+            $provider['well_known_config_url'] ?? null,
+            $provider['show_customer_link'] ?? null,
+            $provider['email_attribute'] ?? OAuthConstants::DEFAULT_MAP_EMAIL,
+            $provider['username_attribute'] ?? OAuthConstants::DEFAULT_MAP_USERN,
+            $provider['email_attribute'] ?? OAuthConstants::DEFAULT_MAP_EMAIL,
         ];
     }
 
     /**
-     * Retrieve the base URL of the store.
+     * Retrieve the Magento product version.
      *
      * @return string
      */
@@ -856,7 +805,7 @@ class OAuthUtility extends Data
     }
 
     /**
-     * Retrieve the current store URL.
+     * Retrieve the Magento edition label.
      */
     public function getEdition(): string
     {
@@ -866,7 +815,7 @@ class OAuthUtility extends Data
     }
 
     /**
-     * Retrieve the admin base URL.
+     * Get the current date/time in the store's configured timezone.
      */
     public function getCurrentDate(): string
     {
@@ -886,8 +835,6 @@ class OAuthUtility extends Data
     /**
      * Decode a base64 encoded string safely.
      *
-     * Returns empty string on invalid input.
-     *
      * @param  string|null $input
      */
     public function decodeBase64(?string $input): string
@@ -902,8 +849,6 @@ class OAuthUtility extends Data
 
     /**
      * Extract the path component from a URL in a safe manner.
-     *
-     * Returns empty string on failure.
      *
      * @param  string $url
      */
@@ -920,8 +865,6 @@ class OAuthUtility extends Data
     /**
      * Parse a URL and return components in a safe manner.
      *
-     * Returns empty array on failure.
-     *
      * @param  string $url
      */
     public function parseUrlComponents(string $url): array
@@ -934,16 +877,6 @@ class OAuthUtility extends Data
     /**
      * Derive a first/last name pair from an email address local-part.
      *
-     * Used as a fallback when the OIDC provider does not return given_name /
-     * family_name claims. Centralised here to avoid the same logic being
-     * duplicated across AdminUserCreator, CustomerUserCreator, ProcessUserAction,
-     * and CheckAttributeMappingAction. (REF-02)
-     *
-     * Examples:
-     *   "john.doe@example.com"  → ['first' => 'John', 'last' => 'Doe']
-     *   "jsmith@example.com"    → ['first' => 'Jsmith', 'last' => '']
-     *   "first_last@x.com"      → ['first' => 'First', 'last' => 'Last']
-     *
      * @param  string $email A valid email address
      * @return array{first: string, last: string}
      */
@@ -951,8 +884,6 @@ class OAuthUtility extends Data
     {
         $local = (string) strstr($email, '@', true);
         if ($local === '') {
-            // Email has no local part (starts with '@') or no '@' at all —
-            // fall back to the domain portion, stripping the leading '@'.
             $domain = ltrim((string) strstr($email, '@'), '@');
             $local  = $domain !== '' ? $domain : $email;
         }
@@ -965,11 +896,7 @@ class OAuthUtility extends Data
     }
 
     /**
-     * Persist the OIDC test result to the provider record.
-     *
-     * Called by ShowTestResults after a test flow completes.
-     * Writes last_test_status ('success'|'failed'|'unsuccessful') and
-     * last_test_at (current UTC datetime) to the miniorange_oauth_client_apps table.
+     * Persist the OIDC test result to the provider record by app_name (legacy).
      *
      * @param string $appName The app_name of the provider
      * @param string $status  'success', 'failed', or 'unsuccessful'
@@ -981,7 +908,6 @@ class OAuthUtility extends Data
             return;
         }
 
-        // Load provider by app_name
         $provider = $this->miniorangeOauthClientAppsFactory->create();
         $this->appResource->load($provider, $appName, 'app_name');
 
@@ -1000,5 +926,72 @@ class OAuthUtility extends Data
             $this->customlog('saveTestStatus: failed to save — ' . $e->getMessage());
         }
     }
-    
+
+    /**
+     * Persist the OIDC test result to the provider record by numeric ID (preferred).
+     *
+     * This is the redirect-safe variant: the provider_id is passed through the
+     * OAuth state parameter and survives the redirect back from the IdP.
+     *
+     * @param int    $providerId Row `id` from miniorange_oauth_client_apps
+     * @param string $status     'success', 'failed', or 'unsuccessful'
+     */
+    public function saveTestStatusById(int $providerId, string $status): void
+    {
+        if ($providerId <= 0) {
+            $this->customlog('saveTestStatusById: skipped — invalid provider ID');
+            return;
+        }
+
+        $provider = $this->miniorangeOauthClientAppsFactory->create();
+        $this->appResource->load($provider, $providerId);
+
+        if (!$provider->getId()) {
+            $this->customlog('saveTestStatusById: provider not found for ID=' . $providerId);
+            return;
+        }
+
+        $provider->setData('last_test_status', $status);
+        $provider->setData('last_test_at', (new \DateTime('now', new \DateTimeZone('UTC')))->format('Y-m-d H:i:s'));
+
+        try {
+            $this->appResource->save($provider);
+            $this->customlog("saveTestStatusById: saved '{$status}' for provider ID={$providerId}");
+        } catch (\Exception $e) {
+            $this->customlog('saveTestStatusById: failed to save — ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Persist received OIDC claim keys to the provider record.
+     *
+     * Stored as JSON array in the `received_oidc_claims` column so the
+     * admin UI can offer a dropdown for attribute mapping.
+     *
+     * @param int      $providerId Row `id` from miniorange_oauth_client_apps
+     * @param string[] $claimKeys  Flat list of claim key names
+     */
+    public function saveReceivedOidcClaims(int $providerId, array $claimKeys): void
+    {
+        if ($providerId <= 0) {
+            return;
+        }
+
+        $provider = $this->miniorangeOauthClientAppsFactory->create();
+        $this->appResource->load($provider, $providerId);
+
+        if (!$provider->getId()) {
+            $this->customlog('saveReceivedOidcClaims: provider not found for ID=' . $providerId);
+            return;
+        }
+
+        $json = json_encode(array_values(array_unique($claimKeys)), JSON_UNESCAPED_SLASHES);
+        $provider->setData('received_oidc_claims', $json !== false ? $json : '[]');
+
+        try {
+            $this->appResource->save($provider);
+        } catch (\Exception $e) {
+            $this->customlog('saveReceivedOidcClaims: failed — ' . $e->getMessage());
+        }
+    }
 }

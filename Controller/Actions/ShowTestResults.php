@@ -5,8 +5,6 @@ namespace MiniOrange\OAuth\Controller\Actions;
 use MiniOrange\OAuth\Helper\OAuthConstants;
 use MiniOrange\OAuth\Helper\OAuthUtility;
 
-use Magento\Framework\App\Config\ScopeConfigInterface;
-use Magento\Store\Model\ScopeInterface;
 use Magento\Framework\App\Action\Action;
 use Magento\Framework\App\Action\Context;
 use Magento\Framework\Controller\Result\Raw as RawResult;
@@ -47,9 +45,6 @@ class ShowTestResults extends Action
     /** @var \Magento\Framework\App\Request\Http */
     protected \Magento\Framework\App\Request\Http $request;
 
-    /** @var \Magento\Framework\App\Config\ScopeConfigInterface */
-    protected \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig;
-
     /** @var \Magento\Framework\Escaper */
     private readonly \Magento\Framework\Escaper $escaper;
 
@@ -67,7 +62,6 @@ class ShowTestResults extends Action
      * @param Context                                    $context
      * @param OAuthUtility                               $oauthUtility
      * @param \Magento\Framework\App\Request\Http        $request
-     * @param ScopeConfigInterface                       $scopeConfig
      * @param \Magento\Customer\Model\Session            $customerSession
      * @param \Magento\Framework\Escaper                 $escaper
      */
@@ -75,15 +69,13 @@ class ShowTestResults extends Action
         Context $context,
         OAuthUtility $oauthUtility,
         \Magento\Framework\App\Request\Http $request,
-        ScopeConfigInterface $scopeConfig,
         \Magento\Customer\Model\Session $customerSession,
         \Magento\Framework\Escaper $escaper
     ) {
-        $this->oauthUtility  = $oauthUtility;
-        $this->scopeConfig   = $scopeConfig;
-        $this->request       = $request;
+        $this->oauthUtility    = $oauthUtility;
+        $this->request         = $request;
         $this->customerSession = $customerSession;
-        $this->escaper       = $escaper;
+        $this->escaper         = $escaper;
         // Absolute path to PHTML template (two dirs up from Controller/Actions/)
         // phpcs:disable Magento2.Functions.DiscouragedFunction.DiscouragedWithAlternative
         $this->templatePath  = dirname(__DIR__, 2)
@@ -139,25 +131,10 @@ class ShowTestResults extends Action
 
         $this->status = $this->oauthUtility->isBlank($this->userEmail) ? 'TEST FAILED' : 'TEST SUCCESSFUL';
 
-        // ------------------------------------------------------------------
-        // Persist last test status to provider record.
-        //
-        // Strategy (multi-provider safe):
-        //   1. Prefer saveTestStatusById() using the numeric provider ID that
-        //      was embedded in the OAuth state parameter and stored in session.
-        //   2. Fall back to saveTestStatus() using app_name from session
-        //      (legacy single-provider path).
-        // ------------------------------------------------------------------
+        // Persist last test status to provider record
         $testStatus = ($this->status === 'TEST SUCCESSFUL') ? 'success' : 'failed';
         $this->persistTestStatus($testStatus);
 
-        
-        $this->oauthUtility->getBaseUrl();
-        $this->oauthUtility->getStoreConfig(OAuthConstants::CUSTOMER_EMAIL);
-        $this->oauthUtility->getEdition();
-        $this->oauthUtility->getProductVersion();
-        $this->oauthUtility->getCurrentDate();
-        $this->oauthUtility->getStoreConfig(OAuthConstants::APP_NAME);
         $this->oauthUtility->flushCache();
 
         $data = $this->renderTemplate([

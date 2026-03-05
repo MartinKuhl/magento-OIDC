@@ -9,6 +9,9 @@ use MiniOrange\OAuth\Helper\OAuthConstants;
 
 /**
  * Debug block for OIDC response data and connectivity tests.
+ *
+ * All provider-specific values are read exclusively from the
+ * miniorange_oauth_client_apps table — no core_config_data fallback.
  */
 class Debug extends Template
 {
@@ -64,34 +67,76 @@ class Debug extends Template
     }
 
     /**
-     * Get OIDC Configuration
+     * Resolve the active provider context from request parameters.
+     *
+     * Resolution order:
+     *  1. provider_id request param → setActiveProviderId()
+     *  2. app_name request param → getClientDetailsByAppName()
+     *  3. First active provider (fallback)
+     *
+     * @return array<string,mixed> Provider data array or empty array
+     */
+    private function resolveProviderContext(): array
+    {
+        $providerId = (int) $this->getRequest()->getParam('provider_id');
+        if ($providerId > 0) {
+            $this->oauthUtility->setActiveProviderId($providerId);
+            $details = $this->oauthUtility->getClientDetailsById($providerId);
+            return $details ?? [];
+        }
+
+        $appName = (string) $this->getRequest()->getParam('app_name');
+        if ($appName !== '') {
+            $details = $this->oauthUtility->getClientDetailsByAppName($appName);
+            if ($details !== null && isset($details['id'])) {
+                $this->oauthUtility->setActiveProviderId((int) $details['id']);
+            }
+            return $details ?? [];
+        }
+
+        // Fallback: first active provider
+        $providers = $this->oauthUtility->getAllActiveProviders();
+        if ($providers !== []) {
+            $first = reset($providers);
+            if (isset($first['id'])) {
+                $this->oauthUtility->setActiveProviderId((int) $first['id']);
+            }
+            return $first;
+        }
+
+        return [];
+    }
+
+    /**
+     * Get OIDC Configuration — reads all provider-specific values
+     * directly from the app table, no core_config_data access.
      */
     public function getOidcConfiguration(): array
     {
-        $clientId = $this->oauthUtility->getStoreConfig(OAuthConstants::CLIENT_ID);
-        $clientSecret = $this->maskSecret($this->oauthUtility->getStoreConfig(OAuthConstants::CLIENT_SECRET));
-        $authorizeEndpoint = $this->oauthUtility->getStoreConfig(OAuthConstants::AUTHORIZE_URL);
-        $tokenEndpoint = $this->oauthUtility->getStoreConfig(OAuthConstants::ACCESSTOKEN_URL);
-        $userInfoEndpoint = $this->oauthUtility->getStoreConfig(OAuthConstants::GETUSERINFO_URL);
-        $callbackUrl = $this->getUrl('', ['_direct' => 'mooauth/actions/readauthorizationresponse']);
-        $scope = $this->oauthUtility->getStoreConfig(OAuthConstants::SCOPE);
-        $emailMapping = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_EMAIL)
-            ?: OAuthConstants::DEFAULT_MAP_EMAIL;
-        $usernameMapping = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_USERNAME)
-            ?: OAuthConstants::DEFAULT_MAP_USERN;
+        $clientDetails = $this->resolveProviderContext();
+
+        $clientId           = $clientDetails['clientID'] ?? null;
+        $clientSecret       = $this->maskSecret($clientDetails['client_secret'] ?? '');
+        $authorizeEndpoint  = $clientDetails['authorize_endpoint'] ?? null;
+        $tokenEndpoint      = $clientDetails['access_token_endpoint'] ?? null;
+        $userInfoEndpoint   = $clientDetails['user_info_endpoint'] ?? null;
+        $callbackUrl        = $this->getUrl('', ['_direct' => 'mooauth/actions/readauthorizationresponse']);
+        $scope              = $clientDetails['scope'] ?? null;
+        $emailMapping       = $clientDetails['email_attribute'] ?? OAuthConstants::DEFAULT_MAP_EMAIL;
+        $usernameMapping    = $clientDetails['username_attribute'] ?? OAuthConstants::DEFAULT_MAP_USERN;
 
         return [
-            'Client ID' => $clientId,
-            'Client Secret' => $clientSecret,
-            'Authorization Endpoint' => $authorizeEndpoint,
-            'Token Endpoint' => $tokenEndpoint,
-            'User Info Endpoint' => $userInfoEndpoint,
-            'Callback URL' => $callbackUrl,
-            'Scope' => $scope,
-            'Email Attribute Mapping' => $emailMapping,
+            'Client ID'                 => $clientId,
+            'Client Secret'             => $clientSecret,
+            'Authorization Endpoint'    => $authorizeEndpoint,
+            'Token Endpoint'            => $tokenEndpoint,
+            'User Info Endpoint'        => $userInfoEndpoint,
+            'Callback URL'              => $callbackUrl,
+            'Scope'                     => $scope,
+            'Email Attribute Mapping'   => $emailMapping,
             'Username Attribute Mapping' => $usernameMapping,
-            'Logging Enabled' => $this->oauthUtility->isLogEnable() ? 'Yes' : 'No',
-            'Log File' => '/var/log/mo_oauth.log'
+            'Logging Enabled'           => $this->oauthUtility->isLogEnable() ? 'Yes' : 'No',
+            'Log File'                  => '/var/log/mo_oauth.log'
         ];
     }
 
@@ -142,23 +187,25 @@ class Debug extends Template
     }
 
     /**
-     * Test Authelia Connection
+     * Test Authelia Connection — reads endpoints directly from the
+     * provider record, no core_config_data access.
      */
     public function testAutheliaConnection(): array
     {
+        $clientDetails = $this->resolveProviderContext();
         $results = [];
 
-        $authEndpoint = $this->oauthUtility->getStoreConfig(OAuthConstants::AUTHORIZE_URL);
+        $authEndpoint = $clientDetails['authorize_endpoint'] ?? null;
         if ($authEndpoint) {
             $results['Authorization Endpoint'] = $this->testUrl($authEndpoint);
         }
 
-        $tokenEndpoint = $this->oauthUtility->getStoreConfig(OAuthConstants::ACCESSTOKEN_URL);
+        $tokenEndpoint = $clientDetails['access_token_endpoint'] ?? null;
         if ($tokenEndpoint) {
             $results['Token Endpoint'] = $this->testUrl($tokenEndpoint);
         }
 
-        $userInfoEndpoint = $this->oauthUtility->getStoreConfig(OAuthConstants::GETUSERINFO_URL);
+        $userInfoEndpoint = $clientDetails['user_info_endpoint'] ?? null;
         if ($userInfoEndpoint) {
             $results['UserInfo Endpoint'] = $this->testUrl($userInfoEndpoint);
         }

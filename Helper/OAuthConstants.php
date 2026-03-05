@@ -65,7 +65,6 @@ class OAuthConstants
     public const LOGIN_TYPE_ADMIN = 'admin';
 
     // attribute mapping constants
-    // extend as needed
     public const MAP_EMAIL = 'amEmail';
     public const DEFAULT_MAP_EMAIL = 'email';
     public const MAP_USERNAME = 'amUsername';
@@ -139,9 +138,7 @@ class OAuthConstants
     public const GRANT_TYPE = 'authorization_code';
 
     // PKCE (RFC 7636) — FEAT-01
-    /** Session key used to store the PKCE code_verifier between authorization and token requests */
     public const PKCE_VERIFIER_SESSION_KEY = 'oidc_pkce_verifier';
-    /** The only supported challenge method (SHA-256) */
     public const PKCE_METHOD_S256 = 'S256';
 
     //OAUTH Constants

@@ -222,12 +222,9 @@ class Data extends AbstractHelper
         $data = $collection->getSize() > 0 ? $collection->getFirstItem()->getData() : null;
 
         if ($data !== null && isset($data['client_secret']) && !empty($data['client_secret'])) {
-            // Magento encrypted values use format "version:key_num:base64data" (e.g. "0:2:abc...")
-            // Only attempt decryption if the value matches this pattern
             if (preg_match('/^\d+:\d+:/', (string) $data['client_secret'])) {
                 $data['client_secret'] = $this->encryptor->decrypt($data['client_secret']);
             }
-            // Otherwise keep as-is (plaintext will be encrypted on next admin save)
         }
 
         return $data;
@@ -235,9 +232,6 @@ class Data extends AbstractHelper
 
     /**
      * Get client details by numeric provider ID (row `id`).
-     *
-     * MP-03: Direct lookup by primary key. Used when `providerId` is available
-     * from the decoded OAuth state parameter (Sprint 5).
      *
      * @param  int $providerId Row `id` of the provider record (must be > 0)
      * @return array|null Client details array or null if not found
@@ -261,9 +255,6 @@ class Data extends AbstractHelper
 
     /**
      * Persist the last test run result for a provider – lookup by app_name.
-     *
-     * Kept for backward compatibility. Prefer saveTestStatusById() when the
-     * numeric provider ID is available (multi-provider safe).
      *
      * @param string $appName Provider app_name
      * @param string $status  'success', 'failed', or 'unsuccessful'
@@ -296,10 +287,6 @@ class Data extends AbstractHelper
 
     /**
      * Persist the last test run result for a provider – lookup by primary key.
-     *
-     * Preferred over saveTestStatus() in multi-provider setups because it uses
-     * the numeric ID from the OAuth state parameter instead of app_name from
-     * the customer session (which may be empty after a redirect).
      *
      * @param int    $providerId Row `id` of the provider record (must be > 0)
      * @param string $status     'success', 'failed', or 'unsuccessful'
@@ -334,9 +321,6 @@ class Data extends AbstractHelper
     /**
      * Save received OIDC claims to the provider record.
      *
-     * Persists the extracted claim keys as JSON to the
-     * received_oidc_claims column in miniorange_oauth_client_apps.
-     *
      * @param int      $providerId Provider row ID
      * @param string[] $claimKeys  Array of claim key names
      */
@@ -367,11 +351,8 @@ class Data extends AbstractHelper
         }
     }
 
-
     /**
      * Return all active provider records for a given login type, ordered by sort_order.
-     *
-     * MP-03: Powers multi-provider SSO button rendering and provider selection UI.
      *
      * @param  string $loginType 'customer', 'admin', or 'both'
      * @return array  Array of provider data arrays (may be empty)
@@ -400,7 +381,10 @@ class Data extends AbstractHelper
     }
 
     /**
-     * Extract data stored in the store config table.
+     * Extract data stored in the store config table (core_config_data).
+     *
+     * Only used for global (non-provider-specific) keys.
+     * Provider-specific keys are resolved in OAuthUtility::getStoreConfig().
      *
      * @param  string $config
      * @return mixed
@@ -414,7 +398,10 @@ class Data extends AbstractHelper
     }
 
     /**
-     * Store data in the store config table.
+     * Store data in the store config table (core_config_data).
+     *
+     * Only writes global keys. Provider-specific values must be
+     * persisted directly to the miniorange_oauth_client_apps table.
      *
      * @param string $config
      * @param mixed  $value
@@ -424,34 +411,10 @@ class Data extends AbstractHelper
     {
         $finalValue = $skipSanitize ? $value : $this->sanitize($value);
         $this->configWriter->save('miniorange/oauth/' . $config, $finalValue);
-
-        // If this is an admin or customer link setting, also update the OAuth client app table
-        if ($config === OAuthConstants::SHOW_ADMIN_LINK
-            || $config === OAuthConstants::SHOW_CUSTOMER_LINK
-        ) {
-            try {
-                $collection = $this->getOAuthClientApps();
-                if (count($collection) > 0) {
-                    foreach ($collection as $item) {
-                        $model = $this->clientAppsFactory->create();
-                        $this->appResource->load($model, $item->getId());
-                        $model->setData($config, $finalValue);
-                        $this->appResource->save($model);
-                    }
-                }
-            } catch (\Exception $e) {
-                $this->logger->error(
-                    'Failed to update OAuth client app table: ' . $e->getMessage(),
-                    ['exception' => $e]
-                );
-            }
-        }
     }
 
     /**
      * Save user attributes to the database.
-     *
-     * Decides which user type (admin or customer) to update.
      *
      * @param string     $url
      * @param mixed      $value
@@ -654,8 +617,6 @@ class Data extends AbstractHelper
 
     /**
      * Get the admin SP-initiated URL for admin backend OIDC login.
-     *
-     * Uses the admin controller which sets loginType=admin.
      *
      * @param string|null $relayState
      * @param string|null $appName
