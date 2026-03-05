@@ -46,6 +46,7 @@
       <column xsi:type="text" name="show_admin_link" nullable="false" comment="Show Admin SSO Link" />
       <column xsi:type="text" name="autoredirect" nullable="false" comment="Auto redirect Users from Login Page" />
       <column xsi:type="text" name="mo_oauth_dont_create_user_if_role_not_mapped" nullable="false" comment="Do not create users if role not mapped" />
+      <column xsi:type="text" name="mo_oauth_dont_create_customer_if_group_not_mapped" nullable="false" comment="Do not create customers if group not mapped" />
       <column xsi:type="text" name="oauth_am_sameasbilling" nullable="false" comment="Same as billing address" />
 
       <!-- Per-provider login options -->

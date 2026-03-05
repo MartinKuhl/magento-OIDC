@@ -736,6 +736,41 @@ class OAuth extends \Magento\Framework\View\Element\Template
     }
 
     /**
+     * Get customer group mappings from provider or global config.
+     *
+     * @return array<int, array{group: string, customerGroup: string}>
+     */
+    public function getCustomerGroupMappings(): array
+    {
+        $mappings = $this->oauthUtility->getStoreConfig(OAuthConstants::CUSTOMER_GROUP_MAPPING);
+        if (!$this->oauthUtility->isBlank($mappings)) {
+            $decoded = json_decode((string) $mappings, true);
+            return is_array($decoded) ? $decoded : [];
+        }
+        return [];
+    }
+
+    /**
+     * Get default customer group (ID or name).
+     */
+    public function getDefaultCustomerGroup(): string
+    {
+        $group = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_DEFAULT_CUSTOMER_GROUP);
+        return $this->oauthUtility->isBlank($group)
+            ? OAuthConstants::DEFAULT_CUSTOMER_GROUP
+            : (string) $group;
+    }
+
+    /**
+     * Check if customer creation is blocked when group is not mapped.
+     */
+    public function getDontCreateCustomerIfGroupNotMapped(): string
+    {
+        $val = $this->oauthUtility->getStoreConfig(OAuthConstants::CREATEIFNOTMAP_CUSTOMER);
+        return $this->oauthUtility->isBlank($val) ? '' : (string) $val;
+    }
+
+    /**
      * This fetches the setting saved by the admin which decides what
      * attribute in the SAML response should be mapped to the Magento
      * user's Email.

@@ -127,6 +127,18 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
             );
             $model->setData('oauth_admin_role_mapping', json_encode($roleMappings));
 
+            // Customer group mappings as JSON
+            $customerGroupMappings = array_filter(
+                $params['oauth_customer_group_mapping'] ?? [],
+                static fn ($m): bool => !empty($m['group']) && !empty($m['customerGroup'])
+            );
+            $model->setData('oauth_customer_group_mapping', json_encode(array_values($customerGroupMappings)));
+            $model->setData('default_group', trim((string) ($params['oauth_am_default_customer_group'] ?? '')));
+            $model->setData(
+                'mo_oauth_dont_create_customer_if_group_not_mapped',
+                isset($params['dont_create_customer_if_group_not_mapped']) ? 'checked' : ''
+            );
+
             $this->appResource->save($model);
             $this->oauthUtility->customlog(
                 'Saved attribute mapping for provider ID ' . $providerId
@@ -146,6 +158,33 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
             $this->oauthUtility->setStoreConfig(
                 OAuthConstants::CREATEIFNOTMAP,
                 $params['dont_create_user_if_role_not_mapped']
+            );
+        }
+
+        // Customer Group Mapping (global mode)
+        if (isset($params['oauth_customer_group_mapping'])) {
+            $customerGroupMappings = array_filter(
+                $params['oauth_customer_group_mapping'],
+                static fn ($m): bool => !empty($m['group']) && !empty($m['customerGroup'])
+            );
+            $this->oauthUtility->setStoreConfig(
+                OAuthConstants::CUSTOMER_GROUP_MAPPING,
+                json_encode(array_values($customerGroupMappings)),
+                true
+            );
+        }
+
+        if (isset($params['oauth_am_default_customer_group'])) {
+            $this->oauthUtility->setStoreConfig(
+                OAuthConstants::MAP_DEFAULT_CUSTOMER_GROUP,
+                $params['oauth_am_default_customer_group']
+            );
+        }
+
+        if (isset($params['dont_create_customer_if_group_not_mapped'])) {
+            $this->oauthUtility->setStoreConfig(
+                OAuthConstants::CREATEIFNOTMAP_CUSTOMER,
+                $params['dont_create_customer_if_group_not_mapped']
             );
         }
 

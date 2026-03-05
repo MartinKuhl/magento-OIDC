@@ -78,6 +78,10 @@ class OAuthConstants
     public const MAP_GROUP = 'group';
     public const UNLISTED_ROLE = 'unlistedRole';
     public const CREATEIFNOTMAP = 'createUserIfRoleNotMapped';
+    public const CUSTOMER_GROUP_MAPPING = 'customerGroupMapping';
+    public const MAP_DEFAULT_CUSTOMER_GROUP = 'defaultCustomerGroup';
+    public const DEFAULT_CUSTOMER_GROUP = 'General';
+    public const CREATEIFNOTMAP_CUSTOMER = 'createCustomerIfGroupNotMapped';
 
     // Customer data attribute mapping constants
     public const MAP_DOB = 'amDob';

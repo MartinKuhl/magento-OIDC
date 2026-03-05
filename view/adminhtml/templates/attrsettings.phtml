@@ -70,6 +70,21 @@ if ($providerData !== null) {
     $oauth_am_admin_role_mappings = $block->getAdminRoleMappings();
 }
 
+// Customer Group Mapping settings
+if ($providerData !== null) {
+    $rawCgm = $providerData['oauth_customer_group_mapping'] ?? '[]';
+    $decodedCgm = json_decode((string) $rawCgm, true);
+    $customerGroupMappings = is_array($decodedCgm) ? $decodedCgm : [];
+    $defaultCustomerGroup = $providerData['default_group'] ?? '';
+    $dontCreateCustomerIfNotMapped =
+        ($providerData['mo_oauth_dont_create_customer_if_group_not_mapped'] ?? '') === 'checked'
+            ? 'checked' : '';
+} else {
+    $customerGroupMappings = $block->getCustomerGroupMappings();
+    $defaultCustomerGroup = $block->getDefaultCustomerGroup();
+    $dontCreateCustomerIfNotMapped = $block->getDontCreateCustomerIfGroupNotMapped();
+}
+
 $emailSelected    = $oauth_am_account_matcher == 'email'    ? 'selected="selected"' : "";
 $usernameSelected = $oauth_am_account_matcher == 'username' ? 'selected="selected"' : "";
 ?>
@@ -383,6 +398,96 @@ selected="selected"
                         </td>
                     </tr>
 
+                    <!-- CUSTOMER GROUP MAPPING Section -->
+                    <tr>
+                        <td colspan="2">
+                            <br>
+                            <h4 style="margin-top: 20px; border-top: 1px solid #ccc; padding-top: 15px;">
+                                CUSTOMER GROUP MAPPING
+                            </h4>
+                            <p style="font-style: italic; color: #666;">
+                                Map OIDC groups to Magento customer groups for frontend users.
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Default Customer Group -->
+                    <tr>
+                        <td><label><strong>Default Customer Group:</strong></label></td>
+                        <td>
+                            <select name="oauth_am_default_customer_group"
+                                    <?= $escaper->escapeHtmlAttr($disabled) ?>>
+                                <?php foreach ($groups as $group): ?>
+                                    <option value="<?= $escaper->escapeHtmlAttr($group['value']) ?>"
+                                        <?php if ((string)$group['value'] === (string)$defaultCustomerGroup): ?>
+                                            selected
+                                        <?php endif; ?>>
+                                        <?= $escaper->escapeHtml($group['label']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </td>
+                    </tr>
+
+                    <!-- Block unmapped groups -->
+                    <tr>
+                        <td><label><strong>Block unmapped groups:</strong></label></td>
+                        <td>
+                            <input type="checkbox"
+                                name="dont_create_customer_if_group_not_mapped"
+                                value="checked"
+                                <?php if ($dontCreateCustomerIfNotMapped === 'checked'): ?>checked<?php endif; ?>
+                                <?= $escaper->escapeHtmlAttr($disabled) ?>>
+                            <small style="color: #666;">
+                                Don't create customers whose OIDC group is not mapped.
+                            </small>
+                        </td>
+                    </tr>
+
+                    <!-- Customer Group Mapping Rows -->
+                    <tr>
+                        <td style="vertical-align: top;">
+                            <label><strong>Group Mappings:</strong></label>
+                        </td>
+                        <td>
+                            <div id="customer-group-mappings">
+                                <?php if (!empty($customerGroupMappings)): ?>
+                                    <?php foreach ($customerGroupMappings as $idx => $mapping): ?>
+                                        <div class="cgm-row" style="margin-bottom: 10px;">
+                                            <input type="text"
+                                                name="oauth_customer_group_mapping[<?= (int)$idx ?>][group]"
+                                                placeholder="OIDC Group Name"
+                                                value="<?= $escaper->escapeHtmlAttr($mapping['group'] ?? '') ?>"
+                                                style="width: 200px;"
+                                                <?= $escaper->escapeHtmlAttr($disabled) ?>>
+                                            <span>→</span>
+                                            <select name="oauth_customer_group_mapping[<?= (int)$idx ?>][customerGroup]"
+                                                    <?php if ($disabled): ?>disabled<?php endif; ?>>
+                                                <?php foreach ($groups as $group): ?>
+                                                    <option value="<?= $escaper->escapeHtmlAttr($group['value']) ?>"
+                                                        <?php if ((string)($mapping['customerGroup'] ?? '') === (string)$group['value']): ?>
+                                                            selected
+                                                        <?php endif; ?>>
+                                                        <?= $escaper->escapeHtml($group['label']) ?>
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                            <button type="button" onclick="this.closest('.cgm-row').remove()"
+                                                    class="action-delete" title="Remove"
+                                                    <?php if ($disabled): ?>disabled<?php endif; ?>>✕</button>
+                                        </div>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </div>
+                            <button type="button" onclick="addCustomerGroupMapping()"
+                                    style="margin-top: 5px;"
+                                    <?php if ($disabled): ?>disabled<?php endif; ?>>
+                                + Add Customer Group Mapping
+                            </button>
+                        </td>
+                    </tr>
+
+
                     <!-- Customer Data Mapping Section -->
                     <tr>
                         <td colspan="2">
@@ -613,6 +718,7 @@ selected="selected"
 
 <script>
 var roleMappingIndex = <?= count($oauth_am_admin_role_mappings) > 0 ? count($oauth_am_admin_role_mappings) : 1 ?>;
+var cgmIndex = <?= count($customerGroupMappings) ?>;
 
 function addRoleMapping() {
     var container = document.getElementById('admin-role-mappings');
@@ -638,6 +744,25 @@ function addRoleMapping() {
 
     container.appendChild(newRow);
     roleMappingIndex++;
+}
+
+function addCustomerGroupMapping() {
+        var container = document.getElementById('customer-group-mappings');
+        var i = cgmIndex++;
+        var opts = '';
+        <?php foreach ($groups as $group): ?>
+        opts += '<option value="<?= $escaper->escapeJs($group['value']) ?>"><?= $escaper->escapeJs($group['label']) ?></option>';
+        <?php endforeach; ?>
+
+        var row = document.createElement('div');
+        row.className = 'cgm-row';
+        row.style.marginBottom = '10px';
+        row.innerHTML =
+            '<input type="text" name="oauth_customer_group_mapping[' + i + '][group]" placeholder="OIDC Group Name" style="width: 200px;">' +
+            ' <span>→</span> ' +
+            '<select name="oauth_customer_group_mapping[' + i + '][customerGroup]">' + opts + '</select>' +
+            ' <button type="button" onclick="this.closest(\'.cgm-row\').remove()" class="action-delete" title="Remove">✕</button>';
+        container.appendChild(row);
 }
 
 function removeRoleMapping(button) {

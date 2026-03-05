@@ -230,6 +230,24 @@ class CustomerUserCreator
                 }
             }
 
+            // Resolve customer group from OIDC group claims
+            $oidcGroups = $this->extractOidcGroups($flattenedAttrs, $rawAttrs);
+            if ($oidcGroups !== []) {
+                $resolvedGroupId = $this->getCustomerGroupFromOidcGroups($oidcGroups);
+                if ($resolvedGroupId === null) {
+                    $this->oauthUtility->customlog(
+                        'CustomerUserCreator: creation denied – OIDC group not mapped'
+                    );
+                    throw new \Magento\Framework\Exception\LocalizedException(
+                        __('Customer creation denied: OIDC group not mapped.')
+                    );
+                }
+                $customer->setGroupId($resolvedGroupId);
+                $this->oauthUtility->customlog(
+                    "CustomerUserCreator: assigned group_id {$resolvedGroupId}"
+                );
+            }
+
             // Convert model to data interface for repository save, pass password as second arg
             $customerDataModel = $customer->getDataModel();
             $savedCustomer = $this->customerRepository->save($customerDataModel, $randomPassword);
@@ -257,6 +275,88 @@ class CustomerUserCreator
             $this->oauthUtility->customlog("Stack trace: " . $e->getTraceAsString());
             return null;
         }
+    }
+
+    /**
+     * Resolve Magento customer group ID from OIDC group claims.
+     *
+     * @param  string[] $userGroups OIDC group claim values
+     * @return int|null  Magento group ID, or null to deny creation
+     */
+    private function getCustomerGroupFromOidcGroups(array $userGroups): ?int
+    {
+        $mappingsJson = $this->oauthUtility->getStoreConfig(OAuthConstants::CUSTOMER_GROUP_MAPPING);
+        $mappings = [];
+        if (!$this->oauthUtility->isBlank($mappingsJson)) {
+            $decoded = json_decode((string) $mappingsJson, true);
+            if (is_array($decoded)) {
+                $mappings = $decoded;
+            }
+        }
+
+        // Match OIDC groups against configured mappings (case-insensitive)
+        if ($userGroups !== [] && $mappings !== []) {
+            foreach ($mappings as $mapping) {
+                $oidcGroup = (string) ($mapping['group'] ?? '');
+                $magentoGroupId = (string) ($mapping['customerGroup'] ?? '');
+                if ($oidcGroup === '' || $magentoGroupId === '') {
+                    continue;
+                }
+                foreach ($userGroups as $userGroup) {
+                    if (strcasecmp((string) $userGroup, $oidcGroup) === 0) {
+                        $this->oauthUtility->customlog(
+                            "CustomerGroupMapping: matched '{$userGroup}' -> group ID {$magentoGroupId}"
+                        );
+                        return (int) $magentoGroupId;
+                    }
+                }
+            }
+        }
+
+        // No match – check deny policy via mo_oauth_dont_create_customer_if_group_not_mapped
+        $dontCreate = $this->oauthUtility->getStoreConfig(OAuthConstants::CREATEIFNOTMAP_CUSTOMER);
+        if (!$this->oauthUtility->isBlank($dontCreate) && $dontCreate === 'checked') {
+            $this->oauthUtility->customlog(
+                'CustomerGroupMapping: no match, creation denied (dont_create_customer_if_group_not_mapped)'
+            );
+            return null;
+        }
+
+        // Fallback: configured default customer group
+        $defaultGroup = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_DEFAULT_CUSTOMER_GROUP);
+        if (!$this->oauthUtility->isBlank($defaultGroup) && is_numeric($defaultGroup)) {
+            $this->oauthUtility->customlog(
+                "CustomerGroupMapping: fallback to default group ID {$defaultGroup}"
+            );
+            return (int) $defaultGroup;
+        }
+
+        // Ultimate fallback: Magento "General" group (ID 1)
+        return 1;
+    }
+
+    /**
+     * Extract OIDC group claims from user attributes.
+     *
+     * @param  array<string, mixed> $flattenedAttrs
+     * @param  array<string, mixed> $rawAttrs
+     * @return string[]
+     */
+    private function extractOidcGroups(array $flattenedAttrs, array $rawAttrs): array
+    {
+        $groupAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_GROUP);
+        if ($this->oauthUtility->isBlank($groupAttribute)) {
+            return [];
+        }
+
+        $rawGroups = $flattenedAttrs[$groupAttribute] ?? ($rawAttrs[$groupAttribute] ?? null);
+        if (is_string($rawGroups)) {
+            return [$rawGroups];
+        }
+        if (is_array($rawGroups)) {
+            return $rawGroups;
+        }
+        return [];
     }
 
     /**

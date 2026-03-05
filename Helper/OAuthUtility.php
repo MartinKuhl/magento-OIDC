@@ -219,6 +219,11 @@ class OAuthUtility extends Data
         'amAccountMatcher'              => 'mo_oauth_create_user_in_magento_by_using',
         'unlistedRole'                  => 'roles_mapped',
         'createUserIfRoleNotMapped'     => 'mo_oauth_dont_create_user_if_role_not_mapped',
+
+        // Customer Group mapping
+        'customerGroupMapping'           => 'oauth_customer_group_mapping',
+        'defaultCustomerGroup'           => 'default_group',
+        'createCustomerIfGroupNotMapped' => 'mo_oauth_dont_create_customer_if_group_not_mapped',
     ];
 
     /**
