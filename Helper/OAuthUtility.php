@@ -224,6 +224,7 @@ class OAuthUtility extends Data
         'customerGroupMapping'           => 'oauth_customer_group_mapping',
         'defaultCustomerGroup'           => 'default_group',
         'createCustomerIfGroupNotMapped' => 'mo_oauth_dont_create_customer_if_group_not_mapped',
+        'updateFrontendGroupsOnSso'      => 'update_frontend_groups_on_sso',
     ];
 
     /**

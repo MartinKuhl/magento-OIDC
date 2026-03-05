@@ -360,6 +360,57 @@ class CustomerUserCreator
     }
 
     /**
+     * Update an existing customer's group based on OIDC group claims.
+     *
+     * Called by ProcessUserAction when update_frontend_groups_on_sso is enabled
+     * and the customer already exists.
+     *
+     * @param  CustomerInterface $customer      Existing Magento customer
+     * @param  array             $flattenedAttrs Flattened OIDC attributes
+     * @param  array             $rawAttrs       Raw OIDC attributes
+     * @return bool true if group was changed and saved
+     */
+    public function updateCustomerGroupFromOidc(
+        CustomerInterface $customer,
+        array $flattenedAttrs,
+        array $rawAttrs
+    ): bool {
+        $oidcGroups = $this->extractOidcGroups($flattenedAttrs, $rawAttrs);
+        if ($oidcGroups === []) {
+            $this->oauthUtility->customlog(
+                'updateCustomerGroupFromOidc: no OIDC groups in token, skipping'
+            );
+            return false;
+        }
+
+        $resolvedGroupId = $this->getCustomerGroupFromOidcGroups($oidcGroups);
+        if ($resolvedGroupId === null) {
+            // Deny-policy active but no match — don't change existing customer
+            $this->oauthUtility->customlog(
+                'updateCustomerGroupFromOidc: no mapping match, keeping current group'
+            );
+            return false;
+        }
+
+        $currentGroupId = (int) $customer->getGroupId();
+        if ($currentGroupId === $resolvedGroupId) {
+            $this->oauthUtility->customlog(
+                "updateCustomerGroupFromOidc: group unchanged (ID {$currentGroupId})"
+            );
+            return false;
+        }
+
+        $customer->setGroupId($resolvedGroupId);
+        $this->customerRepository->save($customer);
+
+        $this->oauthUtility->customlog(
+            "updateCustomerGroupFromOidc: group changed {$currentGroupId} → {$resolvedGroupId}"
+        );
+        return true;
+    }
+
+
+    /**
      * Create customer address with mapped OIDC attributes
      *
      * @param  CustomerInterface $customer

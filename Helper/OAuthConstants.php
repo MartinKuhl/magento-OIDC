@@ -82,6 +82,7 @@ class OAuthConstants
     public const MAP_DEFAULT_CUSTOMER_GROUP = 'defaultCustomerGroup';
     public const DEFAULT_CUSTOMER_GROUP = 'General';
     public const CREATEIFNOTMAP_CUSTOMER = 'createCustomerIfGroupNotMapped';
+    public const UPDATE_FRONTEND_GROUPS_ON_SSO = 'updateFrontendGroupsOnSso';
 
     // Customer data attribute mapping constants
     public const MAP_DOB = 'amDob';

@@ -222,6 +222,9 @@ class ProcessUserAction
             $user = $this->createNewUser($userEmail, $firstName, $lastName, $userName);
         }
 
+        // Update customer group on every SSO login if flag is set
+        $this->updateExistingCustomerGroup($user);
+
         /**
          * @var \Magento\Store\Model\Store $store
          */
@@ -386,5 +389,31 @@ class ProcessUserAction
         return $this;
     }
 
-    // Admin creation methods removed as they are now handled by CheckAttributeMappingAction and AdminUserCreator.
+    /**
+     * Update customer group from OIDC claims if update_frontend_groups_on_sso is enabled.
+     *
+     * @param CustomerInterface $customer
+     */
+    private function updateExistingCustomerGroup(CustomerInterface $customer): void
+    {
+        $updateFlag = $this->oauthUtility->getStoreConfig(OAuthConstants::UPDATE_FRONTEND_GROUPS_ON_SSO);
+        if ($this->oauthUtility->isBlank($updateFlag) || (string) $updateFlag !== '1') {
+            return;
+        }
+
+        $this->oauthUtility->customlog('ProcessUserAction: update_frontend_groups_on_sso is ON');
+
+        try {
+            $this->customerUserCreator->updateCustomerGroupFromOidc(
+                $customer,
+                $this->flattenedattrs ?? [],
+                $this->attrs ?? []
+            );
+        } catch (\Exception $e) {
+            $this->oauthUtility->customlog(
+                'ProcessUserAction: group update failed: ' . $e->getMessage()
+            );
+        }
+    }
+
 }
