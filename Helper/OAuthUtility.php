@@ -1002,17 +1002,31 @@ class OAuthUtility extends Data
     }
 
     /**
-     * Update specific fields on a provider row.
+     * Update specific fields on a provider row (e.g. PKCE code_verifier).
      *
-     * @param int   $providerId
-     * @param array $data key=>value pairs to update
+     * @param int                  $providerId Row `id` from miniorange_oauth_client_apps
+     * @param array<string, mixed> $data       Column => value pairs to update
      */
     public function saveProviderData(int $providerId, array $data): void
     {
-        /** @var \MiniOrange\OAuth\Model\OAuthProvider $model */
-        $model = $this->providerFactory->create()->load($providerId);
-        if ($model->getId()) {
-            $model->addData($data)->save();
+        if ($providerId <= 0 || $data === []) {
+            return;
+        }
+
+        $provider = $this->miniorangeOauthClientAppsFactory->create();
+        $this->appResource->load($provider, $providerId);
+
+        if (!$provider->getId()) {
+            $this->customlog('saveProviderData: provider not found for ID=' . $providerId);
+            return;
+        }
+
+        $provider->addData($data);
+
+        try {
+            $this->appResource->save($provider);
+        } catch (\Exception $e) {
+            $this->customlog('saveProviderData: failed — ' . $e->getMessage());
         }
     }
 
