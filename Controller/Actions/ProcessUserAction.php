@@ -64,41 +64,6 @@ class ProcessUserAction
     private $lastNameKey;
 
     /**
-     * @var string|null
-     */
-    private $dobAttribute;
-
-    /**
-     * @var string|null
-     */
-    private $genderAttribute;
-
-    /**
-     * @var string|null
-     */
-    private $phoneAttribute;
-
-    /**
-     * @var string|null
-     */
-    private $streetAttribute;
-
-    /**
-     * @var string|null
-     */
-    private $zipAttribute;
-
-    /**
-     * @var string|null
-     */
-    private $cityAttribute;
-
-    /**
-     * @var string|null
-     */
-    private $countryAttribute;
-
-    /**
      * @var int|null Per-provider auto-create customer flag (null = fall back to global config)
      */
     private ?int $providerAutoCreateCustomer = null;
@@ -164,6 +129,10 @@ class ProcessUserAction
      * Must be called at the start of execute() — after setActiveProviderId()
      * has been called on oauthUtility — so that getStoreConfig() resolves
      * values from the correct provider row instead of core_config_data.
+     *
+     * Note: DOB, Gender, Phone and Address mappings are handled exclusively
+     * by CustomerUserCreator::initializeAttributeMapping() and are therefore
+     * not loaded here.
      */
     private bool $attributesInitialized = false;
 
@@ -188,36 +157,13 @@ class ProcessUserAction
 
         $this->defaultRole = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_DEFAULT_ROLE)
             ?: OAuthConstants::DEFAULT_ROLE;
-
-        $this->dobAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_DOB)
-            ?: OAuthConstants::DEFAULT_MAP_DOB;
-
-        $this->genderAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_GENDER)
-            ?: OAuthConstants::DEFAULT_MAP_GENDER;
-
-        $this->phoneAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_PHONE)
-            ?: OAuthConstants::DEFAULT_MAP_PHONE;
-
-        $this->streetAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_STREET)
-            ?: OAuthConstants::DEFAULT_MAP_STREET;
-
-        $this->zipAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_ZIP)
-            ?: OAuthConstants::DEFAULT_MAP_ZIP;
-
-        $this->cityAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_CITY)
-            ?: OAuthConstants::DEFAULT_MAP_CITY;
-
-        $this->countryAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_COUNTRY)
-            ?: OAuthConstants::DEFAULT_MAP_COUNTRY;
     }
-
 
     /**
      * Execute the user processing action.
      */
     public function execute(): \Magento\Framework\Controller\Result\Redirect
     {
-
         // MP-05: Initialize attribute mappings from active provider context
         $this->initAttributeMappings();
         $this->oauthUtility->customlog("ProcessUserAction: execute");
@@ -285,8 +231,8 @@ class ProcessUserAction
         }
 
         /**
- * @var \Magento\Store\Model\Store $store
-*/
+         * @var \Magento\Store\Model\Store $store
+         */
         $store = $this->storeManager->getStore();
         $store_url = $store->getBaseUrl(\Magento\Framework\UrlInterface::URL_TYPE_WEB);
         $store_url = rtrim((string) $store_url, '/\\');
@@ -328,11 +274,6 @@ class ProcessUserAction
         return $this->customerLoginAction->setUser($user)->setRelayState('/')->execute();
     }
 
-    /**
-     * Create a new customer user from OIDC attributes.
-     *
-     * @throws \RuntimeException If customer creation fails
-     */
     /**
      * Create a new customer from OIDC attributes.
      *
