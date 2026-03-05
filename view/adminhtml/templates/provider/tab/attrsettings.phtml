@@ -220,6 +220,199 @@ $roleMappings = is_array($decoded) ? $decoded : [];
     </table>
 </div>
 
+<?php
+/* ── Customer Group Mapping — decode provider-level JSON ─────────────── */
+$groups             = $block->getAllGroups();
+$rawCgm             = (string) $val('oauth_customer_group_mapping', '[]');
+$decodedCgm         = json_decode($rawCgm, true);
+$customerGroupMappings = is_array($decodedCgm) ? $decodedCgm : [];
+?>
+
+<!-- ── Customer Group Mapping ────────────────────────────────────────── -->
+<div class="admin__fieldset-wrapper" style="margin-top:24px;">
+    <div class="admin__fieldset-wrapper-title" style="margin-bottom:12px;">
+        <span class="admin__fieldset-wrapper-title-text"
+              style="font-size:15px; font-weight:700; color:#1a1a1a; letter-spacing:0.2px;">
+            <?= $escaper->escapeHtml(__('Customer Group Mapping')) ?>
+        </span>
+        <p class="admin__field-note" style="font-style:italic; margin-top:8px;">
+            <?= $escaper->escapeHtml(
+                __('Map OIDC group claim values to Magento customer groups. '
+                    . 'Uses the same "Group / Role Claim" configured above.')
+            ) ?>
+        </p>
+    </div>
+
+    <table class="admin__table-primary" style="width:100%; margin-top:16px;">
+        <tbody>
+            <!-- Default Customer Group -->
+            <tr>
+                <td style="width:220px;">
+                    <label for="default_group">
+                        <strong><?= $escaper->escapeHtml(__('Default Customer Group')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <select id="default_group"
+                            name="default_group"
+                            class="admin__control-select"
+                            style="width:100%;">
+                        <option value="">-- <?= $escaper->escapeHtml(__('None (use Magento default)')) ?> --</option>
+                        <?php foreach ($groups as $group): ?>
+                            <option value="<?= $escaper->escapeHtmlAttr($group['value']) ?>"
+                                <?= ($val('default_group') == $group['value']) ? 'selected="selected"' : '' ?>>
+                                <?= $escaper->escapeHtml($group['label']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <small class="admin__field-note">
+                        <?= $escaper->escapeHtml(__('Assigned when no group mapping matches.')) ?>
+                    </small>
+                </td>
+            </tr>
+
+            <!-- Update groups on SSO login -->
+            <tr>
+                <td>
+                    <label for="update_frontend_groups_on_sso">
+                        <strong><?= $escaper->escapeHtml(__('Update Group on SSO Login')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <label style="display:flex; align-items:center; gap:8px;">
+                        <input type="hidden" name="update_frontend_groups_on_sso" value="0">
+                        <input type="checkbox"
+                               id="update_frontend_groups_on_sso"
+                               name="update_frontend_groups_on_sso"
+                               value="1"
+                               <?= ((int) $val('update_frontend_groups_on_sso', 0) === 1)
+                                   ? 'checked="checked"' : '' ?>>
+                        <?= $escaper->escapeHtml(
+                            __('Re-evaluate and update the customer group on every SSO login')
+                        ) ?>
+                    </label>
+                </td>
+            </tr>
+
+            <!-- Group Mappings -->
+            <tr>
+                <td style="vertical-align:top; padding-top:8px;">
+                    <label>
+                        <strong><?= $escaper->escapeHtml(__('Group Mappings')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <div id="mooauth-cgm-mappings">
+                        <?php
+                        $displayCgm = !empty($customerGroupMappings)
+                            ? $customerGroupMappings
+                            : [['group' => '', 'customerGroup' => '']];
+                        foreach ($displayCgm as $idx => $mapping):
+                        ?>
+                        <div class="mooauth-cgm-row"
+                             style="margin-bottom:8px; display:flex; align-items:center;">
+                            <input type="text"
+                                   name="oauth_customer_group_mapping[<?= (int) $idx ?>][group]"
+                                   class="admin__control-text"
+                                   value="<?= $escaper->escapeHtmlAttr($mapping['group'] ?? '') ?>"
+                                   placeholder="<?= $escaper->escapeHtmlAttr(__('OIDC Group Name')) ?>"
+                                   style="width:200px;">
+                            <span style="margin:0 10px;">&rarr;</span>
+                            <select name="oauth_customer_group_mapping[<?= (int) $idx ?>][customerGroup]"
+                                    class="admin__control-select"
+                                    style="width:220px;">
+                                <option value="">
+                                    -- <?= $escaper->escapeHtml(__('Select Group')) ?> --
+                                </option>
+                                <?php foreach ($groups as $group): ?>
+                                    <option value="<?= $escaper->escapeHtmlAttr($group['value']) ?>"
+                                        <?= (isset($mapping['customerGroup'])
+                                            && (string) $mapping['customerGroup'] === (string) $group['value'])
+                                            ? 'selected="selected"' : '' ?>>
+                                        <?= $escaper->escapeHtml($group['label']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <button type="button"
+                                    class="action-delete mooauth-remove-cgm"
+                                    style="margin-left:10px;">
+                                <?= $escaper->escapeHtml(__('Remove')) ?>
+                            </button>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <button type="button"
+                            id="mooauth-add-cgm"
+                            class="action-default"
+                            style="margin-top:4px;">
+                        + <?= $escaper->escapeHtml(__('Add Mapping')) ?>
+                    </button>
+                    <small class="admin__field-note" style="display:block; margin-top:4px;">
+                        <?= $escaper->escapeHtml(
+                            __('Map OIDC group names to Magento customer groups.')
+                        ) ?>
+                    </small>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+(function () {
+    'use strict';
+
+    var cgmGroupsHtml = <?= /* @noEscape */ json_encode(
+        array_reduce(
+            $groups,
+            static function (string $carry, array $group) use ($escaper): string {
+                return $carry
+                    . '<option value="' . $escaper->escapeHtmlAttr($group['value']) . '">'
+                    . $escaper->escapeHtml($group['label'])
+                    . '</option>';
+            },
+            '<option value="">-- ' . $escaper->escapeHtml(__('Select Group')) . ' --</option>'
+        )
+    ) ?>;
+
+    var cgmIndex = <?= count($displayCgm) ?>;
+
+    document.getElementById('mooauth-add-cgm').addEventListener('click', function () {
+        var container = document.getElementById('mooauth-cgm-mappings');
+        var row = document.createElement('div');
+        row.className = 'mooauth-cgm-row';
+        row.style.cssText = 'margin-bottom:8px; display:flex; align-items:center;';
+        row.innerHTML =
+            '<input type="text" name="oauth_customer_group_mapping[' + cgmIndex + '][group]"'
+            + ' placeholder="OIDC Group Name" class="admin__control-text" style="width:200px;">'
+            + '<span style="margin:0 10px;">&rarr;</span>'
+            + '<select name="oauth_customer_group_mapping[' + cgmIndex + '][customerGroup]"'
+            + ' class="admin__control-select" style="width:220px;">' + cgmGroupsHtml + '</select>'
+            + '<button type="button" class="action-delete mooauth-remove-cgm"'
+            + ' style="margin-left:10px;"><?= $escaper->escapeJs(__('Remove')) ?></button>';
+        container.appendChild(row);
+        cgmIndex++;
+        bindCgmRemove(row.querySelector('.mooauth-remove-cgm'));
+    });
+
+    function bindCgmRemove(btn) {
+        btn.addEventListener('click', function () {
+            var container = document.getElementById('mooauth-cgm-mappings');
+            var rows = container.querySelectorAll('.mooauth-cgm-row');
+            if (rows.length > 1) {
+                btn.parentElement.remove();
+            } else {
+                btn.parentElement.querySelector('input').value = '';
+                btn.parentElement.querySelector('select').selectedIndex = 0;
+            }
+        });
+    }
+
+    document.querySelectorAll('.mooauth-remove-cgm').forEach(bindCgmRemove);
+}());
+</script>
+
+
 <!-- ── Customer Data Mapping ─────────────────────────────────────────────── -->
 <div class="admin__fieldset-wrapper" style="margin-top:24px;">
     <div class="admin__fieldset-wrapper-title" style="margin-bottom:12px;">

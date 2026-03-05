@@ -8,6 +8,7 @@ use Magento\Authorization\Model\ResourceModel\Role\CollectionFactory as RoleColl
 use Magento\Backend\Block\Template;
 use Magento\Backend\Block\Template\Context;
 use Magento\Backend\Block\Widget\Tab\TabInterface;
+use Magento\Customer\Model\ResourceModel\Group\CollectionFactory as GroupCollectionFactory;
 use Magento\Framework\Phrase;
 use Magento\Framework\Registry;
 use MiniOrange\OAuth\Helper\OAuthConstants;
@@ -21,31 +22,26 @@ class AttributeMapping extends Template implements TabInterface
     /** @var string */
     protected $_template = 'MiniOrange_OAuth::provider/tab/attrsettings.phtml';
 
-    /** @var Registry */
     private readonly Registry $registry;
-
-    /** @var RoleCollectionFactory */
     private readonly RoleCollectionFactory $roleCollectionFactory;
-
-    /** @var OAuthUtility */
+    private readonly GroupCollectionFactory $groupCollectionFactory;
     private readonly OAuthUtility $oauthUtility;
 
     public function __construct(
         Context $context,
         Registry $registry,
         RoleCollectionFactory $roleCollectionFactory,
+        GroupCollectionFactory $groupCollectionFactory,
         OAuthUtility $oauthUtility,
         array $data = []
     ) {
-        $this->registry              = $registry;
-        $this->roleCollectionFactory = $roleCollectionFactory;
-        $this->oauthUtility          = $oauthUtility;
+        $this->registry               = $registry;
+        $this->roleCollectionFactory  = $roleCollectionFactory;
+        $this->groupCollectionFactory = $groupCollectionFactory;
+        $this->oauthUtility           = $oauthUtility;
         parent::__construct($context, $data);
     }
 
-    /**
-     * Return the current provider data, or an empty array for new providers.
-     */
     public function getProviderData(): array
     {
         $provider = $this->registry->registry('current_oidc_provider');
@@ -56,8 +52,6 @@ class AttributeMapping extends Template implements TabInterface
     }
 
     /**
-     * Return all admin roles as [['value' => id, 'label' => name], ...].
-     *
      * @return array<int, array{value: string, label: string}>
      */
     public function getAllRoles(): array
@@ -72,11 +66,23 @@ class AttributeMapping extends Template implements TabInterface
     }
 
     /**
-     * Return merged list of standard + received OIDC claims for datalist suggestions.
+     * Return all customer groups as [['value' => id, 'label' => name], ...].
      *
-     * Loads claims per-provider from the miniorange_oauth_client_apps table.
-     * Falls back to static OIDC_STANDARD_CLAIMS if no test was run yet.
-     *
+     * @return array<int, array{value: string, label: string}>
+     */
+    public function getAllGroups(): array
+    {
+        $groups = [];
+        foreach ($this->groupCollectionFactory->create() as $group) {
+            $groups[] = [
+                'value' => (string) $group->getId(),
+                'label' => (string) $group->getCustomerGroupCode(),
+            ];
+        }
+        return $groups;
+    }
+
+    /**
      * @return string[]
      */
     public function getOidcClaims(): array
@@ -94,7 +100,6 @@ class AttributeMapping extends Template implements TabInterface
             }
         }
 
-        // Before first test: fall back to standard OIDC spec claims
         return OAuthConstants::OIDC_STANDARD_CLAIMS;
     }
 

@@ -125,6 +125,7 @@ class Save extends Action implements HttpPostActionInterface
                 'mo_disable_non_oidc_admin_login',
                 'mo_disable_non_oidc_customer_login',
                 'oauth_am_sameasbilling',
+                'update_frontend_groups_on_sso'
             ] as $checkbox) {
                 $model->setData($checkbox, isset($data[$checkbox]) ? 1 : 0);
             }
@@ -165,6 +166,22 @@ class Save extends Action implements HttpPostActionInterface
                 }
             }
             $model->setData('oauth_admin_role_mapping', json_encode($roleMappings));
+
+            // Default customer group
+            $model->setData('default_group', $this->sanitizeString($data['default_group'] ?? ''));
+
+            // Customer group mappings: oauth_customer_group_mapping[N][group/customerGroup] → JSON
+            $cgMappings = [];
+            if (!empty($data['oauth_customer_group_mapping']) && is_array($data['oauth_customer_group_mapping'])) {
+                foreach ($data['oauth_customer_group_mapping'] as $row) {
+                    $group         = $this->sanitizeString($row['group'] ?? '');
+                    $customerGroup = $this->sanitizeString($row['customerGroup'] ?? '');
+                    if ($group !== '' && $customerGroup !== '') {
+                        $cgMappings[] = ['group' => $group, 'customerGroup' => $customerGroup];
+                    }
+                }
+            }
+            $model->setData('oauth_customer_group_mapping', json_encode($cgMappings));
 
             // Encrypt client secret only when a new value is provided
             if (!empty($data['client_secret'])) {
