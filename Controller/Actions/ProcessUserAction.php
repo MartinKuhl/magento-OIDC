@@ -46,11 +46,6 @@ class ProcessUserAction
     /**
      * @var string
      */
-    private $emailAttribute;
-
-    /**
-     * @var string
-     */
     private $usernameAttribute;
 
     /**
@@ -142,9 +137,6 @@ class ProcessUserAction
             return;
         }
         $this->attributesInitialized = true;
-
-        $this->emailAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_EMAIL)
-            ?: OAuthConstants::DEFAULT_MAP_EMAIL;
 
         $this->usernameAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_USERNAME)
             ?: OAuthConstants::DEFAULT_MAP_USERN;
