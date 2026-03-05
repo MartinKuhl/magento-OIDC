@@ -108,7 +108,7 @@ class OidcCspPolicyCollector implements PolicyCollectorInterface
                 'authorize_endpoint',
                 'access_token_endpoint',
                 'user_info_endpoint',
-                'jwks_endpoint',
+                'jwks_uri',
             ];
             foreach ($endpointFields as $field) {
                 $url = (string) ($provider[$field] ?? '');

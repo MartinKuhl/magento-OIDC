@@ -331,15 +331,15 @@ class OAuthSecurityHelper
     /**
      * Generate a PKCE code verifier (RFC 7636 §4.1).
      *
-     * Returns a 64-byte (128 hex-char) URL-safe random string.
-     * Compliant with the RFC requirement of 43–128 characters using
-     * the unreserved character set [A-Z a-z 0-9 - . _ ~].
+     * 32 random bytes → 43 base64url characters (256 bit entropy).
+     * Compliant with the 43–128 character requirement using the
+     * unreserved character set [A-Z a-z 0-9 - _ ~].
      *
-     * @return string 128-character URL-safe hex string
+     * @return string 43-character URL-safe base64 string
      */
     public function generateCodeVerifier(): string
     {
-        return bin2hex(random_bytes(64));
+        return rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
     }
 
     /**

@@ -172,9 +172,15 @@ class SendAuthorizationRequest extends BaseAction
         if ($pkceFlow === OAuthConstants::PKCE_METHOD_S256) {
             $codeVerifier  = $this->securityHelper->generateCodeVerifier();
             $codeChallenge = $this->securityHelper->computeCodeChallenge($codeVerifier);
-            // Store verifier in session so ReadAuthorizationResponse can include it in the token request
-            $this->oauthUtility->setSessionData(OAuthConstants::PKCE_VERIFIER_SESSION_KEY, $codeVerifier);
-            $this->oauthUtility->customlog("SendAuthorizationRequest: PKCE S256 enabled — challenge generated");
+            // Persist verifier in provider row (survives admin→frontend session switch)
+            $this->oauthUtility->saveProviderData(
+                (int) $clientDetails['id'],
+                ['pkce_code_verifier' => $codeVerifier]
+            );
+
+            $this->oauthUtility->customlog(
+                "SendAuthorizationRequest: PKCE S256 enabled — challenge generated, verifier persisted to DB"
+            );
         }
 
         //generate the authorization request

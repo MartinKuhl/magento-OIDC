@@ -1000,4 +1000,20 @@ class OAuthUtility extends Data
             $this->customlog('saveReceivedOidcClaims: failed — ' . $e->getMessage());
         }
     }
+
+    /**
+     * Update specific fields on a provider row.
+     *
+     * @param int   $providerId
+     * @param array $data key=>value pairs to update
+     */
+    public function saveProviderData(int $providerId, array $data): void
+    {
+        /** @var \MiniOrange\OAuth\Model\OAuthProvider $model */
+        $model = $this->providerFactory->create()->load($providerId);
+        if ($model->getId()) {
+            $model->addData($data)->save();
+        }
+    }
+
 }

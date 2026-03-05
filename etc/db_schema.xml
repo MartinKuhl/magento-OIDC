@@ -15,6 +15,7 @@
       <column xsi:type="text" name="values_in_body" nullable="false" comment="Send values in body" />
       <column xsi:type="text" name="grant_type" nullable="false" comment="Grant Type Selected" />
       <column xsi:type="text" name="pkce_flow" nullable="false" comment="PKCE flow" />
+      <column xsi:type="varchar" name="pkce_code_verifier" nullable="true" length="128" comment="Temporary PKCE code_verifier for active flow"/>
       <column xsi:type="text" name="well_known_config_url" nullable="false" comment="Well Known Config URL" />
       <column xsi:type="text" name="issuer" nullable="false" comment="OIDC Issuer from discovery document" />
       <column xsi:type="text" name="post_logout_url" nullable="false" comment="Post Logout URL" />

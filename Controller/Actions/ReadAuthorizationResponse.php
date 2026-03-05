@@ -225,15 +225,20 @@ class ReadAuthorizationResponse extends BaseAction
             $body = $clientDetails["values_in_body"];
             $redirectURL = $this->oauthUtility->getCallBackUrl();
 
-            // PKCE (RFC 7636 §4.5): retrieve verifier stored during authorization (FEAT-01)
-            $codeVerifier = (string) $this->oauthUtility->getSessionData(
-                OAuthConstants::PKCE_VERIFIER_SESSION_KEY,
-                true // one-time: remove from session immediately after reading
-            );
-            $codeVerifier = $codeVerifier !== '' ? $codeVerifier : null;
+            // PKCE (RFC 7636 §4.5): retrieve verifier from provider row (FEAT-01)
+            $codeVerifier = !empty($clientDetails['pkce_code_verifier'])
+                ? $clientDetails['pkce_code_verifier']
+                : null;
 
             if ($codeVerifier !== null) {
-                $this->oauthUtility->customlog("ReadAuthResponse: PKCE code_verifier found — including in token request");
+                // One-time use: clear verifier immediately
+                $this->oauthUtility->saveProviderData(
+                    (int) $clientDetails['id'],
+                    ['pkce_code_verifier' => null]
+                );
+                $this->oauthUtility->customlog(
+                    "ReadAuthResponse: PKCE code_verifier loaded from DB — including in token request"
+                );
             }
 
             if ($header == 1 && $body == 0) {
@@ -272,7 +277,7 @@ class ReadAuthorizationResponse extends BaseAction
                 } elseif (isset($accessTokenResponseData['id_token'])) {
                     $idToken = $accessTokenResponseData['id_token'];
                     if (!empty($idToken)) {
-                        $jwksEndpoint = $clientDetails['jwks_endpoint'] ?? '';
+                        $jwksEndpoint = $clientDetails['jwks_uri'] ?? '';
                         if (!empty($jwksEndpoint)) {
                             // Resolve expected issuer from stored discovery document data
                             $expectedIssuer = $clientDetails['issuer'] ?? null;

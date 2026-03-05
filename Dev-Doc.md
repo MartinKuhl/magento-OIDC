@@ -217,6 +217,10 @@ NEW UI
 
 - update customer and admin
 
+- pkce fix
+
+- jwks_endpoint
+
 ### LATER - complex ###:
 - Rename: --> Authelia OIDC (in Code)
 
