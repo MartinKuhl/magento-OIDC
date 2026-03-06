@@ -5,9 +5,6 @@ namespace MiniOrange\OAuth\Controller\Adminhtml\Actions;
 use MiniOrange\OAuth\Helper\OAuth\AuthorizationRequest;
 use MiniOrange\OAuth\Helper\OAuthConstants;
 use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
-use MiniOrange\OAuth\Helper\SessionHelper;
-use Magento\Backend\App\Action;
-use MiniOrange\OAuth\Helper\OAuthUtility;
 use MiniOrange\OAuth\Controller\Actions\BaseAction;
 
 /**
@@ -35,10 +32,10 @@ class SendAuthorizationRequest extends BaseAction
     /**
      * Initialize admin send authorization request action.
      *
-     * @param \Magento\Backend\App\Action\Context                    $context
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility                  $oauthUtility
-     * @param OAuthSecurityHelper                                    $securityHelper
-     * @param \Magento\Framework\Session\SessionManagerInterface     $sessionManager
+     * @param \Magento\Backend\App\Action\Context                $context
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility              $oauthUtility
+     * @param OAuthSecurityHelper                                $securityHelper
+     * @param \Magento\Framework\Session\SessionManagerInterface $sessionManager
      */
     public function __construct(
         \Magento\Backend\App\Action\Context $context,
@@ -60,11 +57,6 @@ class SendAuthorizationRequest extends BaseAction
     #[\Override]
     public function execute()
     {
-        // configureSSOSession() removed: it creates a host-only PHPSESSID cookie (no domain)
-        // that conflicts with PHP's session cookie (domain=...). The duplicate cookie prevents
-        // session_regenerate_id() from updating the browser's session ID after login.
-        // SameSite=None is unnecessary — OAuth uses top-level navigation (SameSite=Lax suffices).
-
         $Log_file_time = $this->oauthUtility->getStoreConfig(OAuthConstants::LOG_FILE_TIME);
         $current_time = time();
         $chk_enable_log = 1;
@@ -78,7 +70,6 @@ class SendAuthorizationRequest extends BaseAction
             $chk_enable_log = 0;
             $this->oauthUtility->setStoreConfig(OAuthConstants::LOG_FILE_TIME, null);
             $this->oauthUtility->deleteCustomLogFile();
-            //$this->oauthUtility->flushCache(); // REMOVED for performance
         }
         if ($chk_enable_log !== 0) {
             $this->oauthUtility->customlog("SendAuthorizationRequest: execute");
@@ -86,7 +77,6 @@ class SendAuthorizationRequest extends BaseAction
 
         $params = $this->getRequest()->getParams();
         if ($chk_enable_log !== 0) {
-            // REF-04: Use JSON instead of var_export to avoid leaking nested PHP structures.
             $this->oauthUtility->customlog(
                 "SendAuthorizationRequest: params: " . json_encode($params, JSON_UNESCAPED_SLASHES)
             );
@@ -127,25 +117,30 @@ class SendAuthorizationRequest extends BaseAction
             return $this->resultRedirectFactory->create()->setUrl($backendUrl);
         }
 
-        $clientID = $clientDetails["clientID"];
-        $scope = $clientDetails["scope"];
+        $clientID     = $clientDetails["clientID"];
+        $scope        = $clientDetails["scope"];
         $authorizeURL = $clientDetails["authorize_endpoint"];
         $responseType = OAuthConstants::CODE;
-        $redirectURL = $this->oauthUtility->getCallBackUrl();
+        $redirectURL  = $this->oauthUtility->getCallBackUrl();
 
-        // PKCE (RFC 7636) — generate verifier when provider has S256 configured (FEAT-01)
-        $codeChallenge = null;
-        $pkceFlow      = $clientDetails['pkce_flow'] ?? '';
-        if ($pkceFlow === OAuthConstants::PKCE_METHOD_S256) {
-            $codeVerifier  = $this->securityHelper->generateCodeVerifier();
-            $codeChallenge = $this->securityHelper->computeCodeChallenge($codeVerifier);
+        // PKCE (RFC 7636) — generate verifier when provider has PKCE configured (FEAT-01)
+        $codeChallenge       = null;
+        $codeChallengeMethod = null;
+        $pkceFlow            = $clientDetails['pkce_flow'] ?? '';
+        if ($pkceFlow === OAuthConstants::PKCE_METHOD_S256
+            || $pkceFlow === OAuthConstants::PKCE_METHOD_PLAIN
+        ) {
+            $codeVerifier        = $this->securityHelper->generateCodeVerifier();
+            $codeChallenge       = $this->securityHelper->computeCodeChallenge($codeVerifier, $pkceFlow);
+            $codeChallengeMethod = $pkceFlow;
+
             // Persist verifier in provider row (survives admin→frontend session switch)
             $this->oauthUtility->saveProviderData(
                 (int) $clientDetails['id'],
                 ['pkce_code_verifier' => $codeVerifier]
             );
             $this->oauthUtility->customlog(
-                "SendAuthorizationRequest (admin): PKCE S256 enabled — challenge generated, verifier persisted to DB"
+                "SendAuthorizationRequest (admin): PKCE {$pkceFlow} enabled — challenge generated, verifier persisted to DB"
             );
         }
 
@@ -155,9 +150,9 @@ class SendAuthorizationRequest extends BaseAction
             : (isset($params['relayState']) ? $params['relayState'] : '/');
         $relayState = $this->securityHelper->validateRedirectUrl($rawRelayState, '/');
         $stateToken = $this->securityHelper->createStateToken($currentSessionId);
-        
+
         $providerId = (int) ($clientDetails['id'] ?? 0);
-        
+
         $relayState = $this->securityHelper->encodeRelayState(
             $relayState,
             $currentSessionId,
@@ -180,7 +175,6 @@ class SendAuthorizationRequest extends BaseAction
             $this->oauthUtility->customlog(
                 "SendAuthorizationRequest: Test-Flow, setting relayState to: " . $testRelayState
             );
-            // Rebuild combined state preserving sessionId, appName, loginType, stateToken, providerId
             $relayState = $this->securityHelper->encodeRelayState(
                 $testRelayState,
                 $currentSessionId,
@@ -201,7 +195,8 @@ class SendAuthorizationRequest extends BaseAction
             $redirectURL,
             $relayState,
             $params,
-            $codeChallenge
+            $codeChallenge,
+            $codeChallengeMethod
         ))->build();
 
         if ($chk_enable_log !== 0) {
