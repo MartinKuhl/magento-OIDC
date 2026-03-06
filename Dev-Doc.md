@@ -201,8 +201,6 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
 
 - enable auto-redirect in case only one OIDC provider is configured and non-OIDC are disabled.
 
-- remove delivery address mapping / db entries / checkbox billing/delivery
-
 - you mark the section in case changes were made, extend this so that the concrete data field is highlighted
 
 - scope handling
