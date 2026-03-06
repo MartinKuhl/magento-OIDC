@@ -103,9 +103,6 @@ class Save extends Action implements HttpPostActionInterface
                     'billing_address_attribute', 'billing_zip_attribute',
                     'billing_city_attribute', 'billing_state_attribute',
                     'billing_country_attribute', 'billing_phone_attribute',
-                    'shipping_address_attribute', 'shipping_zip_attribute',
-                    'shipping_city_attribute', 'shipping_state_attribute',
-                    'shipping_country_attribute', 'shipping_phone_attribute',
                 ] as $field) {
                 if (isset($data[$field])) {
                     $model->setData($field, $this->sanitizeString($data[$field]));
@@ -124,7 +121,6 @@ class Save extends Action implements HttpPostActionInterface
                 'autoredirect',
                 'mo_disable_non_oidc_admin_login',
                 'mo_disable_non_oidc_customer_login',
-                'oauth_am_sameasbilling',
                 // Profile Sync on SSO Login
                 'sync_customer_profile_on_sso',
                 'sync_customer_address_on_sso',

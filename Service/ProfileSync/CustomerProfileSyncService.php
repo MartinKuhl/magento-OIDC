@@ -96,11 +96,11 @@ class CustomerProfileSyncService
     }
 
     // ──────────────────────────────────────────────
-    //  Address sync (billing + shipping)
+    //  Address sync (billing)
     // ──────────────────────────────────────────────
 
     /**
-     * Update or create the default billing/shipping address from OIDC claims.
+     * Update or create the default billing address from OIDC claims.
      *
      * Strategy: find existing default address of the given type and update it.
      * If none exists, create a new one and mark it as default.
@@ -109,7 +109,7 @@ class CustomerProfileSyncService
      * @param array             $flat
      * @param array             $raw
      * @param array             $addrKeys  ['phone','street','zip','city','state','country']
-     * @param string            $type      'billing' or 'shipping'
+     * @param string            $type      'billing'
      */
     public function syncAddress(
         CustomerInterface $customer,
@@ -205,8 +205,6 @@ class CustomerProfileSyncService
 
             if ($type === 'billing') {
                 $address->setIsDefaultBilling(true);
-            } else {
-                $address->setIsDefaultShipping(true);
             }
 
             $this->addressRepository->save($address);

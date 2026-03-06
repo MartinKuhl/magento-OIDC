@@ -334,6 +334,158 @@ $customerGroupMappings = is_array($decodedCgm) ? $decodedCgm : [];
     </table>
 </div>
 
+<!-- ── Customer Data Mapping ─────────────────────────────────────────────── -->
+<div class="admin__fieldset-wrapper" style="margin-top:24px;">
+    <div class="admin__fieldset-wrapper-title" style="margin-bottom:12px;">
+        <span class="admin__fieldset-wrapper-title-text" style="font-size:15px; font-weight:700; color:#1a1a1a; letter-spacing:0.2px;">
+            <?= $escaper->escapeHtml(__('Customer Data Mapping')) ?>
+        </span>
+        <p class="admin__field-note" style="font-style:italic; margin-top:8px;">
+            <?= $escaper->escapeHtml(
+                __('Map OIDC claims to customer profile and address fields used during auto-creation.')
+            ) ?>
+        </p>
+    </div>
+
+    <table class="admin__table-primary" style="width:100%; margin-top:16px;">
+        <tbody>
+            <tr>
+                <td style="width:220px;">
+                    <label for="dob_attribute">
+                        <strong><?= $escaper->escapeHtml(__('Date of Birth Claim')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <input type="text"
+                           id="dob_attribute"
+                           name="dob_attribute"
+                           class="admin__control-text"
+                           list="oidc-claims-datalist"
+                           value="<?= $escaper->escapeHtmlAttr($val('dob_attribute', '')) ?>"
+                           style="width:100%;">
+                    <small class="admin__field-note">
+                        <?= $escaper->escapeHtml(__('Expected format from IdP: YYYY-MM-DD')) ?>
+                    </small>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="gender_attribute">
+                        <strong><?= $escaper->escapeHtml(__('Gender Claim')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <input type="text"
+                           id="gender_attribute"
+                           name="gender_attribute"
+                           class="admin__control-text"
+                           list="oidc-claims-datalist"
+                           value="<?= $escaper->escapeHtmlAttr($val('gender_attribute', '')) ?>"
+                           style="width:100%;">
+                    <small class="admin__field-note">
+                        <?= $escaper->escapeHtml(__('Accepted values: male/m/1 or female/f/2')) ?>
+                    </small>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="billing_phone_attribute">
+                        <strong><?= $escaper->escapeHtml(__('Phone Number Claim')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <input type="text"
+                           id="billing_phone_attribute"
+                           name="billing_phone_attribute"
+                           class="admin__control-text"
+                           list="oidc-claims-datalist"
+                           value="<?= $escaper->escapeHtmlAttr($val('billing_phone_attribute', '')) ?>"
+                           style="width:100%;">
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div style="display:flex; align-items:center; margin:24px 0 8px; background:#f5f5f5; font-weight:700; font-size:13px; color:#333; text-transform:uppercase; letter-spacing:0.5px;">
+        <?= $escaper->escapeHtml(__('Billing Address')) ?>
+    </div>
+    <table class="admin__table-primary" style="width:100%;">
+        <tbody>
+            <tr>
+                <td style="width:220px;">
+                    <label for="billing_address_attribute">
+                        <strong><?= $escaper->escapeHtml(__('Street')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <input type="text" id="billing_address_attribute" name="billing_address_attribute"
+                           class="admin__control-text" list="oidc-claims-datalist"
+                           value="<?= $escaper->escapeHtmlAttr($val('billing_address_attribute', '')) ?>"
+                           style="width:100%;">
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="billing_zip_attribute">
+                        <strong><?= $escaper->escapeHtml(__('ZIP / Postal Code')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <input type="text" id="billing_zip_attribute" name="billing_zip_attribute"
+                           class="admin__control-text" list="oidc-claims-datalist"
+                           value="<?= $escaper->escapeHtmlAttr($val('billing_zip_attribute', '')) ?>"
+                           style="width:100%;">
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="billing_city_attribute">
+                        <strong><?= $escaper->escapeHtml(__('City')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <input type="text" id="billing_city_attribute" name="billing_city_attribute"
+                           class="admin__control-text" list="oidc-claims-datalist"
+                           value="<?= $escaper->escapeHtmlAttr($val('billing_city_attribute', '')) ?>"
+                           style="width:100%;">
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="billing_state_attribute">
+                        <strong><?= $escaper->escapeHtml(__('State / Region')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <input type="text" id="billing_state_attribute" name="billing_state_attribute"
+                           class="admin__control-text" list="oidc-claims-datalist"
+                           value="<?= $escaper->escapeHtmlAttr($val('billing_state_attribute', '')) ?>"
+                           style="width:100%;">
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="billing_country_attribute">
+                        <strong><?= $escaper->escapeHtml(__('Country')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <input type="text" id="billing_country_attribute" name="billing_country_attribute"
+                           class="admin__control-text" list="oidc-claims-datalist"
+                           value="<?= $escaper->escapeHtmlAttr($val('billing_country_attribute', '')) ?>"
+                           style="width:100%;">
+                    <small class="admin__field-note">
+                        <?= $escaper->escapeHtml(
+                            __('ISO 3166-1 alpha-2 code (e.g. US, DE, GB) or full country name')
+                        ) ?>
+                    </small>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+
 </fieldset>
 
 <script>

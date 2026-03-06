@@ -195,31 +195,19 @@ Code quality:
 Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
 
 
-### FIX ###:
-
-- Display Name: <> Display Name <> OAuth Provider Name
-- Editing provider: Authelia banner postion and size (Attribute mapping)
-- End Session (Logout) Endpoint style
-- User Auto Redirect Settings:
-- Sign In Settings are also Provider dependent 
-- im und export?
-- remove double "Editing provider info bix"
-- side bar ordering (Left and top)
-
-NEW UI
-
-
-
+### FIX ###
 
 - logout
 
 - enable auto-redirect in case only one OIDC provider is configured and non-OIDC are disabled.
 
+- remove delivery address mapping / db entries / checkbox billing/delivery
+
 - you mark the section in case changes were made, extend this so that the concrete data field is highlighted
 
 - scope handling
 
-# TEsting
+# TESTING
 - update customer and admin
 - PKSE
 

@@ -157,12 +157,12 @@ $disableNonOidcCustomer = (bool)(int) $val('mo_disable_non_oidc_customer_login',
                                name="sync_customer_address_on_sso"
                                value="1"
                                <?= $block->getSyncCustomerAddressOnSso() ? 'checked="checked"' : '' ?>>
-                        <?= $escaper->escapeHtml(__('Sync billing & shipping address')) ?>
+                        <?= $escaper->escapeHtml(__('Sync billing address')) ?>
                     </label>
                     <!-- FIX: margin-left 26px → 0 -->
                     <p class="admin__field-note" style="margin:0 0 12px 0; color:#999; font-size:12px;">
                         <?= $escaper->escapeHtml(__(
-                            'Overwrites the default billing/shipping address with OIDC address claims (incl. phone).'
+                            'Overwrites the default billing address with OIDC address claims (incl. phone).'
                         )) ?>
                     </p>
 
