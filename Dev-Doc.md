@@ -215,6 +215,8 @@ NEW UI
 
 - jwks_endpoint -> fixed but verfication?
 
+- pkce_flow UI componentn 
+
 - scope handling
 
 - update customer and admin

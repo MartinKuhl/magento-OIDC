@@ -125,7 +125,6 @@ class Save extends Action implements HttpPostActionInterface
                 'mo_disable_non_oidc_admin_login',
                 'mo_disable_non_oidc_customer_login',
                 'oauth_am_sameasbilling',
-                'update_frontend_groups_on_sso',
                 // Profile Sync on SSO Login
                 'sync_customer_profile_on_sso',
                 'sync_customer_address_on_sso',
@@ -135,47 +134,6 @@ class Save extends Action implements HttpPostActionInterface
             ] as $checkbox) {
                 $model->setData($checkbox, isset($data[$checkbox]) ? 1 : 0);
             }
-
-            // Auto-fill endpoints from OIDC Discovery URL (.well-known/openid-configuration)
-            $discoveryUrl = trim((string) ($data['well_known_config_url'] ?? ''));
-            if ($discoveryUrl !== '') {
-                try {
-                    $ch = curl_init($discoveryUrl);
-                    curl_setopt_array($ch, [
-                        CURLOPT_RETURNTRANSFER => true,
-                        CURLOPT_TIMEOUT        => 10,
-                        CURLOPT_FOLLOWLOCATION => true,
-                        CURLOPT_SSL_VERIFYPEER => true,
-                    ]);
-                    $response = curl_exec($ch);
-                    $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-                    curl_close($ch);
-
-                    if ($httpCode === 200 && $response) {
-                        $config = json_decode($response, true);
-                        if (is_array($config)) {
-                            $mapping = [
-                                'authorization_endpoint'  => 'authorize_endpoint',
-                                'token_endpoint'          => 'access_token_endpoint',
-                                'userinfo_endpoint'       => 'user_info_endpoint',
-                                'jwks_uri'                => 'jwks_endpoint',
-                                'end_session_endpoint'    => 'endsession_endpoint',
-                                'issuer'                  => 'issuer',
-                            ];
-                            foreach ($mapping as $oidcKey => $dbColumn) {
-                                if (!empty($config[$oidcKey])) {
-                                    $model->setData($dbColumn, $config[$oidcKey]);
-                                }
-                            }
-                        }
-                    }
-                } catch (\Exception $e) {
-                    $this->messageManager->addWarningMessage(
-                        (string) __('Could not fetch Discovery URL: %1', $e->getMessage())
-                    );
-                }
-            }
-
 
             // Lockout-prevention: OIDC-only requires the SSO button to be shown
             if (!isset($data['show_admin_link']) && isset($data['mo_disable_non_oidc_admin_login'])) {

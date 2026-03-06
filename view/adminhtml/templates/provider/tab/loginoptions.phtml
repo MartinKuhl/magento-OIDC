@@ -110,19 +110,18 @@ $disableNonOidcCustomer = (bool)(int) $val('mo_disable_non_oidc_customer_login',
 <!-- ── Profile Sync on SSO Login ─────────────────────────────────────────── -->
 <div class="admin__fieldset-wrapper" style="margin-top:24px;">
     <div class="admin__fieldset-wrapper-title" style="margin-bottom:12px;">
-        <span class="admin__fieldset-wrapper-title-text" style="font-size:15px; font-weight:600;">
+        <span class="admin__fieldset-wrapper-title-text" style="font-size:15px; font-weight:700; color:#1a1a1a; letter-spacing:0.2px;">
             <?= $escaper->escapeHtml(__('Profile Sync on SSO Login')) ?>
         </span>
+        <p class="admin__field-note" style="font-style:italic; margin-top:8px;">
+            <?= $escaper->escapeHtml(__(
+                'When enabled, existing user data is updated from OIDC claims on every SSO login. '
+                . 'Only applies to users that already exist — new users are handled by Auto-Create above.'
+            )) ?>
+        </p>
     </div>
 
-    <p class="admin__field-note" style="margin-bottom:16px; color:#666;">
-        <?= $escaper->escapeHtml(__(
-            'When enabled, existing user data is updated from OIDC claims on every SSO login. '
-            . 'Only applies to users that already exist — new users are handled by Auto-Create above.'
-        )) ?>
-    </p>
-
-    <!-- ── Customer Sync ── -->
+    <!-- Customer Profile Sync -->
     <table class="admin__table-primary" style="width:100%; margin-top:16px;">
         <tbody>
             <tr>
@@ -132,73 +131,56 @@ $disableNonOidcCustomer = (bool)(int) $val('mo_disable_non_oidc_customer_login',
                     </label>
                 </td>
                 <td>
-                    <table class="admin__table-secondary" style="width:100%;">
-                        <tbody>
-                            <!-- Sync Name, DOB, Gender -->
-                            <tr>
-                                <td style="width:50%; padding:6px 0;">
-                                    <label for="loginopt_sync_customer_profile">
-                                        <input type="checkbox"
-                                               id="loginopt_sync_customer_profile"
-                                               name="sync_customer_profile_on_sso"
-                                               value="1"
-                                               <?php if ($block->getSyncCustomerProfileOnSso()): ?> checked<?php endif; ?>
-                                               class="admin__control-checkbox" />
-                                        <span><?= $escaper->escapeHtml(__('Sync name, date of birth & gender')) ?></span>
-                                    </label>
-                                    <p class="admin__field-note" style="margin:4px 0 0 22px; color:#999; font-size:12px;">
-                                        <?= $escaper->escapeHtml(__(
-                                            'Updates firstname, lastname, DOB and gender from OIDC claims for existing customers.'
-                                        )) ?>
-                                    </p>
-                                </td>
-                            </tr>
-                            <!-- Sync Address -->
-                            <tr>
-                                <td style="width:50%; padding:6px 0;">
-                                    <label for="loginopt_sync_customer_address">
-                                        <input type="checkbox"
-                                               id="loginopt_sync_customer_address"
-                                               name="sync_customer_address_on_sso"
-                                               value="1"
-                                               <?php if ($block->getSyncCustomerAddressOnSso()): ?> checked<?php endif; ?>
-                                               class="admin__control-checkbox" />
-                                        <span><?= $escaper->escapeHtml(__('Sync billing & shipping address')) ?></span>
-                                    </label>
-                                    <p class="admin__field-note" style="margin:4px 0 0 22px; color:#999; font-size:12px;">
-                                        <?= $escaper->escapeHtml(__(
-                                            'Overwrites the default billing/shipping address with OIDC address claims (incl. phone).'
-                                        )) ?>
-                                    </p>
-                                </td>
-                            </tr>
-                            <!-- Sync Customer Group -->
-                            <tr>
-                                <td style="width:50%; padding:6px 0;">
-                                    <label for="loginopt_sync_customer_group">
-                                        <input type="checkbox"
-                                               id="loginopt_sync_customer_group"
-                                               name="sync_customer_group_on_sso"
-                                               value="1"
-                                               <?php if ($block->getSyncCustomerGroupOnSso()): ?> checked<?php endif; ?>
-                                               class="admin__control-checkbox" />
-                                        <span><?= $escaper->escapeHtml(__('Re-evaluate customer group')) ?></span>
-                                    </label>
-                                    <p class="admin__field-note" style="margin:4px 0 0 22px; color:#999; font-size:12px;">
-                                        <?= $escaper->escapeHtml(__(
-                                            'Re-evaluates the customer group mapping from OIDC group claims. Existing group will be overwritten.'
-                                        )) ?>
-                                    </p>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <label style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                        <input type="hidden" name="sync_customer_profile_on_sso" value="0">
+                        <input type="checkbox"
+                               id="loginopt_sync_customer_profile"
+                               name="sync_customer_profile_on_sso"
+                               value="1"
+                               <?= $block->getSyncCustomerProfileOnSso() ? 'checked="checked"' : '' ?>>
+                        <?= $escaper->escapeHtml(__('Sync name, date of birth & gender')) ?>
+                    </label>
+                    <p class="admin__field-note" style="margin:-6px 0 12px 26px; color:#999; font-size:12px;">
+                        <?= $escaper->escapeHtml(__(
+                            'Updates firstname, lastname, DOB and gender from OIDC claims for existing customers.'
+                        )) ?>
+                    </p>
+
+                    <label style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                        <input type="hidden" name="sync_customer_address_on_sso" value="0">
+                        <input type="checkbox"
+                               id="loginopt_sync_customer_address"
+                               name="sync_customer_address_on_sso"
+                               value="1"
+                               <?= $block->getSyncCustomerAddressOnSso() ? 'checked="checked"' : '' ?>>
+                        <?= $escaper->escapeHtml(__('Sync billing & shipping address')) ?>
+                    </label>
+                    <p class="admin__field-note" style="margin:-6px 0 12px 26px; color:#999; font-size:12px;">
+                        <?= $escaper->escapeHtml(__(
+                            'Overwrites the default billing/shipping address with OIDC address claims (incl. phone).'
+                        )) ?>
+                    </p>
+
+                    <label style="display:flex; align-items:center; gap:8px;">
+                        <input type="hidden" name="sync_customer_group_on_sso" value="0">
+                        <input type="checkbox"
+                               id="loginopt_sync_customer_group"
+                               name="sync_customer_group_on_sso"
+                               value="1"
+                               <?= $block->getSyncCustomerGroupOnSso() ? 'checked="checked"' : '' ?>>
+                        <?= $escaper->escapeHtml(__('Re-evaluate customer group')) ?>
+                    </label>
+                    <p class="admin__field-note" style="margin:-6px 0 0 26px; color:#999; font-size:12px;">
+                        <?= $escaper->escapeHtml(__(
+                            'Re-evaluates the customer group mapping from OIDC group claims. Existing group will be overwritten.'
+                        )) ?>
+                    </p>
                 </td>
             </tr>
         </tbody>
     </table>
 
-    <!-- ── Admin Sync ── -->
+    <!-- Admin Profile Sync -->
     <table class="admin__table-primary" style="width:100%; margin-top:16px;">
         <tbody>
             <tr>
@@ -208,48 +190,35 @@ $disableNonOidcCustomer = (bool)(int) $val('mo_disable_non_oidc_customer_login',
                     </label>
                 </td>
                 <td>
-                    <table class="admin__table-secondary" style="width:100%;">
-                        <tbody>
-                            <!-- Sync Admin Name + Username -->
-                            <tr>
-                                <td style="width:50%; padding:6px 0;">
-                                    <label for="loginopt_sync_admin_profile">
-                                        <input type="checkbox"
-                                               id="loginopt_sync_admin_profile"
-                                               name="sync_admin_profile_on_sso"
-                                               value="1"
-                                               <?php if ($block->getSyncAdminProfileOnSso()): ?> checked<?php endif; ?>
-                                               class="admin__control-checkbox" />
-                                        <span><?= $escaper->escapeHtml(__('Sync name & username')) ?></span>
-                                    </label>
-                                    <p class="admin__field-note" style="margin:4px 0 0 22px; color:#999; font-size:12px;">
-                                        <?= $escaper->escapeHtml(__(
-                                            'Updates admin firstname, lastname and username from OIDC claims. Username uniqueness is enforced.'
-                                        )) ?>
-                                    </p>
-                                </td>
-                            </tr>
-                            <!-- Sync Admin Role -->
-                            <tr>
-                                <td style="width:50%; padding:6px 0;">
-                                    <label for="loginopt_sync_admin_role">
-                                        <input type="checkbox"
-                                               id="loginopt_sync_admin_role"
-                                               name="sync_admin_role_on_sso"
-                                               value="1"
-                                               <?php if ($block->getSyncAdminRoleOnSso()): ?> checked<?php endif; ?>
-                                               class="admin__control-checkbox" />
-                                        <span><?= $escaper->escapeHtml(__('Re-evaluate admin role')) ?></span>
-                                    </label>
-                                    <p class="admin__field-note" style="margin:4px 0 0 22px; color:#999; font-size:12px;">
-                                        <?= $escaper->escapeHtml(__(
-                                            'Re-evaluates the admin role from OIDC group claims using the role mapping. Existing role will be overwritten.'
-                                        )) ?>
-                                    </p>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <label style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                        <input type="hidden" name="sync_admin_profile_on_sso" value="0">
+                        <input type="checkbox"
+                               id="loginopt_sync_admin_profile"
+                               name="sync_admin_profile_on_sso"
+                               value="1"
+                               <?= $block->getSyncAdminProfileOnSso() ? 'checked="checked"' : '' ?>>
+                        <?= $escaper->escapeHtml(__('Sync name & username')) ?>
+                    </label>
+                    <p class="admin__field-note" style="margin:-6px 0 12px 26px; color:#999; font-size:12px;">
+                        <?= $escaper->escapeHtml(__(
+                            'Updates admin firstname, lastname and username from OIDC claims. Username uniqueness is enforced.'
+                        )) ?>
+                    </p>
+
+                    <label style="display:flex; align-items:center; gap:8px;">
+                        <input type="hidden" name="sync_admin_role_on_sso" value="0">
+                        <input type="checkbox"
+                               id="loginopt_sync_admin_role"
+                               name="sync_admin_role_on_sso"
+                               value="1"
+                               <?= $block->getSyncAdminRoleOnSso() ? 'checked="checked"' : '' ?>>
+                        <?= $escaper->escapeHtml(__('Re-evaluate admin role')) ?>
+                    </label>
+                    <p class="admin__field-note" style="margin:-6px 0 0 26px; color:#999; font-size:12px;">
+                        <?= $escaper->escapeHtml(__(
+                            'Re-evaluates the admin role from OIDC group claims using the role mapping. Existing role will be overwritten.'
+                        )) ?>
+                    </p>
                 </td>
             </tr>
         </tbody>

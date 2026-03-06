@@ -11,10 +11,11 @@ use Magento\Framework\Phrase;
 use Magento\Framework\Registry;
 
 /**
- * Login Options tab — per-provider SSO settings.
+ * Login Options tab — per-provider SSO button visibility, auto-creation, and login restrictions.
  */
 class LoginOptions extends Template implements TabInterface
 {
+    /** @var string */
     protected $_template = 'MiniOrange_OAuth::provider/tab/loginoptions.phtml';
 
     private readonly Registry $registry;
@@ -28,13 +29,16 @@ class LoginOptions extends Template implements TabInterface
         parent::__construct($context, $data);
     }
 
+    /**
+     * Return the current provider data, or an empty array for new providers.
+     *
+     * @return array<string, mixed>
+     */
     public function getProviderData(): array
     {
         $provider = $this->registry->registry('current_oidc_provider');
         return $provider ? $provider->getData() : [];
     }
-
-    // ── Tab Interface ────────────────────────────────────────
 
     public function getTabLabel(): Phrase|string
     {
@@ -56,11 +60,11 @@ class LoginOptions extends Template implements TabInterface
         return false;
     }
 
-    // ── Profile Sync Getters (konsistent via getProviderData) ─
+    // ── Profile Sync Getters ──────────────────────────────────
 
     private function providerVal(string $key): bool
     {
-        return (bool) ($this->getProviderData()[$key] ?? false);
+        return (bool) (int) ($this->getProviderData()[$key] ?? 0);
     }
 
     public function getSyncCustomerProfileOnSso(): bool

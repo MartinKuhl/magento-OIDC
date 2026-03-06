@@ -54,8 +54,7 @@
       <column xsi:type="smallint" name="sync_customer_group_on_sso" nullable="false" default="0" comment="Re-evaluate customer group from OIDC on every login" />
       <column xsi:type="smallint" name="sync_admin_profile_on_sso" nullable="false" default="0" comment="Sync admin name and username from OIDC on every login" />
       <column xsi:type="smallint" name="sync_admin_role_on_sso" nullable="false" default="0" comment="Re-evaluate admin role from OIDC on every login" />
-      <column xsi:type="text" name="update_frontend_groups_on_sso" nullable="false" default="0" comment="Update frontend user groups after each Customer SSO (1=enabled)" />
-
+      
       <!-- Per-provider login options -->
       <column xsi:type="text" name="dob_attribute" nullable="true" comment="OIDC claim name for date of birth" />
       <column xsi:type="text" name="gender_attribute" nullable="true" comment="OIDC claim name for gender" />
