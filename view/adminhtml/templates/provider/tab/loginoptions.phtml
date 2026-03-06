@@ -21,6 +21,8 @@ $disableNonOidcAdmin    = (bool)(int) $val('mo_disable_non_oidc_admin_login', 0)
 $disableNonOidcCustomer = (bool)(int) $val('mo_disable_non_oidc_customer_login', 0);
 ?>
 
+<fieldset class="admin__fieldset">
+
 <!-- ── SSO Button Display ─────────────────────────────────────────────────── -->
 <div class="admin__fieldset-wrapper">
     <div class="admin__fieldset-wrapper-title" style="margin-bottom:12px;">
@@ -140,7 +142,7 @@ $disableNonOidcCustomer = (bool)(int) $val('mo_disable_non_oidc_customer_login',
                                <?= $block->getSyncCustomerProfileOnSso() ? 'checked="checked"' : '' ?>>
                         <?= $escaper->escapeHtml(__('Sync name, date of birth & gender')) ?>
                     </label>
-                    <p class="admin__field-note" style="margin:-6px 0 12px 26px; color:#999; font-size:12px;">
+                    <p class="admin__field-note" style="margin:2px 0 14px 26px; color:#999; font-size:12px;">
                         <?= $escaper->escapeHtml(__(
                             'Updates firstname, lastname, DOB and gender from OIDC claims for existing customers.'
                         )) ?>
@@ -155,7 +157,7 @@ $disableNonOidcCustomer = (bool)(int) $val('mo_disable_non_oidc_customer_login',
                                <?= $block->getSyncCustomerAddressOnSso() ? 'checked="checked"' : '' ?>>
                         <?= $escaper->escapeHtml(__('Sync billing & shipping address')) ?>
                     </label>
-                    <p class="admin__field-note" style="margin:-6px 0 12px 26px; color:#999; font-size:12px;">
+                    <p class="admin__field-note" style="margin:2px 0 14px 26px; color:#999; font-size:12px;">
                         <?= $escaper->escapeHtml(__(
                             'Overwrites the default billing/shipping address with OIDC address claims (incl. phone).'
                         )) ?>
@@ -170,7 +172,7 @@ $disableNonOidcCustomer = (bool)(int) $val('mo_disable_non_oidc_customer_login',
                                <?= $block->getSyncCustomerGroupOnSso() ? 'checked="checked"' : '' ?>>
                         <?= $escaper->escapeHtml(__('Re-evaluate customer group')) ?>
                     </label>
-                    <p class="admin__field-note" style="margin:-6px 0 0 26px; color:#999; font-size:12px;">
+                    <p class="admin__field-note" style="margin:2px 0 6px 26px; color:#999; font-size:12px;">
                         <?= $escaper->escapeHtml(__(
                             'Re-evaluates the customer group mapping from OIDC group claims. Existing group will be overwritten.'
                         )) ?>
@@ -199,7 +201,7 @@ $disableNonOidcCustomer = (bool)(int) $val('mo_disable_non_oidc_customer_login',
                                <?= $block->getSyncAdminProfileOnSso() ? 'checked="checked"' : '' ?>>
                         <?= $escaper->escapeHtml(__('Sync name & username')) ?>
                     </label>
-                    <p class="admin__field-note" style="margin:-6px 0 12px 26px; color:#999; font-size:12px;">
+                    <p class="admin__field-note" style="margin:2px 0 14px 26px; color:#999; font-size:12px;">
                         <?= $escaper->escapeHtml(__(
                             'Updates admin firstname, lastname and username from OIDC claims. Username uniqueness is enforced.'
                         )) ?>
@@ -214,7 +216,7 @@ $disableNonOidcCustomer = (bool)(int) $val('mo_disable_non_oidc_customer_login',
                                <?= $block->getSyncAdminRoleOnSso() ? 'checked="checked"' : '' ?>>
                         <?= $escaper->escapeHtml(__('Re-evaluate admin role')) ?>
                     </label>
-                    <p class="admin__field-note" style="margin:-6px 0 0 26px; color:#999; font-size:12px;">
+                    <p class="admin__field-note" style="margin:2px 0 6px 26px; color:#999; font-size:12px;">
                         <?= $escaper->escapeHtml(__(
                             'Re-evaluates the admin role from OIDC group claims using the role mapping. Existing role will be overwritten.'
                         )) ?>
@@ -345,3 +347,5 @@ $disableNonOidcCustomer = (bool)(int) $val('mo_disable_non_oidc_customer_login',
     });
 }());
 </script>
+
+</fieldset>
