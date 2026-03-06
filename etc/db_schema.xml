@@ -18,7 +18,6 @@
       <column xsi:type="varchar" name="pkce_code_verifier" nullable="true" length="128" comment="Temporary PKCE code_verifier for active flow"/>
       <column xsi:type="text" name="well_known_config_url" nullable="false" comment="Well Known Config URL" />
       <column xsi:type="text" name="issuer" nullable="false" comment="OIDC Issuer from discovery document" />
-      <column xsi:type="text" name="post_logout_url" nullable="false" comment="Post Logout URL" />
       <column xsi:type="text" name="email_attribute" nullable="false" comment="The email attribute of the provider" />
       <column xsi:type="text" name="username_attribute" nullable="false" comment="The username attribute of the provider" />
       <column xsi:type="text" name="firstname_attribute" nullable="false" comment="The first name attribute of the provider" />

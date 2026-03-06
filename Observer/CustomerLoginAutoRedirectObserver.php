@@ -15,40 +15,39 @@ use MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps\CollectionFac
 /**
  * Redirects unauthenticated customers to the IdP authorize URL
  * when auto-redirect is enabled and exactly one provider is configured.
+ *
+ * Guards:
+ * - Post-logout guard: suppresses redirect once after explicit logout.
+ * - Loop guard: suppresses redirect if user already came back from IdP
+ *   without successful authentication.
  */
 class CustomerLoginAutoRedirectObserver implements ObserverInterface
 {
     private const SESSION_GUARD_KEY = 'oidc_customer_redirect_attempted';
-    private const LOGOUT_FLAG_KEY = 'oidc_customer_just_logged_out';
+    private const LOGOUT_FLAG_KEY   = 'oidc_customer_just_logged_out';
 
     public function __construct(
         private readonly CollectionFactory $providerCollectionFactory,
-        private readonly CustomerSession $customerSession,
-        private readonly UrlInterface $url,
-        private readonly ActionFlag $actionFlag
+        private readonly CustomerSession   $customerSession,
+        private readonly UrlInterface      $url,
+        private readonly ActionFlag        $actionFlag
     ) {
     }
 
     public function execute(Observer $observer): void
     {
-        // Post-logout guard: user explicitly logged out → show login page once
-        if ($this->session->getData(self::LOGOUT_FLAG_KEY)) {
-            $this->session->unsetData(self::LOGOUT_FLAG_KEY);
-            return;
-        }
-
-        // Loop guard: already redirected once → show normal login page
-        if ($this->session->getData(self::SESSION_GUARD_KEY)) {
-            $this->session->unsetData(self::SESSION_GUARD_KEY);
-            return;
-        }
-    
-        // Already logged in → skip
+        // Already logged in → nothing to do
         if ($this->customerSession->isLoggedIn()) {
             return;
         }
 
-        // Loop guard
+        // Post-logout guard: user explicitly logged out → show login page once, then clear flag
+        if ($this->customerSession->getData(self::LOGOUT_FLAG_KEY)) {
+            $this->customerSession->unsetData(self::LOGOUT_FLAG_KEY);
+            return;
+        }
+
+        // Loop guard: already redirected to IdP once → avoid infinite redirect loop
         if ($this->customerSession->getData(self::SESSION_GUARD_KEY)) {
             $this->customerSession->unsetData(self::SESSION_GUARD_KEY);
             return;
@@ -56,24 +55,28 @@ class CustomerLoginAutoRedirectObserver implements ObserverInterface
 
         $collection = $this->providerCollectionFactory->create();
 
+        // Exactly one provider must be configured
         if ($collection->getSize() !== 1) {
             return;
         }
 
         $provider = $collection->getFirstItem();
 
+        // Both flags must be active: non-OIDC login disabled AND auto-redirect enabled
         if (!(int) $provider->getData('mo_disable_non_oidc_customer_login')
             || !(int) $provider->getData('autoredirect_customer')
         ) {
             return;
         }
 
+        // Set loop guard before redirecting to prevent infinite loops
         $this->customerSession->setData(self::SESSION_GUARD_KEY, true);
 
         $authorizeUrl = $this->url->getUrl('mooauth/actions/sendauthorizationrequest', [
             'provider_id' => $provider->getId(),
         ]);
 
+        /** @var \Magento\Framework\App\Action\Action $controller */
         $controller = $observer->getEvent()->getData('controller_action');
         $controller->getResponse()->setRedirect($authorizeUrl);
         $this->actionFlag->set('', ActionInterface::FLAG_NO_DISPATCH, true);
