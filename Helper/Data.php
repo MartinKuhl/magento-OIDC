@@ -52,13 +52,13 @@ class Data extends AbstractHelper
     private readonly Url $frontendUrl;
 
     /** @var MiniorangeOauthClientAppsFactory */
-    private readonly MiniorangeOauthClientAppsFactory $clientAppsFactory;
+    protected readonly MiniorangeOauthClientAppsFactory $clientAppsFactory;
 
     /** @var ClientCollectionFactory */
-    private readonly ClientCollectionFactory $clientCollectionFactory;
+    protected readonly ClientCollectionFactory $clientCollectionFactory;
 
     /** @var AppResource */
-    private readonly AppResource $appResource;
+    protected readonly AppResource $appResource;
 
     /** @var UserResource */
     private readonly UserResource $userResource;

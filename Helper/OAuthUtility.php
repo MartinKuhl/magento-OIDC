@@ -914,22 +914,21 @@ class OAuthUtility extends Data
             return;
         }
 
-        $provider = $this->miniorangeOauthClientAppsFactory->create();
-        $this->appResource->load($provider, $appName, 'app_name');
-
-        if (!$provider->getId()) {
-            $this->customlog('saveTestStatus: provider not found for app_name: ' . $appName);
-            return;
-        }
-
-        $provider->setData('last_test_status', $status);
-        $provider->setData('last_test_at', (new \DateTime('now', new \DateTimeZone('UTC')))->format('Y-m-d H:i:s'));
+        $now = (new \DateTime('now', new \DateTimeZone('UTC')))->format('Y-m-d H:i:s');
+        $connection = $this->appResource->getConnection();
+        $tableName  = $this->appResource->getMainTable();
 
         try {
-            $this->appResource->save($provider);
-            $this->customlog("saveTestStatus: saved '{$status}' for provider '{$appName}'");
+            $affected = $connection->update(
+                $tableName,
+                ['last_test_status' => $status, 'last_test_at' => $now],
+                ['app_name = ?' => $appName]
+            );
+            if ($affected === 0) {
+                $this->customlog('saveTestStatus: provider not found for app_name: ' . $appName);
+            }
         } catch (\Exception $e) {
-            $this->customlog('saveTestStatus: failed to save — ' . $e->getMessage());
+            $this->customlog('saveTestStatus: failed — ' . $e->getMessage());
         }
     }
 
@@ -949,22 +948,18 @@ class OAuthUtility extends Data
             return;
         }
 
-        $provider = $this->miniorangeOauthClientAppsFactory->create();
-        $this->appResource->load($provider, $providerId);
-
-        if (!$provider->getId()) {
-            $this->customlog('saveTestStatusById: provider not found for ID=' . $providerId);
-            return;
-        }
-
-        $provider->setData('last_test_status', $status);
-        $provider->setData('last_test_at', (new \DateTime('now', new \DateTimeZone('UTC')))->format('Y-m-d H:i:s'));
+        $now = (new \DateTime('now', new \DateTimeZone('UTC')))->format('Y-m-d H:i:s');
+        $connection = $this->appResource->getConnection();
+        $tableName  = $this->appResource->getMainTable();
 
         try {
-            $this->appResource->save($provider);
-            $this->customlog("saveTestStatusById: saved '{$status}' for provider ID={$providerId}");
+            $connection->update(
+                $tableName,
+                ['last_test_status' => $status, 'last_test_at' => $now],
+                ['id = ?' => $providerId]
+            );
         } catch (\Exception $e) {
-            $this->customlog('saveTestStatusById: failed to save — ' . $e->getMessage());
+            $this->customlog('saveTestStatusById: failed — ' . $e->getMessage());
         }
     }
 
@@ -983,19 +978,17 @@ class OAuthUtility extends Data
             return;
         }
 
-        $provider = $this->miniorangeOauthClientAppsFactory->create();
-        $this->appResource->load($provider, $providerId);
-
-        if (!$provider->getId()) {
-            $this->customlog('saveReceivedOidcClaims: provider not found for ID=' . $providerId);
-            return;
-        }
-
         $json = json_encode(array_values(array_unique($claimKeys)), JSON_UNESCAPED_SLASHES);
-        $provider->setData('received_oidc_claims', $json !== false ? $json : '[]');
+
+        $connection = $this->appResource->getConnection();
+        $tableName  = $this->appResource->getMainTable();
 
         try {
-            $this->appResource->save($provider);
+            $connection->update(
+                $tableName,
+                ['received_oidc_claims' => $json !== false ? $json : '[]'],
+                ['id = ?' => $providerId]
+            );
         } catch (\Exception $e) {
             $this->customlog('saveReceivedOidcClaims: failed — ' . $e->getMessage());
         }
@@ -1013,18 +1006,11 @@ class OAuthUtility extends Data
             return;
         }
 
-        $provider = $this->miniorangeOauthClientAppsFactory->create();
-        $this->appResource->load($provider, $providerId);
-
-        if (!$provider->getId()) {
-            $this->customlog('saveProviderData: provider not found for ID=' . $providerId);
-            return;
-        }
-
-        $provider->addData($data);
+        $connection = $this->appResource->getConnection();
+        $tableName  = $this->appResource->getMainTable();
 
         try {
-            $this->appResource->save($provider);
+            $connection->update($tableName, $data, ['id = ?' => $providerId]);
         } catch (\Exception $e) {
             $this->customlog('saveProviderData: failed — ' . $e->getMessage());
         }
