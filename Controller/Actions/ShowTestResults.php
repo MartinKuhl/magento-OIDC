@@ -138,13 +138,12 @@ class ShowTestResults extends Action
         $this->oauthUtility->flushCache();
 
         $data = $this->renderTemplate([
-            'status'         => $this->status,
-            'attrs'          => $this->attrs,
-            'greetingName'   => $this->greetingName ?? '',
-            'rightImage'     => $this->oauthUtility->getImageUrl(OAuthConstants::IMAGE_RIGHT),
-            'wrongImage'     => $this->oauthUtility->getImageUrl(OAuthConstants::IMAGE_WRONG),
-            'errorMessage'   => '',
-            'providerConfig' => $this->getProviderSecurityConfig(),
+            'status'       => $this->status,
+            'attrs'        => $this->attrs,
+            'greetingName' => $this->greetingName ?? '',
+            'rightImage'   => $this->oauthUtility->getImageUrl(OAuthConstants::IMAGE_RIGHT),
+            'wrongImage'   => $this->oauthUtility->getImageUrl(OAuthConstants::IMAGE_WRONG),
+            'errorMessage' => '',
         ]);
 
         /** @var RawResult $result */
@@ -172,42 +171,18 @@ class ShowTestResults extends Action
         $this->persistTestStatus('unsuccessful');
 
         $data = $this->renderTemplate([
-            'status'         => $this->status,
-            'attrs'          => null,
-            'greetingName'   => '',
-            'rightImage'     => $this->oauthUtility->getImageUrl(OAuthConstants::IMAGE_RIGHT),
-            'wrongImage'     => $this->oauthUtility->getImageUrl(OAuthConstants::IMAGE_WRONG),
-            'errorMessage'   => $this->escaper->escapeHtml($errorMessage),
-            'providerConfig' => $this->getProviderSecurityConfig(),
+            'status'       => $this->status,
+            'attrs'        => null,
+            'greetingName' => '',
+            'rightImage'   => $this->oauthUtility->getImageUrl(OAuthConstants::IMAGE_RIGHT),
+            'wrongImage'   => $this->oauthUtility->getImageUrl(OAuthConstants::IMAGE_WRONG),
+            'errorMessage' => $this->escaper->escapeHtml($errorMessage),
         ]);
 
         /** @var RawResult $result */
         $result = $this->resultFactory->create(ResultFactory::TYPE_RAW);
         $result->setContents($data);
         return $result;
-    }
-
-    /**
-     * Load PKCE/JWKS config for the current provider from the request.
-     *
-     * @return array{pkce_flow: string, jwks_uri: string}|array{}
-     */
-    private function getProviderSecurityConfig(): array
-    {
-        $providerId = (int) $this->request->getParam('provider_id');
-        if ($providerId < 1) {
-            return [];
-        }
-
-        $clientDetails = $this->oauthUtility->getClientDetailsById($providerId);
-        if (!is_array($clientDetails)) {
-            return [];
-        }
-
-        return [
-            'pkce_flow' => (string) ($clientDetails['pkce_flow'] ?? ''),
-            'jwks_uri'  => (string) ($clientDetails['jwks_uri']  ?? ''),
-        ];
     }
 
     /**
