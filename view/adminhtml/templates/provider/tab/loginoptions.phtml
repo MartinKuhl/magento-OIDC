@@ -168,11 +168,6 @@ $syncAdminRole       = $block->getSyncAdminRoleOnSso();
                                <?= $syncCustomerGroup ? 'checked="checked"' : '' ?>>
                         <?= $escaper->escapeHtml(__('Sync customer group on every SSO login')) ?>
                     </label>
-                    <small class="admin__field-note" style="display:block; margin-top:4px;">
-                        <?= $escaper->escapeHtml(
-                            __('Existing group will be overwritten with the group mapped in Attribute Mapping.')
-                        ) ?>
-                    </small>
                 </td>
             </tr>
         </tbody>
@@ -197,12 +192,7 @@ $syncAdminRole       = $block->getSyncAdminRoleOnSso();
                                <?= $syncAdminProfile ? 'checked="checked"' : '' ?>>
                         <?= $escaper->escapeHtml(__('Sync admin profile fields (name, email) on every SSO login')) ?>
                     </label>
-                    <small class="admin__field-note" style="display:block; margin-top:4px;">
-                        <?= $escaper->escapeHtml(
-                            __('Username uniqueness is enforced — duplicates are rejected.')
-                        ) ?>
-                    </small>
-                    <label style="display:flex; align-items:center; gap:8px; margin-top:10px;">
+                    <label style="display:flex; align-items:center; gap:8px;">
                         <input type="hidden" name="sync_admin_role_on_sso" value="0">
                         <input type="checkbox"
                                id="loginopt_sync_admin_role"
@@ -211,11 +201,6 @@ $syncAdminRole       = $block->getSyncAdminRoleOnSso();
                                <?= $syncAdminRole ? 'checked="checked"' : '' ?>>
                         <?= $escaper->escapeHtml(__('Sync admin role on every SSO login')) ?>
                     </label>
-                    <small class="admin__field-note" style="display:block; margin-top:4px;">
-                        <?= $escaper->escapeHtml(
-                            __('Existing role will be overwritten with the role mapped in Attribute Mapping.')
-                        ) ?>
-                    </small>
                 </td>
             </tr>
         </tbody>
@@ -267,7 +252,7 @@ $syncAdminRole       = $block->getSyncAdminRoleOnSso();
                                <?= $autoRedirectAdmin ? 'checked="checked"' : '' ?>>
                         <?= $escaper->escapeHtml(__('Auto redirect to IdP on admin login page')) ?>
                     </label>
-                    <p class="admin__field-note" style="margin:0 0 14px 52px; color:#999; font-size:12px;">
+                    <p class="admin__field-note" style="margin:0 0 14px 26px; color:#999; font-size:12px;">
                         <?= $escaper->escapeHtml(__(
                             'Requires exactly one configured provider and OIDC-only mode enabled above. '
                             . 'Admins visiting the login page are redirected to the IdP automatically.'
@@ -296,7 +281,7 @@ $syncAdminRole       = $block->getSyncAdminRoleOnSso();
                                <?= $autoRedirectCustomer ? 'checked="checked"' : '' ?>>
                         <?= $escaper->escapeHtml(__('Auto redirect to IdP on customer login page')) ?>
                     </label>
-                    <p class="admin__field-note" style="margin:0 0 6px 52px; color:#999; font-size:12px;">
+                    <p class="admin__field-note" style="margin:0 0 6px 26px; color:#999; font-size:12px;">
                         <?= $escaper->escapeHtml(__(
                             'Requires exactly one configured provider and OIDC-only mode enabled above. '
                             . 'Customers visiting the login page are redirected to the IdP automatically.'

@@ -81,35 +81,43 @@ class Save extends Action implements HttpPostActionInterface
             }
 
             // Sanitize and apply multi-provider fields
-            $model->setData('app_name', $this->sanitizeString($data['app_name'] ?? ''));
+            $model->setData('app_name',     $this->sanitizeString($data['app_name'] ?? ''));
             $model->setData('display_name', $this->sanitizeString($data['display_name'] ?? ''));
-            $model->setData('is_active', (int) ($data['is_active'] ?? 1));
-            $model->setData('login_type', $this->validateLoginType($data['login_type'] ?? 'customer'));
-            $model->setData('sort_order', max(0, (int) ($data['sort_order'] ?? 0)));
+            $model->setData('is_active',    (int) ($data['is_active'] ?? 1));
+            $model->setData('login_type',   $this->validateLoginType($data['login_type'] ?? 'customer'));
+            $model->setData('sort_order',   max(0, (int) ($data['sort_order'] ?? 0)));
             $model->setData('button_label', $this->sanitizeString($data['button_label'] ?? ''));
             $model->setData('button_color', $this->validateHexColor($data['button_color'] ?? ''));
 
             // Core endpoint and OAuth fields
             foreach ([
-                    'clientID', 'scope', 'grant_type',
-                    'authorize_endpoint', 'access_token_endpoint',
-                    'user_info_endpoint', 'jwks_endpoint', 'well_known_config_url',
-                    'endsession_endpoint', 'issuer',
-                    // Attribute mapping — basic claims
-                    'email_attribute', 'username_attribute',
-                    'firstname_attribute', 'lastname_attribute', 'group_attribute',
-                    // Attribute mapping — customer data
-                    'dob_attribute', 'gender_attribute',
-                    'billing_address_attribute', 'billing_zip_attribute',
-                    'billing_city_attribute', 'billing_state_attribute',
-                    'billing_country_attribute', 'billing_phone_attribute',
-                ] as $field) {
+                'clientID', 'scope', 'grant_type',
+                'authorize_endpoint', 'access_token_endpoint',
+                'user_info_endpoint', 'jwks_endpoint', 'well_known_config_url',
+                'endsession_endpoint', 'issuer',
+                // Attribute mapping — basic claims
+                'email_attribute', 'username_attribute',
+                'firstname_attribute', 'lastname_attribute', 'group_attribute',
+                // Attribute mapping — customer data
+                'dob_attribute', 'gender_attribute',
+                'billing_address_attribute', 'billing_zip_attribute',
+                'billing_city_attribute', 'billing_state_attribute',
+                'billing_country_attribute', 'billing_phone_attribute',
+            ] as $field) {
                 if (isset($data[$field])) {
                     $model->setData($field, $this->sanitizeString($data[$field]));
                 }
             }
 
-            // Checkbox fields — absent in POST means unchecked (0)
+            // Checkbox/Toggle fields.
+            //
+            // Each checkbox in the template is preceded by a hidden field with value="0":
+            //   <input type="hidden"   name="show_admin_link" value="0">
+            //   <input type="checkbox" name="show_admin_link" value="1">
+            //
+            // This means $data[$field] is ALWAYS set ("0" or "1").
+            // Using isset() ? 1 : 0 would therefore always yield 1 — regardless of
+            // whether the checkbox is checked. We cast the actual value instead.
             foreach ([
                 'values_in_header',
                 'values_in_body',
@@ -118,8 +126,8 @@ class Save extends Action implements HttpPostActionInterface
                 'show_customer_link',
                 'mo_oauth_auto_create_admin',
                 'mo_oauth_auto_create_customer',
-                'autoredirect_admin', 
-                'autoredirect_customer', 
+                'autoredirect_admin',    // Auto-redirect for admin login page
+                'autoredirect_customer', // Auto-redirect for customer login page
                 'mo_disable_non_oidc_admin_login',
                 'mo_disable_non_oidc_customer_login',
                 // Profile Sync on SSO Login
@@ -128,11 +136,14 @@ class Save extends Action implements HttpPostActionInterface
                 'sync_customer_group_on_sso',
                 'sync_admin_profile_on_sso',
                 'sync_admin_role_on_sso',
-            ] as $checkbox) {
+            ] as $field) {
+                // FIX: use $field (not $checkbox) — variable name matches the foreach above.
+                // (int) cast reads the actual "0"/"1" value sent by the hidden+checkbox pair.
                 $model->setData($field, (int) ($data[$field] ?? 0));
             }
 
-            // Lockout-prevention: OIDC-only requires the SSO button to be shown
+            // Lockout-prevention: OIDC-only requires the SSO button to be shown.
+            // isset() is intentional here — we check POST presence, not the value.
             if (!isset($data['show_admin_link']) && isset($data['mo_disable_non_oidc_admin_login'])) {
                 $model->setData('mo_disable_non_oidc_admin_login', 0);
                 $this->messageManager->addWarningMessage(

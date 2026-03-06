@@ -207,7 +207,7 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
 
 # TESTING
 - update customer and admin
-- PKSE
+- PKSE & jwsk s
 
 ### LATER - complex ###:
 - Rename: --> Authelia OIDC (in Code)
