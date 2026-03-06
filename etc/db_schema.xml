@@ -48,9 +48,14 @@
       <column xsi:type="text" name="autoredirect" nullable="false" comment="Auto redirect Users from Login Page" />
       <column xsi:type="text" name="oauth_am_sameasbilling" nullable="false" comment="Same as billing address" />
       
-      <!-- Feature flag: re-evaluate customer group on every SSO login -->
+      <!-- Per-provider: sync existing user data from OIDC on every SSO login -->
+      <column xsi:type="smallint" name="sync_customer_profile_on_sso" nullable="false" default="0" comment="Sync customer name, DOB, gender from OIDC on every login" />
+      <column xsi:type="smallint" name="sync_customer_address_on_sso" nullable="false" default="0" comment="Sync customer billing/shipping address from OIDC on every login" />
+      <column xsi:type="smallint" name="sync_customer_group_on_sso" nullable="false" default="0" comment="Re-evaluate customer group from OIDC on every login" />
+      <column xsi:type="smallint" name="sync_admin_profile_on_sso" nullable="false" default="0" comment="Sync admin name and username from OIDC on every login" />
+      <column xsi:type="smallint" name="sync_admin_role_on_sso" nullable="false" default="0" comment="Re-evaluate admin role from OIDC on every login" />
       <column xsi:type="text" name="update_frontend_groups_on_sso" nullable="false" default="0" comment="Update frontend user groups after each Customer SSO (1=enabled)" />
-      
+
       <!-- Per-provider login options -->
       <column xsi:type="text" name="dob_attribute" nullable="true" comment="OIDC claim name for date of birth" />
       <column xsi:type="text" name="gender_attribute" nullable="true" comment="OIDC claim name for gender" />

@@ -213,13 +213,11 @@ NEW UI
 
 - logout
 
+- jwks_endpoint -> fixed but verfication?
+
 - scope handling
 
 - update customer and admin
-
-- pkce fix
-
-- jwks_endpoint
 
 ### LATER - complex ###:
 - Rename: --> Authelia OIDC (in Code)

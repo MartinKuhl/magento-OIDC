@@ -125,7 +125,13 @@ class Save extends Action implements HttpPostActionInterface
                 'mo_disable_non_oidc_admin_login',
                 'mo_disable_non_oidc_customer_login',
                 'oauth_am_sameasbilling',
-                'update_frontend_groups_on_sso'
+                'update_frontend_groups_on_sso',
+                // Profile Sync on SSO Login
+                'sync_customer_profile_on_sso',
+                'sync_customer_address_on_sso',
+                'sync_customer_group_on_sso',
+                'sync_admin_profile_on_sso',
+                'sync_admin_role_on_sso',
             ] as $checkbox) {
                 $model->setData($checkbox, isset($data[$checkbox]) ? 1 : 0);
             }

@@ -77,4 +77,31 @@ class LoginOptions extends Template implements TabInterface
     {
         return false;
     }
+
+    // ── Profile Sync Getters ──────────────────────────────────
+
+    public function getSyncCustomerProfileOnSso(): bool
+    {
+        return (bool) ($this->provider?->getData('sync_customer_profile_on_sso') ?? false);
+    }
+
+    public function getSyncCustomerAddressOnSso(): bool
+    {
+        return (bool) ($this->provider?->getData('sync_customer_address_on_sso') ?? false);
+    }
+
+    public function getSyncCustomerGroupOnSso(): bool
+    {
+        return (bool) ($this->provider?->getData('sync_customer_group_on_sso') ?? false);
+    }
+
+    public function getSyncAdminProfileOnSso(): bool
+    {
+        return (bool) ($this->provider?->getData('sync_admin_profile_on_sso') ?? false);
+    }
+
+    public function getSyncAdminRoleOnSso(): bool
+    {
+        return (bool) ($this->provider?->getData('sync_admin_role_on_sso') ?? false);
+    }
 }

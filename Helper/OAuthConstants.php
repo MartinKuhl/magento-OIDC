@@ -60,6 +60,14 @@ class OAuthConstants
     public const DISABLE_NON_OIDC_ADMIN_LOGIN = 'disableNonOidcAdminLogin';
     public const DISABLE_NON_OIDC_CUSTOMER_LOGIN = 'disableNonOidcCustomerLogin';
 
+    // Per-provider SSO sync flags (stored in miniorange_oauth_client_apps)
+    public const SYNC_CUSTOMER_PROFILE_ON_SSO = 'sync_customer_profile_on_sso';
+    public const SYNC_CUSTOMER_ADDRESS_ON_SSO = 'sync_customer_address_on_sso';
+    public const SYNC_CUSTOMER_GROUP_ON_SSO   = 'sync_customer_group_on_sso';
+    public const SYNC_ADMIN_PROFILE_ON_SSO    = 'sync_admin_profile_on_sso';
+    public const SYNC_ADMIN_ROLE_ON_SSO       = 'sync_admin_role_on_sso';
+    public const UPDATE_FRONTEND_GROUPS_ON_SSO = 'updateFrontendGroupsOnSso';
+
     // Login type constants for differentiating admin vs customer OIDC login
     public const LOGIN_TYPE_CUSTOMER = 'customer';
     public const LOGIN_TYPE_ADMIN = 'admin';
@@ -80,7 +88,6 @@ class OAuthConstants
     public const CUSTOMER_GROUP_MAPPING = 'customerGroupMapping';
     public const MAP_DEFAULT_CUSTOMER_GROUP = 'defaultCustomerGroup';
     public const DEFAULT_CUSTOMER_GROUP = 'General';
-    public const UPDATE_FRONTEND_GROUPS_ON_SSO = 'updateFrontendGroupsOnSso';
 
     // Customer data attribute mapping constants
     public const MAP_DOB = 'amDob';
