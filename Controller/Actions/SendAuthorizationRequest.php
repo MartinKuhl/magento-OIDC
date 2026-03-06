@@ -166,12 +166,17 @@ class SendAuthorizationRequest extends BaseAction
         $responseType = OAuthConstants::CODE;
         $redirectURL  = $this->oauthUtility->getCallBackUrl();
 
-        // PKCE (RFC 7636) — generate verifier when provider has S256 configured (FEAT-01)
-        $codeChallenge = null;
-        $pkceFlow      = $clientDetails['pkce_flow'] ?? '';
-        if ($pkceFlow === OAuthConstants::PKCE_METHOD_S256) {
-            $codeVerifier  = $this->securityHelper->generateCodeVerifier();
-            $codeChallenge = $this->securityHelper->computeCodeChallenge($codeVerifier);
+        // PKCE (RFC 7636) — generate verifier when provider has PKCE configured (FEAT-01)
+        $codeChallenge       = null;
+        $codeChallengeMethod = null;
+        $pkceFlow            = $clientDetails['pkce_flow'] ?? '';
+        if ($pkceFlow === OAuthConstants::PKCE_METHOD_S256
+            || $pkceFlow === OAuthConstants::PKCE_METHOD_PLAIN
+        ) {
+            $codeVerifier        = $this->securityHelper->generateCodeVerifier();
+            $codeChallenge       = $this->securityHelper->computeCodeChallenge($codeVerifier, $pkceFlow);
+            $codeChallengeMethod = $pkceFlow;
+
             // Persist verifier in provider row (survives admin→frontend session switch)
             $this->oauthUtility->saveProviderData(
                 (int) $clientDetails['id'],
@@ -179,7 +184,7 @@ class SendAuthorizationRequest extends BaseAction
             );
 
             $this->oauthUtility->customlog(
-                "SendAuthorizationRequest: PKCE S256 enabled — challenge generated, verifier persisted to DB"
+                "SendAuthorizationRequest: PKCE {$pkceFlow} enabled — challenge generated, verifier persisted to DB"
             );
         }
 
@@ -192,7 +197,8 @@ class SendAuthorizationRequest extends BaseAction
             $redirectURL,
             $relayState,
             $params,
-            $codeChallenge
+            $codeChallenge,
+            $codeChallengeMethod
         ))->build();
         if ($chk_enable_log !== 0) {
             $this->oauthUtility->customlog(

@@ -150,6 +150,7 @@ class OAuthConstants
     // PKCE (RFC 7636) — FEAT-01
     public const PKCE_VERIFIER_SESSION_KEY = 'oidc_pkce_verifier';
     public const PKCE_METHOD_S256 = 'S256';
+    public const PKCE_METHOD_PLAIN = 'plain';
 
     //OAUTH Constants
     public const OAUTH = 'OAUTH';

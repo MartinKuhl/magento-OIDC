@@ -55,6 +55,11 @@ class AuthorizationRequest
     private ?string $codeChallenge = null;
 
     /**
+     * @var string|null PKCE code_challenge_method ('S256' or 'plain') — null when PKCE is disabled
+     */
+    private ?string $codeChallengeMethod = null;
+
+    /**
      * Initialize authorization request parameters.
      *
      * @param string      $clientID
@@ -64,7 +69,8 @@ class AuthorizationRequest
      * @param string      $redirectURL
      * @param string      $relayState    The pre-validated, encoded state string (SEC-09)
      * @param array       $params        Extra OAuth parameters (nonce, prompt, …)
-     * @param string|null $codeChallenge PKCE code_challenge (FEAT-01); null disables PKCE
+     * @param string|null $codeChallenge       PKCE code_challenge (FEAT-01); null disables PKCE
+     * @param string|null $codeChallengeMethod  PKCE method ('S256' or 'plain'); null when disabled
      */
     public function __construct(
         $clientID,
@@ -74,16 +80,18 @@ class AuthorizationRequest
         $redirectURL,
         $relayState,
         $params,
-        ?string $codeChallenge = null
+        ?string $codeChallenge = null,
+        ?string $codeChallengeMethod = null
     ) {
-        $this->clientID      = $clientID;
-        $this->scope         = $scope;
-        $this->state         = $relayState; // SEC-09: relay state is pre-validated by OAuthSecurityHelper
-        $this->authorizeURL  = $authorizeURL;
-        $this->responseType  = $responseType;
-        $this->redirectURL   = $redirectURL;
-        $this->params        = $params;
-        $this->codeChallenge = $codeChallenge;
+        $this->clientID             = $clientID;
+        $this->scope                = $scope;
+        $this->state                = $relayState; // SEC-09: relay state is pre-validated by OAuthSecurityHelper
+        $this->authorizeURL         = $authorizeURL;
+        $this->responseType         = $responseType;
+        $this->redirectURL          = $redirectURL;
+        $this->params               = $params;
+        $this->codeChallenge        = $codeChallenge;
+        $this->codeChallengeMethod  = $codeChallengeMethod;
     }
 
     /**
@@ -117,10 +125,12 @@ class AuthorizationRequest
             }
         }
 
-        // PKCE (RFC 7636 §4.3) — include code_challenge when verifier was generated (FEAT-01)
-        if ($this->codeChallenge !== null && $this->codeChallenge !== '') {
+        // PKCE (RFC 7636 §4.3) — include code_challenge + method when PKCE is enabled (FEAT-01)
+        if ($this->codeChallenge !== null && $this->codeChallenge !== ''
+            && $this->codeChallengeMethod !== null && $this->codeChallengeMethod !== ''
+        ) {
             $requestStr .= '&code_challenge=' . urlencode($this->codeChallenge)
-                . '&code_challenge_method=S256';
+                . '&code_challenge_method=' . urlencode($this->codeChallengeMethod);
         }
 
         return $requestStr;

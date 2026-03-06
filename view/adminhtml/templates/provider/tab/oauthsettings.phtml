@@ -305,6 +305,35 @@ $inBody    = (bool)(int) $val('values_in_body', 0);
                     </small>
                 </td>
             </tr>
+            <tr>
+                <td>
+                    <label for="pkce_flow">
+                        <strong><?= $escaper->escapeHtml(__('PKCE Method')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <?php $pkceFlow = (string) $val('pkce_flow', ''); ?>
+                    <select id="pkce_flow" name="pkce_flow" class="admin__control-select" style="width:100%;">
+                        <option value=""
+                            <?= $pkceFlow === '' ? 'selected="selected"' : '' ?>>
+                            <?= $escaper->escapeHtml(__('Disabled')) ?>
+                        </option>
+                        <option value="S256"
+                            <?= $pkceFlow === 'S256' ? 'selected="selected"' : '' ?>>
+                            <?= $escaper->escapeHtml(__('S256 (recommended)')) ?>
+                        </option>
+                        <option value="plain"
+                            <?= $pkceFlow === 'plain' ? 'selected="selected"' : '' ?>>
+                            <?= $escaper->escapeHtml(__('Plain (legacy)')) ?>
+                        </option>
+                    </select>
+                    <small class="admin__field-note">
+                        <?= $escaper->escapeHtml(
+                            __('PKCE (Proof Key for Code Exchange) adds an extra security layer to the authorization code flow. S256 is recommended; plain is only for legacy IdPs that do not support S256.')
+                        ) ?>
+                    </small>
+                </td>
+            </tr>
         </tbody>
     </table>
 </div>

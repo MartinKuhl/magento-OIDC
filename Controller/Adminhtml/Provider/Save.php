@@ -193,6 +193,13 @@ class Save extends Action implements HttpPostActionInterface
                 $model->setData('client_secret', $data['client_secret']);
             }
 
+            // PKCE method — only allow 'S256', 'plain', or '' (disabled)
+            $pkceFlow = $this->sanitizeString($data['pkce_flow'] ?? '');
+            if (!in_array($pkceFlow, ['S256', 'plain', ''], true)) {
+                $pkceFlow = '';
+            }
+            $model->setData('pkce_flow', $pkceFlow);
+
             $this->appResource->save($model);
 
             $this->messageManager->addSuccessMessage((string) __('Provider saved successfully.'));
