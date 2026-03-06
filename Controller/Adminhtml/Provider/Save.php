@@ -118,7 +118,8 @@ class Save extends Action implements HttpPostActionInterface
                 'show_customer_link',
                 'mo_oauth_auto_create_admin',
                 'mo_oauth_auto_create_customer',
-                'autoredirect',
+                'autoredirect_admin', 
+                'autoredirect_customer', 
                 'mo_disable_non_oidc_admin_login',
                 'mo_disable_non_oidc_customer_login',
                 // Profile Sync on SSO Login
@@ -128,7 +129,7 @@ class Save extends Action implements HttpPostActionInterface
                 'sync_admin_profile_on_sso',
                 'sync_admin_role_on_sso',
             ] as $checkbox) {
-                $model->setData($checkbox, isset($data[$checkbox]) ? 1 : 0);
+                $model->setData($field, (int) ($data[$field] ?? 0));
             }
 
             // Lockout-prevention: OIDC-only requires the SSO button to be shown
