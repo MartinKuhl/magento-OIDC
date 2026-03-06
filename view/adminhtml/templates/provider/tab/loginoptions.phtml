@@ -8,25 +8,26 @@
 /** @var \Magento\Framework\Escaper $escaper */
 
 $data = $block->getProviderData();
-$val  = static function (string $key, $default = '') use ($data) {
+$val = static function (string $key, $default = '') use ($data) {
     return $data[$key] ?? $default;
 };
 
-$showAdminLink    = (bool)(int) $val('show_admin_link', 0);
-$showCustomerLink = (bool)(int) $val('show_customer_link', 0);
-$autoCreateAdmin  = (bool)(int) $val('mo_oauth_auto_create_admin', 0);
-$autoCreateCustomer = (bool)(int) $val('mo_oauth_auto_create_customer', 0);
-$autoredirect     = (bool)(int) $val('autoredirect', 0);
+$showAdminLink          = (bool)(int) $val('show_admin_link', 0);
+$showCustomerLink       = (bool)(int) $val('show_customer_link', 0);
+$autoCreateAdmin        = (bool)(int) $val('mo_oauth_auto_create_admin', 0);
+$autoCreateCustomer     = (bool)(int) $val('mo_oauth_auto_create_customer', 0);
+$autoredirect           = (bool)(int) $val('autoredirect', 0);
 $disableNonOidcAdmin    = (bool)(int) $val('mo_disable_non_oidc_admin_login', 0);
 $disableNonOidcCustomer = (bool)(int) $val('mo_disable_non_oidc_customer_login', 0);
 ?>
 
 <fieldset class="admin__fieldset">
 
-<!-- ── SSO Button Display ─────────────────────────────────────────────────── -->
+<!-- SSO Button Display -->
 <div class="admin__fieldset-wrapper">
     <div class="admin__fieldset-wrapper-title" style="margin-bottom:12px;">
-        <span class="admin__fieldset-wrapper-title-text" style="font-size:15px; font-weight:700; color:#1a1a1a; letter-spacing:0.2px;">
+        <span class="admin__fieldset-wrapper-title-text"
+              style="font-size:15px; font-weight:700; color:#1a1a1a; letter-spacing:0.2px;">
             <?= $escaper->escapeHtml(__('SSO Button Display')) ?>
         </span>
         <p class="admin__field-note" style="font-style:italic; margin-top:8px;">
@@ -35,7 +36,6 @@ $disableNonOidcCustomer = (bool)(int) $val('mo_disable_non_oidc_customer_login',
             ) ?>
         </p>
     </div>
-
     <table class="admin__table-primary" style="width:100%; margin-top:16px;">
         <tbody>
             <tr>
@@ -67,10 +67,11 @@ $disableNonOidcCustomer = (bool)(int) $val('mo_disable_non_oidc_customer_login',
     </table>
 </div>
 
-<!-- ── User Auto-Creation ────────────────────────────────────────────────── -->
+<!-- User Auto-Creation -->
 <div class="admin__fieldset-wrapper" style="margin-top:24px;">
     <div class="admin__fieldset-wrapper-title" style="margin-bottom:12px;">
-        <span class="admin__fieldset-wrapper-title-text" style="font-size:15px; font-weight:700; color:#1a1a1a; letter-spacing:0.2px;">
+        <span class="admin__fieldset-wrapper-title-text"
+              style="font-size:15px; font-weight:700; color:#1a1a1a; letter-spacing:0.2px;">
             <?= $escaper->escapeHtml(__('User Auto-Creation')) ?>
         </span>
         <p class="admin__field-note" style="font-style:italic; margin-top:8px;">
@@ -79,7 +80,6 @@ $disableNonOidcCustomer = (bool)(int) $val('mo_disable_non_oidc_customer_login',
             ) ?>
         </p>
     </div>
-
     <table class="admin__table-primary" style="width:100%; margin-top:16px;">
         <tbody>
             <tr>
@@ -109,10 +109,11 @@ $disableNonOidcCustomer = (bool)(int) $val('mo_disable_non_oidc_customer_login',
     </table>
 </div>
 
-<!-- ── Profile Sync on SSO Login ─────────────────────────────────────────── -->
+<!-- Profile Sync on SSO Login -->
 <div class="admin__fieldset-wrapper" style="margin-top:24px;">
     <div class="admin__fieldset-wrapper-title" style="margin-bottom:12px;">
-        <span class="admin__fieldset-wrapper-title-text" style="font-size:15px; font-weight:700; color:#1a1a1a; letter-spacing:0.2px;">
+        <span class="admin__fieldset-wrapper-title-text"
+              style="font-size:15px; font-weight:700; color:#1a1a1a; letter-spacing:0.2px;">
             <?= $escaper->escapeHtml(__('Profile Sync on SSO Login')) ?>
         </span>
         <p class="admin__field-note" style="font-style:italic; margin-top:8px;">
@@ -133,7 +134,7 @@ $disableNonOidcCustomer = (bool)(int) $val('mo_disable_non_oidc_customer_login',
                     </label>
                 </td>
                 <td>
-                    <label style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                    <label style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
                         <input type="hidden" name="sync_customer_profile_on_sso" value="0">
                         <input type="checkbox"
                                id="loginopt_sync_customer_profile"
@@ -142,13 +143,13 @@ $disableNonOidcCustomer = (bool)(int) $val('mo_disable_non_oidc_customer_login',
                                <?= $block->getSyncCustomerProfileOnSso() ? 'checked="checked"' : '' ?>>
                         <?= $escaper->escapeHtml(__('Sync name, date of birth & gender')) ?>
                     </label>
-                    <p class="admin__field-note" style="margin:2px 0 14px 0; color:#999; font-size:12px;">
+                    <p class="admin__field-note" style="margin:0 0 12px 26px; color:#999; font-size:12px;">
                         <?= $escaper->escapeHtml(__(
                             'Updates firstname, lastname, DOB and gender from OIDC claims for existing customers.'
                         )) ?>
                     </p>
 
-                    <label style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                    <label style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
                         <input type="hidden" name="sync_customer_address_on_sso" value="0">
                         <input type="checkbox"
                                id="loginopt_sync_customer_address"
@@ -157,13 +158,13 @@ $disableNonOidcCustomer = (bool)(int) $val('mo_disable_non_oidc_customer_login',
                                <?= $block->getSyncCustomerAddressOnSso() ? 'checked="checked"' : '' ?>>
                         <?= $escaper->escapeHtml(__('Sync billing & shipping address')) ?>
                     </label>
-                    <p class="admin__field-note" style="margin:2px 0 14px 0; color:#999; font-size:12px;">
+                    <p class="admin__field-note" style="margin:0 0 12px 26px; color:#999; font-size:12px;">
                         <?= $escaper->escapeHtml(__(
                             'Overwrites the default billing/shipping address with OIDC address claims (incl. phone).'
                         )) ?>
                     </p>
 
-                    <label style="display:flex; align-items:center; gap:8px;">
+                    <label style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
                         <input type="hidden" name="sync_customer_group_on_sso" value="0">
                         <input type="checkbox"
                                id="loginopt_sync_customer_group"
@@ -172,7 +173,7 @@ $disableNonOidcCustomer = (bool)(int) $val('mo_disable_non_oidc_customer_login',
                                <?= $block->getSyncCustomerGroupOnSso() ? 'checked="checked"' : '' ?>>
                         <?= $escaper->escapeHtml(__('Re-evaluate customer group')) ?>
                     </label>
-                    <p class="admin__field-note" style="margin:2px 0 6px 0; color:#999; font-size:12px;">
+                    <p class="admin__field-note" style="margin:0 0 4px 26px; color:#999; font-size:12px;">
                         <?= $escaper->escapeHtml(__(
                             'Re-evaluates the customer group mapping from OIDC group claims. Existing group will be overwritten.'
                         )) ?>
@@ -192,7 +193,7 @@ $disableNonOidcCustomer = (bool)(int) $val('mo_disable_non_oidc_customer_login',
                     </label>
                 </td>
                 <td>
-                    <label style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                    <label style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
                         <input type="hidden" name="sync_admin_profile_on_sso" value="0">
                         <input type="checkbox"
                                id="loginopt_sync_admin_profile"
@@ -201,13 +202,13 @@ $disableNonOidcCustomer = (bool)(int) $val('mo_disable_non_oidc_customer_login',
                                <?= $block->getSyncAdminProfileOnSso() ? 'checked="checked"' : '' ?>>
                         <?= $escaper->escapeHtml(__('Sync name & username')) ?>
                     </label>
-                    <p class="admin__field-note" style="margin:2px 0 14px 0; color:#999; font-size:12px;">
+                    <p class="admin__field-note" style="margin:0 0 12px 26px; color:#999; font-size:12px;">
                         <?= $escaper->escapeHtml(__(
                             'Updates admin firstname, lastname and username from OIDC claims. Username uniqueness is enforced.'
                         )) ?>
                     </p>
 
-                    <label style="display:flex; align-items:center; gap:8px;">
+                    <label style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
                         <input type="hidden" name="sync_admin_role_on_sso" value="0">
                         <input type="checkbox"
                                id="loginopt_sync_admin_role"
@@ -216,7 +217,7 @@ $disableNonOidcCustomer = (bool)(int) $val('mo_disable_non_oidc_customer_login',
                                <?= $block->getSyncAdminRoleOnSso() ? 'checked="checked"' : '' ?>>
                         <?= $escaper->escapeHtml(__('Re-evaluate admin role')) ?>
                     </label>
-                    <p class="admin__field-note" style="margin:2px 0 6px 0; color:#999; font-size:12px;">
+                    <p class="admin__field-note" style="margin:0 0 4px 26px; color:#999; font-size:12px;">
                         <?= $escaper->escapeHtml(__(
                             'Re-evaluates the admin role from OIDC group claims using the role mapping. Existing role will be overwritten.'
                         )) ?>
@@ -227,10 +228,11 @@ $disableNonOidcCustomer = (bool)(int) $val('mo_disable_non_oidc_customer_login',
     </table>
 </div>
 
-<!-- ── Login Restrictions ────────────────────────────────────────────────── -->
+<!-- Login Restrictions -->
 <div class="admin__fieldset-wrapper" style="margin-top:24px;">
     <div class="admin__fieldset-wrapper-title" style="margin-bottom:12px;">
-        <span class="admin__fieldset-wrapper-title-text" style="font-size:15px; font-weight:700; color:#1a1a1a; letter-spacing:0.2px;">
+        <span class="admin__fieldset-wrapper-title-text"
+              style="font-size:15px; font-weight:700; color:#1a1a1a; letter-spacing:0.2px;">
             <?= $escaper->escapeHtml(__('Login Restrictions')) ?>
         </span>
         <p class="admin__field-note" style="font-style:italic; margin-top:8px;">
@@ -240,7 +242,6 @@ $disableNonOidcCustomer = (bool)(int) $val('mo_disable_non_oidc_customer_login',
             ) ?>
         </p>
     </div>
-
     <table class="admin__table-primary" style="width:100%; margin-top:16px;">
         <tbody>
             <tr>
@@ -274,10 +275,11 @@ $disableNonOidcCustomer = (bool)(int) $val('mo_disable_non_oidc_customer_login',
     </table>
 </div>
 
-<!-- ── Auto Redirect ─────────────────────────────────────────────────────── -->
+<!-- Auto Redirect -->
 <div class="admin__fieldset-wrapper" style="margin-top:24px;">
     <div class="admin__fieldset-wrapper-title" style="margin-bottom:12px;">
-        <span class="admin__fieldset-wrapper-title-text" style="font-size:15px; font-weight:700; color:#1a1a1a; letter-spacing:0.2px;">
+        <span class="admin__fieldset-wrapper-title-text"
+              style="font-size:15px; font-weight:700; color:#1a1a1a; letter-spacing:0.2px;">
             <?= $escaper->escapeHtml(__('Auto Redirect')) ?>
         </span>
         <p class="admin__field-note" style="font-style:italic; margin-top:8px;">
@@ -286,13 +288,12 @@ $disableNonOidcCustomer = (bool)(int) $val('mo_disable_non_oidc_customer_login',
             ) ?>
         </p>
     </div>
-
     <table class="admin__table-primary" style="width:100%; margin-top:16px;">
         <tbody>
             <tr>
                 <td style="width:220px; vertical-align:top; padding-top:6px;">
                     <label>
-                        <strong><?= $escaper->escapeHtml(__('Auto Redirect to IdP')) ?></strong>
+                        <strong><?= $escaper->escapeHtml(__('Auto Redirect')) ?></strong>
                     </label>
                 </td>
                 <td>
@@ -301,44 +302,28 @@ $disableNonOidcCustomer = (bool)(int) $val('mo_disable_non_oidc_customer_login',
                                name="autoredirect"
                                value="1"
                                <?= $autoredirect ? 'checked="checked"' : '' ?>>
-                        <?= $escaper->escapeHtml(
-                            __('Redirect users automatically to this IdP from the login page (if not logged in).')
-                        ) ?>
+                        <?= $escaper->escapeHtml(__('Enable auto redirect to IdP on login page visit')) ?>
                     </label>
-                    <small class="admin__field-note" style="display:block; margin-top:4px;">
-                        <?= $escaper->escapeHtml(
-                            __('Note: when multiple providers are active, only the first provider with this '
-                                . 'option enabled triggers the redirect.')
-                        ) ?>
-                    </small>
                 </td>
             </tr>
         </tbody>
     </table>
 </div>
 
+</fieldset>
+
 <script>
 (function () {
-    'use strict';
-
-    function bindOidcDependency(showId, restrictId) {
-        var showCb    = document.getElementById(showId);
-        var restrictCb = document.getElementById(restrictId);
-        if (!showCb || !restrictCb) {
-            return;
+    function bindOidcDependency(sourceId, targetId) {
+        var source = document.getElementById(sourceId);
+        var target = document.getElementById(targetId);
+        if (!source || !target) { return; }
+        function sync() {
+            target.disabled = !source.checked;
+            if (!source.checked) { target.checked = false; }
         }
-
-        function syncState() {
-            if (!showCb.checked) {
-                restrictCb.checked  = false;
-                restrictCb.disabled = true;
-            } else {
-                restrictCb.disabled = false;
-            }
-        }
-
-        showCb.addEventListener('change', syncState);
-        syncState();
+        sync();
+        source.addEventListener('change', sync);
     }
 
     document.addEventListener('DOMContentLoaded', function () {

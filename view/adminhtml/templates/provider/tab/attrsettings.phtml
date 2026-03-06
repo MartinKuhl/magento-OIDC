@@ -1,5 +1,5 @@
 <!--
-    Attribute Mapping tab — Section C: OIDC claim → Magento field mapping.
+    Attribute Mapping tab — OIDC claim → Magento field mapping.
     Rendered inside the Widget\Tabs form on the mooauth/provider/edit page.
     The enclosing <form> and hidden fields are provided by the Edit container block.
 -->
@@ -7,26 +7,31 @@
 /** @var \MiniOrange\OAuth\Block\Adminhtml\Provider\Edit\Tab\AttributeMapping $block */
 /** @var \Magento\Framework\Escaper $escaper */
 
-$data       = $block->getProviderData();
-$roles      = $block->getAllRoles();
+$data = $block->getProviderData();
+$roles = $block->getAllRoles();
 $oidcClaims = $block->getOidcClaims();
-$val        = static function (string $key, $default = '') use ($data) {
+$val = static function (string $key, $default = '') use ($data) {
     return $data[$key] ?? $default;
 };
 
-$rawMappings  = (string) $val('oauth_admin_role_mapping', '[]');
-$decoded      = json_decode($rawMappings, true);
+$rawMappings = (string) $val('oauth_admin_role_mapping', '[]');
+$decoded = json_decode($rawMappings, true);
 $roleMappings = is_array($decoded) ? $decoded : [];
 ?>
-<!-- Datalist of known OIDC claims — populated from standard spec + last Test OIDC Flow result -->
+<!-- Datalist of known OIDC claims populated from standard spec + last Test OIDC Flow result -->
 <datalist id="oidc-claims-datalist">
     <?php foreach ($oidcClaims as $claim): ?>
         <option value="<?= $escaper->escapeHtmlAttr($claim) ?>">
     <?php endforeach; ?>
 </datalist>
+
+<fieldset class="admin__fieldset">
+
+<!-- Attribute Mapping -->
 <div class="admin__fieldset-wrapper">
     <div class="admin__fieldset-wrapper-title" style="margin-bottom:12px;">
-        <span class="admin__fieldset-wrapper-title-text" style="font-size:15px; font-weight:700; color:#1a1a1a; letter-spacing:0.2px;">
+        <span class="admin__fieldset-wrapper-title-text"
+              style="font-size:15px; font-weight:700; color:#1a1a1a; letter-spacing:0.2px;">
             <?= $escaper->escapeHtml(__('Attribute Mapping')) ?>
         </span>
         <p class="admin__field-note" style="font-style:italic; margin-top:8px;">
@@ -38,7 +43,6 @@ $roleMappings = is_array($decoded) ? $decoded : [];
             ) ?>
         </p>
     </div>
-
     <table class="admin__table-primary" style="width:100%; margin-top:16px;">
         <tbody>
             <tr>
@@ -128,9 +132,11 @@ $roleMappings = is_array($decoded) ? $decoded : [];
     </table>
 </div>
 
+<!-- Admin Role Mapping -->
 <div class="admin__fieldset-wrapper" style="margin-top:24px;">
     <div class="admin__fieldset-wrapper-title" style="margin-bottom:12px;">
-        <span class="admin__fieldset-wrapper-title-text" style="font-size:15px; font-weight:700; color:#1a1a1a; letter-spacing:0.2px;">
+        <span class="admin__fieldset-wrapper-title-text"
+              style="font-size:15px; font-weight:700; color:#1a1a1a; letter-spacing:0.2px;">
             <?= $escaper->escapeHtml(__('Admin Role Mapping')) ?>
         </span>
         <p class="admin__field-note" style="font-style:italic; margin-top:8px;">
@@ -139,7 +145,6 @@ $roleMappings = is_array($decoded) ? $decoded : [];
             ) ?>
         </p>
     </div>
-
     <table class="admin__table-primary" style="width:100%; margin-top:16px;">
         <tbody>
             <tr>
@@ -177,32 +182,33 @@ $roleMappings = is_array($decoded) ? $decoded : [];
                         <?php
                         $displayMappings = !empty($roleMappings) ? $roleMappings : [['group' => '', 'role' => '']];
                         foreach ($displayMappings as $index => $mapping):
-                            ?>
-                        <div class="mooauth-mapping-row" style="margin-bottom:8px; display:flex; align-items:center;">
-                            <input type="text"
-                                   name="oauth_role_mapping[<?= (int) $index ?>][group]"
-                                   class="admin__control-text"
-                                   value="<?= $escaper->escapeHtmlAttr($mapping['group'] ?? '') ?>"
-                                   style="width:200px;">
-                            <span style="margin:0 10px;">&rarr;</span>
-                            <select name="oauth_role_mapping[<?= (int) $index ?>][role]"
-                                    class="admin__control-select"
-                                    style="width:220px;">
-                                <option value="">-- <?= $escaper->escapeHtml(__('Select Role')) ?> --</option>
-                                <?php foreach ($roles as $role): ?>
-                                    <option value="<?= $escaper->escapeHtmlAttr($role['value']) ?>"
-                                        <?= (isset($mapping['role']) && $mapping['role'] == $role['value'])
-                                            ? 'selected="selected"' : '' ?>>
-                                        <?= $escaper->escapeHtml($role['label']) ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                            <button type="button"
-                                    class="action-delete mooauth-remove-mapping"
-                                    style="margin-left:10px;">
-                                <?= $escaper->escapeHtml(__('Remove')) ?>
-                            </button>
-                        </div>
+                        ?>
+                            <div class="mooauth-mapping-row"
+                                 style="margin-bottom:8px; display:flex; align-items:center;">
+                                <input type="text"
+                                       name="oauth_role_mapping[<?= (int) $index ?>][group]"
+                                       class="admin__control-text"
+                                       value="<?= $escaper->escapeHtmlAttr($mapping['group'] ?? '') ?>"
+                                       style="width:200px;">
+                                <span style="margin:0 10px;">&rarr;</span>
+                                <select name="oauth_role_mapping[<?= (int) $index ?>][role]"
+                                        class="admin__control-select"
+                                        style="width:220px;">
+                                    <option value="">-- <?= $escaper->escapeHtml(__('Select Role')) ?> --</option>
+                                    <?php foreach ($roles as $role): ?>
+                                        <option value="<?= $escaper->escapeHtmlAttr($role['value']) ?>"
+                                            <?= (isset($mapping['role']) && $mapping['role'] == $role['value'])
+                                                ? 'selected="selected"' : '' ?>>
+                                            <?= $escaper->escapeHtml($role['label']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <button type="button"
+                                        class="action-delete mooauth-remove-mapping"
+                                        style="margin-left:10px;">
+                                    <?= $escaper->escapeHtml(__('Remove')) ?>
+                                </button>
+                            </div>
                         <?php endforeach; ?>
                     </div>
                     <button type="button"
@@ -220,15 +226,13 @@ $roleMappings = is_array($decoded) ? $decoded : [];
     </table>
 </div>
 
+<!-- Customer Group Mapping -->
 <?php
-/* ── Customer Group Mapping — decode provider-level JSON ─────────────── */
-$groups             = $block->getAllGroups();
-$rawCgm             = (string) $val('oauth_customer_group_mapping', '[]');
-$decodedCgm         = json_decode($rawCgm, true);
+$groups = $block->getAllGroups();
+$rawCgm = (string) $val('oauth_customer_group_mapping', '[]');
+$decodedCgm = json_decode($rawCgm, true);
 $customerGroupMappings = is_array($decodedCgm) ? $decodedCgm : [];
 ?>
-
-<!-- ── Customer Group Mapping ────────────────────────────────────────── -->
 <div class="admin__fieldset-wrapper" style="margin-top:24px;">
     <div class="admin__fieldset-wrapper-title" style="margin-bottom:12px;">
         <span class="admin__fieldset-wrapper-title-text"
@@ -242,7 +246,6 @@ $customerGroupMappings = is_array($decodedCgm) ? $decodedCgm : [];
             ) ?>
         </p>
     </div>
-
     <table class="admin__table-primary" style="width:100%; margin-top:16px;">
         <tbody>
             <!-- Default Customer Group -->
@@ -270,3 +273,119 @@ $customerGroupMappings = is_array($decodedCgm) ? $decodedCgm : [];
                     </small>
                 </td>
             </tr>
+            <!-- Customer Group Mappings -->
+            <tr>
+                <td style="vertical-align:top; padding-top:8px;">
+                    <label>
+                        <strong><?= $escaper->escapeHtml(__('Group Mappings')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <div id="mooauth-customer-group-mappings">
+                        <?php
+                        $displayCgm = !empty($customerGroupMappings)
+                            ? $customerGroupMappings
+                            : [['group' => '', 'customer_group' => '']];
+                        foreach ($displayCgm as $cgmIndex => $cgmMapping):
+                        ?>
+                            <div class="mooauth-cgm-row"
+                                 style="margin-bottom:8px; display:flex; align-items:center;">
+                                <input type="text"
+                                       name="oauth_customer_group_mapping[<?= (int) $cgmIndex ?>][group]"
+                                       class="admin__control-text"
+                                       value="<?= $escaper->escapeHtmlAttr($cgmMapping['group'] ?? '') ?>"
+                                       style="width:200px;">
+                                <span style="margin:0 10px;">&rarr;</span>
+                                <select name="oauth_customer_group_mapping[<?= (int) $cgmIndex ?>][customer_group]"
+                                        class="admin__control-select"
+                                        style="width:220px;">
+                                    <option value="">
+                                        -- <?= $escaper->escapeHtml(__('Select Group')) ?> --
+                                    </option>
+                                    <?php foreach ($groups as $group): ?>
+                                        <option value="<?= $escaper->escapeHtmlAttr($group['value']) ?>"
+                                            <?= (isset($cgmMapping['customer_group'])
+                                                && $cgmMapping['customer_group'] == $group['value'])
+                                                ? 'selected="selected"' : '' ?>>
+                                            <?= $escaper->escapeHtml($group['label']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <button type="button"
+                                        class="action-delete mooauth-remove-cgm"
+                                        style="margin-left:10px;">
+                                    <?= $escaper->escapeHtml(__('Remove')) ?>
+                                </button>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <button type="button"
+                            id="mooauth-add-cgm"
+                            class="action-default"
+                            style="margin-top:4px;">
+                        + <?= $escaper->escapeHtml(__('Add Mapping')) ?>
+                    </button>
+                    <small class="admin__field-note" style="display:block; margin-top:4px;">
+                        <?= $escaper->escapeHtml(__('Map OIDC group names to Magento customer groups.')) ?>
+                    </small>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+</fieldset>
+
+<script>
+(function () {
+    // Dynamic role mapping rows
+    var roleContainer = document.getElementById('mooauth-role-mappings');
+    var addRoleBtn    = document.getElementById('mooauth-add-mapping');
+    if (addRoleBtn && roleContainer) {
+        var roleIndex = roleContainer.querySelectorAll('.mooauth-mapping-row').length;
+        addRoleBtn.addEventListener('click', function () {
+            var row = roleContainer.querySelector('.mooauth-mapping-row');
+            if (!row) { return; }
+            var clone = row.cloneNode(true);
+            clone.querySelectorAll('input, select').forEach(function (el) {
+                el.name = el.name.replace(/\[\d+\]/, '[' + roleIndex + ']');
+                el.value = '';
+            });
+            clone.querySelector('select').selectedIndex = 0;
+            roleContainer.appendChild(clone);
+            roleIndex++;
+        });
+        roleContainer.addEventListener('click', function (e) {
+            if (e.target.classList.contains('mooauth-remove-mapping')) {
+                var rows = roleContainer.querySelectorAll('.mooauth-mapping-row');
+                if (rows.length > 1) { e.target.closest('.mooauth-mapping-row').remove(); }
+            }
+        });
+    }
+
+    // Dynamic customer group mapping rows
+    var cgmContainer = document.getElementById('mooauth-customer-group-mappings');
+    var addCgmBtn    = document.getElementById('mooauth-add-cgm');
+    if (addCgmBtn && cgmContainer) {
+        var cgmIndex = cgmContainer.querySelectorAll('.mooauth-cgm-row').length;
+        addCgmBtn.addEventListener('click', function () {
+            var row = cgmContainer.querySelector('.mooauth-cgm-row');
+            if (!row) { return; }
+            var clone = row.cloneNode(true);
+            clone.querySelectorAll('input, select').forEach(function (el) {
+                el.name = el.name.replace(/\[\d+\]/, '[' + cgmIndex + ']');
+                el.value = '';
+            });
+            clone.querySelector('select').selectedIndex = 0;
+            cgmContainer.appendChild(clone);
+            cgmIndex++;
+        });
+        cgmContainer.addEventListener('click', function (e) {
+            if (e.target.classList.contains('mooauth-remove-cgm')) {
+                var rows = cgmContainer.querySelectorAll('.mooauth-cgm-row');
+                if (rows.length > 1) { e.target.closest('.mooauth-cgm-row').remove(); }
+            }
+        });
+    }
+}());
+</script>
