@@ -153,6 +153,26 @@
             </settings>
         </column>
 
+        <!-- PKCE method badge: S256 / plain / disabled -->
+        <column name="pkce_status"
+                class="MiniOrange\OAuth\Ui\Component\Listing\Column\PkceStatus">
+            <settings>
+                <label translate="true">PKCE</label>
+                <sortable>false</sortable>
+                <bodyTmpl>ui/grid/cells/html</bodyTmpl>
+            </settings>
+        </column>
+
+        <!-- JWKS endpoint: configured / not set -->
+        <column name="jwks_status"
+                class="MiniOrange\OAuth\Ui\Component\Listing\Column\JwksStatus">
+            <settings>
+                <label translate="true">JWKS</label>
+                <sortable>false</sortable>
+                <bodyTmpl>ui/grid/cells/html</bodyTmpl>
+            </settings>
+        </column>
+
         <actionsColumn name="actions"
                        class="MiniOrange\OAuth\Ui\Component\Listing\Column\Actions"
                        component="MiniOrange_OAuth/js/grid/columns/provider-actions">

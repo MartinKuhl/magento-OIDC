@@ -97,4 +97,50 @@
                type="button" value="Done" onClick="window.close();">
     </div>
 
+    <?php
+    /**
+     * PKCE / JWKS Infoblock
+     * @var array $providerConfig  Keys: pkce_flow, jwks_uri
+     */
+    if (!empty($providerConfig)):
+        $pkceFlow = (string) ($providerConfig['pkce_flow'] ?? '');
+        $jwksUri  = (string) ($providerConfig['jwks_uri']  ?? '');
+
+        $pkceLabel = match ($pkceFlow) {
+            'S256'  => '<span style="color:#3c763d;font-weight:bold;">&#10003; S256 (recommended)</span>',
+            'plain' => '<span style="color:#8a6d3b;font-weight:bold;">&#9888; plain (legacy — no interception protection)</span>',
+            default => '<span style="color:#999;">&#8212; disabled</span>',
+        };
+
+        $jwksLabel = ($jwksUri !== '')
+            ? '<span style="color:#3c763d;font-weight:bold;">&#10003; configured</span>'
+            . ' <small style="color:#555;">(' . $escaper->escapeHtml($jwksUri) . ')</small>'
+            : '<span style="color:#999;">&#8212; not configured (JWT signature not verified)</span>';
+    ?>
+    <div style="margin-top:30px;padding:15px 20px;background:#f5f5f5;
+                border:1px solid #ddd;border-radius:4px;font-size:13pt;">
+        <p style="font-weight:bold;margin:0 0 12px 0;font-size:14pt;">
+            Security Configuration
+        </p>
+        <table style="border-collapse:collapse;width:100%;font-size:13pt;">
+            <tr>
+                <td style="padding:6px 12px 6px 0;font-weight:bold;width:160px;vertical-align:top;">
+                    PKCE Method
+                </td>
+                <td style="padding:6px 0;">
+                    <?= $pkceLabel /* @noEscape — nur statische Strings, kein User-Input */ ?>
+                </td>
+            </tr>
+            <tr>
+                <td style="padding:6px 12px 6px 0;font-weight:bold;vertical-align:top;">
+                    JWKS Endpoint
+                </td>
+                <td style="padding:6px 0;word-break:break-all;">
+                    <?= $jwksLabel /* @noEscape — jwksUri ist inline per escapeHtml gesichert */ ?>
+                </td>
+            </tr>
+        </table>
+    </div>
+    <?php endif; ?>
+
 </div>

@@ -170,14 +170,27 @@ class ShowTestResults extends Action
         // Persist unsuccessful status
         $this->persistTestStatus('unsuccessful');
 
+        // Lade Provider-Konfiguration für PKCE/JWKS-Anzeige im Template
+        $providerConfig = [];
+        if ($providerId > 0) {
+            $clientDetails = $this->oauthUtility->getClientDetailsById($providerId);
+            if (is_array($clientDetails)) {
+                $providerConfig = [
+                    'pkce_flow' => (string) ($clientDetails['pkce_flow'] ?? ''),
+                    'jwks_uri'  => (string) ($clientDetails['jwks_uri']  ?? ''),
+                ];
+            }
+        }
+
         $data = $this->renderTemplate([
-            'status'       => $this->status,
-            'attrs'        => null,
-            'greetingName' => '',
-            'rightImage'   => $this->oauthUtility->getImageUrl(OAuthConstants::IMAGE_RIGHT),
-            'wrongImage'   => $this->oauthUtility->getImageUrl(OAuthConstants::IMAGE_WRONG),
-            'errorMessage' => $this->escaper->escapeHtml($errorMessage),
-        ]);
+        'status'         => $this->status,
+        'attrs'          => $this->attrs,
+        'greetingName'   => $this->greetingName ?? '',
+        'rightImage'     => $this->oauthUtility->getImageUrl(OAuthConstants::IMAGE_RIGHT),
+        'wrongImage'     => $this->oauthUtility->getImageUrl(OAuthConstants::IMAGE_WRONG),
+        'errorMessage'   => '',
+        'providerConfig' => $providerConfig, 
+    ]);
 
         /** @var RawResult $result */
         $result = $this->resultFactory->create(ResultFactory::TYPE_RAW);
