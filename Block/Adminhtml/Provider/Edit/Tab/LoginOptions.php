@@ -67,6 +67,44 @@ class LoginOptions extends Template implements TabInterface
         return (bool) (int) ($this->getProviderData()[$key] ?? 0);
     }
 
+    // ── Button Visibility ────────────────────────────────────
+
+    public function getShowAdminLink(): bool
+    {
+        return $this->providerVal('show_admin_link');
+    }
+
+    public function getShowCustomerLink(): bool
+    {
+        return $this->providerVal('show_customer_link');
+    }
+
+    // ── Auto-Create ──────────────────────────────────────────
+
+    public function getAutoCreateAdmin(): bool
+    {
+        return $this->providerVal('mo_oauth_auto_create_admin');
+    }
+
+    public function getAutoCreateCustomer(): bool
+    {
+        return $this->providerVal('mo_oauth_auto_create_customer');
+    }
+
+    // ── Login Restrictions ───────────────────────────────────
+
+    public function getDisableNonOidcAdmin(): bool
+    {
+        return $this->providerVal('mo_disable_non_oidc_admin_login');
+    }
+
+    public function getDisableNonOidcCustomer(): bool
+    {
+        return $this->providerVal('mo_disable_non_oidc_customer_login');
+    }
+
+    // ── Auto Redirect ────────────────────────────────────────
+
     public function getAutoRedirectAdmin(): bool
     {
         return $this->providerVal('autoredirect_admin');
@@ -76,6 +114,8 @@ class LoginOptions extends Template implements TabInterface
     {
         return $this->providerVal('autoredirect_customer');
     }
+
+    // ── Profile Sync ─────────────────────────────────────────
 
     public function getSyncCustomerProfileOnSso(): bool
     {

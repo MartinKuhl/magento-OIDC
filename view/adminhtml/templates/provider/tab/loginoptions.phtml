@@ -96,17 +96,17 @@ $syncAdminRole       = $block->getSyncAdminRoleOnSso();
                 </td>
                 <td>
                     <label style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
-                        <input type="hidden" name="auto_create_admin" value="0">
+                        <input type="hidden" name="mo_oauth_auto_create_admin" value="0">
                         <input type="checkbox"
-                               name="auto_create_admin"
+                               name="mo_oauth_auto_create_admin"
                                value="1"
                                <?= $autoCreateAdmin ? 'checked="checked"' : '' ?>>
                         <?= $escaper->escapeHtml(__('Auto-create admin users on first SSO login')) ?>
                     </label>
                     <label style="display:flex; align-items:center; gap:8px;">
-                        <input type="hidden" name="auto_create_customer" value="0">
+                        <input type="hidden" name="mo_oauth_auto_create_customer" value="0">
                         <input type="checkbox"
-                               name="auto_create_customer"
+                               name="mo_oauth_auto_create_customer"
                                value="1"
                                <?= $autoCreateCustomer ? 'checked="checked"' : '' ?>>
                         <?= $escaper->escapeHtml(__('Auto-create customer accounts on first SSO login')) ?>
