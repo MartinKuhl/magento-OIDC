@@ -12,7 +12,7 @@ use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Session\SessionManagerInterface;
 use Magento\Framework\UrlInterface;
-use MiniOrange\OAuth\Model\ResourceModel\Provider\CollectionFactory;
+use MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps\CollectionFactory;
 
 /**
  * Redirects unauthenticated admins to the IdP authorize URL

@@ -9,7 +9,7 @@ use Magento\Backend\Block\Template\Context;
 use Magento\Backend\Block\Widget\Tab\TabInterface;
 use Magento\Framework\Phrase;
 use Magento\Framework\Registry;
-use MiniOrange\OAuth\Model\ResourceModel\Provider\CollectionFactory;
+use MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps\CollectionFactory;
 
 /**
  * Login Options tab — SSO button visibility, auto-creation,
