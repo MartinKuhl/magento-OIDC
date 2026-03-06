@@ -25,6 +25,7 @@ use MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps\CollectionFac
 class AdminLoginAutoRedirectObserver implements ObserverInterface
 {
     private const SESSION_GUARD_KEY = 'oidc_admin_redirect_attempted';
+    private const LOGOUT_FLAG_KEY = 'oidc_admin_just_logged_out';
 
     public function __construct(
         private readonly CollectionFactory $providerCollectionFactory,
@@ -36,6 +37,18 @@ class AdminLoginAutoRedirectObserver implements ObserverInterface
 
     public function execute(Observer $observer): void
     {
+        // Post-logout guard: user explicitly logged out → show login page once
+        if ($this->session->getData(self::LOGOUT_FLAG_KEY)) {
+            $this->session->unsetData(self::LOGOUT_FLAG_KEY);
+            return;
+        }
+
+        // Loop guard: already redirected once → show normal login page
+        if ($this->session->getData(self::SESSION_GUARD_KEY)) {
+            $this->session->unsetData(self::SESSION_GUARD_KEY);
+            return;
+        }
+    
         /** @var RequestInterface $request */
         $request = $observer->getEvent()->getData('request');
 

@@ -13,4 +13,10 @@
         <observer name="mooauth_admin_auto_redirect"
                   instance="MiniOrange\OAuth\Observer\AdminLoginAutoRedirectObserver" />
     </event>
+
+    <event name="adminhtml_user_logout">
+        <observer name="mooauth_admin_set_logout_flag"
+                  instance="MiniOrange\OAuth\Observer\AdminSetLogoutFlagObserver"/>
+    </event>
+
 </config>

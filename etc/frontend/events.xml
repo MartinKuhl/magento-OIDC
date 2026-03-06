@@ -11,4 +11,8 @@
         <observer name="oauth_logout_observer" instance="MiniOrange\OAuth\Observer\OAuthLogoutObserver" />
     </event>
 
+    <event name="customer_logout">
+        <observer name="mooauth_customer_set_logout_flag" instance="MiniOrange\OAuth\Observer\CustomerSetLogoutFlagObserver"/>
+    </event>
+
 </config>
