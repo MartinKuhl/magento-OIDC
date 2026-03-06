@@ -143,7 +143,8 @@ $disableNonOidcCustomer = (bool)(int) $val('mo_disable_non_oidc_customer_login',
                                <?= $block->getSyncCustomerProfileOnSso() ? 'checked="checked"' : '' ?>>
                         <?= $escaper->escapeHtml(__('Sync name, date of birth & gender')) ?>
                     </label>
-                    <p class="admin__field-note" style="margin:0 0 12px 26px; color:#999; font-size:12px;">
+                    <!-- FIX: margin-left 26px → 0 (kein horizontaler Versatz) -->
+                    <p class="admin__field-note" style="margin:0 0 12px 0; color:#999; font-size:12px;">
                         <?= $escaper->escapeHtml(__(
                             'Updates firstname, lastname, DOB and gender from OIDC claims for existing customers.'
                         )) ?>
@@ -158,7 +159,8 @@ $disableNonOidcCustomer = (bool)(int) $val('mo_disable_non_oidc_customer_login',
                                <?= $block->getSyncCustomerAddressOnSso() ? 'checked="checked"' : '' ?>>
                         <?= $escaper->escapeHtml(__('Sync billing & shipping address')) ?>
                     </label>
-                    <p class="admin__field-note" style="margin:0 0 12px 26px; color:#999; font-size:12px;">
+                    <!-- FIX: margin-left 26px → 0 -->
+                    <p class="admin__field-note" style="margin:0 0 12px 0; color:#999; font-size:12px;">
                         <?= $escaper->escapeHtml(__(
                             'Overwrites the default billing/shipping address with OIDC address claims (incl. phone).'
                         )) ?>
@@ -173,7 +175,8 @@ $disableNonOidcCustomer = (bool)(int) $val('mo_disable_non_oidc_customer_login',
                                <?= $block->getSyncCustomerGroupOnSso() ? 'checked="checked"' : '' ?>>
                         <?= $escaper->escapeHtml(__('Re-evaluate customer group')) ?>
                     </label>
-                    <p class="admin__field-note" style="margin:0 0 4px 26px; color:#999; font-size:12px;">
+                    <!-- FIX: margin-left 26px → 0 -->
+                    <p class="admin__field-note" style="margin:0 0 4px 0; color:#999; font-size:12px;">
                         <?= $escaper->escapeHtml(__(
                             'Re-evaluates the customer group mapping from OIDC group claims. Existing group will be overwritten.'
                         )) ?>
@@ -202,7 +205,8 @@ $disableNonOidcCustomer = (bool)(int) $val('mo_disable_non_oidc_customer_login',
                                <?= $block->getSyncAdminProfileOnSso() ? 'checked="checked"' : '' ?>>
                         <?= $escaper->escapeHtml(__('Sync name & username')) ?>
                     </label>
-                    <p class="admin__field-note" style="margin:0 0 12px 26px; color:#999; font-size:12px;">
+                    <!-- FIX: margin-left 26px → 0 -->
+                    <p class="admin__field-note" style="margin:0 0 12px 0; color:#999; font-size:12px;">
                         <?= $escaper->escapeHtml(__(
                             'Updates admin firstname, lastname and username from OIDC claims. Username uniqueness is enforced.'
                         )) ?>
@@ -217,7 +221,8 @@ $disableNonOidcCustomer = (bool)(int) $val('mo_disable_non_oidc_customer_login',
                                <?= $block->getSyncAdminRoleOnSso() ? 'checked="checked"' : '' ?>>
                         <?= $escaper->escapeHtml(__('Re-evaluate admin role')) ?>
                     </label>
-                    <p class="admin__field-note" style="margin:0 0 4px 26px; color:#999; font-size:12px;">
+                    <!-- FIX: margin-left 26px → 0 -->
+                    <p class="admin__field-note" style="margin:0 0 4px 0; color:#999; font-size:12px;">
                         <?= $escaper->escapeHtml(__(
                             'Re-evaluates the admin role from OIDC group claims using the role mapping. Existing role will be overwritten.'
                         )) ?>
