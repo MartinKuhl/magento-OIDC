@@ -137,13 +137,17 @@ class ShowTestResults extends Action
 
         $this->oauthUtility->flushCache();
 
+        // FIX: providerConfig laden und an Template übergeben
+        $providerConfig = $this->loadProviderConfig();
+
         $data = $this->renderTemplate([
-            'status'       => $this->status,
-            'attrs'        => $this->attrs,
-            'greetingName' => $this->greetingName ?? '',
-            'rightImage'   => $this->oauthUtility->getImageUrl(OAuthConstants::IMAGE_RIGHT),
-            'wrongImage'   => $this->oauthUtility->getImageUrl(OAuthConstants::IMAGE_WRONG),
-            'errorMessage' => '',
+            'status'         => $this->status,
+            'attrs'          => $this->attrs,
+            'greetingName'   => $this->greetingName ?? '',
+            'rightImage'     => $this->oauthUtility->getImageUrl(OAuthConstants::IMAGE_RIGHT),
+            'wrongImage'     => $this->oauthUtility->getImageUrl(OAuthConstants::IMAGE_WRONG),
+            'errorMessage'   => '',
+            'providerConfig' => $providerConfig,
         ]);
 
         /** @var RawResult $result */
@@ -170,13 +174,17 @@ class ShowTestResults extends Action
         // Persist unsuccessful status
         $this->persistTestStatus('unsuccessful');
 
+        // FIX: providerConfig laden und an Template übergeben
+        $providerConfig = $this->loadProviderConfig();
+
         $data = $this->renderTemplate([
-            'status'       => $this->status,
-            'attrs'        => null,
-            'greetingName' => '',
-            'rightImage'   => $this->oauthUtility->getImageUrl(OAuthConstants::IMAGE_RIGHT),
-            'wrongImage'   => $this->oauthUtility->getImageUrl(OAuthConstants::IMAGE_WRONG),
-            'errorMessage' => $this->escaper->escapeHtml($errorMessage),
+            'status'         => $this->status,
+            'attrs'          => null,
+            'greetingName'   => '',
+            'rightImage'     => $this->oauthUtility->getImageUrl(OAuthConstants::IMAGE_RIGHT),
+            'wrongImage'     => $this->oauthUtility->getImageUrl(OAuthConstants::IMAGE_WRONG),
+            'errorMessage'   => $this->escaper->escapeHtml($errorMessage),
+            'providerConfig' => $providerConfig,
         ]);
 
         /** @var RawResult $result */
@@ -186,41 +194,26 @@ class ShowTestResults extends Action
     }
 
     /**
-     * Persist the test status to the provider record.
+     * Load PKCE/JWKS config for the current provider.
      *
-     * Priority:
-     *   1. provider_id from URL parameter (redirect-safe, set by ReadAuthorizationResponse)
-     *   2. app_name from customer session (legacy fallback)
-     *
-     * @param string $status 'success' | 'failed' | 'unsuccessful'
+     * @return array{pkce_flow: string, jwks_uri: string}
      */
-    private function persistTestStatus(string $status): void
+    private function loadProviderConfig(): array
     {
-        // 1. Preferred: provider_id from URL parameter (redirect-safe)
         $providerId = (int) $this->request->getParam('provider_id');
-
-        if ($providerId > 0) {
-            $this->oauthUtility->customlog(
-                'ShowTestResults: persisting status "' . $status . '" via provider ID=' . $providerId
-            );
-            $this->oauthUtility->saveTestStatusById($providerId, $status);
-            return;
+        if ($providerId < 1) {
+            return [];
         }
 
-        // Fallback: app_name from customer session (legacy single-provider path)
-        $appName = (string) $this->oauthUtility->getSessionData(OAuthConstants::APP_NAME);
-        if ($appName !== '') {
-            $this->oauthUtility->customlog(
-                'ShowTestResults: persisting status "' . $status . '" via app_name="' . $appName . '"'
-            );
-            $this->oauthUtility->saveTestStatus($appName, $status);
-            return;
+        $clientDetails = $this->oauthUtility->getProviderById($providerId);
+        if (!is_array($clientDetails)) {
+            return [];
         }
 
-        $this->oauthUtility->customlog(
-            'ShowTestResults: WARNING – could not persist test status, '
-            . 'neither provider ID nor app_name found in session.'
-        );
+        return [
+            'pkce_flow' => (string) ($clientDetails['pkce_flow'] ?? ''),
+            'jwks_uri'  => (string) ($clientDetails['jwks_endpoint'] ?? ''),
+        ];
     }
 
     /**
@@ -274,6 +267,44 @@ class ShowTestResults extends Action
             ?? $attrs['preferred_username']
             ?? $attrs['email']
             ?? null;
+    }
+
+    /**
+     * Persist the test status to the provider record.
+     *
+     * Priority:
+     *   1. provider_id from URL parameter (redirect-safe, set by ReadAuthorizationResponse)
+     *   2. app_name from customer session (legacy fallback)
+     *
+     * @param string $status 'success' | 'failed' | 'unsuccessful'
+     */
+    private function persistTestStatus(string $status): void
+    {
+        // 1. Preferred: provider_id from URL parameter (redirect-safe)
+        $providerId = (int) $this->request->getParam('provider_id');
+
+        if ($providerId > 0) {
+            $this->oauthUtility->customlog(
+                'ShowTestResults: persisting status "' . $status . '" via provider ID=' . $providerId
+            );
+            $this->oauthUtility->saveTestStatusById($providerId, $status);
+            return;
+        }
+
+        // Fallback: app_name from customer session (legacy single-provider path)
+        $appName = (string) $this->oauthUtility->getSessionData(OAuthConstants::APP_NAME);
+        if ($appName !== '') {
+            $this->oauthUtility->customlog(
+                'ShowTestResults: persisting status "' . $status . '" via app_name="' . $appName . '"'
+            );
+            $this->oauthUtility->saveTestStatus($appName, $status);
+            return;
+        }
+
+        $this->oauthUtility->customlog(
+            'ShowTestResults: WARNING – could not persist test status, '
+            . 'neither provider ID nor app_name found in session.'
+        );
     }
 
     /**

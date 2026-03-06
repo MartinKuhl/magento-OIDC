@@ -32,7 +32,7 @@ class JwksStatus extends Column
         $fieldName = $this->getData('name');
 
         foreach ($dataSource['data']['items'] as &$item) {
-            $jwksUri = trim((string) ($item['jwks_uri'] ?? ''));
+            $jwksUri = trim((string) ($item['jwks_endpoint'] ?? ''));
             $item[$fieldName] = $this->renderBadge($jwksUri);
         }
 
