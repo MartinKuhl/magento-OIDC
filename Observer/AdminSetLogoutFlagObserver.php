@@ -6,23 +6,39 @@ namespace MiniOrange\OAuth\Observer;
 
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
-use Magento\Framework\Session\SessionManagerInterface;
+use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
+use Magento\Framework\Stdlib\CookieManagerInterface;
 
 /**
- * Sets a session flag on admin logout to suppress the OIDC auto-redirect
- * on the subsequent login page visit.
+ * Sets a short-lived cookie on admin logout to suppress the OIDC
+ * auto-redirect on the subsequent login page visit.
+ *
+ * A cookie is used instead of a session flag because Magento
+ * destroys the admin session during logout.
  */
 class AdminSetLogoutFlagObserver implements ObserverInterface
 {
-    private const LOGOUT_FLAG_KEY = 'oidc_admin_just_logged_out';
+    private const LOGOUT_COOKIE_NAME = 'oidc_admin_just_logged_out';
 
     public function __construct(
-        private readonly SessionManagerInterface $session
+        private readonly CookieManagerInterface $cookieManager,
+        private readonly CookieMetadataFactory  $cookieMetadataFactory
     ) {
     }
 
     public function execute(Observer $observer): void
     {
-        $this->session->setData(self::LOGOUT_FLAG_KEY, true);
+        $metadata = $this->cookieMetadataFactory
+            ->createPublicCookieMetadata()
+            ->setDuration(120)
+            ->setPath('/')
+            ->setHttpOnly(true)
+            ->setSameSite('Lax');
+
+        $this->cookieManager->setPublicCookie(
+            self::LOGOUT_COOKIE_NAME,
+            '1',
+            $metadata
+        );
     }
 }

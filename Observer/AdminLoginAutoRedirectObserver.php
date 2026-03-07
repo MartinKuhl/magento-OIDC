@@ -6,11 +6,11 @@ namespace MiniOrange\OAuth\Observer;
 
 use Magento\Framework\App\ActionFlag;
 use Magento\Framework\App\ActionInterface;
-use Magento\Framework\App\RequestInterface;
-use Magento\Framework\App\Response\HttpFactory as ResponseFactory;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Session\SessionManagerInterface;
+use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
+use Magento\Framework\Stdlib\CookieManagerInterface;
 use Magento\Framework\UrlInterface;
 use MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps\CollectionFactory;
 
@@ -18,41 +18,35 @@ use MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps\CollectionFac
  * Redirects unauthenticated admins to the IdP authorize URL
  * when auto-redirect is enabled and exactly one provider is configured.
  *
- * Loop guard: sets a session flag after the first redirect attempt.
- * If the flag is already present (= user came back from IdP without
- * successful auth), the redirect is skipped to prevent an infinite loop.
+ * Guards:
+ * - Post-logout cookie: prevents redirect right after an explicit logout.
+ * - Session flag: prevents infinite redirect loops when the IdP
+ *   returns without a successful authentication.
  */
 class AdminLoginAutoRedirectObserver implements ObserverInterface
 {
     private const SESSION_GUARD_KEY = 'oidc_admin_redirect_attempted';
-    private const LOGOUT_FLAG_KEY = 'oidc_admin_just_logged_out';
+    private const LOGOUT_COOKIE_NAME = 'oidc_admin_just_logged_out';
 
     public function __construct(
-        private readonly CollectionFactory $providerCollectionFactory,
+        private readonly CollectionFactory       $providerCollectionFactory,
         private readonly SessionManagerInterface $session,
-        private readonly UrlInterface $url,
-        private readonly ActionFlag $actionFlag
+        private readonly UrlInterface            $url,
+        private readonly ActionFlag              $actionFlag,
+        private readonly CookieManagerInterface  $cookieManager,
+        private readonly CookieMetadataFactory   $cookieMetadataFactory
     ) {
     }
 
     public function execute(Observer $observer): void
     {
         // Post-logout guard: user explicitly logged out → show login page once
-        if ($this->session->getData(self::LOGOUT_FLAG_KEY)) {
-            $this->session->unsetData(self::LOGOUT_FLAG_KEY);
+        if ($this->cookieManager->getCookie(self::LOGOUT_COOKIE_NAME)) {
+            $this->deleteLogoutCookie();
             return;
         }
 
         // Loop guard: already redirected once → show normal login page
-        if ($this->session->getData(self::SESSION_GUARD_KEY)) {
-            $this->session->unsetData(self::SESSION_GUARD_KEY);
-            return;
-        }
-    
-        /** @var RequestInterface $request */
-        $request = $observer->getEvent()->getData('request');
-
-        // Guard: already redirected in this session → skip (prevent loop)
         if ($this->session->getData(self::SESSION_GUARD_KEY)) {
             $this->session->unsetData(self::SESSION_GUARD_KEY);
             return;
@@ -86,5 +80,17 @@ class AdminLoginAutoRedirectObserver implements ObserverInterface
         $controller = $observer->getEvent()->getData('controller_action');
         $controller->getResponse()->setRedirect($authorizeUrl);
         $this->actionFlag->set('', ActionInterface::FLAG_NO_DISPATCH, true);
+    }
+
+    /**
+     * Remove the logout cookie after it has been consumed.
+     */
+    private function deleteLogoutCookie(): void
+    {
+        $metadata = $this->cookieMetadataFactory
+            ->createPublicCookieMetadata()
+            ->setPath('/');
+
+        $this->cookieManager->deleteCookie(self::LOGOUT_COOKIE_NAME, $metadata);
     }
 }
