@@ -15,28 +15,32 @@ use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
  */
 class SendAuthorizationRequest extends BaseAction
 {
-    /** @var \MiniOrange\OAuth\Helper\OAuthSecurityHelper */
-    private readonly \MiniOrange\OAuth\Helper\OAuthSecurityHelper $securityHelper;
+    /** @var OAuthSecurityHelper */
+    private readonly OAuthSecurityHelper $securityHelper;
 
     /** @var \Magento\Framework\Session\SessionManagerInterface */
     private readonly \Magento\Framework\Session\SessionManagerInterface $sessionManager;
 
+    /** @var \Magento\Framework\Stdlib\CookieManagerInterface */
+    private readonly \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager;
+
     /**
-     * Initialize send authorization request action.
-     *
      * @param \Magento\Framework\App\Action\Context              $context
      * @param \MiniOrange\OAuth\Helper\OAuthUtility              $oauthUtility
      * @param OAuthSecurityHelper                                $securityHelper
      * @param \Magento\Framework\Session\SessionManagerInterface $sessionManager
+     * @param \Magento\Framework\Stdlib\CookieManagerInterface   $cookieManager
      */
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
         \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
         OAuthSecurityHelper $securityHelper,
-        \Magento\Framework\Session\SessionManagerInterface $sessionManager
+        \Magento\Framework\Session\SessionManagerInterface $sessionManager,
+        \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager
     ) {
         $this->securityHelper = $securityHelper;
         $this->sessionManager = $sessionManager;
+        $this->cookieManager  = $cookieManager;
         parent::__construct($context, $oauthUtility);
     }
 
@@ -53,6 +57,15 @@ class SendAuthorizationRequest extends BaseAction
         // session_regenerate_id() from updating the browser's session ID after login.
         // SameSite=None is unnecessary — OAuth uses top-level navigation (SameSite=Lax suffices).
 
+        // Guard: skip authorization during OIDC logout flow (prevents re-login loop)
+        if ($this->cookieManager->getCookie('oidc_logout_guard') === '1') {
+            $this->oauthUtility->customlog(
+                'Frontend SendAuthorizationRequest: Skipped — oidc_logout_guard cookie active'
+            );
+            $loginUrl = $this->oauthUtility->getBaseUrl() . 'customer/account/login';
+            return $this->resultRedirectFactory->create()->setUrl($loginUrl);
+        }
+        
         $Log_file_time = $this->oauthUtility->getStoreConfig(OAuthConstants::LOG_FILE_TIME);
         $current_time = time();
         $chk_enable_log = 1;
