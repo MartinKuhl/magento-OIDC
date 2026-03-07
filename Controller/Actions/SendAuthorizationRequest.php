@@ -56,15 +56,6 @@ class SendAuthorizationRequest extends BaseAction
         // that conflicts with PHP's session cookie (domain=...). The duplicate cookie prevents
         // session_regenerate_id() from updating the browser's session ID after login.
         // SameSite=None is unnecessary — OAuth uses top-level navigation (SameSite=Lax suffices).
-
-        // Guard: skip authorization during OIDC logout flow (prevents re-login loop)
-        if ($this->cookieManager->getCookie('oidc_logout_guard') === '1') {
-            $this->oauthUtility->customlog(
-                'Frontend SendAuthorizationRequest: Skipped — oidc_logout_guard cookie active'
-            );
-            $loginUrl = $this->oauthUtility->getBaseUrl() . 'customer/account/login';
-            return $this->resultRedirectFactory->create()->setUrl($loginUrl);
-        }
         
         $Log_file_time = $this->oauthUtility->getStoreConfig(OAuthConstants::LOG_FILE_TIME);
         $current_time = time();
