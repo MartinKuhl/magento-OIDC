@@ -19,6 +19,10 @@ use MiniOrange\OAuth\Helper\OAuthConstants;
  * by redirecting to the IdP's end_session_endpoint with id_token_hint
  * and post_logout_redirect_uri parameters.
  *
+ * Supports Authelia fallback: If the endpoint path ends with /logout
+ * (no end_session_endpoint in OIDC discovery), uses /logout?rd=<url>
+ * instead of the standard OIDC parameters.
+ *
  * MP-08: Per-provider endsession_endpoint via oidc_provider_id in session.
  */
 class OAuthLogoutObserver implements ObserverInterface
@@ -70,13 +74,11 @@ class OAuthLogoutObserver implements ObserverInterface
      *
      * Reads id_token from customer session, builds the end_session_endpoint
      * URL with id_token_hint and post_logout_redirect_uri, then redirects.
-     *
-     * @param Observer $observer
      */
     #[\Override]
     public function execute(Observer $observer): void
     {
-        // Clean up OIDC customer cookie on logout
+        // ── Cookie cleanup (best-effort) ──
         try {
             $oidcCookie = $this->cookieManager->getCookie('oidc_customer_authenticated');
             if ($oidcCookie !== null) {
@@ -94,12 +96,13 @@ class OAuthLogoutObserver implements ObserverInterface
             );
         }
 
-        // Read id_token and provider_id from customer session (set at login time)
+        // ── Read session data ──
         $idToken    = (string) $this->customerSession->getData('oidc_id_token');
         $providerId = (int) $this->customerSession->getData('oidc_provider_id');
 
-        // Determine endsession_endpoint
+        // ── Determine endsession_endpoint ──
         $endSessionEndpoint = '';
+        $provider = null;
 
         // MP-08: prefer per-provider endsession_endpoint
         if ($providerId > 0) {
@@ -122,31 +125,9 @@ class OAuthLogoutObserver implements ObserverInterface
             return;
         }
 
-        // Build RP-Initiated Logout URL (OIDC RP-Initiated Logout 1.0)
-        $logoutUrl = $endSessionEndpoint;
-        $params = [];
-
-        if ($idToken !== '') {
-            $params['id_token_hint'] = $idToken;
-        }
-
-        // post_logout_redirect_uri = store base URL (customer landing page after IdP logout)
-        try {
-            $postLogoutRedirectUri = $this->storeManager->getStore()->getBaseUrl();
-            $params['post_logout_redirect_uri'] = $postLogoutRedirectUri;
-            $this->oauthUtility->customlog(
-                "OAuthLogoutObserver: post_logout_redirect_uri=" . $postLogoutRedirectUri
-            );
-        } catch (\Exception $e) {
-            $this->oauthUtility->customlog(
-                "OAuthLogoutObserver: Could not determine store base URL: " . $e->getMessage()
-            );
-        }
-
-        if (!empty($params)) {
-            $separator = (strpos($logoutUrl, '?') !== false) ? '&' : '?';
-            $logoutUrl .= $separator . http_build_query($params);
-        }
+        // ── Build logout URL (Standard OIDC or Authelia fallback) ──
+        $postLogoutRedirectUri = $this->resolvePostLogoutRedirectUri($provider);
+        $logoutUrl = $this->buildLogoutUrl($endSessionEndpoint, $idToken, $postLogoutRedirectUri);
 
         // Clear session data before redirect (id_token must not persist)
         $this->customerSession->unsetData('oidc_id_token');
@@ -154,5 +135,77 @@ class OAuthLogoutObserver implements ObserverInterface
         if ($this->_response instanceof HttpResponse) {
             $this->_response->setRedirect($logoutUrl);
         }
+    }
+
+    /**
+     * Build the full logout redirect URL.
+     *
+     * Standard OIDC: end_session_endpoint?id_token_hint=…&post_logout_redirect_uri=…
+     * Authelia:       /logout?rd=<url>
+     *
+     * Detection: If the endpoint path ends with /logout we assume Authelia-style.
+     */
+    private function buildLogoutUrl(
+        string $endSessionEndpoint,
+        string $idTokenHint,
+        string $postLogoutRedirectUri
+    ): string {
+        $endpoint = rtrim($endSessionEndpoint, '/');
+        $parsedPath = parse_url($endpoint, PHP_URL_PATH) ?? '';
+
+        // Authelia detection: path ends with /logout (not /endsession, /v2/logout etc.)
+        if (str_ends_with($parsedPath, '/logout')) {
+            $url = $endpoint;
+            if ($postLogoutRedirectUri !== '') {
+                $url .= '?rd=' . urlencode($postLogoutRedirectUri);
+            }
+            $this->oauthUtility->customlog(
+                "OAuthLogoutObserver: Authelia-style logout → " . $url
+            );
+            return $url;
+        }
+
+        // Standard OIDC RP-Initiated Logout
+        $params = [];
+        if ($idTokenHint !== '') {
+            $params['id_token_hint'] = $idTokenHint;
+        }
+        if ($postLogoutRedirectUri !== '') {
+            $params['post_logout_redirect_uri'] = $postLogoutRedirectUri;
+        }
+
+        $separator = (strpos($endpoint, '?') !== false) ? '&' : '?';
+        $logoutUrl = $endpoint . (!empty($params) ? $separator . http_build_query($params) : '');
+
+        $this->oauthUtility->customlog(
+            "OAuthLogoutObserver: Standard OIDC logout → " . $logoutUrl
+        );
+
+        return $logoutUrl;
+    }
+
+    /**
+     * Resolve post_logout_redirect_uri for customer context.
+     *
+     * Fallback: 1) provider.post_logout_url  2) Store base URL
+     */
+    private function resolvePostLogoutRedirectUri(?array $provider): string
+    {
+        // 1) Explicit value from provider DB row
+        if ($provider !== null && !empty($provider['post_logout_url'])) {
+            return rtrim((string) $provider['post_logout_url'], '/') . '/';
+        }
+
+        // 2) Store base URL (current store context)
+        try {
+            $baseUrl = $this->storeManager->getStore()->getBaseUrl();
+            return rtrim((string) $baseUrl, '/') . '/';
+        } catch (\Exception $e) {
+            $this->oauthUtility->customlog(
+                "OAuthLogoutObserver: Could not resolve store base URL: " . $e->getMessage()
+            );
+        }
+
+        return '';
     }
 }

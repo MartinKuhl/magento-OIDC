@@ -316,9 +316,9 @@
             <argument name="cookieManager" xsi:type="object">Magento\Framework\Stdlib\CookieManagerInterface</argument>
             <argument name="cookieMetadataFactory" xsi:type="object">Magento\Framework\Stdlib\Cookie\CookieMetadataFactory</argument>
             <argument name="oauthUtility" xsi:type="object">MiniOrange\OAuth\Helper\OAuthUtility</argument>
-            <argument name="adminSession" xsi:type="object">Magento\Backend\Model\Auth\Session\Proxy</argument>
-            <argument name="response" xsi:type="object">Magento\Framework\App\ResponseInterface</argument>
+            <argument name="authSession" xsi:type="object">Magento\Backend\Model\Auth\Session\Proxy</argument>
             <argument name="backendUrl" xsi:type="object">Magento\Backend\Model\UrlInterface</argument>
+            <argument name="response" xsi:type="object">Magento\Framework\App\ResponseInterface</argument>
         </arguments>
     </type>
 

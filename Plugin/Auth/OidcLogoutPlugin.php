@@ -9,7 +9,8 @@
  *  3. Deletes the OIDC admin cookie.
  *  4. Sets a short-lived "oidc_logout_guard" cookie to prevent the
  *     AdminLoginRestrictionPlugin from triggering an immediate re-login.
- *  5. Redirects to the IdP end_session_endpoint (RP-Initiated Logout).
+ *  5. Redirects to the IdP end_session_endpoint (RP-Initiated Logout)
+ *     or /logout?rd= (Authelia fallback).
  *
  * IMPORTANT: We use aroundLogout (not afterLogout) because afterLogout
  * fires AFTER Auth::logout() has already destroyed the session — at that
@@ -23,7 +24,7 @@ declare(strict_types=1);
 namespace MiniOrange\OAuth\Plugin\Auth;
 
 use Magento\Backend\Model\Auth;
-use Magento\Backend\Model\Session as BackendSession;
+use Magento\Backend\Model\Auth\Session as AuthSession;
 use Magento\Backend\Model\UrlInterface as BackendUrlInterface;
 use Magento\Framework\App\ResponseInterface;
 use Magento\Framework\HTTP\PhpEnvironment\Response as HttpResponse;
@@ -37,7 +38,7 @@ class OidcLogoutPlugin
     protected CookieManagerInterface $cookieManager;
     protected CookieMetadataFactory $cookieMetadataFactory;
     protected OAuthUtility $oauthUtility;
-    protected BackendSession $backendSession;
+    protected AuthSession $authSession;
     protected BackendUrlInterface $backendUrl;
     protected ResponseInterface $response;
 
@@ -45,14 +46,14 @@ class OidcLogoutPlugin
         CookieManagerInterface $cookieManager,
         CookieMetadataFactory $cookieMetadataFactory,
         OAuthUtility $oauthUtility,
-        BackendSession $backendSession,
+        AuthSession $authSession,
         BackendUrlInterface $backendUrl,
         ResponseInterface $response
     ) {
         $this->cookieManager         = $cookieManager;
         $this->cookieMetadataFactory = $cookieMetadataFactory;
         $this->oauthUtility          = $oauthUtility;
-        $this->backendSession        = $backendSession;
+        $this->authSession           = $authSession;
         $this->backendUrl            = $backendUrl;
         $this->response              = $response;
     }
@@ -64,8 +65,8 @@ class OidcLogoutPlugin
     public function aroundLogout(Auth $subject, callable $proceed): void
     {
         // ── 1. Read session data BEFORE session is destroyed ──
-        $idToken    = (string) $this->backendSession->getData('oidc_id_token');
-        $providerId = (int) $this->backendSession->getData('oidc_provider_id');
+        $idToken    = (string) $this->authSession->getData('oidc_id_token');
+        $providerId = (int) $this->authSession->getData('oidc_provider_id');
 
         $this->oauthUtility->customlog(sprintf(
             'OidcLogoutPlugin: Pre-logout — id_token=%s, provider_id=%d',
@@ -134,37 +135,62 @@ class OidcLogoutPlugin
             return;
         }
 
-        // ── 6. Build RP-Initiated Logout URL ──
-        $params = [];
-
-        if ($idToken !== '') {
-            $params['id_token_hint'] = $idToken;
-        }
-
-        $params['state'] = bin2hex(random_bytes(16));
-
+        // ── 6. Build logout URL (Standard OIDC or Authelia fallback) ──
         $postLogoutUri = $this->resolvePostLogoutRedirectUri($provider);
-        if ($postLogoutUri !== '') {
-            $params['post_logout_redirect_uri'] = $postLogoutUri;
-        }
-
-        $separator = (strpos($endSessionEndpoint, '?') !== false) ? '&' : '?';
-        $logoutUrl = $endSessionEndpoint . $separator . http_build_query($params);
+        $logoutUrl = $this->buildLogoutUrl($endSessionEndpoint, $idToken, $postLogoutUri);
 
         $this->oauthUtility->customlog(sprintf(
-            'OidcLogoutPlugin: Redirecting to IdP — endpoint=%s, post_logout_redirect_uri=%s',
-            $endSessionEndpoint,
-            $postLogoutUri ?: '(none)'
+            'OidcLogoutPlugin: Redirecting to IdP — url=%s',
+            $logoutUrl
         ));
 
         // ── 7. Redirect to IdP ──
         if ($this->response instanceof HttpResponse) {
             $this->response->setRedirect($logoutUrl);
             $this->response->sendResponse();
-            // Hard exit: prevent Magento from overriding the redirect
-            // phpcs:ignore Magento2.Security.LanguageConstruct.ExitUsage
-            exit;
         }
+    }
+
+    /**
+     * Build the full logout redirect URL.
+     *
+     * Standard OIDC: end_session_endpoint?id_token_hint=…&post_logout_redirect_uri=…
+     * Authelia:       /logout?rd=<url>
+     *
+     * Detection: If the endpoint path ends with /logout we assume Authelia-style.
+     */
+    private function buildLogoutUrl(
+        string $endSessionEndpoint,
+        string $idTokenHint,
+        string $postLogoutRedirectUri
+    ): string {
+        $endpoint = rtrim($endSessionEndpoint, '/');
+        $parsedPath = parse_url($endpoint, PHP_URL_PATH) ?? '';
+
+        // Authelia detection: path ends with /logout
+        if (str_ends_with($parsedPath, '/logout')) {
+            $url = $endpoint;
+            if ($postLogoutRedirectUri !== '') {
+                $url .= '?rd=' . urlencode($postLogoutRedirectUri);
+            }
+            $this->oauthUtility->customlog(
+                'OidcLogoutPlugin: Authelia-style logout detected'
+            );
+            return $url;
+        }
+
+        // Standard OIDC RP-Initiated Logout
+        $params = [];
+        if ($idTokenHint !== '') {
+            $params['id_token_hint'] = $idTokenHint;
+        }
+        $params['state'] = bin2hex(random_bytes(16));
+        if ($postLogoutRedirectUri !== '') {
+            $params['post_logout_redirect_uri'] = $postLogoutRedirectUri;
+        }
+
+        $separator = (strpos($endpoint, '?') !== false) ? '&' : '?';
+        return $endpoint . $separator . http_build_query($params);
     }
 
     /**
