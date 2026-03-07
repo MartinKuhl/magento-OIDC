@@ -322,4 +322,12 @@
         </arguments>
     </type>
 
+    <!-- Cookie-Guard Fix: CustomerLoginAutoRedirectObserver -->
+    <type name="MiniOrange\OAuth\Observer\CustomerLoginAutoRedirectObserver">
+        <arguments>
+            <argument name="cookieManager" xsi:type="object">Magento\Framework\Stdlib\CookieManagerInterface</argument>
+            <argument name="cookieMetadataFactory" xsi:type="object">Magento\Framework\Stdlib\Cookie\CookieMetadataFactory</argument>
+        </arguments>
+    </type>
+
 </config>

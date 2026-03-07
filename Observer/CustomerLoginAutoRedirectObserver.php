@@ -9,65 +9,83 @@ use Magento\Framework\App\ActionFlag;
 use Magento\Framework\App\ActionInterface;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
-use Magento\Framework\UrlInterface;
+use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
 use Magento\Framework\Stdlib\CookieManagerInterface;
+use Magento\Framework\UrlInterface;
 use MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps\CollectionFactory;
 
 /**
  * Redirects unauthenticated customers to the IdP authorize URL
  * when auto-redirect is enabled and exactly one provider is configured.
  *
- * Guards:
- * - Post-logout guard: suppresses redirect once after explicit logout.
- * - Loop guard: suppresses redirect if user already came back from IdP
- *   without successful authentication.
+ * Guards (in order of evaluation):
+ *  1. Cookie-Guard  – oidc_logout_guard cookie set by OAuthLogoutObserver;
+ *                     suppresses auto-redirect once after RP-Initiated Logout
+ *                     and deletes the cookie immediately (consume-once).
+ *  2. Session-Guard – oidc_customer_redirect_attempted; suppresses redirect
+ *                     if the user already came back from the IdP without
+ *                     successful authentication (loop prevention).
  */
 class CustomerLoginAutoRedirectObserver implements ObserverInterface
 {
+    /** Session key set before redirecting to IdP (loop guard) */
     private const SESSION_GUARD_KEY = 'oidc_customer_redirect_attempted';
-    private const LOGOUT_FLAG_KEY   = 'oidc_customer_just_logged_out';
 
+    /**
+     * Cookie name – must match OAuthLogoutObserver::LOGOUT_GUARD_COOKIE.
+     * Set by OAuthLogoutObserver before the RP-Initiated Logout redirect.
+     */
+    private const LOGOUT_GUARD_COOKIE = 'oidc_logout_guard';
+
+    /**
+     * @param CollectionFactory      $providerCollectionFactory
+     * @param CustomerSession        $customerSession
+     * @param UrlInterface           $url
+     * @param ActionFlag             $actionFlag
+     * @param CookieManagerInterface $cookieManager
+     * @param CookieMetadataFactory  $cookieMetadataFactory
+     */
     public function __construct(
-        private readonly CollectionFactory $providerCollectionFactory,
-        private readonly CustomerSession   $customerSession,
-        private readonly UrlInterface      $url,
-        private readonly ActionFlag        $actionFlag,
-        private readonly CookieManagerInterface $cookieManager 
+        private readonly CollectionFactory      $providerCollectionFactory,
+        private readonly CustomerSession        $customerSession,
+        private readonly UrlInterface           $url,
+        private readonly ActionFlag             $actionFlag,
+        private readonly CookieManagerInterface $cookieManager,
+        private readonly CookieMetadataFactory  $cookieMetadataFactory
     ) {
     }
 
+    /**
+     * Evaluate guards and – if all pass – redirect to IdP authorize URL.
+     */
+    #[\Override]
     public function execute(Observer $observer): void
     {
-        // Guard: skip auto-redirect during OIDC logout flow
-        if ($this->cookieManager->getCookie('oidc_logout_guard') === '1') {
-            // Cookie einmalig konsumieren und löschen
-            $meta = $this->cookieMetadataFactory
-                ->createPublicCookieMetadata()
-                ->setPath('/');
-            $this->cookieManager->deleteCookie('oidc_logout_guard', $meta);
+        // ── Guard 1: Post-logout cookie guard ────────────────────────────────
+        // OAuthLogoutObserver sets this cookie before redirecting to the IdP.
+        // We consume it here (delete immediately) so the customer sees the
+        // Magento login page exactly once instead of being looped back to IdP.
+        if ($this->cookieManager->getCookie(self::LOGOUT_GUARD_COOKIE) === '1') {
+            $this->deleteLogoutGuardCookie();
             return;
         }
-    
-        // Already logged in → nothing to do
+
+        // ── Already logged in → nothing to do ────────────────────────────────
         if ($this->customerSession->isLoggedIn()) {
             return;
         }
 
-        // Post-logout guard: user explicitly logged out → show login page once, then clear flag
-        if ($this->customerSession->getData(self::LOGOUT_FLAG_KEY)) {
-            $this->customerSession->unsetData(self::LOGOUT_FLAG_KEY);
-            return;
-        }
-
-        // Loop guard: already redirected to IdP once → avoid infinite redirect loop
+        // ── Guard 2: Session loop guard ───────────────────────────────────────
+        // Set in step below before the redirect; cleared here on the way back.
         if ($this->customerSession->getData(self::SESSION_GUARD_KEY)) {
             $this->customerSession->unsetData(self::SESSION_GUARD_KEY);
             return;
         }
 
+        // ── Provider check ────────────────────────────────────────────────────
         $collection = $this->providerCollectionFactory->create();
 
-        // Exactly one provider must be configured
+        // Exactly one provider must be configured for auto-redirect
         if ($collection->getSize() !== 1) {
             return;
         }
@@ -81,7 +99,8 @@ class CustomerLoginAutoRedirectObserver implements ObserverInterface
             return;
         }
 
-        // Set loop guard before redirecting to prevent infinite loops
+        // ── Redirect to IdP ───────────────────────────────────────────────────
+        // Set loop guard BEFORE redirect so it is available on the way back.
         $this->customerSession->setData(self::SESSION_GUARD_KEY, true);
 
         $authorizeUrl = $this->url->getUrl('mooauth/actions/sendauthorizationrequest', [
@@ -92,5 +111,26 @@ class CustomerLoginAutoRedirectObserver implements ObserverInterface
         $controller = $observer->getEvent()->getData('controller_action');
         $controller->getResponse()->setRedirect($authorizeUrl);
         $this->actionFlag->set('', ActionInterface::FLAG_NO_DISPATCH, true);
+    }
+
+    /**
+     * Delete the oidc_logout_guard cookie (consume-once pattern).
+     *
+     * HttpOnly=false because the cookie was set as public (readable by JS
+     * and server-side observers alike). Secure=true to match the set-metadata.
+     */
+    private function deleteLogoutGuardCookie(): void
+    {
+        try {
+            $metadata = $this->cookieMetadataFactory
+                ->createPublicCookieMetadata()
+                ->setPath('/')
+                ->setHttpOnly(false)
+                ->setSecure(true);
+
+            $this->cookieManager->deleteCookie(self::LOGOUT_GUARD_COOKIE, $metadata);
+        } catch (\Exception) {
+            // Non-critical: if deletion fails the cookie expires naturally (300 s)
+        }
     }
 }
