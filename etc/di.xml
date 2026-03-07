@@ -30,6 +30,7 @@
         <arguments>
             <argument name="oidcAuthService" xsi:type="object">MiniOrange\OAuth\Model\Service\OidcAuthenticationService</argument>
             <argument name="attrMappingAction" xsi:type="object">MiniOrange\OAuth\Controller\Actions\CheckAttributeMappingAction</argument>
+            <argument name="adminSession" xsi:type="object">Magento\Backend\Model\Auth\Session\Proxy</argument>
         </arguments>
     </type>
 
@@ -75,7 +76,7 @@
         </arguments>
     </type>
 
-    <!-- Plugin to inject OIDC Credential Adapter when OIDC token detected -->
+    <!-- Plugins on Magento\Backend\Model\Auth -->
     <type name="Magento\Backend\Model\Auth">
         <plugin name="admin_login_restriction"
                 type="MiniOrange\OAuth\Plugin\AdminLoginRestrictionPlugin"
@@ -93,16 +94,6 @@
         <arguments>
             <argument name="oauthUtility" xsi:type="object">MiniOrange\OAuth\Helper\OAuthUtility</argument>
             <argument name="logger" xsi:type="object">Psr\Log\LoggerInterface</argument>
-        </arguments>
-    </type>
-
-    <!-- OIDC Logout Plugin Configuration -->
-    <type name="MiniOrange\OAuth\Plugin\Auth\OidcLogoutPlugin">
-        <arguments>
-            <argument name="cookieManager" xsi:type="object">Magento\Framework\Stdlib\CookieManagerInterface</argument>
-            <argument name="cookieMetadataFactory" xsi:type="object">Magento\Framework\Stdlib\Cookie\CookieMetadataFactory</argument>
-            <argument name="backendUrl" xsi:type="object">Magento\Backend\Model\UrlInterface</argument>
-            <argument name="oauthUtility" xsi:type="object">MiniOrange\OAuth\Helper\OAuthUtility</argument>
         </arguments>
     </type>
 
@@ -144,7 +135,6 @@
     </type>
 
     <!-- Plugin to remove required validation from identity field for OIDC users (User Edit) -->
-    <!-- Also registers OidcUserInfoPlugin which adds the OIDC Provider note field -->
     <type name="Magento\User\Block\User\Edit\Tab\Main">
         <plugin name="oidc_identity_field_user"
                 type="MiniOrange\OAuth\Plugin\User\Block\OidcIdentityFieldPlugin"
@@ -154,7 +144,7 @@
                 sortOrder="30"/>
     </type>
 
-    <!-- Plugin to display OIDC Provider in admin Customer View → Personal Information table -->
+    <!-- Plugin to display OIDC Provider in admin Customer View -->
     <type name="Magento\Customer\Block\Adminhtml\Edit\Tab\View">
         <plugin name="oidc_customer_info_provider"
                 type="MiniOrange\OAuth\Plugin\Customer\Block\OidcInfoPlugin"
@@ -216,39 +206,21 @@
     <!-- Customer OIDC Callback Controller Dependencies -->
     <type name="MiniOrange\OAuth\Controller\Actions\CustomerOidcCallback">
         <arguments>
-            <argument name="customerFactory" xsi:type="object">
-                Magento\Customer\Model\CustomerFactory
-            </argument>
-            <argument name="customerSession" xsi:type="object">
-                Magento\Customer\Model\Session
-            </argument>
-            <argument name="storeManager" xsi:type="object">
-                Magento\Store\Model\StoreManagerInterface
-            </argument>
-            <argument name="cookieManager" xsi:type="object">
-                Magento\Framework\Stdlib\CookieManagerInterface
-            </argument>
-            <argument name="cookieMetadataFactory" xsi:type="object">
-                Magento\Framework\Stdlib\Cookie\CookieMetadataFactory
-            </argument>
-            <argument name="securityHelper" xsi:type="object">
-                MiniOrange\OAuth\Helper\OAuthSecurityHelper
-            </argument>
-            <argument name="customerRepository" xsi:type="object">
-                Magento\Customer\Api\CustomerRepositoryInterface
-            </argument>
+            <argument name="customerFactory" xsi:type="object">Magento\Customer\Model\CustomerFactory</argument>
+            <argument name="customerSession" xsi:type="object">Magento\Customer\Model\Session</argument>
+            <argument name="storeManager" xsi:type="object">Magento\Store\Model\StoreManagerInterface</argument>
+            <argument name="cookieManager" xsi:type="object">Magento\Framework\Stdlib\CookieManagerInterface</argument>
+            <argument name="cookieMetadataFactory" xsi:type="object">Magento\Framework\Stdlib\Cookie\CookieMetadataFactory</argument>
+            <argument name="securityHelper" xsi:type="object">MiniOrange\OAuth\Helper\OAuthSecurityHelper</argument>
+            <argument name="customerRepository" xsi:type="object">Magento\Customer\Api\CustomerRepositoryInterface</argument>
         </arguments>
     </type>
 
     <!-- Customer Login Action Updated Dependencies -->
     <type name="MiniOrange\OAuth\Controller\Actions\CustomerLoginAction">
         <arguments>
-            <argument name="cookieManager" xsi:type="object">
-                Magento\Framework\Stdlib\CookieManagerInterface
-            </argument>
-            <argument name="cookieMetadataFactory" xsi:type="object">
-                Magento\Framework\Stdlib\Cookie\CookieMetadataFactory
-            </argument>
+            <argument name="cookieManager" xsi:type="object">Magento\Framework\Stdlib\CookieManagerInterface</argument>
+            <argument name="cookieMetadataFactory" xsi:type="object">Magento\Framework\Stdlib\Cookie\CookieMetadataFactory</argument>
         </arguments>
     </type>
 
@@ -270,9 +242,7 @@
     <!-- Customer CAPTCHA Bypass Plugin Configuration -->
     <type name="MiniOrange\OAuth\Plugin\Captcha\CustomerCaptchaBypassPlugin">
         <arguments>
-            <argument name="oauthUtility" xsi:type="object">
-                MiniOrange\OAuth\Helper\OAuthUtility
-            </argument>
+            <argument name="oauthUtility" xsi:type="object">MiniOrange\OAuth\Helper\OAuthUtility</argument>
         </arguments>
     </type>
 
@@ -283,28 +253,11 @@
                 sortOrder="10"/>
     </type>
 
-    <!-- OAuthLogoutObserver Dependencies (MP-08: added customerSession for provider-aware logout) -->
-    <type name="MiniOrange\OAuth\Observer\OAuthLogoutObserver">
-        <arguments>
-            <argument name="cookieManager" xsi:type="object">
-                Magento\Framework\Stdlib\CookieManagerInterface
-            </argument>
-            <argument name="cookieMetadataFactory" xsi:type="object">
-                Magento\Framework\Stdlib\Cookie\CookieMetadataFactory
-            </argument>
-            <argument name="customerSession" xsi:type="object">
-                Magento\Customer\Model\Session
-            </argument>
-        </arguments>
-    </type>
-
-    <!-- MP-09: Dynamic CSP — inject every active provider's hostname at runtime (multi-provider) -->
+    <!-- MP-09: Dynamic CSP -->
     <type name="Magento\Csp\Model\Collector\MergeCollector">
         <arguments>
             <argument name="collectors" xsi:type="array">
-                <item name="miniorange_oidc" xsi:type="object">
-                    MiniOrange\OAuth\Plugin\Csp\OidcCspPolicyCollector
-                </item>
+                <item name="miniorange_oidc" xsi:type="object">MiniOrange\OAuth\Plugin\Csp\OidcCspPolicyCollector</item>
             </argument>
         </arguments>
     </type>
@@ -313,12 +266,8 @@
     <virtualType name="MooauthProviderListingDataProvider"
                  type="MiniOrange\OAuth\Ui\Component\DataProvider">
         <arguments>
-            <argument name="collection" xsi:type="object" shared="false">
-                MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps\Grid\Collection
-            </argument>
-            <argument name="filterPool" xsi:type="object" shared="false">
-                MooauthProviderListingFilterPool
-            </argument>
+            <argument name="collection" xsi:type="object" shared="false">MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps\Grid\Collection</argument>
+            <argument name="filterPool" xsi:type="object" shared="false">MooauthProviderListingFilterPool</argument>
         </arguments>
     </virtualType>
 
@@ -326,9 +275,7 @@
                  type="Magento\Framework\View\Element\UiComponent\DataProvider\FilterPool">
         <arguments>
             <argument name="appliers" xsi:type="array">
-                <item name="regular" xsi:type="object">
-                    Magento\Framework\View\Element\UiComponent\DataProvider\RegularFilter
-                </item>
+                <item name="regular" xsi:type="object">Magento\Framework\View\Element\UiComponent\DataProvider\RegularFilter</item>
             </argument>
         </arguments>
     </virtualType>
@@ -336,9 +283,7 @@
     <type name="Magento\Framework\View\Element\UiComponent\DataProvider\CollectionFactory">
         <arguments>
             <argument name="collections" xsi:type="array">
-                <item name="mooauth_provider_listing_data_source" xsi:type="string">
-                    MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps\Grid\Collection
-                </item>
+                <item name="mooauth_provider_listing_data_source" xsi:type="string">MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps\Grid\Collection</item>
             </argument>
         </arguments>
     </type>
@@ -347,13 +292,33 @@
     <type name="Magento\Framework\Console\CommandList">
         <arguments>
             <argument name="commands" xsi:type="array">
-                <item name="oidc_config_export" xsi:type="object">
-                    MiniOrange\OAuth\Console\Command\ExportOidcConfig
-                </item>
-                <item name="oidc_config_import" xsi:type="object">
-                    MiniOrange\OAuth\Console\Command\ImportOidcConfig
-                </item>
+                <item name="oidc_config_export" xsi:type="object">MiniOrange\OAuth\Console\Command\ExportOidcConfig</item>
+                <item name="oidc_config_import" xsi:type="object">MiniOrange\OAuth\Console\Command\ImportOidcConfig</item>
             </argument>
+        </arguments>
+    </type>
+
+    <!-- RP-Initiated Logout: OAuthLogoutObserver Dependencies -->
+    <type name="MiniOrange\OAuth\Observer\OAuthLogoutObserver">
+        <arguments>
+            <argument name="oauthUtility" xsi:type="object">MiniOrange\OAuth\Helper\OAuthUtility</argument>
+            <argument name="response" xsi:type="object">Magento\Framework\App\ResponseInterface</argument>
+            <argument name="cookieManager" xsi:type="object">Magento\Framework\Stdlib\CookieManagerInterface</argument>
+            <argument name="cookieMetadataFactory" xsi:type="object">Magento\Framework\Stdlib\Cookie\CookieMetadataFactory</argument>
+            <argument name="customerSession" xsi:type="object">Magento\Customer\Model\Session\Proxy</argument>
+            <argument name="storeManager" xsi:type="object">Magento\Store\Model\StoreManagerInterface</argument>
+        </arguments>
+    </type>
+
+    <!-- RP-Initiated Logout: OidcLogoutPlugin Dependencies -->
+    <type name="MiniOrange\OAuth\Plugin\Auth\OidcLogoutPlugin">
+        <arguments>
+            <argument name="cookieManager" xsi:type="object">Magento\Framework\Stdlib\CookieManagerInterface</argument>
+            <argument name="cookieMetadataFactory" xsi:type="object">Magento\Framework\Stdlib\Cookie\CookieMetadataFactory</argument>
+            <argument name="oauthUtility" xsi:type="object">MiniOrange\OAuth\Helper\OAuthUtility</argument>
+            <argument name="adminSession" xsi:type="object">Magento\Backend\Model\Auth\Session\Proxy</argument>
+            <argument name="response" xsi:type="object">Magento\Framework\App\ResponseInterface</argument>
+            <argument name="backendUrl" xsi:type="object">Magento\Backend\Model\UrlInterface</argument>
         </arguments>
     </type>
 

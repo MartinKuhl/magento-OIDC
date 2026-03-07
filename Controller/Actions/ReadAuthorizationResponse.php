@@ -41,6 +41,9 @@ class ReadAuthorizationResponse extends BaseAction
     /** @var \MiniOrange\OAuth\Controller\Actions\CheckAttributeMappingAction */
     private readonly \MiniOrange\OAuth\Controller\Actions\CheckAttributeMappingAction $attrMappingAction;
 
+    /** @var \Magento\Backend\Model\Auth\Session */
+    private readonly \Magento\Backend\Model\Auth\Session $adminSession;
+
     /**
      * Initialize read authorization response action.
      *
@@ -53,6 +56,7 @@ class ReadAuthorizationResponse extends BaseAction
      * @param Curl                                              $curl
      * @param OidcAuthenticationService                         $oidcAuthService
      * @param CheckAttributeMappingAction                       $attrMappingAction
+     * @param \Magento\Backend\Model\Auth\Session               $adminSession
      */
     public function __construct(
         Context $context,
@@ -63,7 +67,8 @@ class ReadAuthorizationResponse extends BaseAction
         JwtVerifier $jwtVerifier,
         Curl $curl,
         OidcAuthenticationService $oidcAuthService,
-        CheckAttributeMappingAction $attrMappingAction
+        CheckAttributeMappingAction $attrMappingAction,
+        \Magento\Backend\Model\Auth\Session $adminSession
     ) {
         $this->_url = $url;
         $this->customerSession = $customerSession;
@@ -72,6 +77,7 @@ class ReadAuthorizationResponse extends BaseAction
         $this->curl = $curl;
         $this->oidcAuthService = $oidcAuthService;
         $this->attrMappingAction = $attrMappingAction;
+        $this->adminSession = $adminSession;
         parent::__construct($context, $oauthUtility);
     }
 
@@ -96,8 +102,8 @@ class ReadAuthorizationResponse extends BaseAction
         // Preparatory logic and logging
 
         if (!isset($params['code'])) {
-            // Parse loginType from state even on error (state is still passed by OAuth provider)
-            $loginType = OAuthConstants::LOGIN_TYPE_CUSTOMER; // default to customer
+            // Parse loginType from state even on error
+            $loginType = OAuthConstants::LOGIN_TYPE_CUSTOMER;
             $relayState = '';
             if (isset($params['state'])) {
                 $stateData = $this->securityHelper->decodeRelayState($params['state']);
@@ -105,7 +111,6 @@ class ReadAuthorizationResponse extends BaseAction
                     $loginType = $stateData['loginType'];
                     $relayState = $stateData['relayState'];
                 } else {
-                    // Legacy pipe-delimited format (backward compatibility)
                     $parts = explode('|', (string) $params['state']);
                     $loginType = isset($parts[3]) ? $parts[3] : OAuthConstants::LOGIN_TYPE_CUSTOMER;
                     $relayState = urldecode($parts[0]);
@@ -150,12 +155,9 @@ class ReadAuthorizationResponse extends BaseAction
                 $app_name = $stateData['appName'];
                 $loginType = $stateData['loginType'];
                 $stateToken = $stateData['stateToken'];
-                // MP-04: provider_id embedded in state (0 = legacy/unknown — use app_name fallback below)
                 $providerId = $stateData['providerId'] ?? 0;
-                // MP-05: Set provider context — all getStoreConfig() calls resolve from correct provider row
                 $this->oauthUtility->setActiveProviderId($providerId);
             } else {
-                // Legacy pipe-delimited format (backward compatibility during rollout)
                 /** @psalm-suppress RedundantCast */
                 $parts = explode('|', (string) $combinedRelayState);
                 $relayState = urldecode($parts[0]);
@@ -163,7 +165,7 @@ class ReadAuthorizationResponse extends BaseAction
                 $app_name = isset($parts[2]) ? urldecode($parts[2]) : '';
                 $loginType = isset($parts[3]) ? $parts[3] : OAuthConstants::LOGIN_TYPE_CUSTOMER;
                 $stateToken = isset($parts[4]) ? $parts[4] : '';
-                $providerId = 0; // legacy state — no provider_id available
+                $providerId = 0;
             }
 
             // Validate CSRF state token
@@ -191,7 +193,7 @@ class ReadAuthorizationResponse extends BaseAction
                 "ReadAuthResponse: State token validation PASSED"
             );
 
-            // MP-04: prefer direct-by-ID lookup when provider_id is known from state
+            // MP-04: prefer direct-by-ID lookup
             $clientDetails = ($providerId > 0)
                 ? $this->oauthUtility->getClientDetailsById($providerId)
                 : $this->oauthUtility->getClientDetailsByAppName($app_name);
@@ -264,6 +266,23 @@ class ReadAuthorizationResponse extends BaseAction
             );
 
             $accessTokenResponseData = json_decode($accessTokenResponse, true);
+
+            // ── RP-Initiated Logout: persist id_token in session ──
+            if (!empty($accessTokenResponseData['id_token'])) {
+                $rawIdToken = $accessTokenResponseData['id_token'];
+                if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
+                    $this->adminSession->setData('oidc_id_token', $rawIdToken);
+                    $this->oauthUtility->customlog(
+                        'ReadAuthResponse: id_token persisted in admin session for RP-Initiated Logout'
+                    );
+                } else {
+                    $this->customerSession->setData('oidc_id_token', $rawIdToken);
+                    $this->oauthUtility->customlog(
+                        'ReadAuthResponse: id_token persisted in customer session for RP-Initiated Logout'
+                    );
+                }
+            }
+            // ── END id_token persistence ──
 
             if (isset($accessTokenResponseData['access_token']) || isset($accessTokenResponseData['id_token'])) {
                 // Fetch user info
@@ -401,7 +420,7 @@ class ReadAuthorizationResponse extends BaseAction
                 }
                 // ==== END TEST REDIRECT LOGIC ====
 
-                // Process authentication via service layer (replaces controller chaining)
+                // Process authentication via service layer
                 if (is_array($userInfoResponseData)) {
                     $userInfoResponseData['relayState'] = $relayState;
                     $userInfoResponseData['loginType'] = $loginType;
@@ -437,7 +456,7 @@ class ReadAuthorizationResponse extends BaseAction
                 $detectedLoginType = $this->oidcAuthService->extractLoginType($userInfoResponseData);
                 $this->oauthUtility->customlog("ReadAuthorizationResponse: loginType = " . $detectedLoginType);
 
-                // MP-07: pass per-provider attribute mappings so the correct row columns are used
+                // MP-07: pass per-provider attribute mappings
                 if (!empty($clientDetails)) {
                     $this->attrMappingAction->setClientDetails($clientDetails);
                 }

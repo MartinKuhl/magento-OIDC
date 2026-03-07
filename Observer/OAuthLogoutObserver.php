@@ -11,16 +11,15 @@ use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\HTTP\PhpEnvironment\Response as HttpResponse;
 use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
 use Magento\Framework\Stdlib\CookieManagerInterface;
+use Magento\Store\Model\StoreManagerInterface;
 use MiniOrange\OAuth\Helper\OAuthConstants;
 
 /**
- * Observer for customer logout events. Handles redirecting to the
- * configured OAuth/OIDC logout URL when the customer logs out.
+ * Observer for customer logout events. Handles RP-Initiated Logout
+ * by redirecting to the IdP's end_session_endpoint with id_token_hint
+ * and post_logout_redirect_uri parameters.
  *
- * MP-08: When a numeric provider ID was stored in the customer session at
- * login time, the provider's `endsession_endpoint` takes precedence over
- * the global store-config `OAUTH_LOGOUT_URL`. This enables per-provider
- * IdP-initiated logout in multi-provider deployments.
+ * MP-08: Per-provider endsession_endpoint via oidc_provider_id in session.
  */
 class OAuthLogoutObserver implements ObserverInterface
 {
@@ -39,43 +38,40 @@ class OAuthLogoutObserver implements ObserverInterface
     /** @var CustomerSession */
     private readonly CustomerSession $customerSession;
 
+    /** @var StoreManagerInterface */
+    private readonly StoreManagerInterface $storeManager;
+
     /**
-     * Initialize OAuth logout observer.
-     *
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility  $oauthUtility          OAuth utility helper
-     * @param ResponseInterface                      $response              HTTP response interface
-     * @param CookieManagerInterface                 $cookieManager         Cookie manager
-     * @param CookieMetadataFactory                  $cookieMetadataFactory Cookie metadata factory
-     * @param CustomerSession                        $customerSession       Customer session (MP-08)
+     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     * @param ResponseInterface                     $response
+     * @param CookieManagerInterface                $cookieManager
+     * @param CookieMetadataFactory                 $cookieMetadataFactory
+     * @param CustomerSession                       $customerSession
+     * @param StoreManagerInterface                 $storeManager
      */
     public function __construct(
         \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
         ResponseInterface $response,
         CookieManagerInterface $cookieManager,
         CookieMetadataFactory $cookieMetadataFactory,
-        CustomerSession $customerSession
+        CustomerSession $customerSession,
+        StoreManagerInterface $storeManager
     ) {
         $this->oauthUtility          = $oauthUtility;
         $this->_response             = $response;
         $this->cookieManager         = $cookieManager;
         $this->cookieMetadataFactory = $cookieMetadataFactory;
         $this->customerSession       = $customerSession;
+        $this->storeManager          = $storeManager;
     }
 
     /**
-     * Handle logout event and redirect to the OIDC provider's logout URL.
+     * Handle logout event: RP-Initiated Logout redirect to IdP.
      *
-     * MP-08 behaviour:
-     *  1. Read `oidc_provider_id` from the customer session (set at login time
-     *     by CheckAttributeMappingAction::setClientDetails()).
-     *  2. If a provider ID is found, load the provider row and use its
-     *     `endsession_endpoint` column as the logout redirect target.
-     *  3. Fall back to the global store-config `OAUTH_LOGOUT_URL` when no
-     *     per-provider ID is available (single-provider / legacy mode).
+     * Reads id_token from customer session, builds the end_session_endpoint
+     * URL with id_token_hint and post_logout_redirect_uri, then redirects.
      *
-     * Cookie cleanup is best-effort and will not prevent the redirect if it fails.
-     *
-     * @param Observer $observer Event observer
+     * @param Observer $observer
      */
     #[\Override]
     public function execute(Observer $observer): void
@@ -93,20 +89,23 @@ class OAuthLogoutObserver implements ObserverInterface
                 $this->oauthUtility->customlog("OAuthLogoutObserver: OIDC customer cookie deleted");
             }
         } catch (\Exception $e) {
-            // Silent fail — cookie cleanup is best-effort
             $this->oauthUtility->customlog(
                 "OAuthLogoutObserver: Error deleting OIDC cookie: " . $e->getMessage()
             );
         }
 
-        // MP-08: prefer per-provider end_session_endpoint when provider_id is known
-        $logoutUrl  = '';
+        // Read id_token and provider_id from customer session (set at login time)
+        $idToken    = (string) $this->customerSession->getData('oidc_id_token');
         $providerId = (int) $this->customerSession->getData('oidc_provider_id');
 
+        // Determine endsession_endpoint
+        $endSessionEndpoint = '';
+
+        // MP-08: prefer per-provider endsession_endpoint
         if ($providerId > 0) {
             $provider = $this->oauthUtility->getClientDetailsById($providerId);
             if ($provider !== null && !empty($provider['endsession_endpoint'])) {
-                $logoutUrl = (string) $provider['endsession_endpoint'];
+                $endSessionEndpoint = (string) $provider['endsession_endpoint'];
                 $this->oauthUtility->customlog(
                     "OAuthLogoutObserver: Using per-provider endsession_endpoint"
                     . " for provider_id={$providerId}"
@@ -115,13 +114,42 @@ class OAuthLogoutObserver implements ObserverInterface
         }
 
         // Fall back to global store-config logout URL (single-provider / legacy)
-        if ($logoutUrl === '') {
-            $logoutUrl = (string) $this->oauthUtility->getStoreConfig(OAuthConstants::OAUTH_LOGOUT_URL);
+        if ($endSessionEndpoint === '') {
+            $endSessionEndpoint = (string) $this->oauthUtility->getStoreConfig(OAuthConstants::OAUTH_LOGOUT_URL);
         }
 
-        if ($logoutUrl === '' || !filter_var($logoutUrl, FILTER_VALIDATE_URL)) {
+        if ($endSessionEndpoint === '' || !filter_var($endSessionEndpoint, FILTER_VALIDATE_URL)) {
             return;
         }
+
+        // Build RP-Initiated Logout URL (OIDC RP-Initiated Logout 1.0)
+        $logoutUrl = $endSessionEndpoint;
+        $params = [];
+
+        if ($idToken !== '') {
+            $params['id_token_hint'] = $idToken;
+        }
+
+        // post_logout_redirect_uri = store base URL (customer landing page after IdP logout)
+        try {
+            $postLogoutRedirectUri = $this->storeManager->getStore()->getBaseUrl();
+            $params['post_logout_redirect_uri'] = $postLogoutRedirectUri;
+            $this->oauthUtility->customlog(
+                "OAuthLogoutObserver: post_logout_redirect_uri=" . $postLogoutRedirectUri
+            );
+        } catch (\Exception $e) {
+            $this->oauthUtility->customlog(
+                "OAuthLogoutObserver: Could not determine store base URL: " . $e->getMessage()
+            );
+        }
+
+        if (!empty($params)) {
+            $separator = (strpos($logoutUrl, '?') !== false) ? '&' : '?';
+            $logoutUrl .= $separator . http_build_query($params);
+        }
+
+        // Clear session data before redirect (id_token must not persist)
+        $this->customerSession->unsetData('oidc_id_token');
 
         if ($this->_response instanceof HttpResponse) {
             $this->_response->setRedirect($logoutUrl);
