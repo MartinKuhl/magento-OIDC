@@ -29,6 +29,9 @@ class SendAuthorizationRequest extends BaseAction
     /** @var \Magento\Framework\Session\SessionManagerInterface */
     private readonly \Magento\Framework\Session\SessionManagerInterface $sessionManager;
 
+    /** @var \Magento\Framework\Stdlib\CookieManagerInterface */
+    private readonly \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager;
+
     /**
      * Initialize admin send authorization request action.
      *
@@ -37,9 +40,6 @@ class SendAuthorizationRequest extends BaseAction
      * @param OAuthSecurityHelper                                $securityHelper
      * @param \Magento\Framework\Session\SessionManagerInterface $sessionManager
      */
-    /** @var \Magento\Framework\Stdlib\CookieManagerInterface */
-    private readonly \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager;
-
     public function __construct(
         \Magento\Backend\App\Action\Context $context,
         \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
@@ -64,10 +64,11 @@ class SendAuthorizationRequest extends BaseAction
     {
         // Guard: skip authorization during OIDC logout flow (prevents re-login loop)
         if ($this->cookieManager->getCookie('oidc_logout_guard') === '1') {
-            $this->oauthUtility->customlog('SendAuthorizationRequest: Skipped — oidc_logout_guard cookie active');
-
-            // This is a frontend controller — redirect to frontend login, not admin
-            $loginUrl = $this->oauthUtility->getBaseUrl() . 'customer/account/login';
+            $this->oauthUtility->customlog(
+                'Admin SendAuthorizationRequest: Skipped — oidc_logout_guard cookie active'
+            );
+            // Admin controller → redirect to admin login
+            $loginUrl = $this->urlBuilder->getUrl('adminhtml/auth/login');
             return $this->resultRedirectFactory->create()->setUrl($loginUrl);
         }
 
