@@ -267,18 +267,22 @@ class ReadAuthorizationResponse extends BaseAction
 
             $accessTokenResponseData = json_decode($accessTokenResponse, true);
 
-            // ── RP-Initiated Logout: persist id_token in session ──
+            // ── RP-Initiated Logout: persist id_token + provider_id in session ──
             if (!empty($accessTokenResponseData['id_token'])) {
                 $rawIdToken = $accessTokenResponseData['id_token'];
                 if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
                     $this->adminSession->setData('oidc_id_token', $rawIdToken);
+                    $this->adminSession->setData('oidc_provider_id', $providerId);
                     $this->oauthUtility->customlog(
-                        'ReadAuthResponse: id_token persisted in admin session for RP-Initiated Logout'
+                        'ReadAuthResponse: id_token + provider_id=' . $providerId
+                        . ' persisted in admin session for RP-Initiated Logout'
                     );
                 } else {
                     $this->customerSession->setData('oidc_id_token', $rawIdToken);
+                    $this->customerSession->setData('oidc_provider_id', $providerId);
                     $this->oauthUtility->customlog(
-                        'ReadAuthResponse: id_token persisted in customer session for RP-Initiated Logout'
+                        'ReadAuthResponse: id_token + provider_id=' . $providerId
+                        . ' persisted in customer session for RP-Initiated Logout'
                     );
                 }
             }

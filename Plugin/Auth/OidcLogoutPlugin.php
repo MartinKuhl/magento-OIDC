@@ -205,15 +205,15 @@ class OidcLogoutPlugin
             return rtrim((string) $provider['post_logout_url'], '/') . '/';
         }
 
-        // 2) Admin base URL
+        // 2) Admin login URL (not store base URL!)
         try {
-            $adminBaseUrl = $this->backendUrl->getBaseUrl();
-            if (!empty($adminBaseUrl) && filter_var($adminBaseUrl, FILTER_VALIDATE_URL)) {
-                return rtrim($adminBaseUrl, '/') . '/';
+            $adminUrl = $this->backendUrl->getUrl('adminhtml/auth/login');
+            if (!empty($adminUrl) && filter_var($adminUrl, FILTER_VALIDATE_URL)) {
+                return $adminUrl;
             }
         } catch (\Exception $e) {
             $this->oauthUtility->customlog(
-                'OidcLogoutPlugin: Could not resolve admin base URL: ' . $e->getMessage()
+                'OidcLogoutPlugin: Could not resolve admin URL: ' . $e->getMessage()
             );
         }
 

@@ -65,8 +65,10 @@ class SendAuthorizationRequest extends BaseAction
         // Guard: skip authorization during OIDC logout flow (prevents re-login loop)
         if ($this->cookieManager->getCookie('oidc_logout_guard') === '1') {
             $this->oauthUtility->customlog('SendAuthorizationRequest: Skipped — oidc_logout_guard cookie active');
-            $backendLoginUrl = $this->urlBuilder->getUrl('adminhtml/auth/login');
-            return $this->resultRedirectFactory->create()->setUrl($backendLoginUrl);
+
+            // This is a frontend controller — redirect to frontend login, not admin
+            $loginUrl = $this->oauthUtility->getBaseUrl() . 'customer/account/login';
+            return $this->resultRedirectFactory->create()->setUrl($loginUrl);
         }
 
         $Log_file_time = $this->oauthUtility->getStoreConfig(OAuthConstants::LOG_FILE_TIME);
