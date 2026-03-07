@@ -192,6 +192,29 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
 
                 // Verify login success and set OIDC cookie
                 if ($this->auth->isLoggedIn()) {
+                    
+                    // ── Persist id_token in post-login admin session ──
+                    $encryptedIdToken = $this->cookieManager->getCookie('oidc_id_token_transport');
+                    if ($encryptedIdToken) {
+                        try {
+                            $idToken = $this->oauthUtility->getEncryptor()->decrypt($encryptedIdToken);
+                            $this->auth->getAuthStorage()->setData('oidc_id_token', $idToken);
+                            $this->auth->getAuthStorage()->setData('oidc_provider_id', (int) $providerId);
+                            $this->oauthUtility->customlog(
+                                'Oidccallback: id_token persisted in admin session, provider_id=' . $providerId
+                            );
+                        } catch (\Exception $e) {
+                            $this->oauthUtility->customlog(
+                                'Oidccallback: Failed to decrypt id_token transport cookie: ' . $e->getMessage()
+                            );
+                        }
+                        // Delete transport cookie immediately
+                        $deleteMeta = $this->cookieMetadataFactory
+                            ->createPublicCookieMetadata()
+                            ->setPath('/');
+                        $this->cookieManager->deleteCookie('oidc_id_token_transport', $deleteMeta);
+                    }
+
                     // Set OIDC authentication cookie (persists across session boundary)
                     // Path MUST be '/' so the cookie is readable on all admin sub-paths.
                     // Using $adminPath (e.g. '/admin') caused the cookie to be invisible

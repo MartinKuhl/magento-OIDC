@@ -267,26 +267,32 @@ class ReadAuthorizationResponse extends BaseAction
 
             $accessTokenResponseData = json_decode($accessTokenResponse, true);
 
-            // ── RP-Initiated Logout: persist id_token + provider_id in session ──
+            // ── RP-Initiated Logout: persist id_token via cookie for Oidccallback ──
             if (!empty($accessTokenResponseData['id_token'])) {
                 $rawIdToken = $accessTokenResponseData['id_token'];
-                if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
-                    $this->adminSession->setData('oidc_id_token', $rawIdToken);
-                    $this->adminSession->setData('oidc_provider_id', $providerId);
-                    $this->oauthUtility->customlog(
-                        'ReadAuthResponse: id_token + provider_id=' . $providerId
-                        . ' persisted in admin session for RP-Initiated Logout'
-                    );
-                } else {
-                    $this->customerSession->setData('oidc_id_token', $rawIdToken);
-                    $this->customerSession->setData('oidc_provider_id', $providerId);
-                    $this->oauthUtility->customlog(
-                        'ReadAuthResponse: id_token + provider_id=' . $providerId
-                        . ' persisted in customer session for RP-Initiated Logout'
-                    );
-                }
+                
+                // Encrypt before storing in cookie
+                $encryptedToken = $this->oauthUtility->getEncryptor()->encrypt($rawIdToken);
+                
+                $metadata = $this->cookieMetadataFactory
+                    ->createPublicCookieMetadata()
+                    ->setPath('/')
+                    ->setHttpOnly(true)
+                    ->setSecure(true)
+                    ->setSameSite('Lax')
+                    ->setDuration(120); // 2 min — just enough for the redirect chain
+
+                $this->cookieManager->setPublicCookie(
+                    'oidc_id_token_transport',
+                    $encryptedToken,
+                    $metadata
+                );
+
+                $this->oauthUtility->customlog(
+                    'ReadAuthResponse: id_token stored in transport cookie for provider_id=' . $providerId
+                );
             }
-            // ── END id_token persistence ──
+            // ── END id_token transport ──
 
             if (isset($accessTokenResponseData['access_token']) || isset($accessTokenResponseData['id_token'])) {
                 // Fetch user info
