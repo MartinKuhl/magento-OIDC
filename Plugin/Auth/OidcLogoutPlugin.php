@@ -196,18 +196,12 @@ class OidcLogoutPlugin
             return rtrim((string) $provider['post_logout_url'], '/') . '/';
         }
 
-        // 2) Admin-URL: getUrl('') liefert die korrekte Admin-Base inkl. Area-Front-Name
+        // 2) Admin base URL — getBaseUrl() liefert NUR die Basis ohne Route/Key
         //    z.B. https://m2-local.casa-kuhl.de/admin/
         try {
-            $adminUrl = $this->backendUrl->getUrl('');
-            // Nur Schema+Host+Pfad, ohne key/-Token
-            $parsed = parse_url($adminUrl);
-            if (!empty($parsed['scheme']) && !empty($parsed['host'])) {
-                $path = rtrim($parsed['path'] ?? '', '/') . '/';
-                $url  = $parsed['scheme'] . '://' . $parsed['host'] . $path;
-                if (filter_var($url, FILTER_VALIDATE_URL)) {
-                    return $url;
-                }
+            $adminBaseUrl = rtrim($this->backendUrl->getBaseUrl(), '/') . '/';
+            if (filter_var($adminBaseUrl, FILTER_VALIDATE_URL)) {
+                return $adminBaseUrl;
             }
         } catch (\Exception $e) {
             $this->oauthUtility->customlog(

@@ -13,6 +13,7 @@ use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
 use Magento\Framework\Stdlib\CookieManagerInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use MiniOrange\OAuth\Helper\OAuthConstants;
+use Magento\Framework\UrlInterface;
 
 /**
  * Observer for customer logout events. Handles RP-Initiated Logout
@@ -45,6 +46,9 @@ class OAuthLogoutObserver implements ObserverInterface
     /** @var StoreManagerInterface */
     private readonly StoreManagerInterface $storeManager;
 
+    /** @var UrlInterface */
+    private readonly UrlInterface $url;
+
     /**
      * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
      * @param ResponseInterface                     $response
@@ -59,7 +63,8 @@ class OAuthLogoutObserver implements ObserverInterface
         CookieManagerInterface $cookieManager,
         CookieMetadataFactory $cookieMetadataFactory,
         CustomerSession $customerSession,
-        StoreManagerInterface $storeManager
+        StoreManagerInterface $storeManager,
+        UrlInterface $url
     ) {
         $this->oauthUtility          = $oauthUtility;
         $this->_response             = $response;
@@ -67,6 +72,7 @@ class OAuthLogoutObserver implements ObserverInterface
         $this->cookieMetadataFactory = $cookieMetadataFactory;
         $this->customerSession       = $customerSession;
         $this->storeManager          = $storeManager;
+        $this->url                   = $url; 
     }
 
     /**
