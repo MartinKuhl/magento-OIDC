@@ -197,10 +197,6 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
 
 ### FIX ###
 
-- logout
-
-- enable auto-redirect in case only one OIDC provider is configured and non-OIDC are disabled.
-
 - you mark the section in case changes were made, extend this so that the concrete data field is highlighted
 
 - scope handling
