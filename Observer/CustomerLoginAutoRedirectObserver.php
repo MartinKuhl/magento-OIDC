@@ -40,6 +40,11 @@ class CustomerLoginAutoRedirectObserver implements ObserverInterface
     {
         // Guard: skip auto-redirect during OIDC logout flow
         if ($this->cookieManager->getCookie('oidc_logout_guard') === '1') {
+            // Cookie einmalig konsumieren und löschen
+            $meta = $this->cookieMetadataFactory
+                ->createPublicCookieMetadata()
+                ->setPath('/');
+            $this->cookieManager->deleteCookie('oidc_logout_guard', $meta);
             return;
         }
     
