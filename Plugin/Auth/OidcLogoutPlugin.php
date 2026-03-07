@@ -111,7 +111,7 @@ class OidcLogoutPlugin
         }
 
         // ── 5. Resolve provider and end_session_endpoint ──
-        $provider = null;
+        $provider           = null;
         $endSessionEndpoint = '';
 
         if ($providerId > 0) {
@@ -170,59 +170,24 @@ class OidcLogoutPlugin
             $endSessionEndpoint,
             $postLogoutUri ?: '(none)'
         ));
+
         // ── 7. Redirect to IdP ──
         if ($this->response instanceof HttpResponse) {
             $this->response->setRedirect($logoutUrl);
             $this->response->sendResponse();
+            // Prevent any further Magento output / redirect overrides
+            exit;
         }
-    }
-
-    /**
-     * Build the full logout redirect URL.
-     *
-     * Standard OIDC: end_session_endpoint?id_token_hint=…&post_logout_redirect_uri=…
-     * Authelia:       /logout?rd=<url>
-     *
-     * Detection: If the endpoint path ends with /logout we assume Authelia-style.
-     */
-    private function buildLogoutUrl(
-        string $endSessionEndpoint,
-        string $idTokenHint,
-        string $postLogoutRedirectUri
-    ): string {
-        $endpoint = rtrim($endSessionEndpoint, '/');
-        $parsedPath = parse_url($endpoint, PHP_URL_PATH) ?? '';
-
-        // Authelia detection: path ends with /logout
-        if (str_ends_with($parsedPath, '/logout')) {
-            $url = $endpoint;
-            if ($postLogoutRedirectUri !== '') {
-                $url .= '?rd=' . urlencode($postLogoutRedirectUri);
-            }
-            $this->oauthUtility->customlog(
-                'OidcLogoutPlugin: Authelia-style logout detected'
-            );
-            return $url;
-        }
-
-        // Standard OIDC RP-Initiated Logout
-        $params = [];
-        if ($idTokenHint !== '') {
-            $params['id_token_hint'] = $idTokenHint;
-        }
-        $params['state'] = bin2hex(random_bytes(16));
-        if ($postLogoutRedirectUri !== '') {
-            $params['post_logout_redirect_uri'] = $postLogoutRedirectUri;
-        }
-
-        $separator = (strpos($endpoint, '?') !== false) ? '&' : '?';
-        return $endpoint . $separator . http_build_query($params);
     }
 
     /**
      * Resolve post_logout_redirect_uri for Admin context.
      *
-     * Order: 1) provider.post_logout_url  2) Admin base URL
+     * Order: 1) provider.post_logout_url  2) Admin base URL (static, no key/token!)
+     *
+     * IMPORTANT: Do NOT use getUrl('adminhtml/auth/login') here — it generates
+     * a URL with a dynamic key/-token that cannot be registered as a
+     * post_logout_redirect_uri or rd value in Authelia.
      */
     private function resolvePostLogoutRedirectUri(?array $provider): string
     {
@@ -231,15 +196,15 @@ class OidcLogoutPlugin
             return rtrim((string) $provider['post_logout_url'], '/') . '/';
         }
 
-        // 2) Admin login URL (not store base URL!)
+        // 2) Static admin base URL — never contains a key/token
         try {
-            $adminUrl = $this->backendUrl->getUrl('adminhtml/auth/login');
-            if (!empty($adminUrl) && filter_var($adminUrl, FILTER_VALIDATE_URL)) {
-                return $adminUrl;
+            $baseUrl = $this->backendUrl->getBaseUrl();
+            if (!empty($baseUrl) && filter_var($baseUrl, FILTER_VALIDATE_URL)) {
+                return rtrim((string) $baseUrl, '/') . '/';
             }
         } catch (\Exception $e) {
             $this->oauthUtility->customlog(
-                'OidcLogoutPlugin: Could not resolve admin URL: ' . $e->getMessage()
+                'OidcLogoutPlugin: Could not resolve admin base URL: ' . $e->getMessage()
             );
         }
 
@@ -260,5 +225,4 @@ class OidcLogoutPlugin
             && !str_contains($path, '/oauth2/')
             && !str_contains($path, '/oidc/');
     }
-
 }
