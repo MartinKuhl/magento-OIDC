@@ -288,6 +288,12 @@ class ReadAuthorizationResponse extends BaseAction
                     $metadata
                 );
 
+                $this->cookieManager->setPublicCookie(
+                    'oidc_provider_id_transport',
+                    (string) $providerId,
+                    $metadata 
+                );
+
                 $this->oauthUtility->customlog(
                     'ReadAuthResponse: id_token stored in transport cookie for provider_id=' . $providerId
                 );

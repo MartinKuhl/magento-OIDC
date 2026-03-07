@@ -123,6 +123,8 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
     public function execute()
     {
         $nonce = $this->cookieManager->getCookie('oidc_admin_nonce');
+        $providerId = (int) $this->cookieManager->getCookie('oidc_provider_id_transport');
+
         // Delete the cookie immediately (one-time use)
         if ($nonce !== null) {
             $adminPath = '/' . $this->backendUrl->getAreaFrontName();
@@ -208,11 +210,13 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
                                 'Oidccallback: Failed to decrypt id_token transport cookie: ' . $e->getMessage()
                             );
                         }
+                        
                         // Delete transport cookie immediately
                         $deleteMeta = $this->cookieMetadataFactory
                             ->createPublicCookieMetadata()
                             ->setPath('/');
                         $this->cookieManager->deleteCookie('oidc_id_token_transport', $deleteMeta);
+                        $this->cookieManager->deleteCookie('oidc_provider_id_transport', $deleteMeta);
                     }
 
                     // Set OIDC authentication cookie (persists across session boundary)
