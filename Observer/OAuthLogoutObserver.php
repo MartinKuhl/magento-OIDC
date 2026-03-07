@@ -171,6 +171,14 @@ class OAuthLogoutObserver implements ObserverInterface
 
         if ($this->_response instanceof HttpResponse) {
             $this->_response->setRedirect($logoutUrl);
+
+            // Force-send the redirect immediately.
+            // Without this, Magento's LogoutController overwrites our Location header
+            // with its own redirect (to the homepage) after the observer returns.
+            $this->_response->sendResponse();
+
+            // phpcs:ignore Magento2.Security.LanguageConstruct.ExitUsage
+            exit(0);
         }
     }
 
