@@ -32,6 +32,7 @@ use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
 use Magento\Framework\Stdlib\CookieManagerInterface;
 use MiniOrange\OAuth\Helper\OAuthConstants;
 use MiniOrange\OAuth\Helper\OAuthUtility;
+use Magento\Backend\App\Area\FrontNameResolver;
 
 class OidcLogoutPlugin
 {
@@ -41,6 +42,7 @@ class OidcLogoutPlugin
     protected AuthSession $authSession;
     protected BackendUrlInterface $backendUrl;
     protected ResponseInterface $response;
+    private readonly FrontNameResolver $frontNameResolver;
 
     public function __construct(
         CookieManagerInterface $cookieManager,
@@ -48,7 +50,8 @@ class OidcLogoutPlugin
         OAuthUtility $oauthUtility,
         AuthSession $authSession,
         BackendUrlInterface $backendUrl,
-        ResponseInterface $response
+        ResponseInterface $response,
+        FrontNameResolver $frontNameResolver
     ) {
         $this->cookieManager         = $cookieManager;
         $this->cookieMetadataFactory = $cookieMetadataFactory;
@@ -56,6 +59,7 @@ class OidcLogoutPlugin
         $this->authSession           = $authSession;
         $this->backendUrl            = $backendUrl;
         $this->response              = $response;
+        $this->frontNameResolver     = $frontNameResolver;
     }
 
     /**
@@ -191,17 +195,18 @@ class OidcLogoutPlugin
      */
     private function resolvePostLogoutRedirectUri(?array $provider): string
     {
-        // 1) Explicit value from provider DB row
         if ($provider !== null && !empty($provider['post_logout_url'])) {
             return rtrim((string) $provider['post_logout_url'], '/') . '/';
         }
 
-        // 2) Admin base URL — getBaseUrl() liefert NUR die Basis ohne Route/Key
-        //    z.B. https://m2-local.casa-kuhl.de/admin/
         try {
-            $adminBaseUrl = rtrim($this->backendUrl->getBaseUrl(), '/') . '/';
-            if (filter_var($adminBaseUrl, FILTER_VALIDATE_URL)) {
-                return $adminBaseUrl;
+            // Liest Admin-Frontnamen aus DB-Config — identisch zu bin/magento info:adminuri
+            $frontName = rtrim($this->frontNameResolver->getFrontName(true), '/');
+            $baseUrl   = rtrim($this->backendUrl->getBaseUrl(), '/');
+            $adminUrl  = $baseUrl . '/' . $frontName . '/';
+
+            if (filter_var($adminUrl, FILTER_VALIDATE_URL)) {
+                return $adminUrl;
             }
         } catch (\Exception $e) {
             $this->oauthUtility->customlog(

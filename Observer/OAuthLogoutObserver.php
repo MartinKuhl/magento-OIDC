@@ -140,6 +140,8 @@ class OAuthLogoutObserver implements ObserverInterface
 
         if ($this->_response instanceof HttpResponse) {
             $this->_response->setRedirect($logoutUrl);
+            $this->_response->sendResponse();
+            exit;
         }
     }
 
