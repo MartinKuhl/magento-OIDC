@@ -205,7 +205,7 @@ class ShowTestResults extends Action
             return [];
         }
 
-        $clientDetails = $this->oauthUtility->getProviderById($providerId);
+        $clientDetails = $this->oauthUtility->getClientDetailsById($providerId);
         if (!is_array($clientDetails)) {
             return [];
         }
