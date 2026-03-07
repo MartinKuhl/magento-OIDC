@@ -40,6 +40,11 @@ class AdminLoginAutoRedirectObserver implements ObserverInterface
 
     public function execute(Observer $observer): void
     {
+        // Guard: skip auto-redirect during OIDC logout flow (prevents re-login loop)
+        if ($this->cookieManager->getCookie('oidc_logout_guard') === '1') {
+            return;
+        }
+    
         // Post-logout guard: user explicitly logged out → show login page once
         if ($this->cookieManager->getCookie(self::LOGOUT_COOKIE_NAME)) {
             $this->deleteLogoutCookie();

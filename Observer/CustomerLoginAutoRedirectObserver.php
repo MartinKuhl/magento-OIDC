@@ -30,12 +30,18 @@ class CustomerLoginAutoRedirectObserver implements ObserverInterface
         private readonly CollectionFactory $providerCollectionFactory,
         private readonly CustomerSession   $customerSession,
         private readonly UrlInterface      $url,
-        private readonly ActionFlag        $actionFlag
+        private readonly ActionFlag        $actionFlag,
+        private readonly CookieManagerInterface $cookieManager 
     ) {
     }
 
     public function execute(Observer $observer): void
     {
+        // Guard: skip auto-redirect during OIDC logout flow
+        if ($this->cookieManager->getCookie('oidc_logout_guard') === '1') {
+            return;
+        }
+    
         // Already logged in → nothing to do
         if ($this->customerSession->isLoggedIn()) {
             return;
