@@ -196,15 +196,22 @@ class OidcLogoutPlugin
             return rtrim((string) $provider['post_logout_url'], '/') . '/';
         }
 
-        // 2) Static admin base URL — never contains a key/token
+        // 2) Admin-URL: getUrl('') liefert die korrekte Admin-Base inkl. Area-Front-Name
+        //    z.B. https://m2-local.casa-kuhl.de/admin/
         try {
-            $baseUrl = $this->backendUrl->getBaseUrl();
-            if (!empty($baseUrl) && filter_var($baseUrl, FILTER_VALIDATE_URL)) {
-                return rtrim((string) $baseUrl, '/') . '/';
+            $adminUrl = $this->backendUrl->getUrl('');
+            // Nur Schema+Host+Pfad, ohne key/-Token
+            $parsed = parse_url($adminUrl);
+            if (!empty($parsed['scheme']) && !empty($parsed['host'])) {
+                $path = rtrim($parsed['path'] ?? '', '/') . '/';
+                $url  = $parsed['scheme'] . '://' . $parsed['host'] . $path;
+                if (filter_var($url, FILTER_VALIDATE_URL)) {
+                    return $url;
+                }
             }
         } catch (\Exception $e) {
             $this->oauthUtility->customlog(
-                'OidcLogoutPlugin: Could not resolve admin base URL: ' . $e->getMessage()
+                'OidcLogoutPlugin: Could not resolve admin URL: ' . $e->getMessage()
             );
         }
 

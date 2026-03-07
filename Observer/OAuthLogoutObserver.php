@@ -196,13 +196,18 @@ class OAuthLogoutObserver implements ObserverInterface
             return rtrim((string) $provider['post_logout_url'], '/') . '/';
         }
 
-        // 2) Store base URL (current store context)
+        // 2) Customer login page als sinnvoller Fallback
         try {
-            $baseUrl = $this->storeManager->getStore()->getBaseUrl();
-            return rtrim((string) $baseUrl, '/') . '/';
+            $loginUrl = $this->url->getUrl('customer/account/login');
+            // Nur Schema+Host+Pfad, kein Query-String
+            $parsed = parse_url($loginUrl);
+            if (!empty($parsed['scheme']) && !empty($parsed['host'])) {
+                $path = rtrim($parsed['path'] ?? '', '/') . '/';
+                return $parsed['scheme'] . '://' . $parsed['host'] . $path;
+            }
         } catch (\Exception $e) {
             $this->oauthUtility->customlog(
-                "OAuthLogoutObserver: Could not resolve store base URL: " . $e->getMessage()
+                'OAuthLogoutObserver: Could not resolve customer login URL: ' . $e->getMessage()
             );
         }
 
