@@ -3,25 +3,17 @@
 /**
  * OIDC Logout Plugin – Admin RP-Initiated Logout
  *
- * Intercepts Magento\Backend\Model\Auth::logout() and:
- *  1. Deletes the OIDC admin cookie.
- *  2. Reads the persisted id_token from the backend session.
- *  3. Resolves the end_session_endpoint from the last-used OIDC provider.
- *  4a. If a valid end_session_endpoint is configured: builds the RP-Initiated
- *      Logout URL (id_token_hint + state + post_logout_redirect_uri) and
- *      redirects the browser to the IdP.
- *  4b. If NO end_session_endpoint is configured: Magento's native admin logout
- *      has already run (afterLogout fires after Auth::logout()), so the admin
- *      session is already destroyed. Return gracefully and let Magento redirect
- *      to the admin login page as usual.
+ * Intercepts Magento\Backend\Model\Auth::logout() via aroundLogout:
+ *  1. Reads id_token + provider_id from backend session BEFORE destroy.
+ *  2. Calls the original logout() (destroys admin session).
+ *  3. Deletes the OIDC admin cookie.
+ *  4. Sets a short-lived "oidc_logout_guard" cookie to prevent the
+ *     AdminLoginRestrictionPlugin from triggering an immediate re-login.
+ *  5. Redirects to the IdP end_session_endpoint (RP-Initiated Logout).
  *
- * post_logout_redirect_uri resolution order (Admin context):
- *  1. provider.post_logout_url  (DB column, if set)
- *  2. Admin base URL            (BackendUrl, trailing slash normalised)
- *
- * IMPORTANT – Authelia validates post_logout_redirect_uri against the
- * client's redirect_uris list (exact string match incl. trailing slash).
- * Register every URI that can be produced here in Authelia's redirect_uris.
+ * IMPORTANT: We use aroundLogout (not afterLogout) because afterLogout
+ * fires AFTER Auth::logout() has already destroyed the session — at that
+ * point oidc_id_token and oidc_provider_id are no longer readable.
  *
  * @package MiniOrange\OAuth\Plugin\Auth
  */
@@ -42,32 +34,13 @@ use MiniOrange\OAuth\Helper\OAuthUtility;
 
 class OidcLogoutPlugin
 {
-    /** @var CookieManagerInterface */
     protected CookieManagerInterface $cookieManager;
-
-    /** @var CookieMetadataFactory */
     protected CookieMetadataFactory $cookieMetadataFactory;
-
-    /** @var OAuthUtility */
     protected OAuthUtility $oauthUtility;
-
-    /** @var BackendSession */
     protected BackendSession $backendSession;
-
-    /** @var BackendUrlInterface */
     protected BackendUrlInterface $backendUrl;
-
-    /** @var ResponseInterface */
     protected ResponseInterface $response;
 
-    /**
-     * @param CookieManagerInterface $cookieManager
-     * @param CookieMetadataFactory  $cookieMetadataFactory
-     * @param OAuthUtility           $oauthUtility
-     * @param BackendSession         $backendSession
-     * @param BackendUrlInterface    $backendUrl
-     * @param ResponseInterface      $response
-     */
     public function __construct(
         CookieManagerInterface $cookieManager,
         CookieMetadataFactory $cookieMetadataFactory,
@@ -85,16 +58,25 @@ class OidcLogoutPlugin
     }
 
     /**
-     * After admin logout: delete OIDC cookie and trigger RP-Initiated Logout
-     * (or fall back to standard Magento admin logout if no IdP is configured).
-     *
-     * @param  Auth  $subject
-     * @param  mixed $result
-     * @return mixed
+     * Around admin logout: read session data first, then execute logout,
+     * then redirect to IdP end_session_endpoint.
      */
-    public function afterLogout(Auth $subject, $result)
+    public function aroundLogout(Auth $subject, callable $proceed): void
     {
-        // --- Cookie cleanup ---
+        // ── 1. Read session data BEFORE session is destroyed ──
+        $idToken    = (string) $this->backendSession->getData('oidc_id_token');
+        $providerId = (int) $this->backendSession->getData('oidc_provider_id');
+
+        $this->oauthUtility->customlog(sprintf(
+            'OidcLogoutPlugin: Pre-logout — id_token=%s, provider_id=%d',
+            $idToken !== '' ? 'present(' . strlen($idToken) . ' chars)' : 'MISSING',
+            $providerId
+        ));
+
+        // ── 2. Execute the original logout (destroys session) ──
+        $proceed();
+
+        // ── 3. Delete OIDC admin cookie ──
         try {
             $metadata = $this->cookieMetadataFactory
                 ->createPublicCookieMetadata()
@@ -103,101 +85,92 @@ class OidcLogoutPlugin
                 ->setSecure(true)
                 ->setSameSite('Lax');
             $this->cookieManager->deleteCookie('oidc_authenticated', $metadata);
-            $this->oauthUtility->customlog("OidcLogoutPlugin: OIDC admin cookie deleted");
+            $this->oauthUtility->customlog('OidcLogoutPlugin: OIDC admin cookie deleted');
         } catch (\Exception $e) {
             $this->oauthUtility->customlog(
-                "OidcLogoutPlugin: Error deleting cookie: " . $e->getMessage()
+                'OidcLogoutPlugin: Error deleting cookie: ' . $e->getMessage()
             );
         }
 
-        // --- Resolve provider and end_session_endpoint ---
-        $providerId = (int) $this->backendSession->getData('oidc_provider_id');
-        $provider   = null;
+        // ── 4. Set logout guard cookie (prevents re-login loop) ──
+        try {
+            $guardMeta = $this->cookieMetadataFactory
+                ->createPublicCookieMetadata()
+                ->setPath('/')
+                ->setDuration(120)
+                ->setHttpOnly(true)
+                ->setSecure(true)
+                ->setSameSite('Lax');
+            $this->cookieManager->setPublicCookie('oidc_logout_guard', '1', $guardMeta);
+            $this->oauthUtility->customlog('OidcLogoutPlugin: Logout guard cookie set');
+        } catch (\Exception $e) {
+            $this->oauthUtility->customlog(
+                'OidcLogoutPlugin: Error setting guard cookie: ' . $e->getMessage()
+            );
+        }
+
+        // ── 5. Resolve provider and end_session_endpoint ──
+        $provider = null;
         $endSessionEndpoint = '';
 
         if ($providerId > 0) {
             $provider = $this->oauthUtility->getClientDetailsById($providerId);
             if ($provider !== null && !empty($provider['endsession_endpoint'])) {
                 $endSessionEndpoint = (string) $provider['endsession_endpoint'];
-                $this->oauthUtility->customlog(
-                    "OidcLogoutPlugin: Using endsession_endpoint for provider_id={$providerId}"
-                );
             }
         }
 
         // Fallback: global store-config logout URL
         if ($endSessionEndpoint === '') {
-            $endSessionEndpoint = (string) $this->oauthUtility->getStoreConfig(OAuthConstants::OAUTH_LOGOUT_URL);
+            $endSessionEndpoint = (string) $this->oauthUtility
+                ->getStoreConfig(OAuthConstants::OAUTH_LOGOUT_URL);
         }
 
-        // --- No valid end_session_endpoint: use standard Magento admin logout ---
-        // afterLogout fires *after* Auth::logout() has already destroyed the admin
-        // session. Returning $result here lets Magento redirect to the admin login
-        // page as usual — no additional action required.
+        // No valid endpoint → let Magento handle the redirect to admin login
         if ($endSessionEndpoint === '' || !filter_var($endSessionEndpoint, FILTER_VALIDATE_URL)) {
             $this->oauthUtility->customlog(
-                'OidcLogoutPlugin: No valid end_session_endpoint configured. '
-                . 'Falling back to standard Magento admin logout (already completed).'
+                'OidcLogoutPlugin: No valid end_session_endpoint — standard admin logout.'
             );
-            return $result;
+            return;
         }
 
-        // --- Build RP-Initiated Logout URL ---
-        $params = $this->buildLogoutParams($provider);
-
-        $separator = (strpos($endSessionEndpoint, '?') !== false) ? '&' : '?';
-        $logoutUrl = $endSessionEndpoint . $separator . http_build_query($params);
-
-        $this->oauthUtility->customlog(
-            "OidcLogoutPlugin: Redirecting admin to IdP end_session_endpoint. "
-            . "post_logout_redirect_uri=" . ($params['post_logout_redirect_uri'] ?? '(none)')
-        );
-
-        if ($this->response instanceof HttpResponse) {
-            $this->response->setRedirect($logoutUrl);
-            $this->response->sendResponse();
-        }
-
-        return $result;
-    }
-
-    /**
-     * Build the query parameters for the end_session_endpoint request.
-     *
-     * @param  array<string,mixed>|null $provider
-     * @return array<string,string>
-     */
-    private function buildLogoutParams(?array $provider): array
-    {
+        // ── 6. Build RP-Initiated Logout URL ──
         $params = [];
 
-        // id_token_hint: required by most IdPs to identify the session
-        $idToken = (string) $this->backendSession->getData('oidc_id_token');
         if ($idToken !== '') {
             $params['id_token_hint'] = $idToken;
         }
 
-        // state: opaque CSRF protection value
         $params['state'] = bin2hex(random_bytes(16));
 
-        // post_logout_redirect_uri (Admin context)
         $postLogoutUri = $this->resolvePostLogoutRedirectUri($provider);
         if ($postLogoutUri !== '') {
             $params['post_logout_redirect_uri'] = $postLogoutUri;
         }
 
-        return $params;
+        $separator = (strpos($endSessionEndpoint, '?') !== false) ? '&' : '?';
+        $logoutUrl = $endSessionEndpoint . $separator . http_build_query($params);
+
+        $this->oauthUtility->customlog(sprintf(
+            'OidcLogoutPlugin: Redirecting to IdP — endpoint=%s, post_logout_redirect_uri=%s',
+            $endSessionEndpoint,
+            $postLogoutUri ?: '(none)'
+        ));
+
+        // ── 7. Redirect to IdP ──
+        if ($this->response instanceof HttpResponse) {
+            $this->response->setRedirect($logoutUrl);
+            $this->response->sendResponse();
+            // Hard exit: prevent Magento from overriding the redirect
+            // phpcs:ignore Magento2.Security.LanguageConstruct.ExitUsage
+            exit;
+        }
     }
 
     /**
-     * Resolve the post_logout_redirect_uri for the Admin (backend) context.
+     * Resolve post_logout_redirect_uri for Admin context.
      *
-     * Resolution order:
-     *  1. provider.post_logout_url  (DB column)
-     *  2. Admin base URL            (BackendUrlInterface, trailing slash normalised)
-     *
-     * @param  array<string,mixed>|null $provider
-     * @return string  Empty string when no URI can be determined.
+     * Order: 1) provider.post_logout_url  2) Admin base URL
      */
     private function resolvePostLogoutRedirectUri(?array $provider): string
     {
@@ -214,7 +187,7 @@ class OidcLogoutPlugin
             }
         } catch (\Exception $e) {
             $this->oauthUtility->customlog(
-                "OidcLogoutPlugin: Could not resolve admin base URL: " . $e->getMessage()
+                'OidcLogoutPlugin: Could not resolve admin base URL: ' . $e->getMessage()
             );
         }
 
