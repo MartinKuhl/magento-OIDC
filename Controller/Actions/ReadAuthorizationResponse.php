@@ -44,6 +44,10 @@ class ReadAuthorizationResponse extends BaseAction
     /** @var \Magento\Backend\Model\Auth\Session */
     private readonly \Magento\Backend\Model\Auth\Session $adminSession;
 
+    private readonly \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager;
+    private readonly \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory;
+
+
     /**
      * Initialize read authorization response action.
      *
@@ -70,7 +74,8 @@ class ReadAuthorizationResponse extends BaseAction
         CheckAttributeMappingAction $attrMappingAction,
         \Magento\Backend\Model\Auth\Session $adminSession,
         \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager,
-        \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory
+        \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory,
+        
     ) {
         $this->_url = $url;
         $this->customerSession = $customerSession;
