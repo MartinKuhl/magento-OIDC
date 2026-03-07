@@ -11,6 +11,7 @@ use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\UrlInterface;
 use MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps\CollectionFactory;
+use Magento\Framework\Stdlib\CookieManagerInterface;
 
 /**
  * Redirects unauthenticated customers to the IdP authorize URL
