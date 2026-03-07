@@ -197,6 +197,8 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
                     
                     // ── Persist id_token in post-login admin session ──
                     $encryptedIdToken = $this->cookieManager->getCookie('oidc_id_token_transport');
+                    $providerId = (int) $this->cookieManager->getCookie('oidc_provider_id_transport');
+
                     if ($encryptedIdToken) {
                         try {
                             $idToken = $this->oauthUtility->getEncryptor()->decrypt($encryptedIdToken);

@@ -135,15 +135,41 @@ class OidcLogoutPlugin
             return;
         }
 
-        // ── 6. Build logout URL (Standard OIDC or Authelia fallback) ──
-        $postLogoutUri = $this->resolvePostLogoutRedirectUri($provider);
-        $logoutUrl = $this->buildLogoutUrl($endSessionEndpoint, $idToken, $postLogoutUri);
+        // ── 6. Build Logout URL ──
+        // Zwei Modi:
+        //  a) OIDC end_session_endpoint → id_token_hint + post_logout_redirect_uri
+        //  b) Authelia Forward-Auth /logout → "rd" mit STATISCHER URL.
+        //     NIEMALS die aktuelle Request-URL verwenden — sie enthält einen
+        //     dynamischen key/-Token, der nicht als redirect_uri registriert werden kann.
+        $isForwardAuthLogout = $this->isAutheliaForwardAuthLogout($endSessionEndpoint);
+        $postLogoutUri       = $this->resolvePostLogoutRedirectUri($provider);
+        $params              = [];
+
+        if ($isForwardAuthLogout) {
+            // Authelia Forward-Auth: "rd" = statische Admin-Base-URL
+            if ($postLogoutUri !== '') {
+                $params['rd'] = $postLogoutUri;
+            }
+        } else {
+            // Standard OIDC RP-Initiated Logout
+            if ($idToken !== '') {
+                $params['id_token_hint'] = $idToken;
+            }
+            $params['state'] = bin2hex(random_bytes(16));
+            if ($postLogoutUri !== '') {
+                $params['post_logout_redirect_uri'] = $postLogoutUri;
+            }
+        }
+
+        $separator = (strpos($endSessionEndpoint, '?') !== false) ? '&' : '?';
+        $logoutUrl = $endSessionEndpoint . ($params ? $separator . http_build_query($params) : '');
 
         $this->oauthUtility->customlog(sprintf(
-            'OidcLogoutPlugin: Redirecting to IdP — url=%s',
-            $logoutUrl
+            'OidcLogoutPlugin: Redirecting to IdP — mode=%s, endpoint=%s, redirect=%s',
+            $isForwardAuthLogout ? 'forward-auth(rd)' : 'oidc-rp-logout',
+            $endSessionEndpoint,
+            $postLogoutUri ?: '(none)'
         ));
-
         // ── 7. Redirect to IdP ──
         if ($this->response instanceof HttpResponse) {
             $this->response->setRedirect($logoutUrl);
@@ -219,4 +245,20 @@ class OidcLogoutPlugin
 
         return '';
     }
+
+    /**
+     * Erkennt Authelia's Forward-Auth /logout-Endpoint.
+     *
+     * Heuristik: Pfad endet auf /logout, enthält aber kein /oauth2/ oder /oidc/.
+     * Damit wird zwischen Authelia-Forward-Auth und echtem OIDC end_session_endpoint
+     * unterschieden.
+     */
+    private function isAutheliaForwardAuthLogout(string $endpoint): bool
+    {
+        $path = (string) parse_url($endpoint, PHP_URL_PATH);
+        return str_ends_with(rtrim($path, '/'), '/logout')
+            && !str_contains($path, '/oauth2/')
+            && !str_contains($path, '/oidc/');
+    }
+
 }

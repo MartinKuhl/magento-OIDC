@@ -68,7 +68,9 @@ class ReadAuthorizationResponse extends BaseAction
         Curl $curl,
         OidcAuthenticationService $oidcAuthService,
         CheckAttributeMappingAction $attrMappingAction,
-        \Magento\Backend\Model\Auth\Session $adminSession
+        \Magento\Backend\Model\Auth\Session $adminSession,
+        \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager,
+        \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory
     ) {
         $this->_url = $url;
         $this->customerSession = $customerSession;
@@ -78,6 +80,8 @@ class ReadAuthorizationResponse extends BaseAction
         $this->oidcAuthService = $oidcAuthService;
         $this->attrMappingAction = $attrMappingAction;
         $this->adminSession = $adminSession;
+        $this->cookieManager = $cookieManager;
+        $this->cookieMetadataFactory = $cookieMetadataFactory;
         parent::__construct($context, $oauthUtility);
     }
 
