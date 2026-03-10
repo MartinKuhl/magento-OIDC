@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace MiniOrange\OAuth\Model\Service;
 
 use MiniOrange\OAuth\Helper\Exception\IncorrectUserInfoDataException;

@@ -182,7 +182,7 @@ $roleMappings = is_array($decoded) ? $decoded : [];
                         <?php
                         $displayMappings = !empty($roleMappings) ? $roleMappings : [['group' => '', 'role' => '']];
                         foreach ($displayMappings as $index => $mapping):
-                        ?>
+                            ?>
                             <div class="mooauth-mapping-row"
                                  style="margin-bottom:8px; display:flex; align-items:center;">
                                 <input type="text"
@@ -287,7 +287,7 @@ $customerGroupMappings = is_array($decodedCgm) ? $decodedCgm : [];
                             ? $customerGroupMappings
                             : [['group' => '', 'customer_group' => '']];
                         foreach ($displayCgm as $cgmIndex => $cgmMapping):
-                        ?>
+                            ?>
                             <div class="mooauth-cgm-row"
                                  style="margin-bottom:8px; display:flex; align-items:center;">
                                 <input type="text"

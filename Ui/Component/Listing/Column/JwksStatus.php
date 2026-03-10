@@ -14,6 +14,14 @@ use Magento\Ui\Component\Listing\Columns\Column;
  */
 class JwksStatus extends Column
 {
+    /**
+     * Constructor.
+     *
+     * @param ContextInterface   $context
+     * @param UiComponentFactory $uiComponentFactory
+     * @param array              $components
+     * @param array              $data
+     */
     public function __construct(
         ContextInterface $context,
         UiComponentFactory $uiComponentFactory,
@@ -23,6 +31,9 @@ class JwksStatus extends Column
         parent::__construct($context, $uiComponentFactory, $components, $data);
     }
 
+    /**
+     * @inheritDoc
+     */
     public function prepareDataSource(array $dataSource): array
     {
         if (!isset($dataSource['data']['items'])) {
@@ -39,6 +50,10 @@ class JwksStatus extends Column
         return $dataSource;
     }
 
+    /**
+     * @param string $jwksUri configured JWKS endpoint or empty string
+     * @return string HTML badge
+     */
     private function renderBadge(string $jwksUri): string
     {
         if ($jwksUri !== '') {

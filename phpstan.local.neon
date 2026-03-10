@@ -3,6 +3,7 @@ includes:
     - phar:///var/www/html/vendor/phpstan/phpstan/phpstan.phar/conf/bleedingEdge.neon
 
 parameters:
+    treatPhpDocTypesAsCertain: false
     magento:
         magentoRoot: ../..  # Points to /var/www/html from module directory
     excludePaths:

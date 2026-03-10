@@ -158,43 +158,6 @@ Fix all the mentioned issue and warnings. Use sub-agents where applicable. DO no
 
 ##############################################
 
-
-feat: add PHPUnit test suite, new services, security fixes, and CI test integration
-
-Test infrastructure:
-- Add full PHPUnit suite (Test/Unit/ + Test/Integration/) with 12 tests
-- Add docker-compose.test.yml with Dex OIDC provider for integration tests
-- Add phpunit.xml with unit and integration test suites
-- Integrate unit tests (PHP 8.2/8.3/8.4 matrix) and integration tests into CI
-
-New features:
-- Add OidcSessionRegistry and TokenRefreshService for token lifecycle management
-- Add BackChannelLogout controller (OIDC back-channel logout support)
-- Add HealthCheck admin controller
-- Add GraphQL schema (schema.graphqls) and Model/Resolver/
-- Add Plugin/Csp/ for dynamic CSP header management
-- Add Console/ commands and Setup/ scripts
-- Add OidcCredentialAdapter for Magento auth integration
-- Add admin menu entries and DB schema columns (etc/adminhtml/menu.xml, etc/db_schema.xml)
-
-Security fixes:
-- SEC-01: Enforce SSL verification in Curl.php and JwtVerifier.php
-- SEC-03: Replace x-html Alpine.js binding in authentication-popup.phtml
-- SEC-04: Remove FILTER_SANITIZE_URL from OAuthsettings/Index.php
-- SEC-05: Clear hardcoded provider hostnames from CSP whitelists
-- SEC-06: Unconditionally reset isOidcAuth flag in OidcCredentialPlugin
-- SEC-07: Replace base64_encode with urlencode for OIDC error messages
-- SEC-09: Use parse_url host comparison for relay state validation
-
-Code quality:
-- PHPCS compliance across all modified files
-- OAuthUtility: add shared extractNameFromEmail() helper (REF-02)
-- ACL title corrected to "MiniOrange OIDC" (REF-05)
-- Remove phpcd-report.txt
-
-Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
-
-
 ### FIX ###
 
 - you mark the section in case changes were made, extend this so that the concrete data field is highlighted

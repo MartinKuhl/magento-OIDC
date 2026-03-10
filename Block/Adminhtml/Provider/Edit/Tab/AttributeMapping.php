@@ -26,7 +26,6 @@ class AttributeMapping extends Template implements TabInterface
 
     private readonly Registry $registry;
     private readonly RoleCollectionFactory $roleCollectionFactory;
-    private readonly GroupCollectionFactory $groupCollectionFactory;
     private readonly OAuthUtility $oauthUtility;
 
     /** @var GroupRepositoryInterface */
@@ -117,24 +116,28 @@ class AttributeMapping extends Template implements TabInterface
     }
 
     /** @inheritDoc */
+    #[\Override]
     public function getTabLabel(): Phrase|string
     {
         return __('Attribute Mapping');
     }
 
     /** @inheritDoc */
+    #[\Override]
     public function getTabTitle(): Phrase|string
     {
         return __('Attribute Mapping');
     }
 
     /** @inheritDoc */
+    #[\Override]
     public function canShowTab(): bool
     {
         return true;
     }
 
     /** @inheritDoc */
+    #[\Override]
     public function isHidden(): bool
     {
         return false;

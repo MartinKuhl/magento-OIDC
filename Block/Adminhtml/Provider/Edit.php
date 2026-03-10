@@ -56,6 +56,7 @@ class Edit extends Container
      * Save / Save & Continue use hidden submit buttons inside the <form>
      * triggered via onclick from the buttonList toolbar buttons.
      */
+    #[\Override]
     protected function _construct(): void
     {
         $this->_objectId   = 'id';
@@ -131,9 +132,13 @@ class Edit extends Container
     {
         $store = $this->storeManager->getStore();
 
+        /** @psalm-suppress UndefinedInterfaceMethod */
+        // @phpstan-ignore-next-line
         $relayState = $store->getUrl('mooauth/actions/showTestResults')
             . OAuthConstants::TEST_RELAYSTATE;
 
+        /** @psalm-suppress UndefinedInterfaceMethod */
+        // @phpstan-ignore-next-line
         return $store->getUrl(
             'mooauth/actions/sendAuthorizationRequest',
             [
@@ -148,6 +153,7 @@ class Edit extends Container
     /**
      * Return the page header text.
      */
+    #[\Override]
     public function getHeaderText(): Phrase|string
     {
         $provider = $this->registry->registry('current_oidc_provider');
@@ -167,6 +173,7 @@ class Edit extends Container
      * for the "back" parameter. The visible toolbar buttons (buttonList)
      * trigger these via onclick → consistent styling + reliable POST data.
      */
+    #[\Override]
     public function getFormHtml(): string
     {
         $providerId = (int) $this->getRequest()->getParam('id', 0);

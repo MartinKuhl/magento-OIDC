@@ -16,6 +16,7 @@ class Collection extends AbstractCollection
     /**
      * @inheritDoc
      */
+    #[\Override]
     protected function _construct(): void
     {
         $this->_init(UserProvider::class, UserProviderResource::class);

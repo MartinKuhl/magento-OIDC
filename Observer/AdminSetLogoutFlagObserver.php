@@ -20,12 +20,22 @@ class AdminSetLogoutFlagObserver implements ObserverInterface
 {
     private const LOGOUT_COOKIE_NAME = 'oidc_admin_just_logged_out';
 
+    /**
+     * Constructor.
+     *
+     * @param CookieManagerInterface $cookieManager
+     * @param CookieMetadataFactory  $cookieMetadataFactory
+     */
     public function __construct(
         private readonly CookieManagerInterface $cookieManager,
         private readonly CookieMetadataFactory  $cookieMetadataFactory
     ) {
     }
 
+    /**
+     * Set a short-lived cookie to suppress OIDC auto-redirect after admin logout.
+     */
+    #[\Override]
     public function execute(Observer $observer): void
     {
         $metadata = $this->cookieMetadataFactory

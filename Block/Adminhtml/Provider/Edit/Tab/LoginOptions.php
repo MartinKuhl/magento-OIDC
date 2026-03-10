@@ -55,10 +55,26 @@ class LoginOptions extends Template implements TabInterface
         return $this->getProviderCount() <= 1;
     }
 
-    public function getTabLabel(): Phrase|string  { return __('Login Options'); }
-    public function getTabTitle(): Phrase|string  { return __('Login Options'); }
-    public function canShowTab(): bool            { return true; }
-    public function isHidden(): bool              { return false; }
+    #[\Override]
+    public function getTabLabel(): Phrase|string
+    {
+        return __('Login Options');
+    }
+    #[\Override]
+    public function getTabTitle(): Phrase|string
+    {
+        return __('Login Options');
+    }
+    #[\Override]
+    public function canShowTab(): bool
+    {
+        return true;
+    }
+    #[\Override]
+    public function isHidden(): bool
+    {
+        return false;
+    }
 
     // ── Value Getters ────────────────────────────────────────
 

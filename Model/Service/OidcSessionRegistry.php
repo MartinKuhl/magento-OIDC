@@ -79,7 +79,6 @@ class OidcSessionRegistry
     {
         $key  = $this->buildKey($sub, $sid);
         $data = $this->cache->load($key);
-        // @phpstan-ignore booleanOr.alwaysFalse, identical.alwaysFalse, identical.alwaysFalse
         if ($data === false || $data === null) {
             return null;
         }

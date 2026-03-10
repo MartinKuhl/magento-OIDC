@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 /**
  * OIDC Credential Storage Adapter
  *
@@ -30,37 +33,34 @@ class OidcCredentialAdapter implements StorageInterface
     /**
      * @var UserFactory
      */
-    protected $userFactory;
+    private $userFactory;
 
     /**
      * @var ManagerInterface
      */
-    protected $eventManager;
+    private $eventManager;
 
     /**
      * @var OAuthUtility
      */
-    protected $oauthUtility;
+    private $oauthUtility;
 
     /**
      * @var \Magento\User\Model\User
      */
-    protected $user;
+    private $user;
 
-    /**
-     * @var bool
-     */
-    protected $hasAvailableResources = false;
+    private bool $hasAvailableResources = false;
 
     /**
      * @var UserResourceModel
      */
-    protected $userResource;
+    private $userResource;
 
     /**
      * @var UserCollectionFactory
      */
-    protected $userCollectionFactory;
+    private $userCollectionFactory;
 
     /**
      * Initialize OIDC credential adapter.
@@ -240,6 +240,10 @@ class OidcCredentialAdapter implements StorageInterface
     {
         $this->restoreDependencies();
 
+        if ($this->user === null) {
+            return $this;
+        }
+
         if ($this->user->getId()) {
             $userId = $this->user->getId();
             $this->user = $this->userFactory->create();
@@ -342,6 +346,12 @@ class OidcCredentialAdapter implements StorageInterface
      */
     public function __call($method, $args)
     {
+        if ($this->user === null) {
+            // phpcs:ignore Generic.Files.LineLength.TooLong
+            throw new \BadMethodCallException(
+                sprintf('OidcCredentialAdapter: Cannot proxy %s() — user not loaded. Call authenticate() first.', $method)
+            );
+        }
         // Proxy method call to user object
         // Don't check method_exists() because User model has magic methods (__call)
         // that handle getters/setters like getReloadAclFlag()

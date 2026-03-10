@@ -132,9 +132,10 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
                 $params['oauth_customer_group_mapping'] ?? [],
                 static fn ($m): bool => !empty($m['group']) && !empty($m['customerGroup'])
             );
+            /** @psalm-suppress RedundantFunctionCall */
             $model->setData('oauth_customer_group_mapping', json_encode(array_values($customerGroupMappings)));
             $model->setData('default_group', trim((string) ($params['oauth_am_default_customer_group'] ?? '')));
-            $model->setData('update_frontend_groups_on_sso',isset($params['update_frontend_groups_on_sso']) ? 1 : 0);
+            $model->setData('update_frontend_groups_on_sso', isset($params['update_frontend_groups_on_sso']) ? 1 : 0);
 
             $this->appResource->save($model);
             $this->oauthUtility->customlog(

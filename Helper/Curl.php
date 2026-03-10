@@ -1,6 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace MiniOrange\OAuth\Helper;
+
+use Magento\Framework\HTTP\Adapter\CurlFactory;
 
 /**
  * HTTP client helper for OAuth/OIDC API requests.
@@ -13,15 +17,21 @@ class Curl
     /** @var OAuthUtility */
     private readonly OAuthUtility $oauthUtility;
 
+    /** @var CurlFactory */
+    private readonly CurlFactory $curlFactory;
+
     /**
      * Initialize cURL helper.
      *
      * @param OAuthUtility $oauthUtility
+     * @param CurlFactory  $curlFactory
      */
     public function __construct(
-        OAuthUtility $oauthUtility
+        OAuthUtility $oauthUtility,
+        CurlFactory $curlFactory
     ) {
         $this->oauthUtility = $oauthUtility;
+        $this->curlFactory = $curlFactory;
     }
 
     /**
@@ -40,10 +50,10 @@ class Curl
         string $url,
         string $clientID,
         string $clientSecret,
-        $header,
-        $body
+        int $header,
+        int $body
     ): string {
-        if ($header == 0 && $body == 1) {
+        if ($header === 0 && $body === 1) {
             $authHeader = [
                 "Content-Type: application/x-www-form-urlencoded",
                 'Accept: application/json',
@@ -80,7 +90,7 @@ class Curl
      */
     private function callAPI(string $url, $jsonData = [], $headers = ["Content-Type: application/json"]): string
     {
-        $curl = new \Magento\Framework\HTTP\Adapter\Curl();
+        $curl = $this->curlFactory->create();
         $curl->setConfig(['header' => false]);
         $options = [
             'CURLOPT_FOLLOWLOCATION' => true,

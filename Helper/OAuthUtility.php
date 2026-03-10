@@ -306,6 +306,7 @@ class OAuthUtility extends Data
      * @param string $config OAuthConstants key (e.g. OAuthConstants::MAP_EMAIL)
      * @return mixed
      */
+    #[\Override]
     public function getStoreConfig(string $config)
     {
         if (isset(self::CONFIG_TO_COLUMN[$config])) {
@@ -573,6 +574,7 @@ class OAuthUtility extends Data
      * @param  string $loginType 'customer' | 'admin' | 'both'
      * @return array<int, array<string, mixed>>
      */
+    #[\Override]
     public function getAllActiveProviders(string $loginType = 'customer'): array
     {
         $collection = $this->getOAuthClientApps();
@@ -582,8 +584,7 @@ class OAuthUtility extends Data
             $data = $item->getData();
             $providerLoginType = $data['login_type'] ?? 'both';
 
-            if (
-                $providerLoginType === $loginType
+            if ($providerLoginType === $loginType
                 || $providerLoginType === 'both'
                 || $providerLoginType === ''
             ) {
@@ -636,7 +637,7 @@ class OAuthUtility extends Data
      */
     public function getAdminPageUrl(): string
     {
-        return $this->getAdminBaseUrl();
+        return $this->getAdminUrl('');
     }
 
     /**
@@ -645,6 +646,29 @@ class OAuthUtility extends Data
     public function getCustomerLoginUrl(): string
     {
         return $this->getUrl('customer/account/login');
+    }
+
+    /**
+     * Get SP-initiated SSO login URL (single-provider shortcut).
+     *
+     * Delegates to getSPInitiatedUrlForProvider() using the first active
+     * customer provider. Provided for backwards-compatibility with templates
+     * and GraphQL resolvers that do not pass a provider ID.
+     *
+     * @param string|null $relayState Optional post-login redirect target
+     * @param string|null $appName    Optional provider app name to select
+     */
+    public function getSPInitiatedUrl(?string $relayState = null, ?string $appName = null): string
+    {
+        $providers = $this->getAllActiveProviders(OAuthConstants::LOGIN_TYPE_CUSTOMER);
+        if ($providers === []) {
+            return $this->getUrl(OAuthConstants::OAUTH_LOGIN_URL);
+        }
+
+        /** @psalm-suppress InvalidArrayOffset */
+        $provider = $appName === null || $appName === '' || $appName === '0' ? reset($providers) : $providers[$appName] ?? reset($providers);
+
+        return $this->getSPInitiatedUrlForProvider((int) ($provider['id'] ?? 0), $relayState);
     }
 
     /**
@@ -775,8 +799,6 @@ class OAuthUtility extends Data
      *
      * All values come from the provider table via getStoreConfig() (which
      * resolves provider-specific keys from miniorange_oauth_client_apps).
-     *
-     * @return array
      */
     public function getClientDetails(): array
     {
@@ -907,6 +929,7 @@ class OAuthUtility extends Data
      * @param string $appName The app_name of the provider
      * @param string $status  'success', 'failed', or 'unsuccessful'
      */
+    #[\Override]
     public function saveTestStatus(string $appName, string $status): void
     {
         if ($appName === '') {
@@ -941,6 +964,7 @@ class OAuthUtility extends Data
      * @param int    $providerId Row `id` from miniorange_oauth_client_apps
      * @param string $status     'success', 'failed', or 'unsuccessful'
      */
+    #[\Override]
     public function saveTestStatusById(int $providerId, string $status): void
     {
         if ($providerId <= 0) {
@@ -972,6 +996,7 @@ class OAuthUtility extends Data
      * @param int      $providerId Row `id` from miniorange_oauth_client_apps
      * @param string[] $claimKeys  Flat list of claim key names
      */
+    #[\Override]
     public function saveReceivedOidcClaims(int $providerId, array $claimKeys): void
     {
         if ($providerId <= 0) {
@@ -1015,6 +1040,4 @@ class OAuthUtility extends Data
             $this->customlog('saveProviderData: failed — ' . $e->getMessage());
         }
     }
-
-
 }

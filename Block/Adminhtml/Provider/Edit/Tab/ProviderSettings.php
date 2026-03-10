@@ -49,6 +49,7 @@ class ProviderSettings extends Template implements TabInterface
     /**
      * @inheritDoc
      */
+    #[\Override]
     public function getTabLabel(): Phrase|string
     {
         return __('Provider Settings');
@@ -57,6 +58,7 @@ class ProviderSettings extends Template implements TabInterface
     /**
      * @inheritDoc
      */
+    #[\Override]
     public function getTabTitle(): Phrase|string
     {
         return __('Provider Settings');
@@ -65,6 +67,7 @@ class ProviderSettings extends Template implements TabInterface
     /**
      * @inheritDoc
      */
+    #[\Override]
     public function canShowTab(): bool
     {
         return true;
@@ -73,6 +76,7 @@ class ProviderSettings extends Template implements TabInterface
     /**
      * @inheritDoc
      */
+    #[\Override]
     public function isHidden(): bool
     {
         return false;

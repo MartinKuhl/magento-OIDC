@@ -19,8 +19,18 @@ use MiniOrange\OAuth\Model\ResourceModel\UserProvider\CollectionFactory;
  */
 class ActiveUserCount extends Column
 {
+    /** @var CollectionFactory */
     private CollectionFactory $collectionFactory;
 
+    /**
+     * Constructor.
+     *
+     * @param ContextInterface   $context
+     * @param UiComponentFactory $uiComponentFactory
+     * @param CollectionFactory  $collectionFactory
+     * @param array              $components
+     * @param array              $data
+     */
     public function __construct(
         ContextInterface $context,
         UiComponentFactory $uiComponentFactory,

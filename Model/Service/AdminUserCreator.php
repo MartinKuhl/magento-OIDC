@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace MiniOrange\OAuth\Model\Service;
 
 use MiniOrange\OAuth\Helper\OAuthConstants;
@@ -69,9 +71,12 @@ class AdminUserCreator
      * @param  int         $providerId OIDC provider ID (0 = unknown / not tracked)
      * @return \Magento\User\Model\User|null
      */
-    public function createAdminUser(string $email, $userName, $firstName, $lastName, array $userGroups, int $providerId = 0)
+    public function createAdminUser(string $email, $userName, $firstName, $lastName, array $userGroups, int $providerId = 0) // phpcs:ignore Generic.Files.LineLength.TooLong
     {
         $this->oauthUtility->customlog("AdminUserCreator: Starting creation for " . $email);
+
+        // Guard against IdPs returning preferred_username as an array
+        $userName = is_array($userName) ? implode(' ', $userName) : (string) $userName;
 
         // Apply name fallbacks
         list($firstName, $lastName) = $this->applyNameFallbacks($firstName, $lastName, $email);
@@ -90,7 +95,7 @@ class AdminUserCreator
     /**
      * Save the admin user to database
      *
-     * @param  mixed  $userName
+     * @param  string $userName
      * @param  string $email
      * @param  mixed  $firstName
      * @param  mixed  $lastName
@@ -98,7 +103,7 @@ class AdminUserCreator
      * @param  int    $providerId OIDC provider ID (0 = not tracked)
      * @return \Magento\User\Model\User|null
      */
-    private function saveAdminUser($userName, string $email, $firstName, $lastName, int $roleId, int $providerId = 0)
+    private function saveAdminUser(string $userName, string $email, $firstName, $lastName, int $roleId, int $providerId = 0)
     {
         // Generate a 32-char password and shuffle to avoid predictable character-class ordering (SEC-12).
         $randomPassword = str_shuffle(
@@ -189,7 +194,7 @@ class AdminUserCreator
     private function getAdminRoleFromGroups(array $userGroups): ?int
     {
         // Get role mappings from configuration
-        $roleMappingsJson = $this->oauthUtility->getStoreConfig('adminRoleMapping');
+        $roleMappingsJson = $this->oauthUtility->getStoreConfig(OAuthConstants::ADMIN_ROLE_MAPPING);
         $roleMappings = [];
         if (!$this->oauthUtility->isBlank($roleMappingsJson)) {
             $decoded = json_decode((string) $roleMappingsJson, true);
@@ -242,20 +247,16 @@ class AdminUserCreator
     {
         $this->oauthUtility->customlog("AdminUserCreator: Checking if user is admin: " . $email);
 
-        // Try username lookup first
-        $user = $this->userFactory->create()->loadByUsername($email);
-        if ($user->getId()) {
-            $this->oauthUtility->customlog("AdminUserCreator: Admin user found by username - ID: " . $user->getId());
-            return true;
-        }
-
-        // Use CollectionFactory (injected) instead of Model::getCollection() to respect DI.
+        // Single query: match on email OR username (some IdPs pass the email as username)
         $userCollection = $this->userCollectionFactory->create()
-            ->addFieldToFilter('email', $email);
+            ->addFieldToFilter(
+                ['email', 'username'],
+                [['eq' => $email], ['eq' => $email]]
+            );
 
         if ($userCollection->getSize() > 0) {
             $user = $userCollection->getFirstItem();
-            $this->oauthUtility->customlog("AdminUserCreator: Admin user found by email - ID: " . $user->getId());
+            $this->oauthUtility->customlog("AdminUserCreator: Admin user found - ID: " . $user->getId());
             return true;
         }
 

@@ -196,7 +196,7 @@ class ShowTestResults extends Action
     /**
      * Load PKCE/JWKS config for the current provider.
      *
-     * @return array{pkce_flow: string, jwks_uri: string}
+     * @return array{pkce_flow?: string, jwks_uri?: string}
      */
     private function loadProviderConfig(): array
     {

@@ -34,7 +34,6 @@ class AccessControlRulesTest extends TestCase
     {
         return static function (array $claims) use ($rules): ?string {
             foreach ($rules as $rule) {
-                // @phpstan-ignore function.alreadyNarrowedType
                 if (!is_array($rule)) {
                     continue;
                 }

@@ -221,10 +221,8 @@ class Data extends AbstractHelper
         $collection->addFieldToFilter('app_name', $appName);
         $data = $collection->getSize() > 0 ? $collection->getFirstItem()->getData() : null;
 
-        if ($data !== null && isset($data['client_secret']) && !empty($data['client_secret'])) {
-            if (preg_match('/^\d+:\d+:/', (string) $data['client_secret'])) {
-                $data['client_secret'] = $this->encryptor->decrypt($data['client_secret']);
-            }
+        if ($data !== null && isset($data['client_secret']) && !empty($data['client_secret']) && preg_match('/^\d+:\d+:/', (string) $data['client_secret'])) {
+            $data['client_secret'] = $this->encryptor->decrypt($data['client_secret']);
         }
 
         return $data;
@@ -556,6 +554,7 @@ class Data extends AbstractHelper
      */
     public function getAdminCssUrl(string $css): string
     {
+        /** @psalm-suppress TooManyArguments */
         // @phpstan-ignore-next-line
         return $this->assetRepo->getUrl(
             OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_CSS . $css,
@@ -570,6 +569,7 @@ class Data extends AbstractHelper
      */
     public function getAdminJSUrl(string $js): string
     {
+        /** @psalm-suppress TooManyArguments */
         // @phpstan-ignore-next-line
         return $this->assetRepo->getUrl(
             OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_JS . $js,
@@ -582,6 +582,7 @@ class Data extends AbstractHelper
      */
     public function getMetadataUrl(): string
     {
+        /** @psalm-suppress TooManyArguments */
         // @phpstan-ignore-next-line
         return $this->assetRepo->getUrl(
             OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_METADATA,
@@ -688,6 +689,6 @@ class Data extends AbstractHelper
      */
     protected function sanitize($value): string
     {
-        return $this->escaper->escapeHtml((string) $value);
+        return (string) $this->escaper->escapeHtml((string) $value);
     }
 }

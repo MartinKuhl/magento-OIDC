@@ -21,26 +21,20 @@ class SendAuthorizationRequest extends BaseAction
     /** @var \Magento\Framework\Session\SessionManagerInterface */
     private readonly \Magento\Framework\Session\SessionManagerInterface $sessionManager;
 
-    /** @var \Magento\Framework\Stdlib\CookieManagerInterface */
-    private readonly \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager;
-
     /**
      * @param \Magento\Framework\App\Action\Context              $context
      * @param \MiniOrange\OAuth\Helper\OAuthUtility              $oauthUtility
      * @param OAuthSecurityHelper                                $securityHelper
      * @param \Magento\Framework\Session\SessionManagerInterface $sessionManager
-     * @param \Magento\Framework\Stdlib\CookieManagerInterface   $cookieManager
      */
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
         \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
         OAuthSecurityHelper $securityHelper,
-        \Magento\Framework\Session\SessionManagerInterface $sessionManager,
-        \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager
+        \Magento\Framework\Session\SessionManagerInterface $sessionManager
     ) {
         $this->securityHelper = $securityHelper;
         $this->sessionManager = $sessionManager;
-        $this->cookieManager  = $cookieManager;
         parent::__construct($context, $oauthUtility);
     }
 

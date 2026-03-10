@@ -109,7 +109,10 @@ class CustomerLoginAutoRedirectObserver implements ObserverInterface
 
         /** @var \Magento\Framework\App\Action\Action $controller */
         $controller = $observer->getEvent()->getData('controller_action');
+        /** @psalm-suppress UndefinedInterfaceMethod */
+        // @phpstan-ignore-next-line
         $controller->getResponse()->setRedirect($authorizeUrl);
+        /** @psalm-suppress InvalidArgument */
         $this->actionFlag->set('', ActionInterface::FLAG_NO_DISPATCH, true);
     }
 

@@ -1,17 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace MiniOrange\OAuth\Controller\Actions;
 
 use MiniOrange\OAuth\Helper\Exception\MissingAttributesException;
 use MiniOrange\OAuth\Helper\OAuthConstants;
 use MiniOrange\OAuth\Helper\OAuthMessages;
 use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
-use MiniOrange\OAuth\Helper\TestResults;
 use MiniOrange\OAuth\Model\Service\AdminUserCreator;
 use Magento\Framework\Stdlib\CookieManagerInterface;
 use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
-use Magento\Framework\Controller\Result\Raw as RawResult;
-use Magento\Framework\Controller\ResultFactory;
 
 /**
  * Check and process OAuth/OIDC attribute mapping
@@ -92,9 +91,6 @@ class CheckAttributeMappingAction extends BaseAction
      */
     private int $providerId = 0;
 
-    /** @var \MiniOrange\OAuth\Helper\TestResults */
-    private readonly \MiniOrange\OAuth\Helper\TestResults $testResults;
-
     /** @var \MiniOrange\OAuth\Controller\Actions\ShowTestResults */
     private readonly \MiniOrange\OAuth\Controller\Actions\ShowTestResults $testAction;
 
@@ -106,12 +102,6 @@ class CheckAttributeMappingAction extends BaseAction
 
     /** @var \Magento\Backend\Model\UrlInterface */
     protected \Magento\Backend\Model\UrlInterface $backendUrl;
-
-    /** @var \Magento\Authorization\Model\ResourceModel\Role\Collection */
-    protected \Magento\Authorization\Model\ResourceModel\Role\Collection $roleCollection;
-
-    /** @var \Magento\Framework\Math\Random */
-    protected \Magento\Framework\Math\Random $randomUtility;
 
     /** @var \MiniOrange\OAuth\Model\Service\AdminUserCreator */
     protected \MiniOrange\OAuth\Model\Service\AdminUserCreator $adminUserCreator;
@@ -133,12 +123,9 @@ class CheckAttributeMappingAction extends BaseAction
      *
      * @param \Magento\Framework\App\Action\Context                               $context
      * @param \MiniOrange\OAuth\Helper\OAuthUtility                               $oauthUtility
-     * @param \MiniOrange\OAuth\Helper\TestResults                                $testResults
      * @param \MiniOrange\OAuth\Controller\Actions\ProcessUserAction              $processUserAction
      * @param \Magento\User\Model\UserFactory                                     $userFactory
      * @param \Magento\Backend\Model\UrlInterface                                 $backendUrl
-     * @param \Magento\Authorization\Model\ResourceModel\Role\Collection          $roleCollection
-     * @param \Magento\Framework\Math\Random                                      $randomUtility
      * @param AdminUserCreator                                                    $adminUserCreator
      * @param \Magento\Customer\Model\Session                                     $customerSession
      * @param \MiniOrange\OAuth\Controller\Actions\ShowTestResults                $testAction
@@ -149,12 +136,9 @@ class CheckAttributeMappingAction extends BaseAction
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
         \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
-        \MiniOrange\OAuth\Helper\TestResults $testResults,
         \MiniOrange\OAuth\Controller\Actions\ProcessUserAction $processUserAction,
         \Magento\User\Model\UserFactory $userFactory,
         \Magento\Backend\Model\UrlInterface $backendUrl,
-        \Magento\Authorization\Model\ResourceModel\Role\Collection $roleCollection,
-        \Magento\Framework\Math\Random $randomUtility,
         AdminUserCreator $adminUserCreator,
         \Magento\Customer\Model\Session $customerSession,
         \MiniOrange\OAuth\Controller\Actions\ShowTestResults $testAction,
@@ -162,13 +146,10 @@ class CheckAttributeMappingAction extends BaseAction
         CookieManagerInterface $cookieManager,
         CookieMetadataFactory $cookieMetadataFactory
     ) {
-        $this->testResults = $testResults;
         $this->testAction = $testAction;
         $this->processUserAction = $processUserAction;
         $this->userFactory = $userFactory;
         $this->backendUrl = $backendUrl;
-        $this->roleCollection = $roleCollection;
-        $this->randomUtility = $randomUtility;
         $this->adminUserCreator = $adminUserCreator;
         $this->customerSession = $customerSession;
         $this->securityHelper = $securityHelper;
@@ -440,42 +421,16 @@ class CheckAttributeMappingAction extends BaseAction
         array $flattenedattrs,
         string $email
     ): \Magento\Framework\Controller\ResultInterface {
-        $isTest = $this->oauthUtility->getStoreConfig(OAuthConstants::IS_TEST);
-
-        if ($isTest == true) {
-            // Test mode - show attribute mapping test results
-            $this->oauthUtility->customlog("Test mode enabled - showing attribute test results");
-            $this->oauthUtility->setStoreConfig(OAuthConstants::IS_TEST, false);
-            $this->oauthUtility->flushCache();
-
-            // Note: The data is passed to the helper
-            $output = $this->testResults->output(
-                null,
-                false,
-                [
-                'mail' => $email,
-                'userinfo' => $flattenedattrs
-                ]
-            );
-
-            /**
- * @var RawResult $result
-*/
-            $result = $this->resultFactory->create(ResultFactory::TYPE_RAW);
-            $result->setContents($output);
-            return $result;
-
-        } else {
-            // Production mode - process user login/registration
-            $this->oauthUtility->customlog("Production mode - processing user login/registration");
-            return $this->processUserAction
-                ->setFlattenedAttrs($flattenedattrs)
-                ->setAttrs($attrs)
-                ->setUserEmail($email)
-                ->setAutoCreateCustomer($this->providerAutoCreateCustomer)
-                ->setProviderId($this->providerId)
-                ->execute();
-        }
+        // Production mode - process user login/registration
+        // Note: test mode is handled earlier in execute() before moOAuthCheckMapping() is called.
+        $this->oauthUtility->customlog("Production mode - processing user login/registration");
+        return $this->processUserAction
+            ->setFlattenedAttrs($flattenedattrs)
+            ->setAttrs($attrs)
+            ->setUserEmail($email)
+            ->setAutoCreateCustomer($this->providerAutoCreateCustomer)
+            ->setProviderId($this->providerId)
+            ->execute();
     }
 
     /**
@@ -505,9 +460,11 @@ class CheckAttributeMappingAction extends BaseAction
     {
         if (!isset($attrs[$this->lastName])) {
             $parts = explode("@", (string) $this->userEmail);
-            $attrs[$this->lastName] = $parts[1] ?? '';
+            $domain = $parts[1] ?? '';
+            // Fall back to the local part (first name) if domain is empty (malformed email)
+            $attrs[$this->lastName] = $domain !== '' ? $domain : ($parts[0] ?: 'User');
             $this->oauthUtility->customlog(
-                "Last name not provided, using email domain: " . ($parts[1] ?? 'empty')
+                "Last name not provided, using fallback: " . $attrs[$this->lastName]
             );
         }
     }
@@ -717,7 +674,7 @@ class CheckAttributeMappingAction extends BaseAction
                 'not_contains' => !str_contains($strActual, $expected),
                 'exists'       => $actual !== null,
                 'not_exists'   => $actual === null,
-                default        => true, // unknown operator: treat as pass
+                default        => false, // unknown operator: fail closed (deny on misconfiguration)
             };
 
             if (!$passes) {
@@ -729,7 +686,12 @@ class CheckAttributeMappingAction extends BaseAction
     }
 
     /**
-     * Save OAuth response for debugging
+     * Save minimal OAuth debug summary for the current request.
+     *
+     * Stores only a non-PII summary in the customer session (just timestamps
+     * and boolean presence flags) and logs the full filtered payload to the
+     * mo_oauth.log file. Full attribute payloads are never persisted in session
+     * storage to avoid PII leakage through session dumps or serialised session stores.
      *
      * @param mixed $attrs
      *
@@ -742,55 +704,26 @@ class CheckAttributeMappingAction extends BaseAction
         }
 
         try {
-            // Filter sensitive data
-            $sensitiveKeys = [
-                'access_token',
-                'refresh_token',
-                'id_token',
-                'client_secret',
-                'password',
-                'token'
-            ];
-            $filteredAttrs = $attrs;
-            $filteredUserInfo = $this->userInfoResponse;
-
-            if (is_array($filteredAttrs)) {
-                foreach ($sensitiveKeys as $key) {
-                    if (isset($filteredAttrs[$key])) {
-                        $filteredAttrs[$key] = '********';
-                    }
+            // Log the full (sensitive-scrubbed) payload to file — not to session
+            $sensitiveKeys = ['access_token', 'refresh_token', 'id_token', 'client_secret', 'password', 'token'];
+            $filteredAttrs = is_array($attrs) ? $attrs : [];
+            foreach ($sensitiveKeys as $key) {
+                if (isset($filteredAttrs[$key])) {
+                    $filteredAttrs[$key] = '********';
                 }
             }
+            $this->oauthUtility->customlogContext('debug_attributes', $filteredAttrs);
 
-            if (is_array($filteredUserInfo)) {
-                foreach ($sensitiveKeys as $key) {
-                    if (isset($filteredUserInfo[$key])) {
-                        $filteredUserInfo[$key] = '********';
-                    }
-                }
-            }
-
-            $debugData = [
-                'timestamp' => date('Y-m-d H:i:s'),
-                'raw_attributes' => $filteredUserInfo,
-                'flattened_attributes' => $filteredAttrs,
-                'email_found' => isset($filteredAttrs[$this->emailAttribute])
-                    ? $filteredAttrs[$this->emailAttribute]
-                    : null,
-                'username_found' => isset($filteredAttrs[$this->usernameAttribute])
-                    ? $filteredAttrs[$this->usernameAttribute]
-                    : null,
+            // Store only a minimal summary in session (no PII, no full attribute payload)
+            $summary = [
+                'timestamp'     => date('Y-m-d H:i:s'),
+                'email_present' => isset($filteredAttrs[$this->emailAttribute]),
+                'user_present'  => isset($filteredAttrs[$this->usernameAttribute]),
+                'claim_count'   => count($filteredAttrs),
             ];
+            $this->customerSession->setData('mo_oauth_debug_response', json_encode($summary));
 
-            $json = json_encode($debugData);
-            if (strlen($json) <= 8192) {
-                $this->customerSession->setData('mo_oauth_debug_response', $json);
-            } else {
-                $sizeMsg = 'Debug data too large for session (' . strlen($json) . " bytes), skipping";
-                $this->oauthUtility->customlog($sizeMsg);
-            }
-
-            $this->oauthUtility->customlog("Debug data (filtered) saved to session");
+            $this->oauthUtility->customlog("Debug summary saved to session, full payload logged to file");
         } catch (\Exception $e) {
             $this->oauthUtility->customlog("Could not save debug data: " . $e->getMessage());
         }

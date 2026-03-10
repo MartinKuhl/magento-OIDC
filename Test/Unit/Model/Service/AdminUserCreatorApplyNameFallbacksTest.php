@@ -41,7 +41,8 @@ class AdminUserCreatorApplyNameFallbacksTest extends TestCase
             $this->oauthUtility,
             $this->createMock(Random::class),
             $this->createMock(User::class),
-            $this->createMock(UserCollectionFactory::class)
+            $this->createMock(UserCollectionFactory::class),
+            $this->createMock(\MiniOrange\OAuth\Model\ResourceModel\UserProvider::class)
         );
     }
 
@@ -101,7 +102,8 @@ class AdminUserCreatorApplyNameFallbacksTest extends TestCase
             $this->oauthUtility,
             $this->createMock(Random::class),
             $this->createMock(User::class),
-            $collectionFactory
+            $collectionFactory,
+            $this->createMock(\MiniOrange\OAuth\Model\ResourceModel\UserProvider::class)
         );
 
         $this->assertFalse($creator->isAdminUser('nonexistent@example.com'));

@@ -14,6 +14,14 @@ use Magento\Ui\Component\Listing\Columns\Column;
  */
 class PkceStatus extends Column
 {
+    /**
+     * Constructor.
+     *
+     * @param ContextInterface   $context
+     * @param UiComponentFactory $uiComponentFactory
+     * @param array              $components
+     * @param array              $data
+     */
     public function __construct(
         ContextInterface $context,
         UiComponentFactory $uiComponentFactory,
@@ -23,6 +31,9 @@ class PkceStatus extends Column
         parent::__construct($context, $uiComponentFactory, $components, $data);
     }
 
+    /**
+     * @inheritDoc
+     */
     public function prepareDataSource(array $dataSource): array
     {
         if (!isset($dataSource['data']['items'])) {

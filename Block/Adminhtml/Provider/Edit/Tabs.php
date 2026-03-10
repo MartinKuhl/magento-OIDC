@@ -17,6 +17,7 @@ class Tabs extends \Magento\Backend\Block\Widget\Tabs
     /**
      * Initialise the tabs widget.
      */
+    #[\Override]
     protected function _construct(): void
     {
         parent::_construct();
@@ -30,6 +31,7 @@ class Tabs extends \Magento\Backend\Block\Widget\Tabs
      *
      * @return $this
      */
+    #[\Override]
     protected function _beforeToHtml(): self
     {
         $this->addTab(

@@ -23,6 +23,8 @@ class DataProvider extends BaseDataProvider
     {
         $items = [];
         foreach ($searchResult->getItems() as $item) {
+            /** @psalm-suppress UndefinedInterfaceMethod */
+            // @phpstan-ignore-next-line
             $items[] = $item->getData();
         }
         return [

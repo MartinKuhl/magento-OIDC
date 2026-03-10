@@ -28,6 +28,16 @@ class AdminLoginAutoRedirectObserver implements ObserverInterface
     private const SESSION_GUARD_KEY = 'oidc_admin_redirect_attempted';
     private const LOGOUT_COOKIE_NAME = 'oidc_admin_just_logged_out';
 
+    /**
+     * Constructor.
+     *
+     * @param CollectionFactory       $providerCollectionFactory
+     * @param SessionManagerInterface $session
+     * @param UrlInterface            $url
+     * @param ActionFlag              $actionFlag
+     * @param CookieManagerInterface  $cookieManager
+     * @param CookieMetadataFactory   $cookieMetadataFactory
+     */
     public function __construct(
         private readonly CollectionFactory       $providerCollectionFactory,
         private readonly SessionManagerInterface $session,
@@ -38,6 +48,10 @@ class AdminLoginAutoRedirectObserver implements ObserverInterface
     ) {
     }
 
+    /**
+     * Redirect to OIDC authorize URL when auto-redirect is enabled.
+     */
+    #[\Override]
     public function execute(Observer $observer): void
     {
         // Guard: skip auto-redirect during OIDC logout flow (prevents re-login loop)
@@ -52,7 +66,11 @@ class AdminLoginAutoRedirectObserver implements ObserverInterface
         }
 
         // Loop guard: already redirected once → show normal login page
+        /** @psalm-suppress UndefinedInterfaceMethod */
+        // @phpstan-ignore-next-line
         if ($this->session->getData(self::SESSION_GUARD_KEY)) {
+            /** @psalm-suppress UndefinedInterfaceMethod */
+            // @phpstan-ignore-next-line
             $this->session->unsetData(self::SESSION_GUARD_KEY);
             return;
         }
@@ -74,6 +92,8 @@ class AdminLoginAutoRedirectObserver implements ObserverInterface
         }
 
         // Set loop guard before redirecting
+        /** @psalm-suppress UndefinedInterfaceMethod */
+        // @phpstan-ignore-next-line
         $this->session->setData(self::SESSION_GUARD_KEY, true);
 
         // Build authorize URL and redirect
@@ -83,7 +103,10 @@ class AdminLoginAutoRedirectObserver implements ObserverInterface
 
         /** @var \Magento\Framework\App\Action\Action $controller */
         $controller = $observer->getEvent()->getData('controller_action');
+        /** @psalm-suppress UndefinedInterfaceMethod */
+        // @phpstan-ignore-next-line
         $controller->getResponse()->setRedirect($authorizeUrl);
+        /** @psalm-suppress InvalidArgument */
         $this->actionFlag->set('', ActionInterface::FLAG_NO_DISPATCH, true);
     }
 

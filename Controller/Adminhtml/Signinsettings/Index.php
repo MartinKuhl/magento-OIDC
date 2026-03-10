@@ -176,6 +176,8 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
      */
     private function handleImportConfig(): void
     {
+        /** @psalm-suppress UndefinedInterfaceMethod */
+        // @phpstan-ignore-next-line
         $files = $this->getRequest()->getFiles();
         $file  = $files['import_config_file'] ?? null;
 

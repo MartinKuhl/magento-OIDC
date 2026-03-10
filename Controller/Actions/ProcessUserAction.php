@@ -415,5 +415,4 @@ class ProcessUserAction
             );
         }
     }
-
 }

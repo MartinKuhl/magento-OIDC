@@ -59,6 +59,7 @@ class OAuthConstants
     public const ENABLE_LOGIN_REDIRECT = 'enableLoginRedirect';
     public const DISABLE_NON_OIDC_ADMIN_LOGIN = 'disableNonOidcAdminLogin';
     public const DISABLE_NON_OIDC_CUSTOMER_LOGIN = 'disableNonOidcCustomerLogin';
+    public const CREATEIFNOTMAP_CUSTOMER = 'createIfNotMapped';
 
     // Per-provider SSO sync flags (stored in miniorange_oauth_client_apps)
     public const SYNC_CUSTOMER_PROFILE_ON_SSO = 'sync_customer_profile_on_sso';
@@ -82,6 +83,7 @@ class OAuthConstants
     public const DEFAULT_MAP_LN = 'lastName';
     public const MAP_LASTNAME = 'amLastName';
     public const MAP_DEFAULT_ROLE = 'defaultRole';
+    public const ADMIN_ROLE_MAPPING = 'adminRoleMapping';
     public const DEFAULT_ROLE = 'General';
     public const MAP_GROUP = 'group';
     public const UNLISTED_ROLE = 'unlistedRole';

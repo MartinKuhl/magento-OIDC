@@ -261,7 +261,7 @@ class CustomerUserCreator
                 $this->userProviderResource->saveMapping('customer', (int) $savedCustomer->getId(), $providerId);
                 $this->oauthUtility->customlog(
                     "CustomerUserCreator: Provider mapping saved (customer ID "
-                    . $savedCustomer->getId() . " → provider ID " . $providerId . ")"
+                    . (string) $savedCustomer->getId() . " → provider ID " . $providerId . ")"
                 );
             }
 

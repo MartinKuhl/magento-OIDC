@@ -6,6 +6,7 @@ namespace MiniOrange\OAuth\Plugin\Customer\Block;
 
 use Magento\Customer\Block\Adminhtml\Edit\Tab\View;
 use Magento\Framework\App\RequestInterface;
+use Magento\Framework\Escaper;
 use MiniOrange\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
 
 /**
@@ -16,15 +17,30 @@ use MiniOrange\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
  */
 class OidcInfoPlugin
 {
+    /** @var UserProviderResource */
     private readonly UserProviderResource $userProviderResource;
+
+    /** @var RequestInterface */
     private readonly RequestInterface $request;
 
+    /** @var Escaper */
+    private readonly Escaper $escaper;
+
+    /**
+     * Constructor.
+     *
+     * @param UserProviderResource $userProviderResource
+     * @param RequestInterface     $request
+     * @param Escaper              $escaper
+     */
     public function __construct(
         UserProviderResource $userProviderResource,
-        RequestInterface $request
+        RequestInterface $request,
+        Escaper $escaper
     ) {
         $this->userProviderResource = $userProviderResource;
         $this->request = $request;
+        $this->escaper = $escaper;
     }
 
     /**
@@ -40,14 +56,14 @@ class OidcInfoPlugin
 
         $info = $this->userProviderResource->getProviderInfo('customer', $customerId);
         $providerText = $info
-            ? htmlspecialchars($info['display_name'], ENT_QUOTES, 'UTF-8')
-              . ' (' . htmlspecialchars($info['created_at'], ENT_QUOTES, 'UTF-8') . ')'
+            ? $this->escaper->escapeHtml($info['display_name'])
+              . ' (' . $this->escaper->escapeHtml($info['created_at']) . ')'
             : 'none';
 
         $label = __('OIDC Provider');
         $row = '<tr>'
             . '<td class="label"><span>'
-            . htmlspecialchars((string) $label, ENT_QUOTES, 'UTF-8')
+            . $this->escaper->escapeHtml((string) $label)
             . '</span></td>'
             . '<td class="value">' . $providerText . '</td>'
             . '</tr>';

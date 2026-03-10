@@ -15,6 +15,7 @@ class UserProvider extends AbstractModel
     /**
      * @inheritDoc
      */
+    #[\Override]
     protected function _construct(): void
     {
         $this->_init(\MiniOrange\OAuth\Model\ResourceModel\UserProvider::class);

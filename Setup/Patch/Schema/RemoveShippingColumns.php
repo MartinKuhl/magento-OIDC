@@ -22,7 +22,8 @@ class RemoveShippingColumns implements SchemaPatchInterface
 
     public function __construct(
         private readonly SchemaSetupInterface $schemaSetup
-    ) {}
+    ) {
+    }
 
     public static function getDependencies(): array
     {

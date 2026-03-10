@@ -81,11 +81,11 @@ class Save extends Action implements HttpPostActionInterface
             }
 
             // Sanitize and apply multi-provider fields
-            $model->setData('app_name',     $this->sanitizeString($data['app_name'] ?? ''));
+            $model->setData('app_name', $this->sanitizeString($data['app_name'] ?? ''));
             $model->setData('display_name', $this->sanitizeString($data['display_name'] ?? ''));
-            $model->setData('is_active',    (int) ($data['is_active'] ?? 1));
-            $model->setData('login_type',   $this->validateLoginType($data['login_type'] ?? 'customer'));
-            $model->setData('sort_order',   max(0, (int) ($data['sort_order'] ?? 0)));
+            $model->setData('is_active', (int) ($data['is_active'] ?? 1));
+            $model->setData('login_type', $this->validateLoginType($data['login_type'] ?? 'customer'));
+            $model->setData('sort_order', max(0, (int) ($data['sort_order'] ?? 0)));
             $model->setData('button_label', $this->sanitizeString($data['button_label'] ?? ''));
             $model->setData('button_color', $this->validateHexColor($data['button_color'] ?? ''));
 

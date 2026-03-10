@@ -166,7 +166,7 @@ class OidcLogoutPlugin
         }
 
         $separator = (strpos($endSessionEndpoint, '?') !== false) ? '&' : '?';
-        $logoutUrl = $endSessionEndpoint . ($params ? $separator . http_build_query($params) : '');
+        $logoutUrl = $endSessionEndpoint . ($params !== [] ? $separator . http_build_query($params) : '');
 
         $this->oauthUtility->customlog(sprintf(
             'OidcLogoutPlugin: Redirecting to IdP — mode=%s, endpoint=%s, redirect=%s',
@@ -180,7 +180,7 @@ class OidcLogoutPlugin
             $this->response->setRedirect($logoutUrl);
             $this->response->sendResponse();
             // Prevent any further Magento output / redirect overrides
-            exit;
+            exit; // phpcs:ignore Magento2.Security.LanguageConstruct.ExitUsage
         }
     }
 
@@ -226,6 +226,7 @@ class OidcLogoutPlugin
      */
     private function isAutheliaForwardAuthLogout(string $endpoint): bool
     {
+        // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
         $path = (string) parse_url($endpoint, PHP_URL_PATH);
         return str_ends_with(rtrim($path, '/'), '/logout')
             && !str_contains($path, '/oauth2/')

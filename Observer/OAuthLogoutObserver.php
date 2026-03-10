@@ -49,9 +49,6 @@ class OAuthLogoutObserver implements ObserverInterface
     /** @var CustomerSession */
     private readonly CustomerSession $customerSession;
 
-    /** @var StoreManagerInterface */
-    private readonly StoreManagerInterface $storeManager;
-
     /** @var UrlInterface */
     private readonly UrlInterface $url;
 
@@ -61,7 +58,6 @@ class OAuthLogoutObserver implements ObserverInterface
      * @param CookieManagerInterface                $cookieManager
      * @param CookieMetadataFactory                 $cookieMetadataFactory
      * @param CustomerSession                       $customerSession
-     * @param StoreManagerInterface                 $storeManager
      * @param UrlInterface                          $url
      */
     public function __construct(
@@ -70,7 +66,6 @@ class OAuthLogoutObserver implements ObserverInterface
         CookieManagerInterface $cookieManager,
         CookieMetadataFactory $cookieMetadataFactory,
         CustomerSession $customerSession,
-        StoreManagerInterface $storeManager,
         UrlInterface $url
     ) {
         $this->oauthUtility          = $oauthUtility;
@@ -78,7 +73,6 @@ class OAuthLogoutObserver implements ObserverInterface
         $this->cookieManager         = $cookieManager;
         $this->cookieMetadataFactory = $cookieMetadataFactory;
         $this->customerSession       = $customerSession;
-        $this->storeManager          = $storeManager;
         $this->url                   = $url;
     }
 
@@ -196,6 +190,7 @@ class OAuthLogoutObserver implements ObserverInterface
         string $postLogoutRedirectUri
     ): string {
         $endpoint   = rtrim($endSessionEndpoint, '/');
+        // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
         $parsedPath = parse_url($endpoint, PHP_URL_PATH) ?? '';
 
         // Authelia detection: path ends with /logout
@@ -218,7 +213,7 @@ class OAuthLogoutObserver implements ObserverInterface
         }
 
         $separator = str_contains($endpoint, '?') ? '&' : '?';
-        $logoutUrl = $endpoint . (!empty($params) ? $separator . http_build_query($params) : '');
+        $logoutUrl = $endpoint . ($params === [] ? '' : $separator . http_build_query($params));
 
         $this->oauthUtility->customlog('OAuthLogoutObserver: Standard OIDC logout → ' . $logoutUrl);
         return $logoutUrl;
@@ -241,8 +236,9 @@ class OAuthLogoutObserver implements ObserverInterface
         // 2) Customer login page as sensible fallback
         try {
             $loginUrl = $this->url->getUrl('customer/account/login');
+            // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
             $parsed   = parse_url($loginUrl);
-            if (!empty($parsed['scheme']) && !empty($parsed['host'])) {
+            if (isset($parsed['scheme']) && ($parsed['scheme'] !== '' && $parsed['scheme'] !== '0') && !empty($parsed['host'])) {
                 $path = rtrim($parsed['path'] ?? '', '/') . '/';
                 return $parsed['scheme'] . '://' . $parsed['host'] . $path;
             }

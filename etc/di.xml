@@ -7,13 +7,9 @@
             <argument name="testAction" xsi:type="object">MiniOrange\OAuth\Controller\Actions\ShowTestResults</argument>
             <argument name="processUserAction" xsi:type="object">MiniOrange\OAuth\Controller\Actions\ProcessUserAction</argument>
             <argument name="userFactory" xsi:type="object">Magento\User\Model\UserFactory</argument>
-            <argument name="adminSession" xsi:type="object">Magento\Backend\Model\Auth\Session</argument>
             <argument name="cookieManager" xsi:type="object">Magento\Framework\Stdlib\CookieManagerInterface</argument>
-            <argument name="adminConfig" xsi:type="object">Magento\Backend\Model\Session\AdminConfig</argument>
             <argument name="cookieMetadataFactory" xsi:type="object">Magento\Framework\Stdlib\Cookie\CookieMetadataFactory</argument>
             <argument name="backendUrl" xsi:type="object">Magento\Backend\Model\UrlInterface</argument>
-            <argument name="roleCollection" xsi:type="object">Magento\Authorization\Model\ResourceModel\Role\Collection</argument>
-            <argument name="randomUtility" xsi:type="object">Magento\Framework\Math\Random</argument>
         </arguments>
     </type>
 
@@ -30,7 +26,6 @@
         <arguments>
             <argument name="oidcAuthService" xsi:type="object">MiniOrange\OAuth\Model\Service\OidcAuthenticationService</argument>
             <argument name="attrMappingAction" xsi:type="object">MiniOrange\OAuth\Controller\Actions\CheckAttributeMappingAction</argument>
-            <argument name="adminSession" xsi:type="object">Magento\Backend\Model\Auth\Session\Proxy</argument>
         </arguments>
     </type>
 
@@ -187,6 +182,13 @@
         </arguments>
     </type>
 
+    <!-- Curl Helper: inject CurlFactory (avoids direct instantiation) -->
+    <type name="MiniOrange\OAuth\Helper\Curl">
+        <arguments>
+            <argument name="curlFactory" xsi:type="object">Magento\Framework\HTTP\Adapter\CurlFactory</argument>
+        </arguments>
+    </type>
+
     <!-- MiniOrange Custom Logger Configuration -->
     <type name="MiniOrange\OAuth\Logger\Handler">
         <arguments>
@@ -306,7 +308,6 @@
             <argument name="cookieManager" xsi:type="object">Magento\Framework\Stdlib\CookieManagerInterface</argument>
             <argument name="cookieMetadataFactory" xsi:type="object">Magento\Framework\Stdlib\Cookie\CookieMetadataFactory</argument>
             <argument name="customerSession" xsi:type="object">Magento\Customer\Model\Session\Proxy</argument>
-            <argument name="storeManager" xsi:type="object">Magento\Store\Model\StoreManagerInterface</argument>
         </arguments>
     </type>
 
@@ -327,6 +328,13 @@
         <arguments>
             <argument name="cookieManager" xsi:type="object">Magento\Framework\Stdlib\CookieManagerInterface</argument>
             <argument name="cookieMetadataFactory" xsi:type="object">Magento\Framework\Stdlib\Cookie\CookieMetadataFactory</argument>
+        </arguments>
+    </type>
+
+    <!-- CustomerProfileSyncService Dependencies -->
+    <type name="MiniOrange\OAuth\Model\Service\CustomerProfileSyncService">
+        <arguments>
+            <argument name="regionFactory" xsi:type="object">Magento\Customer\Api\Data\RegionInterfaceFactory</argument>
         </arguments>
     </type>
 

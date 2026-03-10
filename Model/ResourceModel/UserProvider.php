@@ -15,6 +15,7 @@ class UserProvider extends AbstractDb
     /**
      * @inheritDoc
      */
+    #[\Override]
     protected function _construct(): void
     {
         $this->_init('miniorange_oauth_user_provider', 'id');

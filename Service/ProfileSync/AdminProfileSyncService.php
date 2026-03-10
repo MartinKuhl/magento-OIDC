@@ -23,7 +23,8 @@ class AdminProfileSyncService
         private readonly UserResource $userResource,
         private readonly RoleCollectionFactory $roleCollectionFactory,
         private readonly OAuthUtility $oauthUtility
-    ) {}
+    ) {
+    }
 
     // ──────────────────────────────────────────────
     //  Profile sync (firstname, lastname, username)
@@ -164,7 +165,7 @@ class AdminProfileSyncService
         }
 
         $user->setRoleId($targetRoleId);
-        $user->save();
+        $this->userResource->save($user);
         $this->oauthUtility->customlog(
             'AdminProfileSync: role updated to ID ' . $targetRoleId
             . ' for ' . $email
@@ -241,7 +242,7 @@ class AdminProfileSyncService
         }
 
         $user->setRoleId((int) $role->getId());
-        $user->save();
+        $this->userResource->save($user);
         $this->oauthUtility->customlog(
             'AdminProfileSync: default role "' . $roleName . '" assigned for '
             . $user->getEmail()

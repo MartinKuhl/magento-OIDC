@@ -48,7 +48,7 @@ $oidcVisibility = $block->getData('oidc_visibility');
         $url = $escaper->escapeUrl(
             $block->getSPInitiatedUrlForProvider($pid, null, 'admin')
         );
-    ?>
+        ?>
     <button
         type="button"
         class="action-login action-primary"
@@ -72,7 +72,7 @@ $oidcVisibility = $block->getData('oidc_visibility');
     });
 </script>
 
-<?php if ($oidcVisibility->isNonOidcAdminLoginDisabled()): ?>
+    <?php if ($oidcVisibility->isNonOidcAdminLoginDisabled()): ?>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             var usernameField = document.querySelector('.field-username');
@@ -88,6 +88,6 @@ $oidcVisibility = $block->getData('oidc_visibility');
             if (forgotLink) { forgotLink.style.display = 'none'; }
         });
     </script>
-<?php endif; ?>
+    <?php endif; ?>
 
 <?php endif; ?>

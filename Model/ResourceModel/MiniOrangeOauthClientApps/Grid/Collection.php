@@ -29,6 +29,7 @@ class Collection extends BaseCollection implements SearchResultInterface
      * Called by the Magento collection infrastructure before filters are
      * rendered, giving us a safe place to extend the base SELECT.
      */
+    #[\Override]
     protected function _renderFiltersBefore(): void
     {
         $connection = $this->getConnection();
@@ -54,14 +55,16 @@ class Collection extends BaseCollection implements SearchResultInterface
     /**
      * @inheritDoc
      */
+    #[\Override]
     public function setItems(?array $items = null): self
     {
         return $this;
     }
 
     /**
-     * @inheritDoc
+     * @psalm-suppress InvalidNullableReturnType,NullableReturnStatement
      */
+    #[\Override]
     public function getAggregations(): ?AggregationInterface
     {
         return $this->aggregations;
@@ -70,6 +73,7 @@ class Collection extends BaseCollection implements SearchResultInterface
     /**
      * @inheritDoc
      */
+    #[\Override]
     public function setAggregations($aggregations): self
     {
         $this->aggregations = $aggregations;
@@ -77,8 +81,9 @@ class Collection extends BaseCollection implements SearchResultInterface
     }
 
     /**
-     * @inheritDoc
+     * @psalm-suppress InvalidNullableReturnType,NullableReturnStatement
      */
+    #[\Override]
     public function getSearchCriteria(): ?SearchCriteriaInterface
     {
         return null;
@@ -87,6 +92,7 @@ class Collection extends BaseCollection implements SearchResultInterface
     /**
      * @inheritDoc
      */
+    #[\Override]
     public function setSearchCriteria(?SearchCriteriaInterface $searchCriteria = null): self
     {
         return $this;
@@ -95,6 +101,7 @@ class Collection extends BaseCollection implements SearchResultInterface
     /**
      * @inheritDoc
      */
+    #[\Override]
     public function getTotalCount(): int
     {
         return (int) $this->getSize();
@@ -103,6 +110,7 @@ class Collection extends BaseCollection implements SearchResultInterface
     /**
      * @inheritDoc
      */
+    #[\Override]
     public function setTotalCount($totalCount): self
     {
         return $this;

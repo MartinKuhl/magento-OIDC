@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace MiniOrange\OAuth\Controller\Adminhtml\Actions;
 
 use Magento\Framework\App\Action\HttpGetActionInterface;
@@ -123,7 +126,6 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
     public function execute()
     {
         $nonce = $this->cookieManager->getCookie('oidc_admin_nonce');
-        $providerId = (int) $this->cookieManager->getCookie('oidc_provider_id_transport');
 
         // Delete the cookie immediately (one-time use)
         if ($nonce !== null) {
@@ -202,8 +204,12 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
                     if ($encryptedIdToken) {
                         try {
                             $idToken = $this->oauthUtility->getEncryptor()->decrypt($encryptedIdToken);
+                            /** @psalm-suppress UndefinedInterfaceMethod */
+                            // @phpstan-ignore-next-line
                             $this->auth->getAuthStorage()->setData('oidc_id_token', $idToken);
-                            $this->auth->getAuthStorage()->setData('oidc_provider_id', (int) $providerId);
+                            /** @psalm-suppress UndefinedInterfaceMethod */
+                            // @phpstan-ignore-next-line
+                            $this->auth->getAuthStorage()->setData('oidc_provider_id', $providerId);
                             $this->oauthUtility->customlog(
                                 'Oidccallback: id_token persisted in admin session, provider_id=' . $providerId
                             );

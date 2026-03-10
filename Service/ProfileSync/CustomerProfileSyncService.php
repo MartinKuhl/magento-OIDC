@@ -9,7 +9,6 @@ use Magento\Customer\Api\Data\CustomerInterface;
 use Magento\Customer\Api\Data\AddressInterfaceFactory;
 use Magento\Customer\Api\AddressRepositoryInterface;
 use Magento\Directory\Model\ResourceModel\Country\CollectionFactory as CountryCollectionFactory;
-use Magento\Framework\Stdlib\DateTime\DateTime;
 use MiniOrange\OAuth\Helper\OAuthConstants;
 use MiniOrange\OAuth\Helper\OAuthUtility;
 
@@ -26,9 +25,10 @@ class CustomerProfileSyncService
         private readonly AddressInterfaceFactory $addressFactory,
         private readonly AddressRepositoryInterface $addressRepository,
         private readonly CountryCollectionFactory $countryCollectionFactory,
-        private readonly DateTime $dateTime,
+        private readonly \Magento\Customer\Api\Data\RegionInterfaceFactory $regionFactory,
         private readonly OAuthUtility $oauthUtility
-    ) {}
+    ) {
+    }
 
     // ──────────────────────────────────────────────
     //  Profile sync (firstname, lastname, DOB, gender, phone)
@@ -177,8 +177,7 @@ class CustomerProfileSyncService
             }
             if ($state !== null) {
                 $existingAddress->setRegion(
-                    (new \Magento\Customer\Api\Data\RegionInterfaceFactory())
-                        ->create()
+                    $this->regionFactory->create()
                         ->setRegion($state)
                 );
                 $changed = true;

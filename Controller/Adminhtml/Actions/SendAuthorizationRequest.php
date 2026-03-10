@@ -29,9 +29,6 @@ class SendAuthorizationRequest extends BaseAction
     /** @var \Magento\Framework\Session\SessionManagerInterface */
     private readonly \Magento\Framework\Session\SessionManagerInterface $sessionManager;
 
-    /** @var \Magento\Framework\Stdlib\CookieManagerInterface */
-    private readonly \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager;
-
     /**
      * Initialize admin send authorization request action.
      *
@@ -44,14 +41,12 @@ class SendAuthorizationRequest extends BaseAction
         \Magento\Backend\App\Action\Context $context,
         \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
         OAuthSecurityHelper $securityHelper,
-        \Magento\Framework\Session\SessionManagerInterface $sessionManager,
-        \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager
+        \Magento\Framework\Session\SessionManagerInterface $sessionManager
     ) {
         parent::__construct($context, $oauthUtility);
         $this->urlBuilder = $context->getUrl();
         $this->securityHelper = $securityHelper;
         $this->sessionManager = $sessionManager;
-        $this->cookieManager = $cookieManager;
     }
 
     /**
@@ -145,6 +140,7 @@ class SendAuthorizationRequest extends BaseAction
                 (int) $clientDetails['id'],
                 ['pkce_code_verifier' => $codeVerifier]
             );
+            // phpcs:ignore Generic.Files.LineLength.TooLong
             $this->oauthUtility->customlog(
                 "SendAuthorizationRequest (admin): PKCE {$pkceFlow} enabled — challenge generated, verifier persisted to DB"
             );

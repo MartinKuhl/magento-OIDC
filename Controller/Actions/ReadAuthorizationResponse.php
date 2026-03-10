@@ -41,9 +41,6 @@ class ReadAuthorizationResponse extends BaseAction
     /** @var \MiniOrange\OAuth\Controller\Actions\CheckAttributeMappingAction */
     private readonly \MiniOrange\OAuth\Controller\Actions\CheckAttributeMappingAction $attrMappingAction;
 
-    /** @var \Magento\Backend\Model\Auth\Session */
-    private readonly \Magento\Backend\Model\Auth\Session $adminSession;
-
     private readonly \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager;
     private readonly \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory;
 
@@ -60,7 +57,6 @@ class ReadAuthorizationResponse extends BaseAction
      * @param Curl                                              $curl
      * @param OidcAuthenticationService                         $oidcAuthService
      * @param CheckAttributeMappingAction                       $attrMappingAction
-     * @param \Magento\Backend\Model\Auth\Session               $adminSession
      */
     public function __construct(
         Context $context,
@@ -72,10 +68,8 @@ class ReadAuthorizationResponse extends BaseAction
         Curl $curl,
         OidcAuthenticationService $oidcAuthService,
         CheckAttributeMappingAction $attrMappingAction,
-        \Magento\Backend\Model\Auth\Session $adminSession,
         \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager,
         \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory,
-        
     ) {
         $this->_url = $url;
         $this->customerSession = $customerSession;
@@ -84,7 +78,6 @@ class ReadAuthorizationResponse extends BaseAction
         $this->curl = $curl;
         $this->oidcAuthService = $oidcAuthService;
         $this->attrMappingAction = $attrMappingAction;
-        $this->adminSession = $adminSession;
         $this->cookieManager = $cookieManager;
         $this->cookieMetadataFactory = $cookieMetadataFactory;
         parent::__construct($context, $oauthUtility);
@@ -237,9 +230,9 @@ class ReadAuthorizationResponse extends BaseAction
             $redirectURL = $this->oauthUtility->getCallBackUrl();
 
             // PKCE (RFC 7636 §4.5): retrieve verifier from provider row (FEAT-01)
-            $codeVerifier = !empty($clientDetails['pkce_code_verifier'])
-                ? $clientDetails['pkce_code_verifier']
-                : null;
+            $codeVerifier = empty($clientDetails['pkce_code_verifier'])
+                ? null
+                : $clientDetails['pkce_code_verifier'];
 
             if ($codeVerifier !== null) {
                 // One-time use: clear verifier immediately
@@ -300,7 +293,7 @@ class ReadAuthorizationResponse extends BaseAction
                 $this->cookieManager->setPublicCookie(
                     'oidc_provider_id_transport',
                     (string) $providerId,
-                    $metadata 
+                    $metadata
                 );
 
                 $this->oauthUtility->customlog(
@@ -434,7 +427,7 @@ class ReadAuthorizationResponse extends BaseAction
                     // cross-domain OIDC redirects (SameSite cookies, session regeneration).
                     if ($providerId > 0 && strpos((string) $relayState, 'showTestResults') !== false) {
                         $separator = (strpos((string) $relayState, '?') !== false) ? '&' : '?';
-                        $relayState .= $separator . 'provider_id=' . (int) $providerId;
+                        $relayState .= $separator . 'provider_id=' . $providerId;
                         $this->oauthUtility->customlog(
                             'ReadAuthResponse: appended provider_id=' . $providerId . ' to relayState URL'
                         );
@@ -509,6 +502,9 @@ class ReadAuthorizationResponse extends BaseAction
                 return $this->_redirect($loginUrl);
             }
         }
-        return null;
+        /** @var \Magento\Framework\Controller\Result\Redirect $resultRedirect */
+        $resultRedirect = $this->resultFactory->create(\Magento\Framework\Controller\ResultFactory::TYPE_REDIRECT);
+        $resultRedirect->setPath($this->oauthUtility->getCallBackUrl());
+        return $resultRedirect;
     }
 }

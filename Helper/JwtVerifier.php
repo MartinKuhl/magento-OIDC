@@ -89,14 +89,30 @@ class JwtVerifier
             return null;
         }
 
-        // Verify signature
+        // Verify signature — retry once with a fresh JWKS fetch on failure (handles key rotation)
         $dataToVerify = $headerB64 . '.' . $payloadB64;
         $signature = $this->base64UrlDecode($signatureB64);
 
         $result = openssl_verify($dataToVerify, $signature, $pem, $algMap[$alg]);
         if ($result !== 1) {
-            $this->oauthUtility->customlog("JwtVerifier: Signature verification FAILED");
-            return null;
+            $this->oauthUtility->customlog(
+                "JwtVerifier: Signature verification FAILED with cached JWKS. Retrying with fresh JWKS."
+            );
+            // Invalidate cache and re-fetch in case the IdP rotated its keys
+            $cacheKey = 'mooauth_jwks_' . hash('sha256', $jwksUrl);
+            $this->cache->remove($cacheKey);
+            $freshJwks = $this->fetchJwks($jwksUrl);
+            if ($freshJwks !== null) {
+                $freshPem = $this->findPublicKey($freshJwks, $kid, $alg);
+                if ($freshPem !== null) {
+                    $result = openssl_verify($dataToVerify, $signature, $freshPem, $algMap[$alg]);
+                }
+            }
+            if ($result !== 1) {
+                $this->oauthUtility->customlog("JwtVerifier: Signature verification FAILED after JWKS refresh");
+                return null;
+            }
+            $this->oauthUtility->customlog("JwtVerifier: Signature verified with refreshed JWKS");
         }
 
         $this->oauthUtility->customlog("JwtVerifier: Signature verification PASSED");
@@ -114,15 +130,21 @@ class JwtVerifier
             return null;
         }
 
-        // Validate issuer
-        if ($issuer !== null && isset($payload['iss']) && $payload['iss'] !== $issuer) {
-            $this->oauthUtility->customlog("JwtVerifier: Issuer mismatch - expected: $issuer, got: " . $payload['iss']);
+        // Validate issuer — a missing iss claim when one is expected is a failure (RFC 7519 §4.1.1)
+        if ($issuer !== null && ($payload['iss'] ?? '') !== $issuer) {
+            $this->oauthUtility->customlog(
+                "JwtVerifier: Issuer mismatch - expected: $issuer, got: " . ($payload['iss'] ?? 'MISSING')
+            );
             return null;
         }
 
-        // Validate audience
-        if ($audience !== null && isset($payload['aud'])) {
-            $aud = $payload['aud'];
+        // Validate audience — a missing aud claim when one is expected is a failure (OIDC Core 1.0 §3.1.3.7)
+        if ($audience !== null) {
+            $aud = $payload['aud'] ?? null;
+            if ($aud === null) {
+                $this->oauthUtility->customlog("JwtVerifier: Audience claim missing - expected: $audience");
+                return null;
+            }
             $audMatch = is_array($aud) ? in_array($audience, $aud, true) : ($aud === $audience);
             if (!$audMatch) {
                 $this->oauthUtility->customlog("JwtVerifier: Audience mismatch - expected: $audience");
@@ -189,7 +211,7 @@ class JwtVerifier
             return null;
         }
 
-        $data = json_decode((string) $response, true);
+        $data = json_decode($response, true);
         if (!isset($data['keys']) || !is_array($data['keys'])) {
             $this->oauthUtility->customlog("JwtVerifier: Invalid JWKS format from: " . $jwksUrl);
             return null;
