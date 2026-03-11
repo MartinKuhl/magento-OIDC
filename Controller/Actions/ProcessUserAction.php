@@ -186,10 +186,9 @@ class ProcessUserAction
     private function handleMissingAttributes(): \Magento\Framework\Controller\Result\Redirect
     {
         $this->oauthUtility->customlog("ERROR: Missing required attributes from OAuth provider");
-        $this->messageManager->addErrorMessage(
-            __('Authentication failed: Required user information not received from identity provider.')
-        );
-        return $this->resultRedirectFactory->create()->setPath('customer/account/login');
+        $encodedError = base64_encode('Authentication failed: Required user information not received from identity provider.');
+        $loginUrl = $this->oauthUtility->getCustomerLoginUrl() . '?oidc_error=' . $encodedError;
+        return $this->resultRedirectFactory->create()->setUrl($loginUrl);
     }
 
     /**

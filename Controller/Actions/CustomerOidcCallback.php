@@ -132,11 +132,9 @@ class CustomerOidcCallback extends BaseAction
             $this->oauthUtility->customlog(
                 "ERROR: Missing customer OIDC nonce"
             );
-            $this->messageManager->addErrorMessage(__(
-                'Authentication failed. Please try again.'
-            ));
-            return $this->resultRedirectFactory->create()
-                ->setPath('customer/account/login');
+            $encodedError = base64_encode('Authentication failed. Please try again.');
+            $loginUrl = $this->oauthUtility->getCustomerLoginUrl() . '?oidc_error=' . $encodedError;
+            return $this->resultRedirectFactory->create()->setUrl($loginUrl);
         }
 
         // Redeem nonce
@@ -146,11 +144,9 @@ class CustomerOidcCallback extends BaseAction
             $this->oauthUtility->customlog(
                 "ERROR: Invalid or expired customer OIDC nonce"
             );
-            $this->messageManager->addErrorMessage(__(
-                'Authentication session expired. Please try again.'
-            ));
-            return $this->resultRedirectFactory->create()
-                ->setPath('customer/account/login');
+            $encodedError = base64_encode('Authentication session expired. Please try again.');
+            $loginUrl = $this->oauthUtility->getCustomerLoginUrl() . '?oidc_error=' . $encodedError;
+            return $this->resultRedirectFactory->create()->setUrl($loginUrl);
         }
 
         $email = $nonceData['email'];
@@ -167,11 +163,9 @@ class CustomerOidcCallback extends BaseAction
             $this->oauthUtility->customlog(
                 "ERROR: Customer not found for email: " . $email
             );
-            $this->messageManager->addErrorMessage(__(
-                'Authentication failed. Please try again.'
-            ));
-            return $this->resultRedirectFactory->create()
-                ->setPath('customer/account/login');
+            $encodedError = base64_encode('Authentication failed. Please try again.');
+            $loginUrl = $this->oauthUtility->getCustomerLoginUrl() . '?oidc_error=' . $encodedError;
+            return $this->resultRedirectFactory->create()->setUrl($loginUrl);
         }
 
         $this->oauthUtility->customlog(
@@ -192,11 +186,9 @@ class CustomerOidcCallback extends BaseAction
                 "ERROR: Failed to load customer model for ID: "
                 . (string)$customerId
             );
-            $this->messageManager->addErrorMessage(__(
-                'Authentication failed. Please try again.'
-            ));
-            return $this->resultRedirectFactory->create()
-                ->setPath('customer/account/login');
+            $encodedError = base64_encode('Authentication failed. Please try again.');
+            $loginUrl = $this->oauthUtility->getCustomerLoginUrl() . '?oidc_error=' . $encodedError;
+            return $this->resultRedirectFactory->create()->setUrl($loginUrl);
         }
 
         // SEC-08: Enforce website context — reject cross-site login attempts
@@ -207,11 +199,9 @@ class CustomerOidcCallback extends BaseAction
                 . "Customer website: " . $customerModel->getWebsiteId()
                 . ", Current store website: " . $websiteId
             );
-            $this->messageManager->addErrorMessage(
-                __('Authentication failed: This account is not registered on this website.')
-            );
-            return $this->resultRedirectFactory->create()
-                ->setPath('customer/account/login');
+            $encodedError = base64_encode('Authentication failed: This account is not registered on this website.');
+            $loginUrl = $this->oauthUtility->getCustomerLoginUrl() . '?oidc_error=' . $encodedError;
+            return $this->resultRedirectFactory->create()->setUrl($loginUrl);
         }
 
         // Log in customer (clean HTTP context allows proper

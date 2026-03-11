@@ -399,11 +399,14 @@ class ReadAuthorizationResponse extends BaseAction
                     $this->oauthUtility->customlog(
                         "ERROR: Invalid user info data from OAuth provider - " . $e->getMessage()
                     );
-                    $this->messageManager->addErrorMessage(
-                        __('Authentication failed: Invalid user information received from identity provider.')
-                    );
-                    $errorPath = ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) ? 'admin' : 'customer/account/login';
-                    return $this->resultRedirectFactory->create()->setPath($errorPath);
+                    $errorMsg = 'Authentication failed: Invalid user information received from identity provider.';
+                    if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
+                        $this->messageManager->addErrorMessage(__($errorMsg));
+                        return $this->resultRedirectFactory->create()->setPath('admin');
+                    }
+                    $encodedError = base64_encode($errorMsg);
+                    $loginUrl = $this->_url->getUrl('customer/account/login', ['_query' => ['oidc_error' => $encodedError]]);
+                    return $this->_redirect($loginUrl);
                 }
 
                 $flattenedResponse = [];
@@ -411,10 +414,9 @@ class ReadAuthorizationResponse extends BaseAction
 
                 $userEmail = $this->oidcAuthService->extractEmail($flattenedResponse, $userInfoResponseData);
                 if ($userEmail === '' || $userEmail === '0') {
-                    $this->messageManager->addErrorMessage(
-                        __('Email address not received. Please check attribute mapping.')
-                    );
-                    return $this->resultRedirectFactory->create()->setPath('customer/account/login');
+                    $encodedError = base64_encode('Email address not received. Please check attribute mapping.');
+                    $loginUrl = $this->_url->getUrl('customer/account/login', ['_query' => ['oidc_error' => $encodedError]]);
+                    return $this->_redirect($loginUrl);
                 }
 
                 $detectedLoginType = $this->oidcAuthService->extractLoginType($userInfoResponseData);

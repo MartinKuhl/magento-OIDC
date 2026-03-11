@@ -239,12 +239,14 @@ class CheckAttributeMappingAction extends BaseAction
                 $this->oauthUtility->customlog(
                     "CheckAttributeMappingAction: Access denied for {$userEmail}: {$denialMessage}"
                 );
-                $this->messageManager->addErrorMessage(__($denialMessage));
                 if ($isAdminLoginIntent) {
+                    $this->messageManager->addErrorMessage(__($denialMessage));
                     $adminLoginUrl = $this->backendUrl->getUrl('admin');
                     return $this->resultRedirectFactory->create()->setUrl($adminLoginUrl);
                 }
-                return $this->resultRedirectFactory->create()->setPath('customer/account/login');
+                $encodedError = base64_encode($denialMessage);
+                $loginUrl = $this->oauthUtility->getCustomerLoginUrl() . '?oidc_error=' . $encodedError;
+                return $this->resultRedirectFactory->create()->setUrl($loginUrl);
             }
         }
 
@@ -372,10 +374,9 @@ class CheckAttributeMappingAction extends BaseAction
             return $this->moOAuthCheckMapping($attrs, $flattenedAttrs, $userEmail ?? '');
         } catch (MissingAttributesException $e) {
             $this->oauthUtility->customlog("ERROR: Missing attributes - " . $e->getMessage());
-            $this->messageManager->addErrorMessage(
-                __('Authentication failed: Required user attributes not received.')
-            );
-            return $this->resultRedirectFactory->create()->setPath('customer/account/login');
+            $encodedError = base64_encode('Authentication failed: Required user attributes not received.');
+            $loginUrl = $this->oauthUtility->getCustomerLoginUrl() . '?oidc_error=' . $encodedError;
+            return $this->resultRedirectFactory->create()->setUrl($loginUrl);
         }
     }
 
