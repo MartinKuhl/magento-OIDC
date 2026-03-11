@@ -15,13 +15,17 @@ class OidcErrorMessage extends Template
      */
     public function getOidcErrorMessage(): ?string
     {
-        // getParam() already URL-decodes the value; no additional decoding needed.
-        $message = $this->getRequest()->getParam('oidc_error');
-        if ($message) {
-            $message = trim((string) $message);
-            return $message !== '' ? $message : null;
+        $encoded = $this->getRequest()->getParam('oidc_error');
+        if (empty($encoded)) {
+            return null;
         }
-        return null;
+        // All error senders base64-encode the message before putting it in the URL.
+        // phpcs:ignore Magento2.Functions.DiscouragedFunction
+        $decoded = base64_decode((string) $encoded, true);
+        if ($decoded === false || trim($decoded) === '') {
+            return null;
+        }
+        return trim($decoded);
     }
 
     /**

@@ -347,7 +347,8 @@ class CheckAttributeMappingAction extends BaseAction
                     } else {
                         $this->oauthUtility->customlog("ERROR: Failed to create admin user for: " . $userEmail);
                         $errorMessage = 'Failed to create admin account. Please contact your administrator.';
-                        $adminLoginUrl = $this->backendUrl->getUrl('admin') . '?oidc_error=' . urlencode($errorMessage);
+                        $adminLoginUrl = $this->backendUrl->getUrl('admin')
+                            . '?oidc_error=' . base64_encode($errorMessage);
                         return $this->resultRedirectFactory->create()->setUrl($adminLoginUrl);
                     }
                 } else {
@@ -358,7 +359,7 @@ class CheckAttributeMappingAction extends BaseAction
                         'ADMIN_ACCOUNT_NOT_FOUND',
                         ['email' => $userEmail]
                     );
-                    $adminLoginUrl = $this->backendUrl->getUrl('admin') . '?oidc_error=' . urlencode($errorMessage);
+                    $adminLoginUrl = $this->backendUrl->getUrl('admin') . '?oidc_error=' . base64_encode($errorMessage);
                     return $this->resultRedirectFactory->create()->setUrl($adminLoginUrl);
                 }
             }

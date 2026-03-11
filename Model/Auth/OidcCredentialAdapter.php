@@ -46,7 +46,7 @@ class OidcCredentialAdapter implements StorageInterface
     private $oauthUtility;
 
     /**
-     * @var \Magento\User\Model\User
+     * @var \Magento\User\Model\User|null
      */
     private $user;
 
@@ -300,7 +300,7 @@ class OidcCredentialAdapter implements StorageInterface
      */
     public function getId()
     {
-        return $this->user->getId();
+        return $this->user?->getId();
     }
 
     /**
@@ -310,7 +310,10 @@ class OidcCredentialAdapter implements StorageInterface
      */
     public function getIsActive(): bool
     {
-        return (bool)$this->user->getIsActive();
+        if ($this->user === null) {
+            return false;
+        }
+        return (bool) $this->user->getIsActive();
     }
 
     /**

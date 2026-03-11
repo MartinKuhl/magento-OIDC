@@ -233,19 +233,14 @@ class ReadAuthorizationResponse extends BaseAction
             $body = $clientDetails["values_in_body"];
             $redirectURL = $this->oauthUtility->getCallBackUrl();
 
-            // PKCE (RFC 7636 §4.5): retrieve verifier from provider row (FEAT-01)
-            $codeVerifier = empty($clientDetails['pkce_code_verifier'])
-                ? null
-                : $clientDetails['pkce_code_verifier'];
+            // PKCE (RFC 7636 §4.5): retrieve verifier from session (one-time, auto-removed).
+            // Keyed by provider ID so multiple providers can coexist per session.
+            $sessionKey = 'pkce_code_verifier_' . (int) $clientDetails['id'];
+            $codeVerifier = $this->oauthUtility->getSessionData($sessionKey, true) ?: null;
 
             if ($codeVerifier !== null) {
-                // One-time use: clear verifier immediately
-                $this->oauthUtility->saveProviderData(
-                    (int) $clientDetails['id'],
-                    ['pkce_code_verifier' => null]
-                );
                 $this->oauthUtility->customlog(
-                    "ReadAuthResponse: PKCE code_verifier loaded from DB — including in token request"
+                    "ReadAuthResponse: PKCE code_verifier loaded from session — including in token request"
                 );
             }
 

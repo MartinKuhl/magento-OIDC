@@ -216,40 +216,54 @@ class SecurityRegressionTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // SEC-07 — Error messages must use urlencode(), not base64_encode()
+    // SEC-07 — Error messages must be consistently base64-encoded on send and
+    //          base64-decoded on receive so human-readable text is shown.
     // -------------------------------------------------------------------------
 
     /**
-     * Admin-facing OIDC error paths must not use base64_encode() for error messages.
+     * All admin OIDC error senders must use base64_encode() and the admin error
+     * block must use base64_decode() so the message round-trips correctly.
      *
-     * base64 provides no security — it merely obfuscates and breaks the error
-     * display when OidcErrorMessage::getOidcErrorMessage() doesn't decode it.
+     * Previously the senders used urlencode()/plaintext while the block did not
+     * decode, producing raw base64 garbage in the UI. The fix standardises every
+     * error path: encode with base64_encode() at source, decode with
+     * base64_decode() in OidcErrorMessage::getOidcErrorMessage().
      *
      * Fixes: SEC-07
      */
-    public function testAdminOidcCallbackDoesNotBase64EncodeErrors(): void
+    public function testAdminOidcCallbackBase64EncodesErrors(): void
     {
         $file    = self::$root . '/Controller/Adminhtml/Actions/Oidccallback.php';
         $content = $this->readFile($file);
 
-        $this->assertStringNotContainsString(
+        $this->assertStringContainsString(
             'base64_encode',
             $content,
-            'SEC-07: Oidccallback.php must not base64_encode OIDC error messages'
+            'SEC-07: Oidccallback.php must base64_encode OIDC error messages for consistent encoding'
         );
     }
 
-    public function testCheckAttributeMappingActionDoesNotBase64EncodeErrors(): void
+    public function testAdminErrorBlockBase64DecodesErrors(): void
+    {
+        $file    = self::$root . '/Block/Adminhtml/OidcErrorMessage.php';
+        $content = $this->readFile($file);
+
+        $this->assertStringContainsString(
+            'base64_decode',
+            $content,
+            'SEC-07: OidcErrorMessage.php must base64_decode the oidc_error URL parameter'
+        );
+    }
+
+    public function testCheckAttributeMappingActionBase64EncodesErrors(): void
     {
         $file    = self::$root . '/Controller/Actions/CheckAttributeMappingAction.php';
         $content = $this->readFile($file);
 
-        // base64_encode should not appear for error message encoding
-        // (it may legitimately appear elsewhere for other purposes)
-        $this->assertStringNotContainsString(
+        $this->assertStringContainsString(
             'base64_encode($errorMessage)',
             $content,
-            'SEC-07: CheckAttributeMappingAction must not base64_encode error messages'
+            'SEC-07: CheckAttributeMappingAction must base64_encode error messages for consistent encoding'
         );
     }
 

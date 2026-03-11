@@ -130,6 +130,14 @@ class JwtVerifier
             return null;
         }
 
+        // Validate not-before (RFC 7519 §4.1.5)
+        if (isset($payload['nbf']) && $payload['nbf'] > time()) {
+            $this->oauthUtility->customlog(
+                "JwtVerifier: Token not yet valid, nbf=" . date('Y-m-d H:i:s', $payload['nbf'])
+            );
+            return null;
+        }
+
         // Validate issuer — a missing iss claim when one is expected is a failure (RFC 7519 §4.1.1)
         if ($issuer !== null && ($payload['iss'] ?? '') !== $issuer) {
             $this->oauthUtility->customlog(

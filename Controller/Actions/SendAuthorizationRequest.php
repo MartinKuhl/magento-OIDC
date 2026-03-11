@@ -175,14 +175,16 @@ class SendAuthorizationRequest extends BaseAction
             $codeChallenge       = $this->securityHelper->computeCodeChallenge($codeVerifier, $pkceFlow);
             $codeChallengeMethod = $pkceFlow;
 
-            // Persist verifier in provider row (survives admin→frontend session switch)
-            $this->oauthUtility->saveProviderData(
-                (int) $clientDetails['id'],
-                ['pkce_code_verifier' => $codeVerifier]
+            // Store verifier in session (per browser session, keyed by provider ID).
+            // Previously stored in the provider DB row, which caused a race condition:
+            // two concurrent logins with the same provider would overwrite each other's verifier.
+            $this->oauthUtility->setSessionData(
+                'pkce_code_verifier_' . (int) $clientDetails['id'],
+                $codeVerifier
             );
 
             $this->oauthUtility->customlog(
-                "SendAuthorizationRequest: PKCE {$pkceFlow} enabled — challenge generated, verifier persisted to DB"
+                "SendAuthorizationRequest: PKCE {$pkceFlow} enabled — challenge generated, verifier stored in session"
             );
         }
 
