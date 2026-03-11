@@ -4,23 +4,29 @@
 /** @var \MiniOrange\OAuth\ViewModel\OidcLoginVisibility $oidcVisibility */
 $oidcVisibility = $block->getData('oidc_visibility');
 ?>
+<?php if ($oidcVisibility && $oidcVisibility->isCustomerButtonVisible()): ?>
+
 <?php if ($block->hasOidcError()): ?>
 <div style="
-    width: 470px;
+    max-width: 470px;
+    width: 100%;
     margin: 10px 0 15px 0;
     background: #fff0f0;
     border: 2px solid #e22626;
     border-radius: 5px;
     padding: 12px;
     box-sizing: border-box;
+    overflow: hidden;
+    clear: both;
+    float: none;
 ">
     <div style="display: flex; align-items: flex-start; gap: 10px;">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
-            style="flex-shrink: 0; margin-top: 2px;">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
+            style="flex-shrink: 0; width: 20px; height: 20px; min-width: 20px; min-height: 20px; margin-top: 2px;">
             <circle cx="12" cy="12" r="10" stroke="#e22626" stroke-width="2" fill="none" />
             <path d="M12 8V12M12 16H12.01" stroke="#e22626" stroke-width="2" stroke-linecap="round" />
         </svg>
-        <div style="flex: 1;">
+        <div style="flex: 1; min-width: 0;">
             <strong style="color: #e22626; font-size: 13px; display: block; margin-bottom: 6px;">
                 <?= $escaper->escapeHtml(__('OIDC-Login failed')) ?>
             </strong>
@@ -31,8 +37,6 @@ $oidcVisibility = $block->getData('oidc_visibility');
     </div>
 </div>
 <?php endif; ?>
-
-<?php if ($oidcVisibility && $oidcVisibility->isCustomerButtonVisible()): ?>
 
 <div class="sso-divider">
     <svg class="sso-line" height="5" width="215">
@@ -101,7 +105,6 @@ $oidcVisibility = $block->getData('oidc_visibility');
     /* Hide demo box by background color (beige/yellow) */
     .block-customer-login .box,
     .login-container .box,
-    div[style*="background"],
     div[style*="rgb(255, 248, 220)"],
     div[style*="#fff8dc"] {
         display: none !important;

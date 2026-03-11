@@ -686,7 +686,7 @@ This section documents technical debt, architectural limitations, and potential 
 
 ### Testing & Code Quality
 
-**Add Unit Test Coverage**
+**Extent existing Unit Test Coverage**
 - **Current state**: 0% test coverage — no `Test/Unit/` or `Test/Integration/` directories present
 - **Impact**: High risk of regressions from future changes
 - **Recommendation**: Start with Model and Helper classes
@@ -695,7 +695,7 @@ This section documents technical debt, architectural limitations, and potential 
   - `Helper/JwtVerifier.php` — JWT signature validation
   - `Model/Auth/OidcCredentialAdapter.php` — authentication flow
 
-**Add Integration Tests**
+**Extent existing Integration Tests**
 - Test full authentication flows (customer and admin)
 - Mock OIDC provider (Docker-based local test environment)
 - Verify security plugins fire correctly (CAPTCHA bypass, identity verification bypass)
@@ -707,7 +707,7 @@ This section documents technical debt, architectural limitations, and potential 
 - **Risk**: Tight coupling, hard to test, violates dependency injection principle
 - **Fix**: Implement `Serializable` properly or use a service locator pattern
 
-**Static Analysis Compliance**
+**Extend Static Analysis Compliance**
 - Add PHPStan or Psalm configuration
 - Fix type hint inconsistencies (e.g., `OidcCredentialAdapter::$user` property)
 - Enable strict type checking for new code
@@ -748,7 +748,7 @@ This section documents technical debt, architectural limitations, and potential 
 
 **Consolidate Multi-Provider Admin UI**
 - **Current state**: Database schema fully supports multiple active providers; admin UI for managing them is incomplete or provider-management grid is absent
-- **Recommendation**: Add a provider management grid in the admin panel with per-provider edit/delete/test actions
+- **Recommendation**: Extend the provider management grid in the admin panel with per-provider edit/delete/test actions
 - **Benefit**: Enables multi-IdP setups without direct database manipulation
 
 **Refactor 60+ Configuration Columns**
@@ -774,24 +774,6 @@ This section documents technical debt, architectural limitations, and potential 
 - Allow custom modules to inject logic via observers
 - Examples: `oidc_admin_user_before_create`, `oidc_customer_attribute_mapping`
 
-### Feature Completeness
-
-**IdP-Initiated SSO Support**
-- **Current**: SP-initiated only
-- **Missing**: IdP-initiated (IdP sends user directly to Magento with assertion)
-- **Use case**: Users start at IdP dashboard, click Magento app icon
-
-**Back-Channel Logout (OIDC RP-Initiated Logout)**
-- **Current**: Frontend logout redirects to `endsession_endpoint`
-- **Missing**: Back-channel logout (IdP notifies Magento of logout via server-to-server call)
-- **Specification**: OpenID Connect RP-Initiated Logout 1.0
-
-**Attribute Synchronization Scheduler**
-- **Use case**: Sync user attributes from IdP nightly (address changes, group changes, profile updates)
-- **Current**: Attributes only updated on login
-- **Implementation**: Cron job that refreshes user info from IdP for active users
-- **Requires**: Refresh token storage, IdP API access
-
 ### Operational Improvements
 
 **Admin UI for Viewing Active OIDC Sessions**
@@ -809,23 +791,8 @@ This section documents technical debt, architectural limitations, and potential 
 
 ### Developer Experience
 
-**GraphQL API for SSO Link Generation**
-- **Use case**: Headless commerce implementations need SSO URLs
-- **Query**: `query { oidcLoginUrl(relayState: String, providerId: Int): String }`
-- **Schema**: Add to `etc/schema.graphqls`
-
-**REST API for Configuration Management**
-- **Endpoints**:
-  - `GET /rest/V1/oauth/config` — retrieve current configuration
-  - `PUT /rest/V1/oauth/config` — update configuration
-- **Authentication**: Admin token required
-
 **Better Error Messages**
 - **Current**: Generic errors like "configuration error", "authentication failed"
 - **Improvement**: Specific, actionable error messages
   - "OIDC provider returned email claim 'Email' but expected 'email' — check attribute mapping"
   - "Admin role mapping failed: no role found for group 'Engineers' — configure role mapping or set default role"
-
----
-
-This roadmap represents approximately 6-12 months of development effort for a small team. The most critical items are testing coverage, the PKCE race condition fix, and completing the multi-provider admin UI.
