@@ -25,7 +25,7 @@ class RemoveLegacyConfigPaths implements DataPatchInterface
      * Providerspezifische Pfade, die bereits in miniorange_oauth_client_apps
      * migriert wurden und daher aus core_config_data entfernt werden können.
      */
-    private const LEGACY_PATHS = [
+    private const array LEGACY_PATHS = [
         // Provider identity
         'miniorange/oauth/appName',
 
@@ -74,13 +74,22 @@ class RemoveLegacyConfigPaths implements DataPatchInterface
         'miniorange/oauth/receivedOidcClaims',
     ];
 
+    /** @var ResourceConnection */
     private ResourceConnection $resourceConnection;
 
+    /**
+     * Constructor.
+     *
+     * @param ResourceConnection $resourceConnection
+     */
     public function __construct(ResourceConnection $resourceConnection)
     {
         $this->resourceConnection = $resourceConnection;
     }
 
+    /**
+     * Delete legacy config paths from core_config_data.
+     */
     public function apply(): self
     {
         $connection = $this->resourceConnection->getConnection();
@@ -94,7 +103,8 @@ class RemoveLegacyConfigPaths implements DataPatchInterface
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
+     *
      * Must run after migration patch to avoid data loss.
      */
     public static function getDependencies(): array
@@ -104,6 +114,9 @@ class RemoveLegacyConfigPaths implements DataPatchInterface
         ];
     }
 
+    /**
+     * @inheritdoc
+     */
     public function getAliases(): array
     {
         return [];

@@ -7,7 +7,7 @@ use Magento\Framework\App\CacheInterface;
 /**
  * Pure PHP JWT verification using openssl_verify().
  *
- * Supports RS256, RS384, RS512 signature verification via JWKS endpoints.
+ * Supports RS256, RS384, RS512 signaturfinal e verification via JWKS endpoints.
  * No external composer dependencies required.
  */
 class JwtVerifier

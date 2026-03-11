@@ -20,6 +20,7 @@ use MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps as AppResourc
  * client configuration provided by the administrator.
  *
  * @psalm-suppress ImplicitToStringCast Magento's __() returns Phrase with __toString()
+ * @psalm-suppress DeprecatedInterface
  */
 class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetActionInterface
 {
@@ -283,8 +284,8 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         $this->oauthUtility->setStoreConfig(OAuthConstants::APP_NAME, $mo_oauth_app_name);
         $this->oauthUtility->setStoreConfig(OAuthConstants::SHOW_CUSTOMER_LINK, 1);
 
-        $currentAdminUser = $this->oauthUtility->getCurrentAdminUser()->getData();
-        $userEmail = $currentAdminUser['email'];
+        $adminUser = $this->oauthUtility->getCurrentAdminUser();
+        $userEmail = $adminUser instanceof \Magento\User\Model\User ? (string) $adminUser->getData('email') : '';
 
         $this->oauthUtility->setStoreConfig(OAuthConstants::ADMINEMAIL, $userEmail);
     }

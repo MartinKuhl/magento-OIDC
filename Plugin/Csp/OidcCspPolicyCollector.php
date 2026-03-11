@@ -17,7 +17,7 @@ use MiniOrange\OAuth\Helper\OAuthUtility;
  * hardcoding a customer-specific domain into the module — making the
  * package unsuitable for distribution.
  *
- * Single-provider fallback: when the `miniorange_oauth_client_apps` table
+ * Single-provider fallback: when the `miniorange_oauth_final client_apps` table
  * is empty (fresh install, pre-migration), the legacy store-config
  * `AUTHORIZE_URL` value is used so the page does not break.
  *
@@ -146,7 +146,7 @@ class OidcCspPolicyCollector implements PolicyCollectorInterface
         $scheme = parse_url($url, PHP_URL_SCHEME);
         $host   = parse_url($url, PHP_URL_HOST);
         // phpcs:enable Magento2.Functions.DiscouragedFunction.Discouraged
-        if (empty($host) || $scheme !== 'https') {
+        if ($host === null || $host === false || $host === '' || $scheme !== 'https') {
             return '';
         }
         return 'https://' . $host;

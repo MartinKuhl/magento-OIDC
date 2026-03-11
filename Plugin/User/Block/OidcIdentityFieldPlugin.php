@@ -75,8 +75,9 @@ class OidcIdentityFieldPlugin
 
                     // Remove required-entry CSS class (used by Magento's JS validation)
                     $currentClass = $field->getClass();
-                    $newClass = str_replace('required-entry', '', $currentClass);
-                    $field->setClass(trim($newClass));
+                    $classStr = (string) $currentClass;
+                    $replaced = str_replace('required-entry', '', $classStr);
+                    $field->setClass(trim($replaced));
 
                     $this->oauthUtility->customlog("OidcIdentityFieldPlugin: Field modified - required removed");
                 }

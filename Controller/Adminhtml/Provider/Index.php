@@ -11,7 +11,7 @@ use Magento\Framework\View\Result\Page;
 use Magento\Framework\View\Result\PageFactory;
 
 /**
- * Admin controller — OIDC Provider listing (MP-06).
+ * Admin controller final — OIDC Provider listing (MP-06).
  *
  * Route: GET /admin/mooauth/provider/index
  *
@@ -22,7 +22,7 @@ use Magento\Framework\View\Result\PageFactory;
 class Index extends Action implements HttpGetActionInterface
 {
     /** ACL resource required to access provider management. */
-    public const ADMIN_RESOURCE = 'MiniOrange_OAuth::oauth_settings';
+    public const string ADMIN_RESOURCE = 'MiniOrange_OAuth::oauth_settings';
 
     /** @var PageFactory */
     private readonly PageFactory $pageFactory;

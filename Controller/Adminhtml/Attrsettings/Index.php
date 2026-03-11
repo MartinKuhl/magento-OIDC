@@ -23,6 +23,7 @@ use Psr\Log\LoggerInterface;
  * for each Controller class
  *
  * @psalm-suppress ImplicitToStringCast Magento's __() returns Phrase with __toString()
+ * @psalm-suppress DeprecatedInterface
  */
 class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetActionInterface
 {
@@ -123,14 +124,14 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
             // Role mappings as JSON
             $roleMappings = array_filter(
                 $params['oauth_role_mapping'] ?? [],
-                static fn ($m): bool => !empty($m['group']) && !empty($m['role'])
+                static fn (array $m): bool => !empty($m['group']) && !empty($m['role'])
             );
             $model->setData('oauth_admin_role_mapping', json_encode($roleMappings));
 
             // Customer group mappings as JSON
             $customerGroupMappings = array_filter(
                 $params['oauth_customer_group_mapping'] ?? [],
-                static fn ($m): bool => !empty($m['group']) && !empty($m['customerGroup'])
+                static fn (array $m): bool => !empty($m['group']) && !empty($m['customerGroup'])
             );
             /** @psalm-suppress RedundantFunctionCall */
             $model->setData('oauth_customer_group_mapping', json_encode(array_values($customerGroupMappings)));
@@ -156,7 +157,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         if (isset($params['oauth_customer_group_mapping'])) {
             $customerGroupMappings = array_filter(
                 $params['oauth_customer_group_mapping'],
-                static fn ($m): bool => !empty($m['group']) && !empty($m['customerGroup'])
+                static fn (array $m): bool => !empty($m['group']) && !empty($m['customerGroup'])
             );
             $this->oauthUtility->setStoreConfig(
                 OAuthConstants::CUSTOMER_GROUP_MAPPING,
@@ -193,7 +194,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         if (isset($params['oauth_role_mapping'])) {
             $roleMappings = array_filter(
                 $params['oauth_role_mapping'],
-                function ($mapping): bool {
+                function (array $mapping): bool {
                     return !empty($mapping['group']) && !empty($mapping['role']);
                 }
             );

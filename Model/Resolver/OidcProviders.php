@@ -15,7 +15,7 @@ use MiniOrange\OAuth\Helper\OAuthUtility;
  *
  * Returns all active OIDC providers for the requested login_type, together
  * with the SP-initiated login URL for each. Headless / Hyva storefronts use
- * this to dynamically render a list of SSO login buttons without server-side
+ * this to dynamically render a list of SSOfinal  login buttons without server-side
  * phtml rendering.
  *
  * Schema:

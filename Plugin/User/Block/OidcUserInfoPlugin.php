@@ -15,6 +15,8 @@ use MiniOrange\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
  * field in the Account Information fieldset on the admin User edit page.
  *
  * Uses aroundGetFormHtml + Registry to ensure the user is fully loaded.
+ *
+ * @psalm-suppress DeprecatedClass
  */
 class OidcUserInfoPlugin
 {
@@ -49,6 +51,9 @@ class OidcUserInfoPlugin
      *
      * The admin user is loaded from the registry key 'permissions_user',
      * which is set by the Edit controller before block rendering.
+     *
+     * @param Main    $subject
+     * @param Closure $proceed
      */
     public function aroundGetFormHtml(Main $subject, Closure $proceed): string
     {

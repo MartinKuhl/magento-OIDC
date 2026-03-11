@@ -3,7 +3,7 @@
 namespace MiniOrange\OAuth\Model;
 
 /**
- * Model for MiniOrange OAuth client app records
+ * Model fofinal r MiniOrange OAuth client app records
  */
 class MiniorangeOauthClientApps extends \Magento\Framework\Model\AbstractModel
 {

@@ -25,6 +25,7 @@ use Psr\Log\LoggerInterface;
  * in Manage Providers → Edit Provider.
  *
  * @psalm-suppress ImplicitToStringCast Magento's __() returns Phrase with __toString()
+ * @psalm-suppress DeprecatedInterface
  */
 class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetActionInterface
 {
@@ -37,6 +38,12 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
     /** @var \Magento\Framework\App\ProductMetadataInterface */
     private readonly \Magento\Framework\App\ProductMetadataInterface $productMetadata;
 
+    /** @var \Magento\Framework\Filesystem\Io\File */
+    private readonly \Magento\Framework\Filesystem\Io\File $ioFile;
+
+    /** @var \Magento\Framework\Filesystem\Driver\File */
+    private readonly \Magento\Framework\Filesystem\Driver\File $fileDriver;
+
     /**
      * Initialize sign-in settings controller.
      *
@@ -48,6 +55,8 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
      * @param \Magento\Framework\App\Response\Http\FileFactory $fileFactory
      * @param \Magento\Store\Model\StoreManagerInterface       $storeManager
      * @param \Magento\Framework\App\ProductMetadataInterface  $productMetadata
+     * @param \Magento\Framework\Filesystem\Io\File            $ioFile
+     * @param \Magento\Framework\Filesystem\Driver\File        $fileDriver
      */
     public function __construct(
         Context $context,
@@ -57,12 +66,16 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         LoggerInterface $logger,
         \Magento\Framework\App\Response\Http\FileFactory $fileFactory,
         \Magento\Store\Model\StoreManagerInterface $storeManager,
-        \Magento\Framework\App\ProductMetadataInterface $productMetadata
+        \Magento\Framework\App\ProductMetadataInterface $productMetadata,
+        \Magento\Framework\Filesystem\Io\File $ioFile,
+        \Magento\Framework\Filesystem\Driver\File $fileDriver
     ) {
         parent::__construct($context, $resultPageFactory, $oauthUtility, $messageManager, $logger);
         $this->_storeManager = $storeManager;
         $this->fileFactory = $fileFactory;
         $this->productMetadata = $productMetadata;
+        $this->ioFile = $ioFile;
+        $this->fileDriver = $fileDriver;
     }
 
     /**
@@ -187,14 +200,16 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         }
 
         // Validate file extension
-        $ext = strtolower(pathinfo((string) $file['name'], PATHINFO_EXTENSION));
+        $pathInfo = $this->ioFile->getPathInfo((string) $file['name']);
+        $ext = strtolower((string) ($pathInfo['extension'] ?? ''));
         if ($ext !== 'json') {
             $this->messageManager->addErrorMessage(__('Only .json files are allowed.'));
             return;
         }
 
-        $content = file_get_contents($file['tmp_name']);
-        if ($content === false) {
+        try {
+            $content = $this->fileDriver->fileGetContents($file['tmp_name']);
+        } catch (\Magento\Framework\Exception\FileSystemException $e) {
             $this->messageManager->addErrorMessage(__('Could not read uploaded file.'));
             return;
         }
@@ -228,7 +243,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
                 ->addFieldToFilter('app_name', $providerData['app_name'])
                 ->getFirstItem();
 
-            if ($existing && $existing->getId()) {
+            if ($existing->getId()) {
                 $skipped++;
                 continue;
             }

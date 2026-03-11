@@ -25,14 +25,14 @@ use Magento\Framework\Setup\Patch\PatchRevertableInterface;
  */
 class MigrateGlobalConfigToProvider implements DataPatchInterface, PatchRevertableInterface
 {
-    private const PROVIDER_TABLE = 'miniorange_oauth_client_apps';
-    private const CONFIG_TABLE   = 'core_config_data';
-    private const CONFIG_PREFIX  = 'miniorange/oauth/';
+    private const string PROVIDER_TABLE = 'miniorange_oauth_client_apps';
+    private const string CONFIG_TABLE   = 'core_config_data';
+    private const string CONFIG_PREFIX  = 'miniorange/oauth/';
 
     /**
      * Map from core_config_data path suffix → provider table column name.
      */
-    private const COLUMN_MAP = [
+    private const array COLUMN_MAP = [
         'amEmail'                    => 'email_attribute',
         'amUsername'                 => 'username_attribute',
         'amFirstName'                => 'firstname_attribute',
@@ -138,6 +138,7 @@ class MigrateGlobalConfigToProvider implements DataPatchInterface, PatchRevertab
 
     /**
      * Revert: clear the migrated columns (restore them to empty string).
+     *
      * Does NOT restore the core_config_data entries.
      */
     public function revert(): void

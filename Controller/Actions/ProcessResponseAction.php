@@ -10,7 +10,7 @@ use MiniOrange\OAuth\Helper\OAuthConstants;
  * @deprecated This controller has been superseded by the service layer
  *             and `CheckAttributeMappingAction`.
  *             Use `\MiniOrange\OAuth\Model\Service\OidcAuthenticationService`
- *             together with `CheckAttributeMappingAction` instead.
+ *             together with `CheckAttributeMappingAction` instefinal ad.
  * @see        \MiniOrange\OAuth\Model\Service\OidcAuthenticationService
  * @psalm-suppress ImplicitToStringCast Magento's __() returns Phrase with __toString()
  */
@@ -106,6 +106,7 @@ class ProcessResponseAction extends BaseAction
         }
         $this->oauthUtility->customlog("ProcessResponseAction: loginType = " . $loginType);
 
+        /** @psalm-suppress PossiblyInvalidArgument */
         $result = $this->attrMappingAction->setUserInfoResponse($userInfoResponse)
             ->setFlattenedUserInfoResponse($flattenedUserInfoResponse)
             ->setUserEmail($userEmail)
@@ -121,16 +122,15 @@ class ProcessResponseAction extends BaseAction
         return $result;
     }
 
-    private const MAX_RECURSION_DEPTH = 5;
+    private const int MAX_RECURSION_DEPTH = 5;
 
     /**
      * Recursively search for an email address in the user info array
      *
      * @param  mixed $arr
      * @param  int   $depth
-     * @return string
      */
-    private function findUserEmail($arr, int|float $depth = 0)
+    private function findUserEmail($arr, int|float $depth = 0): string
     {
         if ($depth > self::MAX_RECURSION_DEPTH) {
             return "";
@@ -147,12 +147,12 @@ class ProcessResponseAction extends BaseAction
         foreach ($arr as $value) {
             if (is_scalar($value) && filter_var($value, FILTER_VALIDATE_EMAIL)) {
                 $this->oauthUtility->customlog("ProcessResponseAction: findUserEmail found: " . (string)$value);
-                return $value;
+                return (string) $value;
             }
 
             if (is_array($value) || is_object($value)) {
                 $email = $this->findUserEmail($value, $depth + 1);
-                if (!empty($email)) {
+                if ($email !== '' && $email !== '0') {
                     return $email;
                 }
             }

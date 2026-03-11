@@ -9,7 +9,7 @@ namespace MiniOrange\OAuth\Block\Adminhtml\Provider\Edit;
  *
  * Registers three inline tabs:
  *   - Provider Settings  (identity / appearance)
- *   - OAuth Settings     (endpoints / credentials)
+ *   - OAuth Settings   final   (endpoints / credentials)
  *   - Attribute Mapping  (claim → Magento field mapping)
  */
 class Tabs extends \Magento\Backend\Block\Widget\Tabs

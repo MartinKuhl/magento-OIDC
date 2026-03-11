@@ -17,7 +17,7 @@ use MiniOrange\OAuth\Helper\OAuthConstants;
 
 /**
  * Observer for customer logout events. Handles RP-Initiated Logout
- * by redirecting to the IdP's end_session_endpoint with id_token_hint
+ * by redirecting to the IdP's end_final session_endpoint with id_token_hint
  * and post_logout_redirect_uri parameters.
  *
  * Supports Authelia fallback: If the endpoint path ends with /logout
@@ -32,7 +32,7 @@ use MiniOrange\OAuth\Helper\OAuthConstants;
 class OAuthLogoutObserver implements ObserverInterface
 {
     /** Logout-guard cookie name — must match CustomerLoginAutoRedirectObserver */
-    private const LOGOUT_GUARD_COOKIE = 'oidc_logout_guard';
+    private const string LOGOUT_GUARD_COOKIE = 'oidc_logout_guard';
 
     /** @var \MiniOrange\OAuth\Helper\OAuthUtility */
     private readonly \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
@@ -86,6 +86,8 @@ class OAuthLogoutObserver implements ObserverInterface
      *  4. Build logout URL (Authelia-style or standard OIDC).
      *  5. Set oidc_logout_guard cookie so auto-redirect is suppressed on return.
      *  6. Clear id_token from session and redirect.
+     *
+     * @param Observer $observer
      */
     #[\Override]
     public function execute(Observer $observer): void
@@ -183,6 +185,10 @@ class OAuthLogoutObserver implements ObserverInterface
      * Authelia:       /logout?rd=<url>
      *
      * Detection: If the endpoint path ends with /logout → Authelia-style.
+     *
+     * @param string $endSessionEndpoint
+     * @param string $idTokenHint
+     * @param string $postLogoutRedirectUri
      */
     private function buildLogoutUrl(
         string $endSessionEndpoint,
@@ -191,7 +197,8 @@ class OAuthLogoutObserver implements ObserverInterface
     ): string {
         $endpoint   = rtrim($endSessionEndpoint, '/');
         // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
-        $parsedPath = parse_url($endpoint, PHP_URL_PATH) ?? '';
+        $parsedPathRaw = parse_url($endpoint, PHP_URL_PATH);
+        $parsedPath    = ($parsedPathRaw !== false && $parsedPathRaw !== null) ? $parsedPathRaw : '';
 
         // Authelia detection: path ends with /logout
         if (str_ends_with($parsedPath, '/logout')) {
@@ -225,6 +232,8 @@ class OAuthLogoutObserver implements ObserverInterface
      * Priority:
      *  1) provider.post_logout_url (DB column, if set)
      *  2) Customer login page URL (programmatically resolved)
+     *
+     * @param array|null $provider
      */
     private function resolvePostLogoutRedirectUri(?array $provider): string
     {
@@ -238,7 +247,8 @@ class OAuthLogoutObserver implements ObserverInterface
             $loginUrl = $this->url->getUrl('customer/account/login');
             // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
             $parsed   = parse_url($loginUrl);
-            if (isset($parsed['scheme']) && ($parsed['scheme'] !== '' && $parsed['scheme'] !== '0') && !empty($parsed['host'])) {
+            $hasScheme = isset($parsed['scheme']) && $parsed['scheme'] !== '' && $parsed['scheme'] !== '0';
+            if ($hasScheme && !empty($parsed['host'])) {
                 $path = rtrim($parsed['path'] ?? '', '/') . '/';
                 return $parsed['scheme'] . '://' . $parsed['host'] . $path;
             }

@@ -7,7 +7,7 @@ namespace MiniOrange\OAuth\Model\ResourceModel;
 use Magento\Framework\Model\ResourceModel\Db\AbstractDb;
 
 /**
- * Resource model for the miniorange_oauth_user_provider mapping table.
+ * Resource model forfinal  the miniorange_oauth_user_provider mapping table.
  * Provides helpers for saving and retrieving the OIDC provider that created a user.
  */
 class UserProvider extends AbstractDb
@@ -27,13 +27,17 @@ class UserProvider extends AbstractDb
      * Uses INSERT ON DUPLICATE KEY UPDATE so that re-created users get
      * their provider_id refreshed without violating the UNIQUE constraint.
      *
-     * @param string $userType  'customer' or 'admin'
-     * @param int    $userId    Magento entity_id / user_id
+     * @param string $userType   'customer' or 'admin'
+     * @param int    $userId     Magento entity_id / user_id
      * @param int    $providerId miniorange_oauth_client_apps.id
      */
     public function saveMapping(string $userType, int $userId, int $providerId): void
     {
-        $this->getConnection()->insertOnDuplicate(
+        $connection = $this->getConnection();
+        if ($connection === false) {
+            return;
+        }
+        $connection->insertOnDuplicate(
             $this->getMainTable(),
             [
                 'user_type'   => $userType,

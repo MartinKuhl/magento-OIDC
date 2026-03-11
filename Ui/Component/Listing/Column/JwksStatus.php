@@ -15,13 +15,14 @@ use Magento\Ui\Component\Listing\Columns\Column;
 class JwksStatus extends Column
 {
     /**
-     * Constructor.
+     * Override to inject dependencies for OIDC JWKS status column rendering.
      *
      * @param ContextInterface   $context
      * @param UiComponentFactory $uiComponentFactory
      * @param array              $components
      * @param array              $data
      */
+    // phpcs:ignore Generic.CodeAnalysis.UselessOverridingMethod
     public function __construct(
         ContextInterface $context,
         UiComponentFactory $uiComponentFactory,
@@ -51,6 +52,8 @@ class JwksStatus extends Column
     }
 
     /**
+     * Render an HTML badge indicating whether the JWKS endpoint is configured.
+     *
      * @param string $jwksUri configured JWKS endpoint or empty string
      * @return string HTML badge
      */

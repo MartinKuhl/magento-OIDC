@@ -14,10 +14,10 @@ use Magento\Framework\Setup\SchemaSetupInterface;
  */
 class AddProfileSyncColumns implements SchemaPatchInterface
 {
-    private const TABLE = 'miniorange_oauth_client_apps';
+    private const string TABLE = 'miniorange_oauth_client_apps';
 
     /** New boolean columns (tinyint, default 0) */
-    private const NEW_COLUMNS = [
+    private const array NEW_COLUMNS = [
         'sync_customer_profile_on_sso' => 'Sync customer name/DOB/gender on every SSO login',
         'sync_customer_address_on_sso' => 'Sync customer billing/shipping address on every SSO login',
         'sync_customer_group_on_sso'   => 'Re-evaluate customer group mapping on every SSO login',
@@ -25,21 +25,35 @@ class AddProfileSyncColumns implements SchemaPatchInterface
         'sync_admin_role_on_sso'       => 'Re-evaluate admin role mapping on every SSO login',
     ];
 
+    /**
+     * Constructor.
+     *
+     * @param SchemaSetupInterface $schemaSetup
+     */
     public function __construct(
         private readonly SchemaSetupInterface $schemaSetup
     ) {
     }
 
+    /**
+     * @inheritdoc
+     */
     public static function getDependencies(): array
     {
         return [];
     }
 
+    /**
+     * @inheritdoc
+     */
     public function getAliases(): array
     {
         return [];
     }
 
+    /**
+     * Add profile sync columns and migrate legacy flag.
+     */
     public function apply(): self
     {
         $this->schemaSetup->startSetup();

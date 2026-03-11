@@ -103,8 +103,14 @@ class AdminUserCreator
      * @param  int    $providerId OIDC provider ID (0 = not tracked)
      * @return \Magento\User\Model\User|null
      */
-    private function saveAdminUser(string $userName, string $email, $firstName, $lastName, int $roleId, int $providerId = 0)
-    {
+    private function saveAdminUser(
+        string $userName,
+        string $email,
+        $firstName,
+        $lastName,
+        int $roleId,
+        int $providerId = 0
+    ) {
         // Generate a 32-char password and shuffle to avoid predictable character-class ordering (SEC-12).
         $randomPassword = str_shuffle(
             $this->randomUtility->getRandomString(28)

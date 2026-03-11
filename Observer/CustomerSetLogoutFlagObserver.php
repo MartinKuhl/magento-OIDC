@@ -14,7 +14,7 @@ use Magento\Framework\Event\ObserverInterface;
  */
 class CustomerSetLogoutFlagObserver implements ObserverInterface
 {
-    private const LOGOUT_FLAG_KEY = 'oidc_customer_just_logged_out';
+    private const string LOGOUT_FLAG_KEY = 'oidc_customer_just_logged_out';
 
     /**
      * Constructor.
@@ -28,6 +28,8 @@ class CustomerSetLogoutFlagObserver implements ObserverInterface
 
     /**
      * Set the logout flag in the customer session.
+     *
+     * @param Observer $observer
      */
     #[\Override]
     public function execute(Observer $observer): void

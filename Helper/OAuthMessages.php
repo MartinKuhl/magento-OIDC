@@ -90,7 +90,9 @@ class OAuthMessages
     {
         $message = constant("self::" . $message);
         foreach ($data as $key => $value) {
-            $message = str_replace("{{" . $key . "}}", $value, $message);
+            $strValue = is_array($value) ? implode('', $value) : (string) $value;
+            $replaced = str_replace("{{" . $key . "}}", $strValue, (string) $message);
+            $message = $replaced;
         }
         return (string) $message;
     }

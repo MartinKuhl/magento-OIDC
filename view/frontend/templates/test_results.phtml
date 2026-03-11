@@ -108,7 +108,8 @@
 
         $pkceLabel = match ($pkceFlow) {
             'S256'  => '<span style="color:#3c763d;font-weight:bold;">&#10003; S256 (recommended)</span>',
-            'plain' => '<span style="color:#8a6d3b;font-weight:bold;">&#9888; plain (legacy — no interception protection)</span>',
+            'plain' => '<span style="color:#8a6d3b;font-weight:bold;">'
+                . '&#9888; plain (legacy — no interception protection)</span>',
             default => '<span style="color:#999;">&#8212; disabled</span>',
         };
 

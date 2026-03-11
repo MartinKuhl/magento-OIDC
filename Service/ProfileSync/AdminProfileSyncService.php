@@ -18,6 +18,14 @@ use MiniOrange\OAuth\Helper\OAuthUtility;
  */
 class AdminProfileSyncService
 {
+    /**
+     * Constructor.
+     *
+     * @param UserFactory            $userFactory
+     * @param UserResource           $userResource
+     * @param RoleCollectionFactory  $roleCollectionFactory
+     * @param OAuthUtility           $oauthUtility
+     */
     public function __construct(
         private readonly UserFactory $userFactory,
         private readonly UserResource $userResource,
@@ -178,6 +186,9 @@ class AdminProfileSyncService
 
     /**
      * Load admin user by email. Returns null if not found.
+     *
+     * @param string $email Admin email address
+     * @return \Magento\User\Model\User|null
      */
     private function loadAdminByEmail(string $email): ?\Magento\User\Model\User
     {
@@ -188,6 +199,11 @@ class AdminProfileSyncService
 
     /**
      * Extract a single value from flattened or raw attributes.
+     *
+     * @param string $key  Attribute key to look up
+     * @param array  $flat Flattened OIDC attributes
+     * @param array  $raw  Raw (nested) OIDC attributes
+     * @return string|null
      */
     private function extract(string $key, array $flat, array $raw): ?string
     {
@@ -204,6 +220,9 @@ class AdminProfileSyncService
     /**
      * Extract groups array from OIDC claims.
      *
+     * @param string $key  Attribute key for groups claim
+     * @param array  $flat Flattened OIDC attributes
+     * @param array  $raw  Raw (nested) OIDC attributes
      * @return string[]
      */
     private function extractGroups(string $key, array $flat, array $raw): array
@@ -220,6 +239,10 @@ class AdminProfileSyncService
 
     /**
      * Assign a role by its name (fallback for default role).
+     *
+     * @param \Magento\User\Model\User $user     Admin user to assign role to
+     * @param string                   $roleName Role name to look up and assign
+     * @return void
      */
     private function assignRoleByName(\Magento\User\Model\User $user, string $roleName): void
     {

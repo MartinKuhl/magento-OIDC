@@ -18,7 +18,8 @@ $inBody    = (bool)(int) $val('values_in_body', 0);
 ?>
 <div class="admin__fieldset-wrapper">
     <div class="admin__fieldset-wrapper-title" style="margin-bottom:12px;">
-        <span class="admin__fieldset-wrapper-title-text" style="font-size:15px; font-weight:700; color:#1a1a1a; letter-spacing:0.2px;">
+        <span class="admin__fieldset-wrapper-title-text"
+              style="font-size:15px; font-weight:700; color:#1a1a1a; letter-spacing:0.2px;">
             <?= $escaper->escapeHtml(__('OAuth / OIDC Configuration')) ?>
         </span>
         <p class="admin__field-note" style="font-style:italic; margin-top:8px;">
@@ -328,9 +329,11 @@ $inBody    = (bool)(int) $val('values_in_body', 0);
                         </option>
                     </select>
                     <small class="admin__field-note">
-                        <?= $escaper->escapeHtml(
-                            __('PKCE (Proof Key for Code Exchange) adds an extra security layer to the authorization code flow. S256 is recommended; plain is only for legacy IdPs that do not support S256.')
-                        ) ?>
+                        <?= $escaper->escapeHtml(__(
+                            'PKCE (Proof Key for Code Exchange) adds an extra security layer'
+                            . ' to the authorization code flow.'
+                            . ' S256 is recommended; plain is only for legacy IdPs that do not support S256.'
+                        )) ?>
                     </small>
                 </td>
             </tr>

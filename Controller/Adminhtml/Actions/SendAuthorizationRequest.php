@@ -140,9 +140,9 @@ class SendAuthorizationRequest extends BaseAction
                 (int) $clientDetails['id'],
                 ['pkce_code_verifier' => $codeVerifier]
             );
-            // phpcs:ignore Generic.Files.LineLength.TooLong
             $this->oauthUtility->customlog(
-                "SendAuthorizationRequest (admin): PKCE {$pkceFlow} enabled — challenge generated, verifier persisted to DB"
+                "SendAuthorizationRequest (admin): PKCE {$pkceFlow} enabled"
+                . " — challenge generated, verifier persisted to DB"
             );
         }
 

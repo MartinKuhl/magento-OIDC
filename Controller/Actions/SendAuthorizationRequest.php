@@ -7,7 +7,7 @@ use MiniOrange\OAuth\Helper\OAuthConstants;
 use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
 
 /**
- * Handles generation and sending of AuthnRequest to the IDP
+ * Handles generation and sending of AuthnRequest to the final IDP
  * for authentication. AuthnRequest is generated and user is
  * redirected to the IDP for authentication.
  *

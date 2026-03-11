@@ -38,7 +38,7 @@ class HealthCheck extends Action implements HttpGetActionInterface
      * ACL resource required to call this endpoint.
      * Maps to MiniOrange_OAuth::oauth_settings in etc/acl.xml.
      */
-    public const ADMIN_RESOURCE = 'MiniOrange_OAuth::oauth_settings';
+    public const string ADMIN_RESOURCE = 'MiniOrange_OAuth::oauth_settings';
 
     /** @var OAuthUtility */
     private readonly OAuthUtility $oauthUtility;

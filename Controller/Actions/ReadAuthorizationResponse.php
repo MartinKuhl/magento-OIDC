@@ -41,22 +41,26 @@ class ReadAuthorizationResponse extends BaseAction
     /** @var \MiniOrange\OAuth\Controller\Actions\CheckAttributeMappingAction */
     private readonly \MiniOrange\OAuth\Controller\Actions\CheckAttributeMappingAction $attrMappingAction;
 
+    /** @var \Magento\Framework\Stdlib\CookieManagerInterface */
     private readonly \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager;
-    private readonly \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory;
 
+    /** @var \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory */
+    private readonly \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory;
 
     /**
      * Initialize read authorization response action.
      *
-     * @param Context                                           $context
-     * @param OAuthUtility                                      $oauthUtility
-     * @param \Magento\Framework\UrlInterface                   $url
-     * @param \Magento\Customer\Model\Session                   $customerSession
-     * @param OAuthSecurityHelper                               $securityHelper
-     * @param JwtVerifier                                       $jwtVerifier
-     * @param Curl                                              $curl
-     * @param OidcAuthenticationService                         $oidcAuthService
-     * @param CheckAttributeMappingAction                       $attrMappingAction
+     * @param Context $context
+     * @param OAuthUtility $oauthUtility
+     * @param \Magento\Framework\UrlInterface $url
+     * @param \Magento\Customer\Model\Session $customerSession
+     * @param OAuthSecurityHelper $securityHelper
+     * @param JwtVerifier $jwtVerifier
+     * @param Curl $curl
+     * @param OidcAuthenticationService $oidcAuthService
+     * @param CheckAttributeMappingAction $attrMappingAction
+     * @param \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager
+     * @param \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory
      */
     public function __construct(
         Context $context,
@@ -314,65 +318,17 @@ class ReadAuthorizationResponse extends BaseAction
                 } elseif (isset($accessTokenResponseData['id_token'])) {
                     $idToken = $accessTokenResponseData['id_token'];
                     if (!empty($idToken)) {
-                        $jwksEndpoint = $clientDetails['jwks_uri'] ?? '';
-                        if (!empty($jwksEndpoint)) {
-                            // Resolve expected issuer from stored discovery document data
-                            $expectedIssuer = $clientDetails['issuer'] ?? null;
-                            if (empty($expectedIssuer)) {
-                                // Fallback: derive issuer from well-known URL
-                                $wellKnownUrl = $clientDetails['well_known_config_url'] ?? '';
-                                if (!empty($wellKnownUrl)) {
-                                    $expectedIssuer = preg_replace(
-                                        '#/\.well-known/openid-configuration$#i',
-                                        '',
-                                        (string) $wellKnownUrl
-                                    );
-                                }
-                            }
-                            $userInfoResponseData = $this->jwtVerifier->verifyAndDecode(
-                                $idToken,
-                                $jwksEndpoint,
-                                $expectedIssuer,
-                                $clientID
-                            );
-                            if ($userInfoResponseData === null) {
-                                $this->oauthUtility->customlog("ERROR: JWT signature verification failed");
-                                $encodedError = base64_encode(
-                                    'ID token verification failed. Please contact the administrator.'
-                                );
-                                // Test mode: show error on showTestResults instead of admin login
-                                if (strpos((string) $relayState, 'showTestResults') !== false) {
-                                    $errorUrl = rtrim((string) $relayState, '/') . '?oidc_error=' . urlencode($encodedError);
-                                    return $this->_redirect($errorUrl);
-                                }
-                                $query = ['_query' => ['oidc_error' => $encodedError]];
-                                if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
-                                    $loginUrl = $this->_url->getUrl('admin', $query);
-                                } else {
-                                    $loginUrl = $this->_url->getUrl('customer/account/login', $query);
-                                }
-                                return $this->_redirect($loginUrl);
-                            }
-                        } else {
-                            // SECURITY: Refuse unverified JWTs — JWKS endpoint is required
-                            $this->oauthUtility->customlog("ERROR: Cannot verify id_token - no JWKS endpoint configured.");
-                            $encodedError = base64_encode(
-                                'OIDC configuration error: JWKS endpoint is required for id_token verification.'
-                                . ' Please configure it in the OAuth settings.'
-                            );
-                            // Test mode: show error on showTestResults instead of admin login
-                            if (strpos((string) $relayState, 'showTestResults') !== false) {
-                                $errorUrl = rtrim((string) $relayState, '/') . '?oidc_error=' . urlencode($encodedError);
-                                return $this->_redirect($errorUrl);
-                            }
-                            $query = ['_query' => ['oidc_error' => $encodedError]];
-                            if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
-                                $loginUrl = $this->_url->getUrl('admin', $query);
-                            } else {
-                                $loginUrl = $this->_url->getUrl('customer/account/login', $query);
-                            }
-                            return $this->_redirect($loginUrl);
+                        $idTokenResult = $this->resolveUserInfoFromIdToken(
+                            $idToken,
+                            $clientDetails,
+                            $clientID,
+                            $relayState,
+                            $loginType
+                        );
+                        if ($idTokenResult instanceof \Magento\Framework\Controller\ResultInterface) {
+                            return $idTokenResult;
                         }
+                        $userInfoResponseData = $idTokenResult;
                     }
                 }
 
@@ -404,23 +360,7 @@ class ReadAuthorizationResponse extends BaseAction
                     // Extract test key from relayState (e.g. /key/abc123...)
                     preg_match('/key\/([a-f0-9]{32,})/', (string) $relayState, $matches);
                     $testKey = $matches[1] ?? '';
-                    if ($testKey !== '' && $testKey !== '0') {
-                        $testResults = $this->customerSession->getData('mooauth_test_results') ?: [];
-                        // Filter out large token data to prevent session bloat
-                        $filteredData = $userInfoResponseData;
-                        if (is_array($filteredData)) {
-                            $excludeKeys = ['access_token', 'refresh_token', 'id_token', 'token'];
-                            foreach ($excludeKeys as $exKey) {
-                                unset($filteredData[$exKey]);
-                            }
-                        }
-                        $testResults[$testKey] = $filteredData;
-                        // Only keep the latest 3 test results
-                        if (count($testResults) > 3) {
-                            $testResults = array_slice($testResults, -3, 3, true);
-                        }
-                        $this->customerSession->setData('mooauth_test_results', $testResults);
-                    }
+                    $this->storeTestResultInSession($testKey, $userInfoResponseData);
 
                     // MP-04: Append provider_id as URL parameter to the relayState URL.
                     // Session-based approach removed — sessions are unreliable across
@@ -506,5 +446,120 @@ class ReadAuthorizationResponse extends BaseAction
         $resultRedirect = $this->resultFactory->create(\Magento\Framework\Controller\ResultFactory::TYPE_REDIRECT);
         $resultRedirect->setPath($this->oauthUtility->getCallBackUrl());
         return $resultRedirect;
+    }
+
+    /**
+     * Store OIDC test result data in the customer session under the given key.
+     *
+     * Filters out large token values to prevent session bloat.
+     * Keeps only the 3 most recent test results.
+     *
+     * @param  string $testKey          Hex key extracted from relayState
+     * @param  mixed  $userInfoResponse Raw user info response data
+     */
+    private function storeTestResultInSession(string $testKey, $userInfoResponse): void
+    {
+        if ($testKey === '' || $testKey === '0') {
+            return;
+        }
+        $testResults = $this->customerSession->getData('mooauth_test_results') ?: [];
+        // Filter out large token data to prevent session bloat
+        $filteredData = $userInfoResponse;
+        if (is_array($filteredData)) {
+            $excludeKeys = ['access_token', 'refresh_token', 'id_token', 'token'];
+            foreach ($excludeKeys as $exKey) {
+                unset($filteredData[$exKey]);
+            }
+        }
+        $testResults[$testKey] = $filteredData;
+        // Only keep the latest 3 test results
+        if (count($testResults) > 3) {
+            $testResults = array_slice($testResults, -3, 3, true);
+        }
+        $this->customerSession->setData('mooauth_test_results', $testResults);
+    }
+
+    /**
+     * Verify and decode an OIDC id_token using the configured JWKS endpoint.
+     *
+     * Returns the decoded claims array on success, a redirect ResultInterface on
+     * verification failure, or null when no JWKS endpoint is configured.
+     *
+     * @param  string $idToken       Raw JWT id_token from the token endpoint
+     * @param  array  $clientDetails Provider configuration row
+     * @param  string $clientID      OAuth client identifier
+     * @param  string $relayState    Relay state URL for test-mode error redirect
+     * @param  string $loginType     Login type (admin|customer) for error routing
+     * @return array|\Magento\Framework\App\ResponseInterface
+     */
+    private function resolveUserInfoFromIdToken(
+        string $idToken,
+        array $clientDetails,
+        string $clientID,
+        string $relayState,
+        string $loginType
+    ) {
+        $jwksEndpoint = $clientDetails['jwks_uri'] ?? '';
+        if (!empty($jwksEndpoint)) {
+            // Resolve expected issuer from stored discovery document data
+            $expectedIssuer = $clientDetails['issuer'] ?? null;
+            if (empty($expectedIssuer)) {
+                // Fallback: derive issuer from well-known URL
+                $wellKnownUrl = $clientDetails['well_known_config_url'] ?? '';
+                if (!empty($wellKnownUrl)) {
+                    $expectedIssuer = preg_replace(
+                        '#/\.well-known/openid-configuration$#i',
+                        '',
+                        (string) $wellKnownUrl
+                    );
+                }
+            }
+            $decoded = $this->jwtVerifier->verifyAndDecode(
+                $idToken,
+                $jwksEndpoint,
+                $expectedIssuer,
+                $clientID
+            );
+            if ($decoded === null) {
+                $this->oauthUtility->customlog("ERROR: JWT signature verification failed");
+                $encodedError = base64_encode(
+                    'ID token verification failed. Please contact the administrator.'
+                );
+                if (strpos($relayState, 'showTestResults') !== false) {
+                    $errorUrl = rtrim($relayState, '/') . '?oidc_error='
+                        . urlencode($encodedError);
+                    return $this->_redirect($errorUrl);
+                }
+                $query = ['_query' => ['oidc_error' => $encodedError]];
+                if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
+                    $loginUrl = $this->_url->getUrl('admin', $query);
+                } else {
+                    $loginUrl = $this->_url->getUrl('customer/account/login', $query);
+                }
+                return $this->_redirect($loginUrl);
+            }
+            return $decoded;
+        }
+
+        // SECURITY: Refuse unverified JWTs — JWKS endpoint is required
+        $this->oauthUtility->customlog(
+            "ERROR: Cannot verify id_token - no JWKS endpoint configured."
+        );
+        $encodedError = base64_encode(
+            'OIDC configuration error: JWKS endpoint is required for id_token verification.'
+            . ' Please configure it in the OAuth settings.'
+        );
+        if (strpos($relayState, 'showTestResults') !== false) {
+            $errorUrl = rtrim($relayState, '/') . '?oidc_error='
+                . urlencode($encodedError);
+            return $this->_redirect($errorUrl);
+        }
+        $query = ['_query' => ['oidc_error' => $encodedError]];
+        if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
+            $loginUrl = $this->_url->getUrl('admin', $query);
+        } else {
+            $loginUrl = $this->_url->getUrl('customer/account/login', $query);
+        }
+        return $this->_redirect($loginUrl);
     }
 }

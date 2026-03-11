@@ -4,7 +4,7 @@ namespace MiniOrange\OAuth\Logger;
 use Monolog\Logger;
 
 /**
- * Custom log handler for MiniOrange OAuth Plugin
+ * Custom log handler for Minifinal Orange OAuth Plugin
  * Writes logs to var/log/mo_oauth.log
  */
 class Handler extends \Magento\Framework\Logger\Handler\Base

@@ -12,19 +12,33 @@ use MiniOrange\OAuth\Helper\OAuthConstants;
  *
  * All provider-specific values are read exclusively from the
  * miniorange_oauth_client_apps table — no core_config_data fallback.
+ *
+ * @psalm-suppress DeprecatedClass
  */
 class Debug extends Template
 {
-    /** @var \MiniOrange\OAuth\Helper\OAuthUtility */
+    /**
+     * @psalm-suppress PropertyNotSetInConstructor
+     * @var \MiniOrange\OAuth\Helper\OAuthUtility
+     */
     protected \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
 
-    /** @var \Magento\Framework\App\Filesystem\DirectoryList */
+    /**
+     * @psalm-suppress PropertyNotSetInConstructor
+     * @var \Magento\Framework\App\Filesystem\DirectoryList
+     */
     protected \Magento\Framework\App\Filesystem\DirectoryList $directoryList;
 
-    /** @var \Magento\Framework\Filesystem\Driver\File|null */
+    /**
+     * @psalm-suppress PropertyNotSetInConstructor
+     * @var \Magento\Framework\Filesystem\Driver\File|null
+     */
     protected ?\Magento\Framework\Filesystem\Driver\File $fileDriver;
 
-    /** @var \Magento\Framework\HTTP\Client\Curl|null */
+    /**
+     * @psalm-suppress PropertyNotSetInConstructor
+     * @var \Magento\Framework\HTTP\Client\Curl|null
+     */
     protected ?\Magento\Framework\HTTP\Client\Curl $curlClient;
 
     /**
@@ -108,8 +122,9 @@ class Debug extends Template
     }
 
     /**
-     * Get OIDC Configuration — reads all provider-specific values
-     * directly from the app table, no core_config_data access.
+     * Get OIDC Configuration from provider app table (no core_config_data access).
+     *
+     * @return array<string, mixed>
      */
     public function getOidcConfiguration(): array
     {
@@ -152,7 +167,7 @@ class Debug extends Template
             $customerSession = $objectManager->get(\Magento\Customer\Model\Session::class);
 
             $response = $customerSession->getData('mo_oauth_debug_response');
-            if ($response) {
+            if ($response !== null && $response !== false) {
                 return json_decode((string) $response, true);
             }
         } catch (\Exception $e) {
@@ -171,12 +186,16 @@ class Debug extends Template
         $entries = [];
 
         try {
-            if ($this->fileDriver->isExists($logFile)) {
+            if ($this->fileDriver instanceof \Magento\Framework\Filesystem\Driver\File
+                && $this->fileDriver->isExists($logFile)
+            ) {
                 $contents = $this->fileDriver->fileGetContents($logFile);
                 $lines = preg_split('/\r\n|\n|\r/', $contents);
-                $recentLines = array_slice($lines, -50);
-                foreach ($recentLines as $line) {
-                    $entries[] = trim((string) $line);
+                if ($lines !== false) {
+                    $recentLines = array_slice($lines, -50);
+                    foreach ($recentLines as $line) {
+                        $entries[] = trim((string) $line);
+                    }
                 }
             }
         } catch (\Exception $e) {
@@ -187,8 +206,9 @@ class Debug extends Template
     }
 
     /**
-     * Test Authelia Connection — reads endpoints directly from the
-     * provider record, no core_config_data access.
+     * Test Authelia Connection — reads endpoints directly from the provider record, no core_config_data access.
+     *
+     * @return array<string, mixed>
      */
     public function testAutheliaConnection(): array
     {
@@ -196,17 +216,17 @@ class Debug extends Template
         $results = [];
 
         $authEndpoint = $clientDetails['authorize_endpoint'] ?? null;
-        if ($authEndpoint) {
+        if ($authEndpoint !== null && $authEndpoint !== '') {
             $results['Authorization Endpoint'] = $this->testUrl($authEndpoint);
         }
 
         $tokenEndpoint = $clientDetails['access_token_endpoint'] ?? null;
-        if ($tokenEndpoint) {
+        if ($tokenEndpoint !== null && $tokenEndpoint !== '') {
             $results['Token Endpoint'] = $this->testUrl($tokenEndpoint);
         }
 
         $userInfoEndpoint = $clientDetails['user_info_endpoint'] ?? null;
-        if ($userInfoEndpoint) {
+        if ($userInfoEndpoint !== null && $userInfoEndpoint !== '') {
             $results['UserInfo Endpoint'] = $this->testUrl($userInfoEndpoint);
         }
 
@@ -226,29 +246,31 @@ class Debug extends Template
         $httpCode = null;
 
         try {
-            /** @psalm-suppress InvalidArgument */
-            $curl->setOption(CURLOPT_NOBODY, true);
-            /** @psalm-suppress InvalidArgument */
-            $curl->setOption(CURLOPT_TIMEOUT, 5);
-            /** @psalm-suppress InvalidArgument */
-            $curl->setOption(CURLOPT_SSL_VERIFYPEER, true);
-            /** @psalm-suppress InvalidArgument */
-            $curl->setOption(CURLOPT_SSL_VERIFYHOST, 2);
+            if ($curl instanceof \Magento\Framework\HTTP\Client\Curl) {
+                /** @psalm-suppress InvalidArgument */
+                $curl->setOption(CURLOPT_NOBODY, true);
+                /** @psalm-suppress InvalidArgument */
+                $curl->setOption(CURLOPT_TIMEOUT, 5);
+                /** @psalm-suppress InvalidArgument */
+                $curl->setOption(CURLOPT_SSL_VERIFYPEER, true);
+                /** @psalm-suppress InvalidArgument */
+                $curl->setOption(CURLOPT_SSL_VERIFYHOST, 2);
 
-            $startTime = microtime(true);
-            $curl->get($url);
-            $endTime = microtime(true);
+                $startTime = microtime(true);
+                $curl->get($url);
+                $endTime = microtime(true);
 
-            $httpCode = $curl->getStatus();
-            $responseTime = round(((float) $endTime - (float) $startTime) * 1000.0, 2);
+                $httpCode = $curl->getStatus();
+                $responseTime = round(($endTime - $startTime) * 1000.0, 2);
+            }
         } catch (\Exception $e) {
             $error = $e->getMessage();
         }
 
         return [
-            'status' => $httpCode ?: 'Error',
-            'reachable' => !empty($httpCode),
-            'response_time' => $responseTime !== null ? (string)$responseTime . ' ms' : null,
+            'status' => $httpCode !== null ? $httpCode : 'Error',
+            'reachable' => $httpCode !== null,
+            'response_time' => $responseTime !== null ? number_format($responseTime, 2) . ' ms' : null,
             'error' => $error
         ];
     }

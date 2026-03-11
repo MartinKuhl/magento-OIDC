@@ -13,7 +13,7 @@ use Magento\Framework\Stdlib\CookieManagerInterface;
 use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
 
 /**
- * Check and process OAuth/OIDC attribute mapping
+ * Check and process OAuth/OIDC attribute mapfinal ping
  *
  * This controller handles attribute mapping after successful authentication.
  * Admin users are redirected to a separate login endpoint that runs in the
@@ -163,9 +163,14 @@ class CheckAttributeMappingAction extends BaseAction
      *
      * Called at the start of execute() after setActiveProviderId() has been
      * set on oauthUtility. Ensures mappings come from the correct provider row.
+     *
+     * @var bool
      */
     private bool $attributesInitialized = false;
 
+    /**
+     * Initialize attribute mappings from active provider configuration.
+     */
     private function initAttributeMappings(): void
     {
         if ($this->attributesInitialized) {
@@ -188,7 +193,6 @@ class CheckAttributeMappingAction extends BaseAction
         $this->groupName = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_GROUP)
             ?: 'groups';
     }
-
 
     /**
      * Execute attribute mapping and route users accordingly
@@ -219,7 +223,7 @@ class CheckAttributeMappingAction extends BaseAction
 
         // Only execute admin logic and redirect when NOT in test mode:
         $this->oauthUtility->customlog(
-            "=== CheckAttributeMappingAction: Processing authentication for: " . $userEmail
+            "=== CheckAttributeMappingAction: Processing authentication for: " . ($userEmail ?? '')
         );
 
         // Use explicit loginType for routing decision instead of just checking admin_user table
@@ -246,6 +250,9 @@ class CheckAttributeMappingAction extends BaseAction
 
         if ($isAdminLoginIntent) {
             // User initiated login from admin page - verify they have admin account
+            if ($userEmail === null) {
+                return $this->resultRedirectFactory->create()->setPath('customer/account/login');
+            }
             $hasAdminAccount = $this->adminUserCreator->isAdminUser($userEmail);
             $hasAccountMsg = "Admin login intent detected. Has admin account: ";
             $hasAccountMsg .= ($hasAdminAccount ? 'YES' : 'NO');
@@ -291,8 +298,8 @@ class CheckAttributeMappingAction extends BaseAction
                     $mappedLog = sprintf(
                         'Mapped attributes - userName: %s, firstName: %s, lastName: %s',
                         $adminUserName,
-                        $adminFirstName,
-                        $adminLastName
+                        $adminFirstName ?? '',
+                        $adminLastName ?? ''
                     );
                     $this->oauthUtility->customlog($mappedLog);
 
@@ -358,10 +365,10 @@ class CheckAttributeMappingAction extends BaseAction
         }
 
         // Customer login flow (either explicit customer intent or default)
-        $this->oauthUtility->customlog("Routing to customer login flow for: " . $userEmail);
+        $this->oauthUtility->customlog("Routing to customer login flow for: " . ($userEmail ?? ''));
 
         try {
-            return $this->moOAuthCheckMapping($attrs, $flattenedAttrs, $userEmail);
+            return $this->moOAuthCheckMapping($attrs, $flattenedAttrs, $userEmail ?? '');
         } catch (MissingAttributesException $e) {
             $this->oauthUtility->customlog("ERROR: Missing attributes - " . $e->getMessage());
             $this->messageManager->addErrorMessage(
@@ -480,7 +487,7 @@ class CheckAttributeMappingAction extends BaseAction
     {
         if (!isset($attrs[$this->usernameAttribute])) {
             $attrs[$this->usernameAttribute] = $this->userEmail;
-            $this->oauthUtility->customlog("Username not provided, using email: " . $this->userEmail);
+            $this->oauthUtility->customlog("Username not provided, using email: " . ($this->userEmail ?? ''));
         }
     }
 
@@ -496,7 +503,7 @@ class CheckAttributeMappingAction extends BaseAction
         if (!isset($attrs[$this->emailAttribute])) {
             $attrs[$this->emailAttribute] = $this->userEmail;
             $this->oauthUtility->customlog(
-                "Email attribute not mapped, using userEmail: " . $this->userEmail
+                "Email attribute not mapped, using userEmail: " . ($this->userEmail ?? '')
             );
         }
     }
@@ -648,6 +655,9 @@ class CheckAttributeMappingAction extends BaseAction
      */
     private function evaluateAccessControlRules(array $claims): ?string
     {
+        if ($this->accessControlRules === null) {
+            return null;
+        }
         foreach ($this->accessControlRules as $rule) {
             if (!is_array($rule)) {
                 continue;

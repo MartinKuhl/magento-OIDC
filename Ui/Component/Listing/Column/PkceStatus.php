@@ -15,13 +15,14 @@ use Magento\Ui\Component\Listing\Columns\Column;
 class PkceStatus extends Column
 {
     /**
-     * Constructor.
+     * Override to inject dependencies for OIDC PKCE status column rendering.
      *
      * @param ContextInterface   $context
      * @param UiComponentFactory $uiComponentFactory
      * @param array              $components
      * @param array              $data
      */
+    // phpcs:ignore Generic.CodeAnalysis.UselessOverridingMethod
     public function __construct(
         ContextInterface $context,
         UiComponentFactory $uiComponentFactory,
@@ -51,6 +52,8 @@ class PkceStatus extends Column
     }
 
     /**
+     * Render an HTML badge for the given PKCE flow value.
+     *
      * @param string $pkceFlow 'S256' | 'plain' | ''
      * @return string HTML-Badge (kein User-Input — sicher ohne escaping)
      */

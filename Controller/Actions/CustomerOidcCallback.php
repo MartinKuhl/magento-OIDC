@@ -6,7 +6,7 @@
  * validation. Mirrors the admin Oidccallback pattern for proper
  * session persistence.
  *
- * @package MiniOrange\OAuth\Controller\Actions
+ * @package MiniOrange\OAuth\Controller\Actiofinal ns
  */
 namespace MiniOrange\OAuth\Controller\Actions;
 

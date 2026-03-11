@@ -22,10 +22,13 @@ use MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps as AppResourc
  * When `id` is absent or 0 the form opens in "Add new provider" mode.
  * When `id` is present the provider is loaded and stored in the Core Registry
  * so Block\Adminhtml\Provider\Edit and its tab children can pre-populate fields.
+ *
+ * @psalm-suppress DeprecatedClass
+ * @psalm-suppress PropertyNotSetInConstructor
  */
 class Edit extends Action implements HttpGetActionInterface
 {
-    public const ADMIN_RESOURCE = 'MiniOrange_OAuth::oauth_settings';
+    public const string ADMIN_RESOURCE = 'MiniOrange_OAuth::oauth_settings';
 
     /** @var PageFactory */
     private readonly PageFactory $pageFactory;
@@ -67,6 +70,7 @@ class Edit extends Action implements HttpGetActionInterface
     public function execute(): Page|Redirect
     {
         $providerId = (int) $this->getRequest()->getParam('id', 0);
+        $model = null;
 
         if ($providerId > 0) {
             $model = $this->clientAppsFactory->create();

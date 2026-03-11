@@ -18,22 +18,55 @@ use Magento\Framework\Api\SearchCriteriaBuilder;
 
 /**
  * Attribute Mapping tab — OIDC claim to Magento field mapping.
+ *
+ * @psalm-suppress DeprecatedClass
  */
 class AttributeMapping extends Template implements TabInterface
 {
     /** @var string */
     protected $_template = 'MiniOrange_OAuth::provider/tab/attrsettings.phtml';
 
+    /**
+     * @psalm-suppress PropertyNotSetInConstructor
+     * @var Registry
+     */
     private readonly Registry $registry;
+
+    /**
+     * @psalm-suppress PropertyNotSetInConstructor
+     * @var RoleCollectionFactory
+     */
     private readonly RoleCollectionFactory $roleCollectionFactory;
+
+    /**
+     * @psalm-suppress PropertyNotSetInConstructor
+     * @var OAuthUtility
+     */
     private readonly OAuthUtility $oauthUtility;
 
-    /** @var GroupRepositoryInterface */
+    /**
+     * @psalm-suppress PropertyNotSetInConstructor
+     * @var GroupRepositoryInterface
+     */
     private readonly GroupRepositoryInterface $groupRepository;
 
-    /** @var SearchCriteriaBuilder */
+    /**
+     * @psalm-suppress PropertyNotSetInConstructor
+     * @var SearchCriteriaBuilder
+     */
     private readonly SearchCriteriaBuilder $searchCriteriaBuilder;
 
+    /**
+     * Constructor.
+     *
+     * @param Context                  $context
+     * @param Registry                 $registry
+     * @param RoleCollectionFactory    $roleCollectionFactory
+     * @param OAuthUtility             $oauthUtility
+     * @param GroupRepositoryInterface $groupRepository
+     * @param SearchCriteriaBuilder    $searchCriteriaBuilder
+     * @param array                    $data
+     */
     public function __construct(
         Context $context,
         Registry $registry,
@@ -51,6 +84,11 @@ class AttributeMapping extends Template implements TabInterface
         parent::__construct($context, $data);
     }
 
+    /**
+     * Return current provider data array from registry.
+     *
+     * @return array<string, mixed>
+     */
     public function getProviderData(): array
     {
         $provider = $this->registry->registry('current_oidc_provider');
@@ -61,6 +99,8 @@ class AttributeMapping extends Template implements TabInterface
     }
 
     /**
+     * Return all admin roles as value/label pairs.
+     *
      * @return array<int, array{value: string, label: string}>
      */
     public function getAllRoles(): array
@@ -87,7 +127,7 @@ class AttributeMapping extends Template implements TabInterface
         foreach ($this->groupRepository->getList($searchCriteria)->getItems() as $group) {
             $groups[] = [
                 'value' => (string) $group->getId(),
-                'label' => (string) $group->getCode(),
+                'label' => $group->getCode(),
             ];
         }
 
@@ -95,6 +135,8 @@ class AttributeMapping extends Template implements TabInterface
     }
 
     /**
+     * Return OIDC claim names for autocomplete suggestions in the attribute mapping form.
+     *
      * @return string[]
      */
     public function getOidcClaims(): array
@@ -115,28 +157,36 @@ class AttributeMapping extends Template implements TabInterface
         return OAuthConstants::OIDC_STANDARD_CLAIMS;
     }
 
-    /** @inheritDoc */
+    /**
+     * Return the tab label.
+     */
     #[\Override]
     public function getTabLabel(): Phrase|string
     {
         return __('Attribute Mapping');
     }
 
-    /** @inheritDoc */
+    /**
+     * Return the tab title.
+     */
     #[\Override]
     public function getTabTitle(): Phrase|string
     {
         return __('Attribute Mapping');
     }
 
-    /** @inheritDoc */
+    /**
+     * Determine whether this tab can be shown.
+     */
     #[\Override]
     public function canShowTab(): bool
     {
         return true;
     }
 
-    /** @inheritDoc */
+    /**
+     * Determine whether this tab is hidden.
+     */
     #[\Override]
     public function isHidden(): bool
     {

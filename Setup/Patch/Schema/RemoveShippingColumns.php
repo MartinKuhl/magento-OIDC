@@ -7,11 +7,14 @@ namespace MiniOrange\OAuth\Setup\Patch\Schema;
 use Magento\Framework\Setup\Patch\SchemaPatchInterface;
 use Magento\Framework\Setup\SchemaSetupInterface;
 
+/**
+ * Removes obsolete shipping address attribute columns from miniorange_oauth_client_apps.
+ */
 class RemoveShippingColumns implements SchemaPatchInterface
 {
-    private const TABLE = 'miniorange_oauth_client_apps';
+    private const string TABLE = 'miniorange_oauth_client_apps';
 
-    private const DROP_COLUMNS = [
+    private const array DROP_COLUMNS = [
         'shipping_address_attribute',
         'shipping_zip_attribute',
         'shipping_city_attribute',
@@ -20,21 +23,35 @@ class RemoveShippingColumns implements SchemaPatchInterface
         'oauth_am_sameasbilling',
     ];
 
+    /**
+     * Constructor.
+     *
+     * @param SchemaSetupInterface $schemaSetup
+     */
     public function __construct(
         private readonly SchemaSetupInterface $schemaSetup
     ) {
     }
 
+    /**
+     * @inheritdoc
+     */
     public static function getDependencies(): array
     {
         return [AddProfileSyncColumns::class];
     }
 
+    /**
+     * @inheritdoc
+     */
     public function getAliases(): array
     {
         return [];
     }
 
+    /**
+     * Drop legacy shipping attribute columns.
+     */
     public function apply(): self
     {
         $this->schemaSetup->startSetup();

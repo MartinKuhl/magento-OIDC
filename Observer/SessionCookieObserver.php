@@ -11,7 +11,7 @@ use MiniOrange\OAuth\Helper\SessionHelper;
 /**
  * Observer for session cookie adjustment.
  *
- * Called before the HTTP response is sent to ensure the session cookie
+ * Called before final the HTTP response is sent to ensure the session cookie
  * carries the correct SameSite attribute for cross-origin OIDC redirects.
  * Scoped to /mooauth/ routes only to avoid overhead on non-OIDC pages.
  */

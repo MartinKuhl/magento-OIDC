@@ -44,8 +44,10 @@ class OidcInfoPlugin
     }
 
     /**
-     * After the Customer View tab is rendered, append an OIDC Provider row
-     * to the Personal Information table.
+     * After the Customer View tab is rendered, append an OIDC Provider row to the Personal Information table.
+     *
+     * @param View   $subject
+     * @param string $result
      */
     public function afterToHtml(View $subject, string $result): string
     {

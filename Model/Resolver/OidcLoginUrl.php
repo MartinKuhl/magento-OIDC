@@ -15,7 +15,7 @@ use MiniOrange\OAuth\Helper\OAuthUtility;
  * GraphQL resolver: oidcLoginUrl (FEAT-08).
  *
  * Returns the SP-initiated login URL for the requested OIDC provider.
- * When no provider_id is supplied the first active customer-facing provider
+ * When no provider_id is supplifinal ed the first active customer-facing provider
  * is used as a sensible default (Hyva / headless single-IdP deployments).
  *
  * Schema:

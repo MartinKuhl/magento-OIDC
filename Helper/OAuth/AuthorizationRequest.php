@@ -67,10 +67,10 @@ class AuthorizationRequest
      * @param string      $authorizeURL
      * @param string      $responseType
      * @param string      $redirectURL
-     * @param string      $relayState    The pre-validated, encoded state string (SEC-09)
-     * @param array       $params        Extra OAuth parameters (nonce, prompt, …)
+     * @param string      $relayState          The pre-validated, encoded state string (SEC-09)
+     * @param array       $params              Extra OAuth parameters (nonce, prompt, …)
      * @param string|null $codeChallenge       PKCE code_challenge (FEAT-01); null disables PKCE
-     * @param string|null $codeChallengeMethod  PKCE method ('S256' or 'plain'); null when disabled
+     * @param string|null $codeChallengeMethod PKCE method ('S256' or 'plain'); null when disabled
      */
     public function __construct(
         $clientID,

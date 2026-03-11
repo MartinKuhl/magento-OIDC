@@ -5,7 +5,7 @@
  * Bypasses CAPTCHA validation for OIDC-authenticated customers.
  * Mirrors admin OidcCaptchaBypassPlugin for frontend customer login.
  *
- * @package MiniOrange\OAuth\Plugin\Captcha
+ * @pacfinal kage MiniOrange\OAuth\Plugin\Captcha
  */
 namespace MiniOrange\OAuth\Plugin\Captcha;
 

@@ -101,7 +101,9 @@ class ShowTestResults extends Action
         $testResults = $this->customerSession->getData('mooauth_test_results');
         $attrs      = (is_array($testResults) && isset($testResults[$key])) ? $testResults[$key] : null;
         $this->setAttrs($attrs);
-        $this->setUserEmail($attrs['email'] ?? null);
+        if ($attrs !== null) {
+            $this->setUserEmail($attrs['email'] ?? null);
+        }
         $this->setGreetingName($attrs);
 
         // Store received OIDC claims per-provider for dropdown selection in Attribute Mapping
@@ -227,6 +229,7 @@ class ShowTestResults extends Action
         $escaper = $this->escaper;
         extract($vars); // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
         ob_start();    // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
+        /** @psalm-suppress UnresolvableInclude */
         include $this->templatePath; // phpcs:ignore Magento2.Security.IncludeFile.FoundIncludeFile
         return (string) ob_get_clean();
     }
@@ -324,6 +327,7 @@ class ShowTestResults extends Action
             return $keys;
         }
 
+        $nestedChunks = [];
         foreach ($attrs as $key => $value) {
             // Skip numeric array indices (e.g., groups: ["admin", "user"] → 0, 1)
             if (is_int($key)) {
@@ -334,10 +338,14 @@ class ShowTestResults extends Action
 
             if (is_array($value) && !$this->isIndexedArray($value)) {
                 // Nested associative object: only add dotted sub-keys, NOT the parent key
-                $keys = array_merge($keys, $this->extractClaimKeys($value, $fullKey));
+                $nestedChunks[] = $this->extractClaimKeys($value, $fullKey);
             } else {
                 $keys[] = $fullKey;
             }
+        }
+
+        if ($nestedChunks !== []) {
+            $keys = array_merge($keys, ...$nestedChunks);
         }
 
         return $keys;
@@ -345,6 +353,8 @@ class ShowTestResults extends Action
 
     /**
      * Check if array is numerically indexed (list) vs associative (object).
+     *
+     * @param array $arr
      */
     private function isIndexedArray(array $arr): bool
     {

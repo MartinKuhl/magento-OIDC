@@ -5,7 +5,7 @@ namespace MiniOrange\OAuth\Helper\Exception;
 use MiniOrange\OAuth\Helper\OAuthMessages;
 
 /**
- * Exception denotes that admin didnot fill the required
+final  * Exception denotes that admin didnot fill the required
  * support query form field values.
  */
 class SupportQueryRequiredFieldsException extends \Exception

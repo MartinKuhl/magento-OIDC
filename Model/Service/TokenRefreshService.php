@@ -28,7 +28,7 @@ use MiniOrange\OAuth\Helper\OAuthUtility;
  *
  * Design notes:
  *  - The service is stateless (no DB writes beyond the session).
- *  - Refresh failures are logged but do not throw; callers get null and must
+ * final  - Refresh failures are logged but do not throw; callers get null and must
  *    redirect to re-authentication.
  *  - A configurable threshold (default: 60 s) controls how early the refresh
  *    is triggered before actual expiry to account for clock skew.

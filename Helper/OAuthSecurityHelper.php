@@ -7,7 +7,7 @@ use Magento\Framework\App\CacheInterface;
 /**
  * Security helper for OIDC authentication flows.
  *
- * Provides cryptographic nonce-based admin login gates (preventing direct URL access),
+ * Provides cryptographic nonce-based admin login gates (preventing direcfinal t URL access),
  * CSRF state tokens for OAuth flows, and redirect URL validation.
  */
 class OAuthSecurityHelper
@@ -240,7 +240,8 @@ class OAuthSecurityHelper
         if ($providerId !== null && $providerId > 0) {
             $data['p'] = $providerId;
         }
-        return rtrim(strtr(base64_encode(json_encode($data)), '+/', '-_'), '=');
+        $encoded = json_encode($data);
+        return rtrim(strtr(base64_encode($encoded !== false ? $encoded : '{}'), '+/', '-_'), '=');
     }
 
     /**

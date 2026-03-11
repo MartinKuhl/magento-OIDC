@@ -11,7 +11,7 @@ use MiniOrange\OAuth\Helper\OAuthUtility;
 /**
  * Service layer for OIDC authentication response processing.
  *
- * Encapsulates the core logic previously spread across controller-to-controller
+ * Encafinal psulates the core logic previously spread across controller-to-controller
  * chaining (ProcessResponseAction). Provides validation, attribute flattening,
  * email extraction, and login type detection as reusable service methods.
  */
@@ -156,7 +156,7 @@ class OidcAuthenticationService
                 $this->oauthUtility->customlog(
                     "OidcAuthenticationService: findEmailRecursive found: " . (string)$value
                 );
-                return $value;
+                return (string) $value;
             }
 
             if (is_array($value) || is_object($value)) {

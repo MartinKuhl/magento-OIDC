@@ -81,7 +81,7 @@ class OidcIdentityVerificationPlugin
             }
 
             // Validate user has assigned role
-            if (!$subject->hasAssigned2Role($subject->getId())) {
+            if (empty($subject->hasAssigned2Role($subject->getId()))) {
                 $this->oauthUtility->customlog(
                     "OIDC Identity Bypass: User has no role: " . $subject->getUserName()
                 );

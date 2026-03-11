@@ -37,5 +37,8 @@
         <!-- Magento Magic Methods (getId, setEmail, etc.) sind Framework-Level -->
         <UndefinedMagicMethod errorLevel="suppress" />
 
+        <!-- Magento modules need extensible classes — do not require final -->
+        <ClassMustBeFinal errorLevel="suppress" />
+
     </issueHandlers>
 </psalm>

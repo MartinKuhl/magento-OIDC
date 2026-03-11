@@ -25,8 +25,8 @@ use MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps\CollectionFac
  */
 class AdminLoginAutoRedirectObserver implements ObserverInterface
 {
-    private const SESSION_GUARD_KEY = 'oidc_admin_redirect_attempted';
-    private const LOGOUT_COOKIE_NAME = 'oidc_admin_just_logged_out';
+    private const string SESSION_GUARD_KEY = 'oidc_admin_redirect_attempted';
+    private const string LOGOUT_COOKIE_NAME = 'oidc_admin_just_logged_out';
 
     /**
      * Constructor.
@@ -50,6 +50,8 @@ class AdminLoginAutoRedirectObserver implements ObserverInterface
 
     /**
      * Redirect to OIDC authorize URL when auto-redirect is enabled.
+     *
+     * @param Observer $observer
      */
     #[\Override]
     public function execute(Observer $observer): void

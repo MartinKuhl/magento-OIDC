@@ -36,14 +36,38 @@ use Magento\Backend\App\Area\FrontNameResolver;
 
 class OidcLogoutPlugin
 {
+    /** @var CookieManagerInterface */
     protected CookieManagerInterface $cookieManager;
+
+    /** @var CookieMetadataFactory */
     protected CookieMetadataFactory $cookieMetadataFactory;
+
+    /** @var OAuthUtility */
     protected OAuthUtility $oauthUtility;
+
+    /** @var AuthSession */
     protected AuthSession $authSession;
+
+    /** @var BackendUrlInterface */
     protected BackendUrlInterface $backendUrl;
+
+    /** @var ResponseInterface */
     protected ResponseInterface $response;
+
+    /** @var FrontNameResolver */
     private readonly FrontNameResolver $frontNameResolver;
 
+    /**
+     * Initialize OIDC logout plugin.
+     *
+     * @param CookieManagerInterface $cookieManager
+     * @param CookieMetadataFactory  $cookieMetadataFactory
+     * @param OAuthUtility           $oauthUtility
+     * @param AuthSession            $authSession
+     * @param BackendUrlInterface    $backendUrl
+     * @param ResponseInterface      $response
+     * @param FrontNameResolver      $frontNameResolver
+     */
     public function __construct(
         CookieManagerInterface $cookieManager,
         CookieMetadataFactory $cookieMetadataFactory,
@@ -63,8 +87,10 @@ class OidcLogoutPlugin
     }
 
     /**
-     * Around admin logout: read session data first, then execute logout,
-     * then redirect to IdP end_session_endpoint.
+     * Around admin logout: read session data first, then execute logout, then redirect to IdP end_session_endpoint.
+     *
+     * @param Auth     $subject The Auth model being intercepted
+     * @param callable $proceed The original logout callable
      */
     public function aroundLogout(Auth $subject, callable $proceed): void
     {
@@ -172,7 +198,7 @@ class OidcLogoutPlugin
             'OidcLogoutPlugin: Redirecting to IdP — mode=%s, endpoint=%s, redirect=%s',
             $isForwardAuthLogout ? 'forward-auth(rd)' : 'oidc-rp-logout',
             $endSessionEndpoint,
-            $postLogoutUri ?: '(none)'
+            $postLogoutUri !== '' ? $postLogoutUri : '(none)'
         ));
 
         // ── 7. Redirect to IdP ──
@@ -192,6 +218,8 @@ class OidcLogoutPlugin
      * IMPORTANT: Do NOT use getUrl('adminhtml/auth/login') here — it generates
      * a URL with a dynamic key/-token that cannot be registered as a
      * post_logout_redirect_uri or rd value in Authelia.
+     *
+     * @param array|null $provider Provider data array or null
      */
     private function resolvePostLogoutRedirectUri(?array $provider): string
     {
@@ -223,6 +251,8 @@ class OidcLogoutPlugin
      * Heuristik: Pfad endet auf /logout, enthält aber kein /oauth2/ oder /oidc/.
      * Damit wird zwischen Authelia-Forward-Auth und echtem OIDC end_session_endpoint
      * unterschieden.
+     *
+     * @param string $endpoint The end session endpoint URL to check
      */
     private function isAutheliaForwardAuthLogout(string $endpoint): bool
     {

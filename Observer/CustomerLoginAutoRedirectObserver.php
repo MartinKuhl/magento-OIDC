@@ -16,7 +16,7 @@ use MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps\CollectionFac
 
 /**
  * Redirects unauthenticated customers to the IdP authorize URL
- * when auto-redirect is enabled and exactly one provider is configured.
+ * when auto-redirect is enabled and exacfinal tly one provider is configured.
  *
  * Guards (in order of evaluation):
  *  1. Cookie-Guard  – oidc_logout_guard cookie set by OAuthLogoutObserver;
@@ -29,13 +29,13 @@ use MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps\CollectionFac
 class CustomerLoginAutoRedirectObserver implements ObserverInterface
 {
     /** Session key set before redirecting to IdP (loop guard) */
-    private const SESSION_GUARD_KEY = 'oidc_customer_redirect_attempted';
+    private const string SESSION_GUARD_KEY = 'oidc_customer_redirect_attempted';
 
     /**
      * Cookie name – must match OAuthLogoutObserver::LOGOUT_GUARD_COOKIE.
      * Set by OAuthLogoutObserver before the RP-Initiated Logout redirect.
      */
-    private const LOGOUT_GUARD_COOKIE = 'oidc_logout_guard';
+    private const string LOGOUT_GUARD_COOKIE = 'oidc_logout_guard';
 
     /**
      * @param CollectionFactory      $providerCollectionFactory
@@ -57,6 +57,8 @@ class CustomerLoginAutoRedirectObserver implements ObserverInterface
 
     /**
      * Evaluate guards and – if all pass – redirect to IdP authorize URL.
+     *
+     * @param Observer $observer
      */
     #[\Override]
     public function execute(Observer $observer): void
@@ -132,8 +134,9 @@ class CustomerLoginAutoRedirectObserver implements ObserverInterface
                 ->setSecure(true);
 
             $this->cookieManager->deleteCookie(self::LOGOUT_GUARD_COOKIE, $metadata);
-        } catch (\Exception) {
-            // Non-critical: if deletion fails the cookie expires naturally (300 s)
+        // phpcs:ignore Magento2.CodeAnalysis.EmptyBlock.DetectedCatch
+        } catch (\Exception $e) {
+            // Intentionally empty: cookie deletion failure is non-critical; it expires naturally (300 s)
         }
     }
 }

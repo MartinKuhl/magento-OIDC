@@ -128,9 +128,14 @@ class ProcessUserAction
      * Note: DOB, Gender, Phone and Address mappings are handled exclusively
      * by CustomerUserCreator::initializeAttributeMapping() and are therefore
      * not loaded here.
+     *
+     * @var bool
      */
     private bool $attributesInitialized = false;
 
+    /**
+     * Initialize attribute mappings from active provider configuration.
+     */
     private function initAttributeMappings(): void
     {
         if ($this->attributesInitialized) {
@@ -230,7 +235,7 @@ class ProcessUserAction
          */
         $store = $this->storeManager->getStore();
         $store_url = $store->getBaseUrl(\Magento\Framework\UrlInterface::URL_TYPE_WEB);
-        $store_url = rtrim((string) $store_url, '/\\');
+        $store_url = rtrim($store_url, '/\\');
 
         // SEC-09: Validate relay state by comparing parsed hosts — str_contains allows open-redirect bypass
         // (e.g. https://evil.com?q=real-store.com would have passed str_contains).
@@ -243,7 +248,7 @@ class ProcessUserAction
                 $this->attrs['relayState'] = $store_url;
                 $this->oauthUtility->customlog(
                     "SEC-09: relayState host mismatch ('"
-                    . $relayHost . "' != '" . $storeHost . "'), reset to store URL."
+                    . ($relayHost ?? '') . "' != '" . ($storeHost ?? '') . "'), reset to store URL."
                 );
             }
         }
@@ -259,13 +264,16 @@ class ProcessUserAction
         if ($this->oauthUtility->getSessionData('guest_checkout')) {
             $this->oauthUtility->setSessionData('guest_checkout', null);
             $target = rtrim($this->oauthUtility->getBaseUrl(), '/') . '/checkout';
+            /** @psalm-suppress ArgumentTypeCoercion */
             return $this->customerLoginAction->setUser($user)->setRelayState($target)->execute();
         }
 
         if (!empty($relayState)) {
+            /** @psalm-suppress ArgumentTypeCoercion */
             return $this->customerLoginAction->setUser($user)->setRelayState($relayState)->execute();
         }
 
+        /** @psalm-suppress ArgumentTypeCoercion */
         return $this->customerLoginAction->setUser($user)->setRelayState('/')->execute();
     }
 

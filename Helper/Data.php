@@ -221,7 +221,8 @@ class Data extends AbstractHelper
         $collection->addFieldToFilter('app_name', $appName);
         $data = $collection->getSize() > 0 ? $collection->getFirstItem()->getData() : null;
 
-        if ($data !== null && isset($data['client_secret']) && !empty($data['client_secret']) && preg_match('/^\d+:\d+:/', (string) $data['client_secret'])) {
+        if ($data !== null && isset($data['client_secret']) && !empty($data['client_secret'])
+            && preg_match('/^\d+:\d+:/', (string) $data['client_secret'])) {
             $data['client_secret'] = $this->encryptor->decrypt($data['client_secret']);
         }
 
@@ -277,6 +278,7 @@ class Data extends AbstractHelper
         try {
             $model->setData('last_test_status', $status);
             $model->setData('last_test_at', date('Y-m-d H:i:s'));
+            /** @psalm-suppress ArgumentTypeCoercion */
             $this->appResource->save($model);
         } catch (\Exception $e) {
             $this->logger->error('saveTestStatus failed: ' . $e->getMessage(), ['exception' => $e]);
@@ -467,7 +469,7 @@ class Data extends AbstractHelper
     public function getCustomerStoreConfig(string $config, $id)
     {
         $model = $this->customerFactory->create();
-        $this->customerResource->load($model, $id);
+        $this->customerResource->load($model, (int) $id);
         return $model->getData($config);
     }
 
@@ -483,7 +485,7 @@ class Data extends AbstractHelper
     {
         $data  = [$url => $value];
         $model = $this->customerFactory->create();
-        $this->customerResource->load($model, $id);
+        $this->customerResource->load($model, (int) $id);
         $model->addData($data);
         $model->setId($id);
         $this->customerResource->save($model);
@@ -689,6 +691,7 @@ class Data extends AbstractHelper
      */
     protected function sanitize($value): string
     {
-        return (string) $this->escaper->escapeHtml((string) $value);
+        $escaped = $this->escaper->escapeHtml((string) $value);
+        return is_array($escaped) ? implode('', $escaped) : (string) $escaped;
     }
 }

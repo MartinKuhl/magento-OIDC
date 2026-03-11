@@ -23,7 +23,7 @@ use MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps as AppResourc
  */
 class Delete extends Action implements HttpPostActionInterface
 {
-    public const ADMIN_RESOURCE = 'MiniOrange_OAuth::oauth_settings';
+    public const string ADMIN_RESOURCE = 'MiniOrange_OAuth::oauth_settings';
 
     /** @var MiniorangeOauthClientAppsFactory */
     private readonly MiniorangeOauthClientAppsFactory $clientAppsFactory;

@@ -18,7 +18,7 @@ use Magento\Framework\App\CacheInterface;
  *
  * API:
  *   register(sub, sid, phpSessionId, ttl)  — call at login time
- *   resolve(sub, sid)                       — call in back-channel handler
+ *   resolve(sub, sid)                       —final  call in back-channel handler
  *   revoke(sub, sid)                        — call after the session is destroyed
  */
 class OidcSessionRegistry
@@ -79,7 +79,7 @@ class OidcSessionRegistry
     {
         $key  = $this->buildKey($sub, $sid);
         $data = $this->cache->load($key);
-        if ($data === false || $data === null) {
+        if ($data === false) {
             return null;
         }
         $payload = json_decode((string) $data, true);

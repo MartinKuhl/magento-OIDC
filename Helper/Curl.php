@@ -7,7 +7,7 @@ namespace MiniOrange\OAuth\Helper;
 use Magento\Framework\HTTP\Adapter\CurlFactory;
 
 /**
- * HTTP client helper for OAuth/OIDC API requests.
+ * HTTP client helper for OAuth/OIDC API requestsfinal .
  *
  * Instance methods are preferred. Static methods are kept for backward
  * compatibility but are deprecated.

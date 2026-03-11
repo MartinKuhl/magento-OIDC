@@ -50,6 +50,7 @@ class OidcCredentialAdapter implements StorageInterface
      */
     private $user;
 
+    /** @var bool */
     private bool $hasAvailableResources = false;
 
     /**
@@ -101,6 +102,7 @@ class OidcCredentialAdapter implements StorageInterface
      */
     protected function restoreDependencies(): void
     {
+        /** @psalm-suppress RedundantConditionGivenDocblockType */
         if ($this->userFactory !== null) {
             return;
         }
@@ -240,6 +242,7 @@ class OidcCredentialAdapter implements StorageInterface
     {
         $this->restoreDependencies();
 
+        /** @psalm-suppress DocblockTypeContradiction */
         if ($this->user === null) {
             return $this;
         }
@@ -346,11 +349,12 @@ class OidcCredentialAdapter implements StorageInterface
      */
     public function __call($method, $args)
     {
+        /** @psalm-suppress DocblockTypeContradiction */
         if ($this->user === null) {
-            // phpcs:ignore Generic.Files.LineLength.TooLong
-            throw new \BadMethodCallException(
-                sprintf('OidcCredentialAdapter: Cannot proxy %s() — user not loaded. Call authenticate() first.', $method)
-            );
+            throw new \BadMethodCallException(sprintf(
+                'OidcCredentialAdapter: Cannot proxy %s() — user not loaded. Call authenticate() first.',
+                $method
+            ));
         }
         // Proxy method call to user object
         // Don't check method_exists() because User model has magic methods (__call)

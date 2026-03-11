@@ -338,8 +338,8 @@ class CustomerUserCreator
     /**
      * Extract OIDC group claims from user attributes.
      *
-     * @param  array<string, mixed> $flattenedAttrs
-     * @param  array<string, mixed> $rawAttrs
+     * @param  array $flattenedAttrs Flattened OIDC attributes
+     * @param  array $rawAttrs       Raw OIDC attributes
      * @return string[]
      */
     private function extractOidcGroups(array $flattenedAttrs, array $rawAttrs): array
@@ -365,7 +365,7 @@ class CustomerUserCreator
      * Called by ProcessUserAction when update_frontend_groups_on_sso is enabled
      * and the customer already exists.
      *
-     * @param  CustomerInterface $customer      Existing Magento customer
+     * @param  CustomerInterface $customer       Existing Magento customer
      * @param  array             $flattenedAttrs Flattened OIDC attributes
      * @param  array             $rawAttrs       Raw OIDC attributes
      * @return bool true if group was changed and saved
@@ -408,7 +408,6 @@ class CustomerUserCreator
         );
         return true;
     }
-
 
     /**
      * Create customer address with mapped OIDC attributes

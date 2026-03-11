@@ -53,7 +53,7 @@ class OAuthUtility extends Data
     protected \Magento\Framework\App\Config\ReinitableConfigInterface $reinitableConfig;
 
     /**
-     * @var \MiniOrange\OAuth\Logger\Logger
+     * @var \Psr\Log\LoggerInterface
      */
     protected $_logger;
 
@@ -296,8 +296,7 @@ class OAuthUtility extends Data
     }
 
     /**
-     * Read a config value — provider-specific keys from the app table,
-     * global keys from core_config_data.
+     * Read a config value — provider-specific keys from the app table, global keys from core_config_data.
      *
      * Provider-specific keys are read EXCLUSIVELY from the
      * miniorange_oauth_client_apps table. No fallback to core_config_data.
@@ -666,7 +665,9 @@ class OAuthUtility extends Data
         }
 
         /** @psalm-suppress InvalidArrayOffset */
-        $provider = $appName === null || $appName === '' || $appName === '0' ? reset($providers) : $providers[$appName] ?? reset($providers);
+        $provider = ($appName === null || $appName === '' || $appName === '0')
+            ? reset($providers)
+            : ($providers[$appName] ?? reset($providers));
 
         return $this->getSPInitiatedUrlForProvider((int) ($provider['id'] ?? 0), $relayState);
     }
@@ -941,6 +942,11 @@ class OAuthUtility extends Data
         $connection = $this->appResource->getConnection();
         $tableName  = $this->appResource->getMainTable();
 
+        if ($connection === false) {
+            $this->customlog('saveTestStatus: failed — could not obtain database connection');
+            return;
+        }
+
         try {
             $affected = $connection->update(
                 $tableName,
@@ -976,6 +982,11 @@ class OAuthUtility extends Data
         $connection = $this->appResource->getConnection();
         $tableName  = $this->appResource->getMainTable();
 
+        if ($connection === false) {
+            $this->customlog('saveTestStatusById: failed — could not obtain database connection');
+            return;
+        }
+
         try {
             $connection->update(
                 $tableName,
@@ -1008,6 +1019,11 @@ class OAuthUtility extends Data
         $connection = $this->appResource->getConnection();
         $tableName  = $this->appResource->getMainTable();
 
+        if ($connection === false) {
+            $this->customlog('saveReceivedOidcClaims: failed — could not obtain database connection');
+            return;
+        }
+
         try {
             $connection->update(
                 $tableName,
@@ -1022,8 +1038,8 @@ class OAuthUtility extends Data
     /**
      * Update specific fields on a provider row (e.g. PKCE code_verifier).
      *
-     * @param int                  $providerId Row `id` from miniorange_oauth_client_apps
-     * @param array<string, mixed> $data       Column => value pairs to update
+     * @param int   $providerId Row `id` from miniorange_oauth_client_apps
+     * @param array $data       Column => value pairs to update
      */
     public function saveProviderData(int $providerId, array $data): void
     {
@@ -1033,6 +1049,11 @@ class OAuthUtility extends Data
 
         $connection = $this->appResource->getConnection();
         $tableName  = $this->appResource->getMainTable();
+
+        if ($connection === false) {
+            $this->customlog('saveProviderData: failed — could not obtain database connection');
+            return;
+        }
 
         try {
             $connection->update($tableName, $data, ['id = ?' => $providerId]);

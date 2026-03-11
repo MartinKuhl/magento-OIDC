@@ -6,7 +6,7 @@ use Magento\Customer\Model\Session;
 use Magento\Framework\Escaper;
 
 /**
- * Utility block for OAuth/OIDC admin templates.
+ * Utility block for OAuth/OIDCfinal  admin templates.
  *
  * Provides helper methods used by admin and frontend templates to access
  * configuration values, URLs and attribute mappings.

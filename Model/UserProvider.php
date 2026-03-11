@@ -7,7 +7,7 @@ namespace MiniOrange\OAuth\Model;
 use Magento\Framework\Model\AbstractModel;
 
 /**
- * Model for the miniorange_oauth_user_provider mapping table.
+ * Model forfinal  the miniorange_oauth_user_provider mapping table.
  * Tracks which OIDC provider created each Magento user.
  */
 class UserProvider extends AbstractModel

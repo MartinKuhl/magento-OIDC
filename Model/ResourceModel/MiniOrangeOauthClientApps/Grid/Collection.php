@@ -62,6 +62,8 @@ class Collection extends BaseCollection implements SearchResultInterface
     }
 
     /**
+     * Get aggregations.
+     *
      * @psalm-suppress InvalidNullableReturnType,NullableReturnStatement
      */
     #[\Override]
@@ -81,6 +83,8 @@ class Collection extends BaseCollection implements SearchResultInterface
     }
 
     /**
+     * Get search criteria.
+     *
      * @psalm-suppress InvalidNullableReturnType,NullableReturnStatement
      */
     #[\Override]

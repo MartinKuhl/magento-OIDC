@@ -39,7 +39,7 @@ use MiniOrange\OAuth\Model\Service\OidcSessionRegistry;
 class BackChannelLogout extends BaseAction implements HttpPostActionInterface, CsrfAwareActionInterface
 {
     /** OIDC Back-Channel Logout event URI (spec §2.4). */
-    private const LOGOUT_EVENT_URI = 'http://schemas.openid.net/event/backchannel-logout';
+    private const string LOGOUT_EVENT_URI = 'http://schemas.openid.net/event/backchannel-logout';
 
     /** @var JsonFactory */
     private readonly JsonFactory $jsonFactory;

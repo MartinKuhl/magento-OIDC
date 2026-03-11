@@ -20,6 +20,16 @@ use MiniOrange\OAuth\Helper\OAuthUtility;
  */
 class CustomerProfileSyncService
 {
+    /**
+     * Constructor.
+     *
+     * @param CustomerRepositoryInterface                              $customerRepository
+     * @param AddressInterfaceFactory                                  $addressFactory
+     * @param AddressRepositoryInterface                               $addressRepository
+     * @param CountryCollectionFactory                                 $countryCollectionFactory
+     * @param \Magento\Customer\Api\Data\RegionInterfaceFactory        $regionFactory
+     * @param OAuthUtility                                             $oauthUtility
+     */
     public function __construct(
         private readonly CustomerRepositoryInterface $customerRepository,
         private readonly AddressInterfaceFactory $addressFactory,
@@ -148,7 +158,8 @@ class CustomerProfileSyncService
             try {
                 $existingAddress = $this->addressRepository->getById((int) $defaultId);
             } catch (\Exception $e) {
-                // Address deleted externally — will create new one
+                // Address deleted externally — will create a new one
+                $this->oauthUtility->customlog('CustomerProfileSync: ' . $e->getMessage());
             }
         }
 
@@ -220,6 +231,11 @@ class CustomerProfileSyncService
 
     /**
      * Extract a value from flattened or raw OIDC attributes.
+     *
+     * @param string|null $key  Attribute key to look up
+     * @param array       $flat Flattened OIDC attributes
+     * @param array       $raw  Raw (nested) OIDC attributes
+     * @return string|null
      */
     private function extract(?string $key, array $flat, array $raw): ?string
     {
@@ -235,6 +251,9 @@ class CustomerProfileSyncService
 
     /**
      * Format various DOB string formats to Y-m-d.
+     *
+     * @param string $dob Date of birth string in any supported format
+     * @return string|null
      */
     private function formatDob(string $dob): ?string
     {
@@ -252,6 +271,9 @@ class CustomerProfileSyncService
 
     /**
      * Map gender string to Magento gender ID (1=Male, 2=Female, 3=Not specified).
+     *
+     * @param string $gender Gender string from OIDC claim
+     * @return int|null
      */
     private function mapGender(string $gender): ?int
     {
@@ -266,6 +288,9 @@ class CustomerProfileSyncService
 
     /**
      * Resolve a country name or ISO code to a Magento country_id.
+     *
+     * @param string $country Country name or ISO code from OIDC claim
+     * @return string|null
      */
     private function resolveCountryId(string $country): ?string
     {
