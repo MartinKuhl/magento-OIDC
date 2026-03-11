@@ -242,6 +242,17 @@ class ReadAuthorizationResponse extends BaseAction
                 $this->oauthUtility->customlog(
                     "ReadAuthResponse: PKCE code_verifier loaded from session — including in token request"
                 );
+            } elseif (!empty($clientDetails['pkce_code_verifier'])) {
+                // Fallback: admin flow stores verifier in DB because the admin and frontend
+                // PHP sessions are isolated. Read and immediately clear (one-time use).
+                $codeVerifier = (string) $clientDetails['pkce_code_verifier'];
+                $this->oauthUtility->saveProviderData(
+                    (int) $clientDetails['id'],
+                    ['pkce_code_verifier' => null]
+                );
+                $this->oauthUtility->customlog(
+                    "ReadAuthResponse: PKCE code_verifier loaded from DB (admin flow) — including in token request"
+                );
             }
 
             if ($header == 1 && $body == 0) {

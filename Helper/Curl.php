@@ -121,6 +121,8 @@ class Curl
 
         if ($httpCode >= 400) {
             $this->oauthUtility->customlog("Curl: HTTP error " . $httpCode . " from: " . $url);
+            $preview = mb_substr($content, 0, 500);
+            $this->oauthUtility->customlog("Curl: Error response body: " . $preview);
         }
 
         return $content;
