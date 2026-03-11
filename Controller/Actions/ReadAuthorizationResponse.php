@@ -405,7 +405,10 @@ class ReadAuthorizationResponse extends BaseAction
                         return $this->resultRedirectFactory->create()->setPath('admin');
                     }
                     $encodedError = base64_encode($errorMsg);
-                    $loginUrl = $this->_url->getUrl('customer/account/login', ['_query' => ['oidc_error' => $encodedError]]);
+                    $loginUrl = $this->_url->getUrl(
+                        'customer/account/login',
+                        ['_query' => ['oidc_error' => $encodedError]]
+                    );
                     return $this->_redirect($loginUrl);
                 }
 
@@ -414,8 +417,13 @@ class ReadAuthorizationResponse extends BaseAction
 
                 $userEmail = $this->oidcAuthService->extractEmail($flattenedResponse, $userInfoResponseData);
                 if ($userEmail === '' || $userEmail === '0') {
-                    $encodedError = base64_encode('Email address not received. Please check attribute mapping.');
-                    $loginUrl = $this->_url->getUrl('customer/account/login', ['_query' => ['oidc_error' => $encodedError]]);
+                    $encodedError = base64_encode(
+                        'Email address not received. Please check attribute mapping.'
+                    );
+                    $loginUrl = $this->_url->getUrl(
+                        'customer/account/login',
+                        ['_query' => ['oidc_error' => $encodedError]]
+                    );
                     return $this->_redirect($loginUrl);
                 }
 

@@ -10,7 +10,6 @@ use MiniOrange\OAuth\Helper\OAuthUtility;
 use MiniOrange\OAuth\Helper\OAuthMessages;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Controller\Result\RedirectFactory;
-use Magento\Framework\Message\ManagerInterface;
 use Magento\Customer\Api\CustomerRepositoryInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Customer\Api\Data\CustomerInterface;
@@ -83,9 +82,6 @@ class ProcessUserAction
     /** @var \Magento\Framework\Controller\Result\RedirectFactory */
     private readonly \Magento\Framework\Controller\Result\RedirectFactory $resultRedirectFactory;
 
-    /** @var \Magento\Framework\Message\ManagerInterface */
-    private readonly \Magento\Framework\Message\ManagerInterface $messageManager;
-
     /** @var \Magento\Customer\Api\CustomerRepositoryInterface */
     private readonly \Magento\Customer\Api\CustomerRepositoryInterface $customerRepository;
 
@@ -98,7 +94,6 @@ class ProcessUserAction
      * @param CustomerLoginAction $customerLoginAction
      * @param CustomerUserCreator $customerUserCreator
      * @param RedirectFactory $resultRedirectFactory
-     * @param ManagerInterface $messageManager
      */
     public function __construct(
         OAuthUtility $oauthUtility,
@@ -106,8 +101,7 @@ class ProcessUserAction
         StoreManagerInterface $storeManager,
         CustomerLoginAction $customerLoginAction,
         CustomerUserCreator $customerUserCreator,
-        RedirectFactory $resultRedirectFactory,
-        ManagerInterface $messageManager
+        RedirectFactory $resultRedirectFactory
     ) {
         $this->customerRepository = $customerRepository;
         $this->storeManager = $storeManager;
@@ -115,7 +109,6 @@ class ProcessUserAction
         $this->oauthUtility = $oauthUtility;
         $this->customerUserCreator = $customerUserCreator;
         $this->resultRedirectFactory = $resultRedirectFactory;
-        $this->messageManager = $messageManager;
     }
 
     /**
@@ -186,7 +179,9 @@ class ProcessUserAction
     private function handleMissingAttributes(): \Magento\Framework\Controller\Result\Redirect
     {
         $this->oauthUtility->customlog("ERROR: Missing required attributes from OAuth provider");
-        $encodedError = base64_encode('Authentication failed: Required user information not received from identity provider.');
+        $encodedError = base64_encode(
+            'Authentication failed: Required user information not received from identity provider.'
+        );
         $loginUrl = $this->oauthUtility->getCustomerLoginUrl() . '?oidc_error=' . $encodedError;
         return $this->resultRedirectFactory->create()->setUrl($loginUrl);
     }
