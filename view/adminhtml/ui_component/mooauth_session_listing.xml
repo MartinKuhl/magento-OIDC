@@ -108,6 +108,15 @@
             </settings>
         </column>
 
+        <column name="is_online"
+                class="MiniOrange\OAuth\Ui\Component\Listing\Column\OnlineStatus">
+            <settings>
+                <label translate="true">Status</label>
+                <sortable>true</sortable>
+                <bodyTmpl>ui/grid/cells/html</bodyTmpl>
+            </settings>
+        </column>
+
     </columns>
 
 </listing>

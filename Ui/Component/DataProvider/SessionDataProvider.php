@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MiniOrange\OAuth\Ui\Component\DataProvider;
 
+use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\ResourceConnection;
 use Magento\Ui\DataProvider\AbstractDataProvider;
 
@@ -17,6 +18,11 @@ use Magento\Ui\DataProvider\AbstractDataProvider;
  *   - admin_user                      (admin email + last login)
  *   - customer_log                    (customer last login)
  *
+ * The is_online field is computed via SQL EXISTS subqueries:
+ *   - Admin:    active row in admin_user_session (status = 1)
+ *   - Customer: customer_log row where last_login_at > last_logout_at and
+ *               login is within the configured cookie/session lifetime
+ *
  * Each row represents one user ↔ provider pairing, with the user's email
  * resolved from whichever Magento entity type applies.
  */
@@ -24,8 +30,14 @@ class SessionDataProvider extends AbstractDataProvider
 {
     private const int DEFAULT_PAGE_SIZE = 20;
 
+    /** Config path for the frontend session / cookie lifetime in seconds (default 3600). */
+    private const string XML_PATH_COOKIE_LIFETIME = 'web/cookie/cookie_lifetime';
+
     /** @var ResourceConnection */
     private readonly ResourceConnection $resource;
+
+    /** @var ScopeConfigInterface */
+    private readonly ScopeConfigInterface $scopeConfig;
 
     /** @var array|null Cached query result */
     private ?array $loadedData = null;
@@ -40,22 +52,25 @@ class SessionDataProvider extends AbstractDataProvider
     private array $orders = ['up.created_at' => 'DESC'];
 
     /**
-     * @param string             $name
-     * @param string             $primaryFieldName
-     * @param string             $requestFieldName
-     * @param ResourceConnection $resource
-     * @param array              $meta
-     * @param array              $data
+     * @param string               $name
+     * @param string               $primaryFieldName
+     * @param string               $requestFieldName
+     * @param ResourceConnection   $resource
+     * @param ScopeConfigInterface $scopeConfig
+     * @param array                $meta
+     * @param array                $data
      */
     public function __construct(
         string $name,
         string $primaryFieldName,
         string $requestFieldName,
         ResourceConnection $resource,
+        ScopeConfigInterface $scopeConfig,
         array $meta = [],
         array $data = []
     ) {
-        $this->resource = $resource;
+        $this->resource    = $resource;
+        $this->scopeConfig = $scopeConfig;
         parent::__construct($name, $primaryFieldName, $requestFieldName, $meta, $data);
     }
 
@@ -68,11 +83,31 @@ class SessionDataProvider extends AbstractDataProvider
             return $this->loadedData;
         }
 
-        $connection = $this->resource->getConnection();
-        $upTable    = $this->resource->getTableName('miniorange_oauth_user_provider');
-        $appsTable  = $this->resource->getTableName('miniorange_oauth_client_apps');
-        $ceTable    = $this->resource->getTableName('customer_entity');
-        $auTable    = $this->resource->getTableName('admin_user');
+        $connection        = $this->resource->getConnection();
+        $upTable           = $this->resource->getTableName('miniorange_oauth_user_provider');
+        $appsTable         = $this->resource->getTableName('miniorange_oauth_client_apps');
+        $ceTable           = $this->resource->getTableName('customer_entity');
+        $auTable           = $this->resource->getTableName('admin_user');
+        $adminSessionTable   = $this->resource->getTableName('admin_user_session');
+        $customerLogTable    = $this->resource->getTableName('customer_log');
+        // Convert session lifetime (seconds) to minutes; fall back to 60 min.
+        $cookieLifetimeSecs  = max(60, (int) $this->scopeConfig->getValue(self::XML_PATH_COOKIE_LIFETIME));
+        $sessionMinutes      = (int) ceil($cookieLifetimeSecs / 60);
+
+        $isOnlineExpr = new \Zend_Db_Expr(
+            'CASE'
+            . ' WHEN up.user_type = \'admin\' THEN'
+            . ' IF(EXISTS(SELECT 1 FROM ' . $adminSessionTable
+            . ' WHERE user_id = up.user_id AND status = 1), 1, 0)'
+            . ' WHEN up.user_type = \'customer\' THEN'
+            . ' IF(EXISTS(SELECT 1 FROM ' . $customerLogTable
+            . ' WHERE customer_id = up.user_id'
+            . ' AND last_login_at IS NOT NULL'
+            . ' AND (last_logout_at IS NULL OR last_logout_at < last_login_at)'
+            . ' AND last_login_at >= DATE_SUB(NOW(), INTERVAL ' . $sessionMinutes . ' MINUTE)), 1, 0)'
+            . ' ELSE 0'
+            . ' END'
+        );
 
         $select = $connection->select()
             ->from(['up' => $upTable], ['id', 'user_type', 'user_id', 'provider_id', 'created_at'])
@@ -95,7 +130,8 @@ class SessionDataProvider extends AbstractDataProvider
                 ['cl' => $this->resource->getTableName('customer_log')],
                 'cl.customer_id = up.user_id AND up.user_type = \'customer\'',
                 ['customer_last_login' => 'cl.last_login_at']
-            );
+            )
+            ->columns(['is_online' => $isOnlineExpr]);
 
         foreach ($this->orders as $field => $direction) {
             $select->order($field . ' ' . $direction);
@@ -156,6 +192,7 @@ class SessionDataProvider extends AbstractDataProvider
             'provider_name'    => 'provider_name',
             'user_email'       => 'user_email',
             'last_login'       => 'COALESCE(au.logdate, cl.last_login_at)',
+            'is_online'        => 'is_online',
         ];
 
         $sqlField = $columnMap[$field] ?? ('up.' . $field);
