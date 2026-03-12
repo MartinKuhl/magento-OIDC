@@ -27,6 +27,7 @@ use Magento\Backend\Model\Auth;
 use Magento\Backend\Model\Auth\Session as AuthSession;
 use Magento\Backend\Model\UrlInterface as BackendUrlInterface;
 use Magento\Framework\App\ResponseInterface;
+use Magento\Framework\HTTP\Adapter\CurlFactory;
 use Magento\Framework\HTTP\PhpEnvironment\Response as HttpResponse;
 use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
 use Magento\Framework\Stdlib\CookieManagerInterface;
@@ -57,6 +58,9 @@ class OidcLogoutPlugin
     /** @var FrontNameResolver */
     private readonly FrontNameResolver $frontNameResolver;
 
+    /** @var CurlFactory */
+    private readonly CurlFactory $curlFactory;
+
     /**
      * Initialize OIDC logout plugin.
      *
@@ -67,6 +71,7 @@ class OidcLogoutPlugin
      * @param BackendUrlInterface    $backendUrl
      * @param ResponseInterface      $response
      * @param FrontNameResolver      $frontNameResolver
+     * @param CurlFactory            $curlFactory
      */
     public function __construct(
         CookieManagerInterface $cookieManager,
@@ -75,7 +80,8 @@ class OidcLogoutPlugin
         AuthSession $authSession,
         BackendUrlInterface $backendUrl,
         ResponseInterface $response,
-        FrontNameResolver $frontNameResolver
+        FrontNameResolver $frontNameResolver,
+        CurlFactory $curlFactory
     ) {
         $this->cookieManager         = $cookieManager;
         $this->cookieMetadataFactory = $cookieMetadataFactory;
@@ -84,6 +90,7 @@ class OidcLogoutPlugin
         $this->backendUrl            = $backendUrl;
         $this->response              = $response;
         $this->frontNameResolver     = $frontNameResolver;
+        $this->curlFactory           = $curlFactory;
     }
 
     /**
@@ -95,8 +102,9 @@ class OidcLogoutPlugin
     public function aroundLogout(Auth $subject, callable $proceed): void
     {
         // ── 1. Read session data BEFORE session is destroyed ──
-        $idToken    = (string) $this->authSession->getData('oidc_id_token');
-        $providerId = (int) $this->authSession->getData('oidc_provider_id');
+        $idToken     = (string) $this->authSession->getData('oidc_id_token');
+        $accessToken = (string) $this->authSession->getData('oidc_access_token');
+        $providerId  = (int) $this->authSession->getData('oidc_provider_id');
 
         $this->oauthUtility->customlog(sprintf(
             'OidcLogoutPlugin: Pre-logout — id_token=%s, provider_id=%d',
@@ -163,6 +171,16 @@ class OidcLogoutPlugin
                 'OidcLogoutPlugin: No valid end_session_endpoint — standard admin logout.'
             );
             return;
+        }
+
+        // ── 5b. RFC 7009 token revocation (non-fatal, fire-and-forget) ──
+        if ($provider !== null && !empty($provider['revocation_endpoint']) && $accessToken !== '') {
+            $this->revokeToken(
+                (string) $provider['revocation_endpoint'],
+                $accessToken,
+                (string) ($provider['clientID'] ?? ''),
+                (string) ($provider['client_secret'] ?? '')
+            );
         }
 
         // ── 6. Build Logout URL ──
@@ -261,5 +279,48 @@ class OidcLogoutPlugin
         return str_ends_with(rtrim($path, '/'), '/logout')
             && !str_contains($path, '/oauth2/')
             && !str_contains($path, '/oidc/');
+    }
+
+    /**
+     * Call the RFC 7009 token revocation endpoint (fire-and-forget).
+     *
+     * Failure is non-fatal: we log and continue the logout flow.
+     *
+     * @param string $revocationEndpoint
+     * @param string $accessToken
+     * @param string $clientId
+     * @param string $clientSecret  May be encrypted; decrypted via OAuthUtility
+     */
+    private function revokeToken(
+        string $revocationEndpoint,
+        string $accessToken,
+        string $clientId,
+        string $clientSecret
+    ): void {
+        try {
+            $curl = $this->curlFactory->create();
+            $curl->setConfig(['timeout' => 5]);
+            $curl->write(
+                'POST',
+                $revocationEndpoint,
+                '1.1',
+                ['Content-Type: application/x-www-form-urlencoded'],
+                http_build_query([
+                    'token'           => $accessToken,
+                    'token_type_hint' => 'access_token',
+                    'client_id'       => $clientId,
+                    'client_secret'   => $this->oauthUtility->decryptSecret($clientSecret),
+                ])
+            );
+            $curl->read();
+            $curl->close();
+            $this->oauthUtility->customlog(
+                'OidcLogoutPlugin: Token revocation request sent to ' . $revocationEndpoint
+            );
+        } catch (\Exception $e) {
+            $this->oauthUtility->customlog(
+                'OidcLogoutPlugin: Token revocation failed (non-fatal): ' . $e->getMessage()
+            );
+        }
     }
 }

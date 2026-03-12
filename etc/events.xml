@@ -5,4 +5,20 @@
         <observer name="mooauth_customer_auto_redirect"
                   instance="MiniOrange\OAuth\Observer\CustomerLoginAutoRedirectObserver" />
     </event>
+
+    <!-- OIDC JIT provisioning hooks — third-party modules may observe these events.
+         All events carry a DataObject transport; set 'skip_creation' => true on
+         before-events to abort user creation and return null. -->
+    <event name="oidc_customer_before_create">
+        <!-- No built-in observers; dispatched so third-party modules can intercept. -->
+    </event>
+    <event name="oidc_customer_after_create">
+        <!-- No built-in observers; dispatched so third-party modules can react. -->
+    </event>
+    <event name="oidc_admin_user_before_create">
+        <!-- No built-in observers; dispatched so third-party modules can intercept. -->
+    </event>
+    <event name="oidc_admin_user_after_create">
+        <!-- No built-in observers; dispatched so third-party modules can react. -->
+    </event>
 </config>

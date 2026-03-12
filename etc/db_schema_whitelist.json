@@ -69,7 +69,8 @@
             "sync_admin_profile_on_sso": true,
             "sync_admin_role_on_sso": true,
             "autoredirect_admin": true,
-            "autoredirect_customer": true
+            "autoredirect_customer": true,
+            "revocation_endpoint": true
         },
         "index": {
             "MINIORANGE_OAUTH_CLIENT_APPS_IS_ACTIVE_LOGIN_TYPE_SORT_ORDER": true
@@ -92,6 +93,38 @@
         "constraint": {
             "PRIMARY": true,
             "MINIORANGE_OAUTH_USER_PROVIDER_USER_TYPE_USER_ID": true
+        }
+    },
+    "miniorange_oauth_attribute_mappings": {
+        "column": {
+            "id": true,
+            "provider_id": true,
+            "attribute_type": true,
+            "attribute_name": true,
+            "sync_on_sso": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "MOOAUTH_ATTR_MAPPING_PROVIDER_ID_ATTR_TYPE": true,
+            "MOOAUTH_ATTR_MAPPING_PROVIDER_ID_FK": true
+        }
+    },
+    "miniorange_oauth_role_mappings": {
+        "column": {
+            "id": true,
+            "provider_id": true,
+            "mapping_type": true,
+            "oidc_group": true,
+            "magento_role_id": true,
+            "sort_order": true
+        },
+        "index": {
+            "MOOAUTH_ROLE_MAPPING_PROVIDER_ID_TYPE": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "MOOAUTH_ROLE_MAPPING_PROVIDER_ID_TYPE_GROUP": true,
+            "MOOAUTH_ROLE_MAPPING_PROVIDER_ID_FK": true
         }
     }
 }

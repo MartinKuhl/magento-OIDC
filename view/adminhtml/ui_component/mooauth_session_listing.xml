@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    UI Grid component for the OIDC Session Activity list.
+    Data source: JOIN query across miniorange_oauth_user_provider,
+                 miniorange_oauth_client_apps, customer_entity, admin_user.
+    Route: mooauth/sessions/index
+    Read-only grid — no mass-actions or row-level actions.
+-->
+<listing xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
+
+    <argument name="data" xsi:type="array">
+        <item name="js_config" xsi:type="array">
+            <item name="provider" xsi:type="string">
+                mooauth_session_listing.mooauth_session_listing_data_source
+            </item>
+        </item>
+    </argument>
+
+    <settings>
+        <spinner>mooauth_session_columns</spinner>
+        <deps>
+            <dep>mooauth_session_listing.mooauth_session_listing_data_source</dep>
+        </deps>
+    </settings>
+
+    <dataSource name="mooauth_session_listing_data_source"
+                component="Magento_Ui/js/grid/provider">
+        <settings>
+            <storageConfig>
+                <param name="indexField" xsi:type="string">id</param>
+            </storageConfig>
+            <updateUrl path="mui/index/render"/>
+        </settings>
+        <aclResource>MiniOrange_OAuth::oidc_sessions</aclResource>
+        <dataProvider class="MiniOrange\OAuth\Ui\Component\DataProvider\SessionDataProvider"
+                      name="mooauth_session_listing_data_source">
+            <settings>
+                <requestFieldName>id</requestFieldName>
+                <primaryFieldName>id</primaryFieldName>
+            </settings>
+        </dataProvider>
+    </dataSource>
+
+    <listingToolbar name="listing_top">
+        <settings>
+            <sticky>true</sticky>
+        </settings>
+        <bookmark name="bookmarks"/>
+        <columnsControls name="columns_controls"/>
+        <filters name="listing_filters"/>
+        <paging name="listing_paging"/>
+    </listingToolbar>
+
+    <columns name="mooauth_session_columns">
+
+        <column name="id">
+            <settings>
+                <filter>textRange</filter>
+                <label translate="true">ID</label>
+                <sorting>desc</sorting>
+            </settings>
+        </column>
+
+        <column name="user_email">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">User Email</label>
+                <sortable>true</sortable>
+            </settings>
+        </column>
+
+        <column name="user_type">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">User Type</label>
+                <sortable>true</sortable>
+            </settings>
+        </column>
+
+        <column name="provider_name">
+            <settings>
+                <filter>text</filter>
+                <label translate="true">Provider</label>
+                <sortable>true</sortable>
+            </settings>
+        </column>
+
+        <column name="created_at"
+                class="Magento\Ui\Component\Listing\Columns\Date"
+                component="Magento_Ui/js/grid/columns/date">
+            <settings>
+                <filter>dateRange</filter>
+                <label translate="true">First SSO Login</label>
+                <dataType>date</dataType>
+                <sortable>true</sortable>
+            </settings>
+        </column>
+
+        <column name="last_login"
+                class="Magento\Ui\Component\Listing\Columns\Date"
+                component="Magento_Ui/js/grid/columns/date">
+            <settings>
+                <filter>dateRange</filter>
+                <label translate="true">Last Login</label>
+                <dataType>date</dataType>
+                <sortable>true</sortable>
+            </settings>
+        </column>
+
+    </columns>
+
+</listing>

@@ -210,8 +210,10 @@ class ProcessUserAction
                 ?? $this->oauthUtility->getStoreConfig(OAuthConstants::AUTO_CREATE_CUSTOMER);
 
             if (!$autoCreateEnabled) {
-                $this->oauthUtility->customlog("Auto Create Customer is disabled. Rejecting login.");
-                $encodedError = base64_encode(OAuthMessages::AUTO_CREATE_USER_DISABLED);
+                $this->oauthUtility->customlog("Auto Create Customer is disabled. Rejecting login for: " . $userEmail);
+                $encodedError = base64_encode(
+                    OAuthMessages::parse('CUSTOMER_AUTO_CREATE_DISABLED_FOR_EMAIL', ['email' => $userEmail])
+                );
                 $baseLoginUrl = $this->oauthUtility->getCustomerLoginUrl();
                 $sep = (strpos($baseLoginUrl, '?') !== false) ? '&' : '?';
                 $loginUrl = $baseLoginUrl . $sep . 'oidc_error=' . $encodedError;
@@ -258,16 +260,13 @@ class ProcessUserAction
         if ($this->oauthUtility->getSessionData('guest_checkout')) {
             $this->oauthUtility->setSessionData('guest_checkout', null);
             $target = rtrim($this->oauthUtility->getBaseUrl(), '/') . '/checkout';
-            /** @psalm-suppress ArgumentTypeCoercion */
             return $this->customerLoginAction->setUser($user)->setRelayState($target)->execute();
         }
 
         if (!empty($relayState)) {
-            /** @psalm-suppress ArgumentTypeCoercion */
             return $this->customerLoginAction->setUser($user)->setRelayState($relayState)->execute();
         }
 
-        /** @psalm-suppress ArgumentTypeCoercion */
         return $this->customerLoginAction->setUser($user)->setRelayState('/')->execute();
     }
 

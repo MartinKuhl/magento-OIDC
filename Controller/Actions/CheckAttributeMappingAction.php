@@ -9,6 +9,7 @@ use MiniOrange\OAuth\Helper\OAuthConstants;
 use MiniOrange\OAuth\Helper\OAuthMessages;
 use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
 use MiniOrange\OAuth\Model\Service\AdminUserCreator;
+use MiniOrange\OAuth\Model\Service\UserProvisioningService;
 use Magento\Framework\Stdlib\CookieManagerInterface;
 use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
 
@@ -106,6 +107,9 @@ class CheckAttributeMappingAction extends BaseAction
     /** @var \MiniOrange\OAuth\Model\Service\AdminUserCreator */
     protected \MiniOrange\OAuth\Model\Service\AdminUserCreator $adminUserCreator;
 
+    /** @var \MiniOrange\OAuth\Model\Service\UserProvisioningService */
+    private readonly UserProvisioningService $userProvisioningService;
+
     /** @var \Magento\Customer\Model\Session */
     protected \Magento\Customer\Model\Session $customerSession;
 
@@ -132,6 +136,7 @@ class CheckAttributeMappingAction extends BaseAction
      * @param OAuthSecurityHelper                                                 $securityHelper
      * @param CookieManagerInterface                                              $cookieManager
      * @param CookieMetadataFactory                                               $cookieMetadataFactory
+     * @param UserProvisioningService                                             $userProvisioningService
      */
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
@@ -144,7 +149,8 @@ class CheckAttributeMappingAction extends BaseAction
         \MiniOrange\OAuth\Controller\Actions\ShowTestResults $testAction,
         OAuthSecurityHelper $securityHelper,
         CookieManagerInterface $cookieManager,
-        CookieMetadataFactory $cookieMetadataFactory
+        CookieMetadataFactory $cookieMetadataFactory,
+        UserProvisioningService $userProvisioningService
     ) {
         $this->testAction = $testAction;
         $this->processUserAction = $processUserAction;
@@ -155,6 +161,7 @@ class CheckAttributeMappingAction extends BaseAction
         $this->securityHelper = $securityHelper;
         $this->cookieManager = $cookieManager;
         $this->cookieMetadataFactory = $cookieMetadataFactory;
+        $this->userProvisioningService = $userProvisioningService;
         parent::__construct($context, $oauthUtility);
     }
 
@@ -240,7 +247,7 @@ class CheckAttributeMappingAction extends BaseAction
                     "CheckAttributeMappingAction: Access denied for {$userEmail}: {$denialMessage}"
                 );
                 if ($isAdminLoginIntent) {
-                    $this->messageManager->addErrorMessage(__($denialMessage));
+                    $this->messageManager->addErrorMessage((string) __($denialMessage));
                     $adminLoginUrl = $this->backendUrl->getUrl('admin');
                     return $this->resultRedirectFactory->create()->setUrl($adminLoginUrl);
                 }
@@ -317,8 +324,8 @@ class CheckAttributeMappingAction extends BaseAction
                     $groupsJson = json_encode($userGroups);
                     $this->oauthUtility->customlog("User groups from OIDC: " . $groupsJson);
 
-                    // Create the admin user via Service
-                    $adminUser = $this->adminUserCreator->createAdminUser(
+                    // Create the admin user via UserProvisioningService (fires before/after events)
+                    $adminUser = $this->userProvisioningService->provisionAdmin(
                         $userEmail,
                         $adminUserName,
                         $adminFirstName,
@@ -348,7 +355,11 @@ class CheckAttributeMappingAction extends BaseAction
                         return $this->resultRedirectFactory->create()->setUrl($adminCallbackUrl);
                     } else {
                         $this->oauthUtility->customlog("ERROR: Failed to create admin user for: " . $userEmail);
-                        $errorMessage = 'Failed to create admin account. Please contact your administrator.';
+                        $groupList = implode(', ', array_map('strval', $userGroups));
+                        $errorMessage = OAuthMessages::parse(
+                            'ADMIN_ROLE_MAPPING_NO_MATCH',
+                            ['groups' => $groupList !== '' ? $groupList : '(none)']
+                        );
                         $adminLoginUrl = $this->backendUrl->getUrl('admin')
                             . '?oidc_error=' . base64_encode($errorMessage);
                         return $this->resultRedirectFactory->create()->setUrl($adminLoginUrl);

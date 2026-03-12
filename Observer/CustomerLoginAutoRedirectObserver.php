@@ -114,8 +114,7 @@ class CustomerLoginAutoRedirectObserver implements ObserverInterface
         /** @psalm-suppress UndefinedInterfaceMethod */
         // @phpstan-ignore-next-line
         $controller->getResponse()->setRedirect($authorizeUrl);
-        /** @psalm-suppress InvalidArgument */
-        $this->actionFlag->set('', ActionInterface::FLAG_NO_DISPATCH, true);
+        $this->actionFlag->set('', ActionInterface::FLAG_NO_DISPATCH, '1');
     }
 
     /**

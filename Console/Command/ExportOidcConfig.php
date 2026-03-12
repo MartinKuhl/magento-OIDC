@@ -11,6 +11,8 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use MiniOrange\OAuth\Helper\OAuthUtility;
+use MiniOrange\OAuth\Model\Provider\MappingRepository;
+use MiniOrange\OAuth\Model\ResourceModel\OauthRoleMapping as RoleMappingResource;
 
 /**
  * CLI command: export one or all OIDC provider configurations to JSON (FEAT-07).
@@ -45,21 +47,27 @@ class ExportOidcConfig extends Command
     /** @var State */
     private readonly State $appState;
 
+    /** @var MappingRepository */
+    private readonly MappingRepository $mappingRepository;
+
     /**
      * Initialize export command.
      *
      * @param OAuthUtility       $oauthUtility
      * @param EncryptorInterface $encryptor
      * @param State              $appState
+     * @param MappingRepository  $mappingRepository
      */
     public function __construct(
         OAuthUtility $oauthUtility,
         EncryptorInterface $encryptor,
-        State $appState
+        State $appState,
+        MappingRepository $mappingRepository
     ) {
-        $this->oauthUtility = $oauthUtility;
-        $this->encryptor    = $encryptor;
-        $this->appState     = $appState;
+        $this->oauthUtility      = $oauthUtility;
+        $this->encryptor         = $encryptor;
+        $this->appState          = $appState;
+        $this->mappingRepository = $mappingRepository;
         parent::__construct();
     }
 
@@ -146,6 +154,16 @@ class ExportOidcConfig extends Command
 
         foreach ($providers as $provider) {
             $row = $this->sanitizeProviderForExport($provider, $noEncrypt);
+            $pid = (int) ($provider['id'] ?? 0);
+            if ($pid > 0) {
+                $row['attribute_mappings'] = $this->mappingRepository->getFullAttributeMap($pid);
+                $row['role_mappings']      = [
+                    RoleMappingResource::TYPE_ADMIN_ROLE     =>
+                        $this->mappingRepository->getAdminRoleMappings($pid),
+                    RoleMappingResource::TYPE_CUSTOMER_GROUP =>
+                        $this->mappingRepository->getCustomerGroupMappings($pid),
+                ];
+            }
             $exportData['providers'][] = $row;
         }
 

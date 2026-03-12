@@ -250,7 +250,7 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
                     // that does not pass instanceof checks against the concrete User class.
                     // Use the $user we already loaded from the collection instead.
                     $this->messageManager->addSuccessMessage(
-                        __('Welcome back, %1!', $user->getFirstname() ?: $user->getUsername())
+                        (string) __('Welcome back, %1!', $user->getFirstname() ?: $user->getUsername())
                     );
                 } else {
                     $this->oauthUtility->customlog("WARNING: Login processed but isLoggedIn() returned false");

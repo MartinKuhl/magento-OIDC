@@ -138,8 +138,10 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
                                     $params['mo_oauth_accesstoken_url']  = trim($mo_oauth_accesstoken_url);
                                     $params['mo_oauth_getuserinfo_url']  = trim($mo_oauth_getuserinfo_url);
                                     $params['mo_oauth_issuer']           = trim($mo_oauth_issuer);
-                                    $params['mo_oauth_endsession_url']   = isset($obj->end_session_endpoint)
+                                    $params['mo_oauth_endsession_url']      = isset($obj->end_session_endpoint)
                                         ? trim((string) $obj->end_session_endpoint) : '';
+                                    $params['mo_oauth_revocation_endpoint'] = isset($obj->revocation_endpoint)
+                                        ? trim((string) $obj->revocation_endpoint) : '';
 
                                     $endpointRequired = array_merge(
                                         $requiredBase,
@@ -227,6 +229,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         $mo_oauth_well_known_config_url = trim((string) ($params['endpoint_url'] ?? ''));
         $mo_oauth_issuer              = trim((string) ($params['mo_oauth_issuer'] ?? ''));
         $mo_oauth_endsession_url      = trim((string) ($params['mo_oauth_endsession_url'] ?? ''));
+        $mo_oauth_revocation_endpoint = trim((string) ($params['mo_oauth_revocation_endpoint'] ?? ''));
         $send_header                  = isset($params['send_header']);
         $send_body                    = isset($params['send_body']);
 
@@ -247,6 +250,9 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
             $model->setData('well_known_config_url', $mo_oauth_well_known_config_url);
             $model->setData('issuer', $mo_oauth_issuer);
             $model->setData('endsession_endpoint', $mo_oauth_endsession_url);
+            if ($mo_oauth_revocation_endpoint !== '') {
+                $model->setData('revocation_endpoint', $mo_oauth_revocation_endpoint);
+            }
             $model->setData('values_in_header', (int) $send_header);
             $model->setData('values_in_body', (int) $send_body);
             if ($mo_oauth_client_secret !== '') {

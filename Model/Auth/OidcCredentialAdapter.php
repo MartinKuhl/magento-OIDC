@@ -30,38 +30,26 @@ class OidcCredentialAdapter implements StorageInterface
      */
     public const OIDC_TOKEN_MARKER = 'OIDC_VERIFIED_USER';
 
-    /**
-     * @var UserFactory
-     */
-    private $userFactory;
+    /** @var UserFactory|null */
+    private ?UserFactory $userFactory = null;
 
-    /**
-     * @var ManagerInterface
-     */
-    private $eventManager;
+    /** @var ManagerInterface|null */
+    private ?ManagerInterface $eventManager = null;
 
-    /**
-     * @var OAuthUtility
-     */
-    private $oauthUtility;
+    /** @var OAuthUtility|null */
+    private ?OAuthUtility $oauthUtility = null;
 
-    /**
-     * @var \Magento\User\Model\User|null
-     */
-    private $user;
+    /** @var \Magento\User\Model\User|null */
+    private ?\Magento\User\Model\User $user = null;
 
     /** @var bool */
     private bool $hasAvailableResources = false;
 
-    /**
-     * @var UserResourceModel
-     */
-    private $userResource;
+    /** @var UserResourceModel|null */
+    private ?UserResourceModel $userResource = null;
 
-    /**
-     * @var UserCollectionFactory
-     */
-    private $userCollectionFactory;
+    /** @var UserCollectionFactory|null */
+    private ?UserCollectionFactory $userCollectionFactory = null;
 
     /**
      * Initialize OIDC credential adapter.
@@ -103,7 +91,7 @@ class OidcCredentialAdapter implements StorageInterface
     protected function restoreDependencies(): void
     {
         /** @psalm-suppress RedundantConditionGivenDocblockType */
-        if ($this->userFactory !== null) {
+        if ($this->userFactory instanceof \Magento\User\Model\UserFactory) {
             return;
         }
 
@@ -122,9 +110,8 @@ class OidcCredentialAdapter implements StorageInterface
      * only when the oauthUtility dependency is available.
      *
      * @param  string $message
-     * @return void
      */
-    protected function log(string $message)
+    protected function log(string $message): void
     {
         $this->oauthUtility->customlog($message);
     }
@@ -243,7 +230,7 @@ class OidcCredentialAdapter implements StorageInterface
         $this->restoreDependencies();
 
         /** @psalm-suppress DocblockTypeContradiction */
-        if ($this->user === null) {
+        if (!$this->user instanceof \Magento\User\Model\User) {
             return $this;
         }
 
@@ -258,11 +245,9 @@ class OidcCredentialAdapter implements StorageInterface
 
     /**
      * Check if user has available resources
-     *
-     * @return bool
      */
     #[\Override]
-    public function hasAvailableResources()
+    public function hasAvailableResources(): bool
     {
         return $this->hasAvailableResources;
     }
@@ -283,10 +268,8 @@ class OidcCredentialAdapter implements StorageInterface
      * Get the authenticated user
      *
      * This method is not part of StorageInterface but may be called by Auth class.
-     *
-     * @return \Magento\User\Model\User|null
      */
-    public function getUser()
+    public function getUser(): ?\Magento\User\Model\User
     {
         return $this->user;
     }
@@ -295,12 +278,11 @@ class OidcCredentialAdapter implements StorageInterface
      * Get user ID
      *
      * This method is not part of StorageInterface but may be called by Auth class.
-     *
-     * @return int|null
      */
-    public function getId()
+    public function getId(): ?int
     {
-        return $this->user?->getId();
+        $id = $this->user?->getId();
+        return $id !== null ? (int) $id : null;
     }
 
     /**
@@ -310,7 +292,7 @@ class OidcCredentialAdapter implements StorageInterface
      */
     public function getIsActive(): bool
     {
-        if ($this->user === null) {
+        if (!$this->user instanceof \Magento\User\Model\User) {
             return false;
         }
         return (bool) $this->user->getIsActive();
@@ -325,7 +307,7 @@ class OidcCredentialAdapter implements StorageInterface
      *
      * @return array Properties to serialize
      */
-    public function __sleep()
+    public function __sleep(): array
     {
         return ['user', 'hasAvailableResources'];
     }
@@ -336,7 +318,7 @@ class OidcCredentialAdapter implements StorageInterface
      * Intentionally empty: dependencies are restored lazily by restoreDependencies().
      */
     // phpcs:ignore Magento2.CodeAnalysis.EmptyBlock.DetectedFunction
-    public function __wakeup()
+    public function __wakeup(): void
     {
         // Dependencies will be restored lazily by restoreDependencies()
         // when any method requiring them is called.
@@ -347,13 +329,12 @@ class OidcCredentialAdapter implements StorageInterface
      *
      * @param  string $method
      * @param  array  $args
-     * @return mixed
      * @throws \BadMethodCallException
      */
-    public function __call($method, $args)
+    public function __call(string $method, array $args): mixed
     {
         /** @psalm-suppress DocblockTypeContradiction */
-        if ($this->user === null) {
+        if (!$this->user instanceof \Magento\User\Model\User) {
             throw new \BadMethodCallException(sprintf(
                 'OidcCredentialAdapter: Cannot proxy %s() — user not loaded. Call authenticate() first.',
                 $method

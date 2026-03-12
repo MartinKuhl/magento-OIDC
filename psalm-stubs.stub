@@ -69,6 +69,23 @@ namespace Magento\Framework\HTTP\Adapter {
     }
 }
 
+namespace Magento\Authorization\Model\ResourceModel\Role {
+    class Collection extends \Magento\Framework\Model\ResourceModel\Db\Collection\AbstractCollection
+    {
+        public function setRolesFilter(): static
+        {
+            return $this;
+        }
+    }
+    class CollectionFactory
+    {
+        public function create(array $data = []): Collection
+        {
+            return new Collection();
+        }
+    }
+}
+
 namespace MiniOrange\OAuth\Model {
     class MiniorangeOauthClientAppsFactory
     {

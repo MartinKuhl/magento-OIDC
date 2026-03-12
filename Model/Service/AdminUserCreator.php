@@ -6,6 +6,8 @@ namespace MiniOrange\OAuth\Model\Service;
 
 use MiniOrange\OAuth\Helper\OAuthConstants;
 use MiniOrange\OAuth\Helper\OAuthUtility;
+use MiniOrange\OAuth\Model\Attribute\AttributeMapperInterface;
+use MiniOrange\OAuth\Model\Provider\MappingRepository;
 use MiniOrange\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
 use Magento\User\Model\UserFactory;
 use Magento\User\Model\ResourceModel\User\CollectionFactory as UserCollectionFactory;
@@ -34,6 +36,12 @@ class AdminUserCreator
     /** @var \MiniOrange\OAuth\Model\ResourceModel\UserProvider */
     private readonly UserProviderResource $userProviderResource;
 
+    /** @var MappingRepository */
+    private readonly MappingRepository $mappingRepository;
+
+    /** @var AttributeMapperInterface */
+    private readonly AttributeMapperInterface $adminAttributeMapper;
+
     /**
      * Initialize admin user creator.
      *
@@ -43,6 +51,8 @@ class AdminUserCreator
      * @param \Magento\User\Model\ResourceModel\User $userResource
      * @param UserCollectionFactory                  $userCollectionFactory
      * @param UserProviderResource                   $userProviderResource
+     * @param MappingRepository                      $mappingRepository
+     * @param AttributeMapperInterface               $adminAttributeMapper
      */
     public function __construct(
         UserFactory $userFactory,
@@ -50,7 +60,9 @@ class AdminUserCreator
         Random $randomUtility,
         \Magento\User\Model\ResourceModel\User $userResource,
         UserCollectionFactory $userCollectionFactory,
-        UserProviderResource $userProviderResource
+        UserProviderResource $userProviderResource,
+        MappingRepository $mappingRepository,
+        AttributeMapperInterface $adminAttributeMapper
     ) {
         $this->userFactory = $userFactory;
         $this->oauthUtility = $oauthUtility;
@@ -58,6 +70,8 @@ class AdminUserCreator
         $this->userResource = $userResource;
         $this->userCollectionFactory = $userCollectionFactory;
         $this->userProviderResource = $userProviderResource;
+        $this->mappingRepository = $mappingRepository;
+        $this->adminAttributeMapper = $adminAttributeMapper;
     }
 
     /**
@@ -78,11 +92,16 @@ class AdminUserCreator
         // Guard against IdPs returning preferred_username as an array
         $userName = is_array($userName) ? implode(' ', $userName) : (string) $userName;
 
-        // Apply name fallbacks
-        list($firstName, $lastName) = $this->applyNameFallbacks($firstName, $lastName, $email);
+        // Apply name fallbacks via strategy (Phase 3.2)
+        $nameMapped = $this->adminAttributeMapper->map(
+            ['firstname' => $firstName, 'lastname' => $lastName],
+            ['_email' => $email]
+        );
+        $firstName = (string) ($nameMapped['firstname'] ?? $firstName);
+        $lastName  = (string) ($nameMapped['lastname']  ?? $lastName);
 
         // Determine Role ID
-        $roleId = $this->getAdminRoleFromGroups($userGroups);
+        $roleId = $this->getAdminRoleFromGroups($userGroups, $providerId);
 
         if (!$roleId) {
             $this->oauthUtility->customlog("AdminUserCreator: No suitable role found for user. Creation aborted.");
@@ -97,8 +116,8 @@ class AdminUserCreator
      *
      * @param  string $userName
      * @param  string $email
-     * @param  mixed  $firstName
-     * @param  mixed  $lastName
+     * @param  string $firstName
+     * @param  string $lastName
      * @param  int    $roleId
      * @param  int    $providerId OIDC provider ID (0 = not tracked)
      * @return \Magento\User\Model\User|null
@@ -106,8 +125,8 @@ class AdminUserCreator
     private function saveAdminUser(
         string $userName,
         string $email,
-        $firstName,
-        $lastName,
+        string $firstName,
+        string $lastName,
         int $roleId,
         int $providerId = 0
     ) {
@@ -161,50 +180,38 @@ class AdminUserCreator
     }
 
     /**
-     * Apply name fallbacks from email when firstName/lastName are empty.
+     * Get admin role ID from OIDC groups using configured mappings.
      *
-     * Delegates to OAuthUtility::extractNameFromEmail() — single source of
-     * truth shared with CustomerUserCreator and the action controllers. (REF-02)
-     *
-     * @param  mixed  $firstName
-     * @param  mixed  $lastName
-     * @param  string $email
-     * @return array [firstName, lastName]
-     */
-    private function applyNameFallbacks($firstName, $lastName, string $email): array
-    {
-        if (!empty($firstName) && !empty($lastName)) {
-            return [$firstName, $lastName];
-        }
-
-        $derived = $this->oauthUtility->extractNameFromEmail($email);
-
-        if (empty($firstName)) {
-            $firstName = $derived['first'];
-            $this->oauthUtility->customlog("AdminUserCreator: firstName fallback from email: " . $firstName);
-        }
-        if (empty($lastName)) {
-            $lastName = $derived['last'] !== '' ? $derived['last'] : $firstName;
-            $this->oauthUtility->customlog("AdminUserCreator: lastName fallback from email: " . $lastName);
-        }
-
-        return [$firstName, $lastName];
-    }
-
-    /**
-     * Get admin role ID from OIDC groups using configured mappings
+     * Reads from the normalized miniorange_oauth_role_mappings table first (Phase 4).
+     * Falls back to the legacy JSON column when the new table has no data for this provider
+     * (e.g. before the migration patch runs or on providers saved through older admin UI).
      *
      * @param  array $userGroups Groups from OIDC response
+     * @param  int   $providerId OIDC provider ID (used for new table lookup)
      * @return int|null Admin role ID or null if denied
      */
-    private function getAdminRoleFromGroups(array $userGroups): ?int
+    private function getAdminRoleFromGroups(array $userGroups, int $providerId = 0): ?int
     {
-        // Get role mappings from configuration
-        $roleMappingsJson = $this->oauthUtility->getStoreConfig(OAuthConstants::ADMIN_ROLE_MAPPING);
+        // --- Phase 4 path: read from normalized table ---
         $roleMappings = [];
-        if (!$this->oauthUtility->isBlank($roleMappingsJson)) {
-            $decoded = json_decode((string) $roleMappingsJson, true);
-            $roleMappings = is_array($decoded) ? $decoded : [];
+        if ($providerId > 0) {
+            $newRows = $this->mappingRepository->getAdminRoleMappings($providerId);
+            // Normalize to legacy key names so the loop below is unchanged
+            foreach ($newRows as $row) {
+                $roleMappings[] = [
+                    'group' => $row['oidc_group'],
+                    'role'  => $row['magento_role_id'],
+                ];
+            }
+        }
+
+        // --- Fallback path: legacy JSON column ---
+        if ($roleMappings === []) {
+            $roleMappingsJson = $this->oauthUtility->getStoreConfig(OAuthConstants::ADMIN_ROLE_MAPPING);
+            if (!$this->oauthUtility->isBlank($roleMappingsJson)) {
+                $decoded = json_decode((string) $roleMappingsJson, true);
+                $roleMappings = is_array($decoded) ? $decoded : [];
+            }
         }
 
         // Use strict empty-array check instead of empty() to avoid falsy edge-cases.

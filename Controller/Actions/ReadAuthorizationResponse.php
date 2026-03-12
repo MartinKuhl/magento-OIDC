@@ -11,7 +11,9 @@ use MiniOrange\OAuth\Helper\Exception\IncorrectUserInfoDataException;
 use MiniOrange\OAuth\Helper\JwtVerifier;
 use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
 use MiniOrange\OAuth\Helper\OAuthUtility;
+use MiniOrange\OAuth\Model\Security\OidcRateLimiter;
 use MiniOrange\OAuth\Model\Service\OidcAuthenticationService;
+use MiniOrange\OAuth\Model\Service\TokenRefreshService;
 
 /**
  * @psalm-suppress ImplicitToStringCast Magento's __() returns Phrase with __toString()
@@ -38,6 +40,12 @@ class ReadAuthorizationResponse extends BaseAction
     /** @var \MiniOrange\OAuth\Model\Service\OidcAuthenticationService */
     private readonly \MiniOrange\OAuth\Model\Service\OidcAuthenticationService $oidcAuthService;
 
+    /** @var OidcRateLimiter */
+    private readonly OidcRateLimiter $rateLimiter;
+
+    /** @var TokenRefreshService */
+    private readonly TokenRefreshService $tokenRefreshService;
+
     /** @var \MiniOrange\OAuth\Controller\Actions\CheckAttributeMappingAction */
     private readonly \MiniOrange\OAuth\Controller\Actions\CheckAttributeMappingAction $attrMappingAction;
 
@@ -61,6 +69,8 @@ class ReadAuthorizationResponse extends BaseAction
      * @param CheckAttributeMappingAction $attrMappingAction
      * @param \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager
      * @param \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory
+     * @param OidcRateLimiter $rateLimiter
+     * @param TokenRefreshService $tokenRefreshService
      */
     public function __construct(
         Context $context,
@@ -74,6 +84,8 @@ class ReadAuthorizationResponse extends BaseAction
         CheckAttributeMappingAction $attrMappingAction,
         \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager,
         \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory,
+        OidcRateLimiter $rateLimiter,
+        TokenRefreshService $tokenRefreshService,
     ) {
         $this->_url = $url;
         $this->customerSession = $customerSession;
@@ -84,6 +96,8 @@ class ReadAuthorizationResponse extends BaseAction
         $this->attrMappingAction = $attrMappingAction;
         $this->cookieManager = $cookieManager;
         $this->cookieMetadataFactory = $cookieMetadataFactory;
+        $this->rateLimiter = $rateLimiter;
+        $this->tokenRefreshService = $tokenRefreshService;
         parent::__construct($context, $oauthUtility);
     }
 
@@ -102,6 +116,20 @@ class ReadAuthorizationResponse extends BaseAction
         // SameSite=None is only needed in SendAuthorizationRequest (outbound redirect to IdP).
         // Calling it here sets a stale Secure cookie that conflicts with session_regenerate_id()
         // inside setCustomerAsLoggedIn(), causing the browser to keep the old destroyed session ID.
+
+        // Rate limiting: block IPs that exceed MAX_ATTEMPTS/WINDOW_SECONDS
+        /** @var \Magento\Framework\App\Request\Http $request */
+        $request = $this->getRequest();
+        $clientIp = (string) $request->getClientIp();
+        if (!$this->rateLimiter->isAllowed($clientIp)) {
+            $this->oauthUtility->customlog(
+                "ReadAuthResponse: Rate limit exceeded for IP: " . $clientIp
+            );
+            $this->messageManager->addErrorMessage(
+                __('Too many authentication attempts. Please wait before trying again.')
+            );
+            return $this->resultRedirectFactory->create()->setPath('customer/account/login');
+        }
 
         $params = $this->getRequest()->getParams();
 
@@ -317,6 +345,14 @@ class ReadAuthorizationResponse extends BaseAction
                 $userInfoURL = $clientDetails['user_info_endpoint'];
                 if ($userInfoURL != null && $userInfoURL != '' && isset($accessTokenResponseData['access_token'])) {
                     $accessToken = $accessTokenResponseData['access_token'];
+
+                    // Store tokens in session for subsequent refresh (Phase 2.3)
+                    $this->tokenRefreshService->storeTokens(
+                        (string) ($accessTokenResponseData['refresh_token'] ?? ''),
+                        (int) ($accessTokenResponseData['expires_in'] ?? 0),
+                        (string) $accessToken
+                    );
+
                     $headerAuth = "Bearer " . $accessToken;
                     $authHeader = ["Authorization: $headerAuth"];
                     $userInfoResponse = $this->curl->sendUserInfoRequest($userInfoURL, $authHeader);

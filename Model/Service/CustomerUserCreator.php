@@ -1,17 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace MiniOrange\OAuth\Model\Service;
 
 use MiniOrange\OAuth\Helper\OAuthConstants;
 use MiniOrange\OAuth\Helper\OAuthUtility;
+use MiniOrange\OAuth\Model\Attribute\AttributeMapperInterface;
+use MiniOrange\OAuth\Model\Provider\MappingRepository;
 use Magento\Customer\Model\CustomerFactory;
 use Magento\Customer\Api\Data\AddressInterfaceFactory;
 use Magento\Customer\Api\AddressRepositoryInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use Magento\Framework\Math\Random;
-use Magento\Directory\Model\ResourceModel\Country\CollectionFactory as CountryCollectionFactory;
 use Magento\Directory\Helper\Data as DirectoryData;
-use Magento\Framework\Stdlib\DateTime\DateTime;
 use Magento\Customer\Api\Data\CustomerInterface;
 use MiniOrange\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
 
@@ -37,12 +39,6 @@ class CustomerUserCreator
 
     /** @var \MiniOrange\OAuth\Helper\OAuthUtility */
     private readonly \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
-
-    /** @var CountryCollectionFactory */
-    private readonly CountryCollectionFactory $countryCollectionFactory;
-
-    /** @var \Magento\Framework\Stdlib\DateTime\DateTime */
-    private readonly \Magento\Framework\Stdlib\DateTime\DateTime $dateTime;
 
     /** @var DirectoryData */
     private readonly DirectoryData $directoryData;
@@ -83,20 +79,26 @@ class CustomerUserCreator
     /** @var \MiniOrange\OAuth\Model\ResourceModel\UserProvider */
     private readonly UserProviderResource $userProviderResource;
 
+    /** @var MappingRepository */
+    private readonly MappingRepository $mappingRepository;
+
+    /** @var AttributeMapperInterface */
+    private readonly AttributeMapperInterface $attributeMapper;
+
     /**
      * Initialize customer user creator service.
      *
-     * @param CustomerFactory $customerFactory
-     * @param AddressInterfaceFactory $addressFactory
-     * @param AddressRepositoryInterface $addressRepository
-     * @param StoreManagerInterface $storeManager
-     * @param Random $randomUtility
-     * @param OAuthUtility $oauthUtility
-     * @param CountryCollectionFactory $countryCollectionFactory
-     * @param DateTime $dateTime
-     * @param DirectoryData $directoryData
+     * @param CustomerFactory                                   $customerFactory
+     * @param AddressInterfaceFactory                           $addressFactory
+     * @param AddressRepositoryInterface                        $addressRepository
+     * @param StoreManagerInterface                             $storeManager
+     * @param Random                                            $randomUtility
+     * @param OAuthUtility                                      $oauthUtility
+     * @param DirectoryData                                     $directoryData
      * @param \Magento\Customer\Api\CustomerRepositoryInterface $customerRepository
-     * @param UserProviderResource $userProviderResource
+     * @param UserProviderResource                              $userProviderResource
+     * @param MappingRepository                                 $mappingRepository
+     * @param AttributeMapperInterface                          $attributeMapper
      */
     public function __construct(
         CustomerFactory $customerFactory,
@@ -105,11 +107,11 @@ class CustomerUserCreator
         StoreManagerInterface $storeManager,
         Random $randomUtility,
         OAuthUtility $oauthUtility,
-        CountryCollectionFactory $countryCollectionFactory,
-        DateTime $dateTime,
         DirectoryData $directoryData,
         \Magento\Customer\Api\CustomerRepositoryInterface $customerRepository,
-        UserProviderResource $userProviderResource
+        UserProviderResource $userProviderResource,
+        MappingRepository $mappingRepository,
+        AttributeMapperInterface $attributeMapper
     ) {
         $this->customerFactory = $customerFactory;
         $this->addressFactory = $addressFactory;
@@ -117,11 +119,11 @@ class CustomerUserCreator
         $this->storeManager = $storeManager;
         $this->randomUtility = $randomUtility;
         $this->oauthUtility = $oauthUtility;
-        $this->countryCollectionFactory = $countryCollectionFactory;
-        $this->dateTime = $dateTime;
         $this->directoryData = $directoryData;
         $this->customerRepository = $customerRepository;
         $this->userProviderResource = $userProviderResource;
+        $this->mappingRepository = $mappingRepository;
+        $this->attributeMapper = $attributeMapper;
 
         $this->initializeAttributeMapping();
     }
@@ -212,28 +214,20 @@ class CustomerUserCreator
                 ->setFirstname($firstName)
                 ->setLastname($lastName);
 
-            // Set Date of Birth
-            $dob = $this->extractAttributeValue($this->dobAttribute, $flattenedAttrs, $rawAttrs);
-            if (!empty($dob)) {
-                $formattedDob = $this->formatDateOfBirth($dob);
-                if ($formattedDob) {
-                    $customer->setDob($formattedDob);
-                }
-            }
+            // Map customer attributes via strategy (Phase 3.2)
+            $mapped = $this->attributeMapper->map($flattenedAttrs, $this->buildMappingConfig($rawAttrs));
 
-            // Set Gender
-            $gender = $this->extractAttributeValue($this->genderAttribute, $flattenedAttrs, $rawAttrs);
-            if (!empty($gender)) {
-                $genderId = $this->mapGender($gender);
-                if ($genderId !== null) {
-                    $customer->setGender($genderId);
-                }
+            if (isset($mapped['dob'])) {
+                $customer->setDob($mapped['dob']);
+            }
+            if (isset($mapped['gender'])) {
+                $customer->setGender($mapped['gender']);
             }
 
             // Resolve customer group from OIDC group claims
             $oidcGroups = $this->extractOidcGroups($flattenedAttrs, $rawAttrs);
             if ($oidcGroups !== []) {
-                $resolvedGroupId = $this->getCustomerGroupFromOidcGroups($oidcGroups);
+                $resolvedGroupId = $this->getCustomerGroupFromOidcGroups($oidcGroups, $providerId);
                 if ($resolvedGroupId === null) {
                     $this->oauthUtility->customlog(
                         'CustomerUserCreator: creation denied – OIDC group not mapped'
@@ -266,7 +260,7 @@ class CustomerUserCreator
             }
 
             // Create customer address
-            $this->createCustomerAddress($savedCustomer, $firstName, $lastName, $flattenedAttrs, $rawAttrs);
+            $this->createCustomerAddress($savedCustomer, $firstName, $lastName, $mapped);
 
             return $savedCustomer;
 
@@ -280,17 +274,36 @@ class CustomerUserCreator
     /**
      * Resolve Magento customer group ID from OIDC group claims.
      *
+     * Reads from the normalized miniorange_oauth_role_mappings table first (Phase 4).
+     * Falls back to the legacy JSON column when the new table has no data for this provider.
+     *
      * @param  string[] $userGroups OIDC group claim values
+     * @param  int      $providerId OIDC provider ID (0 = unknown)
      * @return int|null  Magento group ID, or null to deny creation
      */
-    private function getCustomerGroupFromOidcGroups(array $userGroups): ?int
+    private function getCustomerGroupFromOidcGroups(array $userGroups, int $providerId = 0): ?int
     {
-        $mappingsJson = $this->oauthUtility->getStoreConfig(OAuthConstants::CUSTOMER_GROUP_MAPPING);
+        // --- Phase 4 path: read from normalized table ---
         $mappings = [];
-        if (!$this->oauthUtility->isBlank($mappingsJson)) {
-            $decoded = json_decode((string) $mappingsJson, true);
-            if (is_array($decoded)) {
-                $mappings = $decoded;
+        if ($providerId > 0) {
+            $newRows = $this->mappingRepository->getCustomerGroupMappings($providerId);
+            // Normalize to legacy key names so the loop below is unchanged
+            foreach ($newRows as $row) {
+                $mappings[] = [
+                    'group'         => $row['oidc_group'],
+                    'customerGroup' => $row['magento_role_id'],
+                ];
+            }
+        }
+
+        // --- Fallback path: legacy JSON column ---
+        if ($mappings === []) {
+            $mappingsJson = $this->oauthUtility->getStoreConfig(OAuthConstants::CUSTOMER_GROUP_MAPPING);
+            if (!$this->oauthUtility->isBlank($mappingsJson)) {
+                $decoded = json_decode((string) $mappingsJson, true);
+                if (is_array($decoded)) {
+                    $mappings = $decoded;
+                }
             }
         }
 
@@ -410,51 +423,46 @@ class CustomerUserCreator
     }
 
     /**
-     * Create customer address with mapped OIDC attributes
+     * Create customer address from mapped OIDC attribute values.
      *
-     * @param  CustomerInterface $customer
-     * @param  string            $firstName
-     * @param  string            $lastName
-     * @param  array             $flattenedAttrs
-     * @param  array             $rawAttrs
+     * @param  CustomerInterface      $customer
+     * @param  string                 $firstName
+     * @param  string                 $lastName
+     * @param  array<string,mixed>    $mapped   Output of AttributeMapperInterface::map()
      */
     private function createCustomerAddress(
         CustomerInterface $customer,
         string $firstName,
         string $lastName,
-        array $flattenedAttrs,
-        array $rawAttrs
+        array $mapped
     ): void {
-        // Extract address fields
-        $street = $this->extractAttributeValue($this->streetAttribute, $flattenedAttrs, $rawAttrs);
-        $city = $this->extractAttributeValue($this->cityAttribute, $flattenedAttrs, $rawAttrs);
-        $zip = $this->extractAttributeValue($this->zipAttribute, $flattenedAttrs, $rawAttrs);
-        $country = $this->extractAttributeValue($this->countryAttribute, $flattenedAttrs, $rawAttrs);
-        $phone = $this->extractAttributeValue($this->phoneAttribute, $flattenedAttrs, $rawAttrs);
+        $street    = (string) ($mapped['billing_street'] ?? '');
+        $city      = (string) ($mapped['billing_city'] ?? '');
+        $zip       = (string) ($mapped['billing_postcode'] ?? '');
+        $countryId = (string) ($mapped['billing_country_id'] ?? '');
+        $phone     = (string) ($mapped['billing_telephone'] ?? '');
 
-        // Only create address if at least street and city are provided
-        if (empty($street) && empty($city) && empty($country)) {
+        // Only create address if at least one of street, city, or country is present
+        if ($street === '' && $city === '' && $countryId === '') {
             return;
         }
 
         try {
-            $countryId = $this->resolveCountryId($country);
-
             $address = $this->addressFactory->create();
             $address->setCustomerId($customer->getId())
                 ->setFirstname($firstName)
                 ->setLastname($lastName)
-                ->setStreet([$street ?? ''])
-                ->setCity($city ?? '')
-                ->setPostcode($zip ?? '')
-                ->setCountryId($countryId ?? $this->directoryData->getDefaultCountry())
-                ->setTelephone($phone ?? '')
+                ->setStreet([$street])
+                ->setCity($city)
+                ->setPostcode($zip)
+                ->setCountryId($countryId !== '' ? $countryId : $this->directoryData->getDefaultCountry())
+                ->setTelephone($phone)
                 ->setIsDefaultBilling(true)
                 ->setIsDefaultShipping(true);
 
             $this->addressRepository->save($address);
             $this->oauthUtility->customlog(
-                "CustomerUserCreator: Address created for customer ID: " . (string)$customer->getId()
+                "CustomerUserCreator: Address created for customer ID: " . (string) $customer->getId()
             );
 
         } catch (\Exception $e) {
@@ -463,138 +471,25 @@ class CustomerUserCreator
     }
 
     /**
-     * Extract attribute value from flattened attributes with support for nested paths
+     * Build the mapping config array for AttributeMapperInterface::map().
      *
-     * @param  string            $key            Attribute key or dotted path (e.g., "address.locality")
-     * @param  array             $flattenedAttrs Flattened key/value map
-     * @param  array             $rawAttrs       Original attributes structure
-     * @return string|null
-     */
-    private function extractAttributeValue($key, array $flattenedAttrs, array $rawAttrs)
-    {
-        if (empty($key)) {
-            return null;
-        }
-
-        // First check if it exists directly in flattened attributes
-        if (isset($flattenedAttrs[$key])) {
-            return $flattenedAttrs[$key];
-        }
-
-        // Support nested path notation (e.g., "address.locality")
-        if (str_contains($key, '.')) {
-            // Check in flattened attrs
-            if ($flattenedAttrs !== []) {
-                $parts = explode('.', $key);
-                $value = $flattenedAttrs;
-                foreach ($parts as $part) {
-                    if (is_array($value) && isset($value[$part])) {
-                        $value = $value[$part];
-                    } else {
-                        return null;
-                    }
-                }
-                if (is_string($value)) {
-                    return $value;
-                }
-            }
-
-            // Check in raw attrs
-            if ($rawAttrs !== []) {
-                $parts = explode('.', $key);
-                $value = $rawAttrs;
-                foreach ($parts as $part) {
-                    if (is_array($value) && isset($value[$part])) {
-                        $value = $value[$part];
-                    } elseif (is_object($value) && isset($value->$part)) {
-                        $value = $value->$part;
-                    } else {
-                        return null;
-                    }
-                }
-                return is_string($value) ? $value : null;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Format date of birth to Y-m-d format
+     * Keys are attribute types; values are the OIDC claim names resolved from config.
+     * The '_raw_attrs' key carries the original nested OIDC response for dot-path support.
      *
-     * @param  string $dob Raw date string
-     * @return string|null Formatted date `Y-m-d` or null on parse failure
+     * @param  array<mixed> $rawAttrs Original nested OIDC response
+     * @return array<string,mixed>
      */
-    private function formatDateOfBirth($dob): ?string
+    private function buildMappingConfig(array $rawAttrs = []): array
     {
-        try {
-            $date = date_create($dob);
-            if ($date) {
-                return $date->format('Y-m-d');
-            }
-        } catch (\Exception $e) {
-            $this->oauthUtility->customlog("CustomerUserCreator: DOB parsing exception: " . $e->getMessage());
-        }
-        return null;
-    }
-
-    /**
-     * Map OIDC gender value to Magento gender ID
-     *
-     * @param string $genderValue
-     * @psalm-return 1|2|3|null
-     */
-    private function mapGender(string $genderValue): int|null
-    {
-        if ($genderValue === '' || $genderValue === '0') {
-            return null;
-        }
-
-        $genderLower = strtolower(trim($genderValue));
-
-        if (in_array($genderLower, ['male', 'm', '1', 'mann', 'männlich'])) {
-            return 1;
-        }
-        if (in_array($genderLower, ['female', 'f', '2', 'frau', 'weiblich'])) {
-            return 2;
-        }
-
-        return 3; // Not Specified
-    }
-
-    /**
-     * Resolve country name or code to Magento country ID
-     *
-     * @param  string|null $country
-     */
-    private function resolveCountryId(string|null $country)
-    {
-        if ($country === null || $country === '' || $country === '0') {
-            return null;
-        }
-
-        // If already a 2-letter code, return as-is (uppercase)
-        if (strlen($country) === 2) {
-            return strtoupper($country);
-        }
-
-        try {
-            $countryCollection = $this->countryCollectionFactory->create();
-            foreach ($countryCollection as $countryItem) {
-                $countryName = $countryItem->getName();
-                if ($countryName !== null && strcasecmp((string) $countryName, $country) === 0) {
-                    return $countryItem->getId();
-                }
-            }
-        } catch (\Exception $e) {
-            $this->oauthUtility->customlog("CustomerUserCreator: Error resolving country: " . $e->getMessage());
-        }
-
-        // Return the value as-is if it looks like a country code
-        if (strlen($country) <= 3) {
-            return strtoupper($country);
-        }
-
-        return null;
+        return [
+            'dob'             => $this->dobAttribute,
+            'gender'          => $this->genderAttribute,
+            'billing_address' => $this->streetAttribute,
+            'billing_city'    => $this->cityAttribute,
+            'billing_zip'     => $this->zipAttribute,
+            'billing_country' => $this->countryAttribute,
+            'billing_phone'   => $this->phoneAttribute,
+            '_raw_attrs'      => $rawAttrs,
+        ];
     }
 }

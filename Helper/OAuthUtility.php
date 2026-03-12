@@ -1036,6 +1036,17 @@ class OAuthUtility extends Data
     }
 
     /**
+     * Decrypt an encrypted secret value using Magento's encryptor.
+     *
+     * @param string $secret Encrypted secret string
+     * @return string Decrypted secret
+     */
+    public function decryptSecret(string $secret): string
+    {
+        return $this->encryptor->decrypt($secret);
+    }
+
+    /**
      * Update specific fields on a provider row (e.g. PKCE code_verifier).
      *
      * @param int   $providerId Row `id` from miniorange_oauth_client_apps

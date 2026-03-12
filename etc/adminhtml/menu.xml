@@ -31,10 +31,19 @@
             within the Add / Edit Provider form (mooauth/provider/edit).
             Only Manage Providers and Miscellaneous (debug logs) remain as top-level menu items.
         -->
+        <!-- OIDC Session Activity: read-only grid of all SSO-linked users -->
+        <add id="MiniOrange_OAuth::oidc_sessions"
+            title="Session Activity"
+            module="MiniOrange_OAuth"
+            sortOrder="1"
+            parent="MiniOrange_OAuth::OAuth"
+            action="mooauth/sessions/index"
+            resource="MiniOrange_OAuth::oidc_sessions"/>
+
         <add id="MiniOrange_OAuth::signin_settings"
             title="Miscellaneous"
             module="MiniOrange_OAuth"
-            sortOrder="1"
+            sortOrder="2"
             parent="MiniOrange_OAuth::OAuth"
             action="mooauth/signinsettings"
             resource="MiniOrange_OAuth::signin_settings"/>

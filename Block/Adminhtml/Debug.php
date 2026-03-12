@@ -247,13 +247,13 @@ class Debug extends Template
 
         try {
             if ($curl instanceof \Magento\Framework\HTTP\Client\Curl) {
-                /** @psalm-suppress InvalidArgument */
+                /** @psalm-suppress InvalidArgument */ // @phpstan-ignore-next-line
                 $curl->setOption(CURLOPT_NOBODY, true);
-                /** @psalm-suppress InvalidArgument */
+                /** @psalm-suppress InvalidArgument */ // @phpstan-ignore-next-line
                 $curl->setOption(CURLOPT_TIMEOUT, 5);
-                /** @psalm-suppress InvalidArgument */
+                /** @psalm-suppress InvalidArgument */ // @phpstan-ignore-next-line
                 $curl->setOption(CURLOPT_SSL_VERIFYPEER, true);
-                /** @psalm-suppress InvalidArgument */
+                /** @psalm-suppress InvalidArgument */ // @phpstan-ignore-next-line
                 $curl->setOption(CURLOPT_SSL_VERIFYHOST, 2);
 
                 $startTime = microtime(true);

@@ -10,6 +10,48 @@
             <argument name="cookieManager" xsi:type="object">Magento\Framework\Stdlib\CookieManagerInterface</argument>
             <argument name="cookieMetadataFactory" xsi:type="object">Magento\Framework\Stdlib\Cookie\CookieMetadataFactory</argument>
             <argument name="backendUrl" xsi:type="object">Magento\Backend\Model\UrlInterface</argument>
+            <argument name="userProvisioningService" xsi:type="object">MiniOrange\OAuth\Model\Service\UserProvisioningService</argument>
+        </arguments>
+    </type>
+
+    <!-- UserProvisioningService Dependencies -->
+    <type name="MiniOrange\OAuth\Model\Service\UserProvisioningService">
+        <arguments>
+            <argument name="adminUserCreator" xsi:type="object">MiniOrange\OAuth\Model\Service\AdminUserCreator</argument>
+            <argument name="customerUserCreator" xsi:type="object">MiniOrange\OAuth\Model\Service\CustomerUserCreator</argument>
+            <argument name="oauthUtility" xsi:type="object">MiniOrange\OAuth\Helper\OAuthUtility</argument>
+            <argument name="eventManager" xsi:type="object">Magento\Framework\Event\ManagerInterface</argument>
+        </arguments>
+    </type>
+
+    <!-- MappingRepository Dependencies (Phase 4) -->
+    <type name="MiniOrange\OAuth\Model\Provider\MappingRepository">
+        <arguments>
+            <argument name="attrResource" xsi:type="object">MiniOrange\OAuth\Model\ResourceModel\OauthAttributeMapping</argument>
+            <argument name="roleResource" xsi:type="object">MiniOrange\OAuth\Model\ResourceModel\OauthRoleMapping</argument>
+        </arguments>
+    </type>
+
+    <!-- AdminUserCreator Dependencies (Phase 4: MappingRepository; Phase 3.2: AdminAttributeMapper) -->
+    <type name="MiniOrange\OAuth\Model\Service\AdminUserCreator">
+        <arguments>
+            <argument name="mappingRepository" xsi:type="object">MiniOrange\OAuth\Model\Provider\MappingRepository</argument>
+            <argument name="adminAttributeMapper" xsi:type="object">MiniOrange\OAuth\Model\Attribute\AdminAttributeMapper</argument>
+        </arguments>
+    </type>
+
+    <!-- CustomerUserCreator Dependencies (Phase 4: MappingRepository; Phase 3.2: CustomerAttributeMapper) -->
+    <type name="MiniOrange\OAuth\Model\Service\CustomerUserCreator">
+        <arguments>
+            <argument name="mappingRepository" xsi:type="object">MiniOrange\OAuth\Model\Provider\MappingRepository</argument>
+            <argument name="attributeMapper" xsi:type="object">MiniOrange\OAuth\Model\Attribute\CustomerAttributeMapper</argument>
+        </arguments>
+    </type>
+
+    <!-- Provider Save controller Dependencies (Phase 4: dual-write to normalized tables) -->
+    <type name="MiniOrange\OAuth\Controller\Adminhtml\Provider\Save">
+        <arguments>
+            <argument name="mappingRepository" xsi:type="object">MiniOrange\OAuth\Model\Provider\MappingRepository</argument>
         </arguments>
     </type>
 
@@ -173,6 +215,13 @@
                 sortOrder="10" />
     </type>
 
+    <!-- OidcRateLimiter: use the default Magento cache frontend -->
+    <type name="MiniOrange\OAuth\Model\Security\OidcRateLimiter">
+        <arguments>
+            <argument name="cache" xsi:type="object">Magento\Framework\App\CacheInterface</argument>
+        </arguments>
+    </type>
+
     <!-- JwtVerifier Cache and Curl Configuration -->
     <type name="MiniOrange\OAuth\Helper\JwtVerifier">
         <arguments>
@@ -307,6 +356,7 @@
             <argument name="cookieManager" xsi:type="object">Magento\Framework\Stdlib\CookieManagerInterface</argument>
             <argument name="cookieMetadataFactory" xsi:type="object">Magento\Framework\Stdlib\Cookie\CookieMetadataFactory</argument>
             <argument name="customerSession" xsi:type="object">Magento\Customer\Model\Session\Proxy</argument>
+            <argument name="curlFactory" xsi:type="object">Magento\Framework\HTTP\Adapter\CurlFactory</argument>
         </arguments>
     </type>
 
@@ -319,6 +369,7 @@
             <argument name="authSession" xsi:type="object">Magento\Backend\Model\Auth\Session\Proxy</argument>
             <argument name="backendUrl" xsi:type="object">Magento\Backend\Model\UrlInterface</argument>
             <argument name="response" xsi:type="object">Magento\Framework\App\ResponseInterface</argument>
+            <argument name="curlFactory" xsi:type="object">Magento\Framework\HTTP\Adapter\CurlFactory</argument>
         </arguments>
     </type>
 

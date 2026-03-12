@@ -15,7 +15,7 @@ use MiniOrange\OAuth\Helper\OAuthUtility;
 class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
 {
     /**
-     * @var \Magento\Customer\Model\Data\Customer|null
+     * @var \Magento\Customer\Api\Data\CustomerInterface|null
      */
     private $user;
 
@@ -141,7 +141,7 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
     /**
      * Setter for the user parameter.
      *
-     * @param  \Magento\Customer\Model\Data\Customer|null $user
+     * @param  \Magento\Customer\Api\Data\CustomerInterface|null $user
      */
     public function setUser($user): static
     {

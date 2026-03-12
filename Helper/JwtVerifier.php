@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace MiniOrange\OAuth\Helper;
 
 use Magento\Framework\App\CacheInterface;
+use MiniOrange\OAuth\Helper\OAuthMessages;
 
 /**
  * Pure PHP JWT verification using openssl_verify().
@@ -126,7 +129,12 @@ class JwtVerifier
 
         // Validate expiration
         if (isset($payload['exp']) && $payload['exp'] < time()) {
-            $this->oauthUtility->customlog("JwtVerifier: Token expired at " . date('Y-m-d H:i:s', $payload['exp']));
+            $this->oauthUtility->customlog(
+                "JwtVerifier: " . OAuthMessages::parse('JWT_EXPIRED', [
+                    'exp' => date('Y-m-d H:i:s', (int) $payload['exp']),
+                    'now' => date('Y-m-d H:i:s'),
+                ])
+            );
             return null;
         }
 
@@ -141,7 +149,10 @@ class JwtVerifier
         // Validate issuer — a missing iss claim when one is expected is a failure (RFC 7519 §4.1.1)
         if ($issuer !== null && ($payload['iss'] ?? '') !== $issuer) {
             $this->oauthUtility->customlog(
-                "JwtVerifier: Issuer mismatch - expected: $issuer, got: " . ($payload['iss'] ?? 'MISSING')
+                "JwtVerifier: " . OAuthMessages::parse('JWT_ISSUER_MISMATCH', [
+                    'token_issuer'      => $payload['iss'] ?? 'MISSING',
+                    'configured_issuer' => $issuer,
+                ])
             );
             return null;
         }

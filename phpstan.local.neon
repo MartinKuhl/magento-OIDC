@@ -6,6 +6,10 @@ parameters:
     treatPhpDocTypesAsCertain: false
     magento:
         magentoRoot: ../..  # Points to /var/www/html from module directory
+    stubFiles:
+        # Overrides auto-generated FactoryAutoloader stubs for classes whose names
+        # end with "Factory" but are NOT simple Magento DI factories.
+        - phpstan-stubs.stub
     excludePaths:
         analyseAndScan:
             - .github
@@ -14,3 +18,4 @@ parameters:
             - Test/Stubs
         analyse:
             - psalm-stubs.stub
+            - phpstan-stubs.stub

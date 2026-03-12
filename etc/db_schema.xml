@@ -7,6 +7,7 @@
       <column xsi:type="text" name="client_secret" nullable="false" comment="The client secret of the Provider" />
       <column xsi:type="text" name="scope" nullable="false" comment="The scope of the Provider" />
       <column xsi:type="text" name="endsession_endpoint" nullable="false" comment="The endsession endpoint" />
+      <column xsi:type="text" name="revocation_endpoint" nullable="true" comment="RFC 7009 token revocation endpoint (optional)" />
       <column xsi:type="text" name="authorize_endpoint" nullable="false" comment="The authorize endpoint" />
       <column xsi:type="text" name="access_token_endpoint" nullable="false" comment="The token endpoint" />
       <column xsi:type="text" name="user_info_endpoint" nullable="false" comment="The user info endpoint" />
@@ -18,22 +19,24 @@
       <column xsi:type="varchar" name="pkce_code_verifier" nullable="true" length="128" comment="Temporary PKCE code_verifier for active flow"/>
       <column xsi:type="text" name="well_known_config_url" nullable="false" comment="Well Known Config URL" />
       <column xsi:type="text" name="issuer" nullable="false" comment="OIDC Issuer from discovery document" />
-      <column xsi:type="text" name="email_attribute" nullable="false" comment="The email attribute of the provider" />
-      <column xsi:type="text" name="username_attribute" nullable="false" comment="The username attribute of the provider" />
-      <column xsi:type="text" name="firstname_attribute" nullable="false" comment="The first name attribute of the provider" />
-      <column xsi:type="text" name="lastname_attribute" nullable="false" comment="The Last name attribute of the provider" />
-      <column xsi:type="text" name="group_attribute" nullable="false" comment="The group name attribute" />
-      <column xsi:type="text" name="billing_city_attribute" nullable="false" comment="The billing_city attribute" />
-      <column xsi:type="text" name="billing_state_attribute" nullable="false" comment="The billing_state attribute" />
-      <column xsi:type="text" name="billing_country_attribute" nullable="false" comment="The billing_country attribute" />
-      <column xsi:type="text" name="billing_address_attribute" nullable="false" comment="The billing_address attribute" />
-      <column xsi:type="text" name="billing_phone_attribute" nullable="false" comment="The billing_Telephone attribute" />
-      <column xsi:type="text" name="billing_zip_attribute" nullable="false" comment="The billing_zip code attribute" />
-   
-      <column xsi:type="text" name="default_group" nullable="false" comment="Default Group for Frontend Users" />
-      <column xsi:type="text" name="default_role" nullable="false" comment="Default Role for Backend Users" />
-      <column xsi:type="text" name="oauth_customer_group_mapping" nullable="false" comment="Group Mapping for Frontend Users" />
-      <column xsi:type="text" name="oauth_admin_role_mapping" nullable="false" comment="Role Mapping for Backend Users" />
+      <!-- Attribute mapping columns — nullable after Phase 4 normalization; rows use miniorange_oauth_attribute_mappings -->
+      <column xsi:type="text" name="email_attribute" nullable="true" comment="The email attribute of the provider" />
+      <column xsi:type="text" name="username_attribute" nullable="true" comment="The username attribute of the provider" />
+      <column xsi:type="text" name="firstname_attribute" nullable="true" comment="The first name attribute of the provider" />
+      <column xsi:type="text" name="lastname_attribute" nullable="true" comment="The Last name attribute of the provider" />
+      <column xsi:type="text" name="group_attribute" nullable="true" comment="The group name attribute" />
+      <column xsi:type="text" name="billing_city_attribute" nullable="true" comment="The billing_city attribute" />
+      <column xsi:type="text" name="billing_state_attribute" nullable="true" comment="The billing_state attribute" />
+      <column xsi:type="text" name="billing_country_attribute" nullable="true" comment="The billing_country attribute" />
+      <column xsi:type="text" name="billing_address_attribute" nullable="true" comment="The billing_address attribute" />
+      <column xsi:type="text" name="billing_phone_attribute" nullable="true" comment="The billing_Telephone attribute" />
+      <column xsi:type="text" name="billing_zip_attribute" nullable="true" comment="The billing_zip code attribute" />
+
+      <!-- Role/group mapping columns — nullable after Phase 4; rows use miniorange_oauth_role_mappings -->
+      <column xsi:type="text" name="default_group" nullable="true" comment="Default Group for Frontend Users" />
+      <column xsi:type="text" name="default_role" nullable="true" comment="Default Role for Backend Users" />
+      <column xsi:type="text" name="oauth_customer_group_mapping" nullable="true" comment="Group Mapping for Frontend Users" />
+      <column xsi:type="text" name="oauth_admin_role_mapping" nullable="true" comment="Role Mapping for Backend Users" />
       <column xsi:type="text" name="mo_oauth_auto_create_customer" nullable="false" comment="Auto create Customer" />
       <column xsi:type="text" name="mo_oauth_auto_create_admin" nullable="false" comment="Auto create Admin" />
       <column xsi:type="text" name="show_customer_link" nullable="false" comment="Show Customer SSO Link" />
@@ -78,6 +81,74 @@
          <column name="is_active" />
          <column name="login_type" />
          <column name="sort_order" />
+      </index>
+   </table>
+
+   <!-- Normalized attribute mapping table (Phase 4).
+        One row per provider × attribute type.
+        attribute_type: 'email'|'username'|'firstname'|'lastname'|'group'|'dob'|'gender'|
+                        'billing_city'|'billing_state'|'billing_country'|'billing_address'|
+                        'billing_phone'|'billing_zip'
+        attribute_name: the OIDC claim key (e.g. 'email', 'given_name', 'custom:dept')
+        sync_on_sso: 1 = re-sync this attribute from OIDC on every login -->
+   <table name="miniorange_oauth_attribute_mappings" resource="default" engine="innodb"
+          comment="Normalized OIDC attribute mappings per provider">
+      <column xsi:type="int" name="id" padding="10" unsigned="true" nullable="false"
+              identity="true" comment="Row ID"/>
+      <column xsi:type="smallint" name="provider_id" padding="7" unsigned="true" nullable="false"
+              comment="OIDC Provider ID (FK to miniorange_oauth_client_apps.id)"/>
+      <column xsi:type="varchar" name="attribute_type" length="30" nullable="false"
+              comment="Attribute slot: email, firstname, billing_city, etc."/>
+      <column xsi:type="varchar" name="attribute_name" length="255" nullable="false"
+              comment="OIDC claim key configured by the admin"/>
+      <column xsi:type="smallint" name="sync_on_sso" padding="1" unsigned="true" nullable="false"
+              default="0" comment="1 = re-sync this attribute from OIDC on every SSO login"/>
+      <constraint xsi:type="primary" referenceId="PRIMARY">
+         <column name="id"/>
+      </constraint>
+      <constraint xsi:type="unique" referenceId="MOOAUTH_ATTR_MAPPING_PROVIDER_ID_ATTR_TYPE">
+         <column name="provider_id"/>
+         <column name="attribute_type"/>
+      </constraint>
+      <constraint xsi:type="foreign" referenceId="MOOAUTH_ATTR_MAPPING_PROVIDER_ID_FK"
+                  table="miniorange_oauth_attribute_mappings" column="provider_id"
+                  referenceTable="miniorange_oauth_client_apps" referenceColumn="id"
+                  onDelete="CASCADE"/>
+   </table>
+
+   <!-- Normalized role/group mapping table (Phase 4).
+        One row per provider × mapping_type × OIDC group.
+        mapping_type: 'admin_role' or 'customer_group'
+        magento_role_id: Magento role ID (admin_role) or customer group ID (customer_group) -->
+   <table name="miniorange_oauth_role_mappings" resource="default" engine="innodb"
+          comment="Normalized OIDC role and customer group mappings per provider">
+      <column xsi:type="int" name="id" padding="10" unsigned="true" nullable="false"
+              identity="true" comment="Row ID"/>
+      <column xsi:type="smallint" name="provider_id" padding="7" unsigned="true" nullable="false"
+              comment="OIDC Provider ID (FK to miniorange_oauth_client_apps.id)"/>
+      <column xsi:type="varchar" name="mapping_type" length="20" nullable="false"
+              comment="admin_role or customer_group"/>
+      <column xsi:type="varchar" name="oidc_group" length="255" nullable="false"
+              comment="OIDC group/role claim value (case-insensitive match at runtime)"/>
+      <column xsi:type="varchar" name="magento_role_id" length="50" nullable="false"
+              comment="Magento admin role ID or customer group ID"/>
+      <column xsi:type="smallint" name="sort_order" padding="5" unsigned="true" nullable="false"
+              default="0" comment="Evaluation order (lower = matched first)"/>
+      <constraint xsi:type="primary" referenceId="PRIMARY">
+         <column name="id"/>
+      </constraint>
+      <constraint xsi:type="unique" referenceId="MOOAUTH_ROLE_MAPPING_PROVIDER_ID_TYPE_GROUP">
+         <column name="provider_id"/>
+         <column name="mapping_type"/>
+         <column name="oidc_group"/>
+      </constraint>
+      <constraint xsi:type="foreign" referenceId="MOOAUTH_ROLE_MAPPING_PROVIDER_ID_FK"
+                  table="miniorange_oauth_role_mappings" column="provider_id"
+                  referenceTable="miniorange_oauth_client_apps" referenceColumn="id"
+                  onDelete="CASCADE"/>
+      <index referenceId="MOOAUTH_ROLE_MAPPING_PROVIDER_ID_TYPE" indexType="btree">
+         <column name="provider_id"/>
+         <column name="mapping_type"/>
       </index>
    </table>
 

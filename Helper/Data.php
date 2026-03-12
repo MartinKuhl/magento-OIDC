@@ -67,7 +67,7 @@ class Data extends AbstractHelper
     private readonly CustomerResource $customerResource;
 
     /** @var EncryptorInterface */
-    private readonly EncryptorInterface $encryptor;
+    protected readonly EncryptorInterface $encryptor;
 
     /** @var Escaper */
     private readonly Escaper $escaper;
@@ -278,7 +278,7 @@ class Data extends AbstractHelper
         try {
             $model->setData('last_test_status', $status);
             $model->setData('last_test_at', date('Y-m-d H:i:s'));
-            /** @psalm-suppress ArgumentTypeCoercion */
+            /** @psalm-suppress ArgumentTypeCoercion */ // @phpstan-ignore-next-line
             $this->appResource->save($model);
         } catch (\Exception $e) {
             $this->logger->error('saveTestStatus failed: ' . $e->getMessage(), ['exception' => $e]);

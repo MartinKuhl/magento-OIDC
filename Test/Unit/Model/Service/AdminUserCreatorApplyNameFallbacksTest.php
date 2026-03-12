@@ -9,6 +9,8 @@ use Magento\User\Model\ResourceModel\User;
 use Magento\User\Model\ResourceModel\User\CollectionFactory as UserCollectionFactory;
 use Magento\User\Model\UserFactory;
 use MiniOrange\OAuth\Helper\OAuthUtility;
+use MiniOrange\OAuth\Model\Attribute\AttributeMapperInterface;
+use MiniOrange\OAuth\Model\Provider\MappingRepository;
 use MiniOrange\OAuth\Model\Service\AdminUserCreator;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -42,7 +44,9 @@ class AdminUserCreatorApplyNameFallbacksTest extends TestCase
             $this->createMock(Random::class),
             $this->createMock(User::class),
             $this->createMock(UserCollectionFactory::class),
-            $this->createMock(\MiniOrange\OAuth\Model\ResourceModel\UserProvider::class)
+            $this->createMock(\MiniOrange\OAuth\Model\ResourceModel\UserProvider::class),
+            $this->createMock(MappingRepository::class),
+            $this->createMock(AttributeMapperInterface::class)
         );
     }
 
@@ -103,7 +107,9 @@ class AdminUserCreatorApplyNameFallbacksTest extends TestCase
             $this->createMock(Random::class),
             $this->createMock(User::class),
             $collectionFactory,
-            $this->createMock(\MiniOrange\OAuth\Model\ResourceModel\UserProvider::class)
+            $this->createMock(\MiniOrange\OAuth\Model\ResourceModel\UserProvider::class),
+            $this->createMock(MappingRepository::class),
+            $this->createMock(AttributeMapperInterface::class)
         );
 
         $this->assertFalse($creator->isAdminUser('nonexistent@example.com'));

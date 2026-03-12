@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace MiniOrange\OAuth\Helper;
 
 /**
@@ -79,6 +81,70 @@ class OAuthMessages
     public const ADMIN_ACCOUNT_NOT_FOUND = "Admin login failed: No administrator account exists for '{{email}}'."
         . " This login option is only available for users with existing admin accounts. Please contact your site"
         . " administrator if you believe you should have admin access.";
+
+    // -------------------------------------------------------------------------
+    // Attribute mapping errors
+    // -------------------------------------------------------------------------
+
+    /** The IdP did not return an email claim. Lists the received claims so the admin can identify the correct name. */
+    public const EMAIL_CLAIM_NOT_FOUND_WITH_CONTEXT
+        = "OIDC provider returned no email claim. Received claims: {{received_claims}}."
+        . " Check that your Email Attribute setting (currently '{{configured_attribute}}')"
+        . " matches the actual claim name (case-sensitive).";
+
+    /** The IdP returned the email under a differently-cased claim name. */
+    public const EMAIL_CLAIM_WRONG_CASE
+        = "OIDC provider returned claim '{{actual_claim}}' but Email Attribute is set to '{{configured_claim}}'."
+        . " Update the Email Attribute field to '{{actual_claim}}'.";
+
+    // -------------------------------------------------------------------------
+    // Role mapping errors
+    // -------------------------------------------------------------------------
+
+    /** No admin role could be mapped for the OIDC groups the user belongs to. */
+    public const ADMIN_ROLE_MAPPING_NO_MATCH
+        = "Admin role mapping failed: no role configured for OIDC groups [{{groups}}]."
+        . " Configure a role mapping in Attribute Settings, or set a Default Admin Role as fallback."
+        . " Admin user creation aborted.";
+
+    /** A configured role mapping references a Magento role ID that does not exist. */
+    public const ADMIN_ROLE_MAPPING_INVALID_ROLE_ID
+        = "Admin role mapping failed: configured role ID '{{role_id}}' does not exist in Magento."
+        . " Verify the role ID in the Attribute Settings > Admin Role Mapping table.";
+
+    // -------------------------------------------------------------------------
+    // JWT errors
+    // -------------------------------------------------------------------------
+
+    /** JWT signature verification failed (includes JWKS URL for diagnosis). */
+    public const JWT_SIGNATURE_INVALID
+        = "JWT signature verification failed for issuer '{{issuer}}'."
+        . " Check that the JWKS URI is correct and the IdP is signing with RS256, RS384, or RS512.";
+
+    /** JWT has expired. */
+    public const JWT_EXPIRED
+        = "ID token has expired (exp: {{exp}}, server time: {{now}})."
+        . " Check server clock synchronisation between Magento and the IdP.";
+
+    /** JWT issuer does not match the configured value. */
+    public const JWT_ISSUER_MISMATCH
+        = "JWT issuer mismatch: token has '{{token_issuer}}' but expected '{{configured_issuer}}'."
+        . " Update the Issuer field in OAuth Settings to '{{token_issuer}}'.";
+
+    // -------------------------------------------------------------------------
+    // User creation errors (more specific replacements for generic messages)
+    // -------------------------------------------------------------------------
+
+    /** Auto-create is disabled and the admin user does not exist. */
+    public const ADMIN_AUTO_CREATE_DISABLED_FOR_EMAIL
+        = "Admin account not found for '{{email}}'."
+        . " Auto-creation is disabled. Create the admin account manually or enable"
+        . " 'Auto Create Admin Users' in Sign In Settings.";
+
+    /** Auto-create is disabled and the customer does not exist. */
+    public const CUSTOMER_AUTO_CREATE_DISABLED_FOR_EMAIL
+        = "Account not found for '{{email}}'."
+        . " Auto-creation is disabled. Please register first or contact the store administrator.";
 
     /**
      * Parse the message and replace the dynamic values with the

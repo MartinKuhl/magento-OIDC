@@ -1,0 +1,88 @@
+<?php
+/**
+ * PHPStan stubs for Magento classes whose names end with "Factory".
+ *
+ * The bitexpert/phpstan-magento FactoryAutoloader generates minimal stubs
+ * (only create(array $data = [])) for ANY class ending with "Factory".
+ * The classes below are NOT simple Magento DI factories, so we override
+ * those generated stubs here via phpstan.local.neon's stubFiles directive,
+ * which takes precedence over everything the autoloader generates.
+ */
+
+// phpcs:ignoreFile
+
+namespace Magento\Framework\Stdlib\Cookie;
+
+class SensitiveCookieMetadata
+{
+}
+
+class PublicCookieMetadata
+{
+}
+
+class CookieMetadata
+{
+}
+
+class CookieMetadataFactory
+{
+    /** @param array<string, mixed> $metadata */
+    public function createSensitiveCookieMetadata(array $metadata = []): SensitiveCookieMetadata
+    {
+    }
+
+    /** @param array<string, mixed> $metadata */
+    public function createPublicCookieMetadata(array $metadata = []): PublicCookieMetadata
+    {
+    }
+
+    /** @param array<string, mixed> $metadata */
+    public function createCookieMetadata(array $metadata = []): CookieMetadata
+    {
+    }
+}
+
+namespace Magento\Framework\Controller;
+
+interface ResultInterface
+{
+}
+
+class ResultFactory
+{
+    const TYPE_JSON     = 'json';
+    const TYPE_RAW      = 'raw';
+    const TYPE_REDIRECT = 'redirect';
+    const TYPE_FORWARD  = 'forward';
+    const TYPE_LAYOUT   = 'layout';
+    const TYPE_PAGE     = 'page';
+
+    /** @param array<string, mixed> $arguments */
+    public function create(string $type, array $arguments = []): ResultInterface
+    {
+    }
+}
+
+namespace Magento\Framework\App;
+
+interface ResponseInterface
+{
+}
+
+namespace Magento\Framework\App\Response\Http;
+
+class FileFactory
+{
+    /**
+     * @param string|array<string, mixed> $content
+     */
+    public function create(
+        string $fileName,
+        $content,
+        string $baseDir = \Magento\Framework\App\Filesystem\DirectoryList::ROOT,
+        string $contentType = 'application/octet-stream',
+        ?int $contentLength = null
+    ): \Magento\Framework\App\ResponseInterface {
+    }
+}

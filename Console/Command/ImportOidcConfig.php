@@ -12,7 +12,9 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use MiniOrange\OAuth\Helper\OAuthUtility;
 use MiniOrange\OAuth\Model\MiniorangeOauthClientAppsFactory;
+use MiniOrange\OAuth\Model\Provider\MappingRepository;
 use MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps as AppResource;
+use MiniOrange\OAuth\Model\ResourceModel\OauthRoleMapping as RoleMappingResource;
 
 /**
  * CLI command: import OIDC provider configurations from a JSON file (FEAT-07).
@@ -50,6 +52,9 @@ class ImportOidcConfig extends Command
     /** @var State */
     private readonly State $appState;
 
+    /** @var MappingRepository */
+    private readonly MappingRepository $mappingRepository;
+
     /**
      * Initialize import command.
      *
@@ -58,19 +63,22 @@ class ImportOidcConfig extends Command
      * @param AppResource                      $appResource
      * @param EncryptorInterface               $encryptor
      * @param State                            $appState
+     * @param MappingRepository                $mappingRepository
      */
     public function __construct(
         OAuthUtility $oauthUtility,
         MiniorangeOauthClientAppsFactory $clientAppsFactory,
         AppResource $appResource,
         EncryptorInterface $encryptor,
-        State $appState
+        State $appState,
+        MappingRepository $mappingRepository
     ) {
         $this->oauthUtility      = $oauthUtility;
         $this->clientAppsFactory = $clientAppsFactory;
         $this->appResource       = $appResource;
         $this->encryptor         = $encryptor;
         $this->appState          = $appState;
+        $this->mappingRepository = $mappingRepository;
         parent::__construct();
     }
 
@@ -190,9 +198,13 @@ class ImportOidcConfig extends Command
                 $this->appResource->load($model, $existing['id']);
             }
 
-            // Apply data (exclude internal primary key from the import payload)
+            // Separate normalized mapping data from provider core data
+            $attributeMappings = $provider['attribute_mappings'] ?? [];
+            $roleMappings      = $provider['role_mappings'] ?? [];
+
+            // Apply data (exclude internal primary key and normalized tables from provider row)
             $importData = $provider;
-            unset($importData['id']); // never import primary key
+            unset($importData['id'], $importData['attribute_mappings'], $importData['role_mappings']);
 
             // Handle sensitive field encryption
             foreach (self::SENSITIVE_FIELDS as $field) {
@@ -219,8 +231,7 @@ class ImportOidcConfig extends Command
 
             if (!$dryRun) {
                 try {
-                    $model->setData($importData);
-                    $this->appResource->save($model);
+                    $this->persistProvider($model, $importData, $attributeMappings, $roleMappings);
                     if ($existing !== null) {
                         $updated++;
                     } else {
@@ -250,5 +261,63 @@ class ImportOidcConfig extends Command
         ));
 
         return $errors > 0 ? Command::FAILURE : Command::SUCCESS;
+    }
+
+    /**
+     * Save provider model and restore its normalized mapping tables.
+     *
+     * Extracted from execute() to keep nesting level within coding-standard limits.
+     *
+     * @param \MiniOrange\OAuth\Model\MiniorangeOauthClientApps $model
+     * @param array $importData
+     * @param array $attributeMappings
+     * @param array $roleMappings
+     */
+    private function persistProvider(
+        \MiniOrange\OAuth\Model\MiniorangeOauthClientApps $model,
+        array $importData,
+        array $attributeMappings,
+        array $roleMappings
+    ): void {
+        $model->setData($importData);
+        $this->appResource->save($model);
+        $savedId = (int) $model->getId();
+
+        if ($savedId > 0 && $attributeMappings !== []) {
+            foreach ($attributeMappings as $type => $attrData) {
+                $name = is_array($attrData)
+                    ? (string) ($attrData['attribute_name'] ?? '')
+                    : (string) $attrData;
+                $syncOnSso = is_array($attrData)
+                    ? (int) ($attrData['sync_on_sso'] ?? 0)
+                    : 0;
+                if ($name !== '') {
+                    $this->mappingRepository->saveAttributeMapping(
+                        $savedId,
+                        (string) $type,
+                        $name,
+                        $syncOnSso
+                    );
+                }
+            }
+        }
+
+        if ($savedId > 0 && $roleMappings !== []) {
+            $mappingTypes = [
+                RoleMappingResource::TYPE_ADMIN_ROLE,
+                RoleMappingResource::TYPE_CUSTOMER_GROUP,
+            ];
+            foreach ($mappingTypes as $mappingType) {
+                if (!empty($roleMappings[$mappingType])
+                    && is_array($roleMappings[$mappingType])
+                ) {
+                    $this->mappingRepository->replaceRoleMappings(
+                        $savedId,
+                        $mappingType,
+                        $roleMappings[$mappingType]
+                    );
+                }
+            }
+        }
     }
 }

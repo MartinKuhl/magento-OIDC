@@ -8,6 +8,7 @@ use Magento\Customer\Model\Session as CustomerSession;
 use Magento\Framework\App\ResponseInterface;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
+use Magento\Framework\HTTP\Adapter\CurlFactory;
 use Magento\Framework\HTTP\PhpEnvironment\Response as HttpResponse;
 use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
 use Magento\Framework\Stdlib\CookieManagerInterface;
@@ -52,6 +53,9 @@ class OAuthLogoutObserver implements ObserverInterface
     /** @var UrlInterface */
     private readonly UrlInterface $url;
 
+    /** @var CurlFactory */
+    private readonly CurlFactory $curlFactory;
+
     /**
      * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
      * @param ResponseInterface                     $response
@@ -59,6 +63,7 @@ class OAuthLogoutObserver implements ObserverInterface
      * @param CookieMetadataFactory                 $cookieMetadataFactory
      * @param CustomerSession                       $customerSession
      * @param UrlInterface                          $url
+     * @param CurlFactory                           $curlFactory
      */
     public function __construct(
         \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
@@ -66,7 +71,8 @@ class OAuthLogoutObserver implements ObserverInterface
         CookieManagerInterface $cookieManager,
         CookieMetadataFactory $cookieMetadataFactory,
         CustomerSession $customerSession,
-        UrlInterface $url
+        UrlInterface $url,
+        CurlFactory $curlFactory
     ) {
         $this->oauthUtility          = $oauthUtility;
         $this->_response             = $response;
@@ -74,6 +80,7 @@ class OAuthLogoutObserver implements ObserverInterface
         $this->cookieMetadataFactory = $cookieMetadataFactory;
         $this->customerSession       = $customerSession;
         $this->url                   = $url;
+        $this->curlFactory           = $curlFactory;
     }
 
     /**
@@ -137,6 +144,17 @@ class OAuthLogoutObserver implements ObserverInterface
 
         if ($endSessionEndpoint === '' || !filter_var($endSessionEndpoint, FILTER_VALIDATE_URL)) {
             return;
+        }
+
+        // ── 3b. RFC 7009 token revocation (non-fatal, fire-and-forget) ───────────
+        $accessToken = (string) $this->customerSession->getData('oidc_access_token');
+        if ($provider !== null && !empty($provider['revocation_endpoint']) && $accessToken !== '') {
+            $this->revokeToken(
+                (string) $provider['revocation_endpoint'],
+                $accessToken,
+                (string) ($provider['clientID'] ?? ''),
+                (string) ($provider['client_secret'] ?? '')
+            );
         }
 
         // ── 4. Build logout URL ───────────────────────────────────────────────
@@ -259,5 +277,48 @@ class OAuthLogoutObserver implements ObserverInterface
         }
 
         return '';
+    }
+
+    /**
+     * Call the RFC 7009 token revocation endpoint (fire-and-forget).
+     *
+     * Failure is non-fatal: we log the error and continue the logout flow.
+     *
+     * @param string $revocationEndpoint
+     * @param string $accessToken
+     * @param string $clientId
+     * @param string $clientSecret  May be encrypted; decrypted by OAuthUtility if needed
+     */
+    private function revokeToken(
+        string $revocationEndpoint,
+        string $accessToken,
+        string $clientId,
+        string $clientSecret
+    ): void {
+        try {
+            $curl = $this->curlFactory->create();
+            $curl->setConfig(['timeout' => 5]);
+            $curl->write(
+                'POST',
+                $revocationEndpoint,
+                '1.1',
+                ['Content-Type: application/x-www-form-urlencoded'],
+                http_build_query([
+                    'token'           => $accessToken,
+                    'token_type_hint' => 'access_token',
+                    'client_id'       => $clientId,
+                    'client_secret'   => $this->oauthUtility->decryptSecret($clientSecret),
+                ])
+            );
+            $curl->read();
+            $curl->close();
+            $this->oauthUtility->customlog(
+                'OAuthLogoutObserver: Token revocation request sent to ' . $revocationEndpoint
+            );
+        } catch (\Exception $e) {
+            $this->oauthUtility->customlog(
+                'OAuthLogoutObserver: Token revocation failed (non-fatal): ' . $e->getMessage()
+            );
+        }
     }
 }

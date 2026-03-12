@@ -10,7 +10,9 @@ use Magento\Framework\App\Action\HttpPostActionInterface;
 use Magento\Framework\App\Request\DataPersistorInterface;
 use Magento\Framework\Controller\Result\Redirect;
 use MiniOrange\OAuth\Model\MiniorangeOauthClientAppsFactory;
+use MiniOrange\OAuth\Model\Provider\MappingRepository;
 use MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps as AppResource;
+use MiniOrange\OAuth\Model\ResourceModel\OauthRoleMapping as RoleMappingResource;
 
 /**
  * Admin controller — Save OIDC Provider (MP-06).
@@ -33,6 +35,9 @@ class Save extends Action implements HttpPostActionInterface
     /** @var DataPersistorInterface */
     private readonly DataPersistorInterface $dataPersistor;
 
+    /** @var MappingRepository */
+    private readonly MappingRepository $mappingRepository;
+
     /**
      * Initialize provider save controller.
      *
@@ -40,16 +45,19 @@ class Save extends Action implements HttpPostActionInterface
      * @param MiniorangeOauthClientAppsFactory $clientAppsFactory
      * @param AppResource                      $appResource
      * @param DataPersistorInterface           $dataPersistor
+     * @param MappingRepository                $mappingRepository
      */
     public function __construct(
         Context $context,
         MiniorangeOauthClientAppsFactory $clientAppsFactory,
         AppResource $appResource,
-        DataPersistorInterface $dataPersistor
+        DataPersistorInterface $dataPersistor,
+        MappingRepository $mappingRepository
     ) {
-        $this->clientAppsFactory = $clientAppsFactory;
-        $this->appResource       = $appResource;
-        $this->dataPersistor     = $dataPersistor;
+        $this->clientAppsFactory  = $clientAppsFactory;
+        $this->appResource        = $appResource;
+        $this->dataPersistor      = $dataPersistor;
+        $this->mappingRepository  = $mappingRepository;
         parent::__construct($context);
     }
 
@@ -94,7 +102,7 @@ class Save extends Action implements HttpPostActionInterface
                 'clientID', 'scope', 'grant_type',
                 'authorize_endpoint', 'access_token_endpoint',
                 'user_info_endpoint', 'jwks_endpoint', 'well_known_config_url',
-                'endsession_endpoint', 'issuer',
+                'endsession_endpoint', 'revocation_endpoint', 'issuer',
                 // Attribute mapping — basic claims
                 'email_attribute', 'username_attribute',
                 'firstname_attribute', 'lastname_attribute', 'group_attribute',
@@ -168,13 +176,17 @@ class Save extends Action implements HttpPostActionInterface
             $model->setData('default_role', $this->sanitizeString($data['default_role'] ?? ''));
 
             // Admin role mappings: oauth_role_mapping[N][group/role] → JSON → oauth_admin_role_mapping
-            $roleMappings = [];
+            // $roleMappings stores the legacy format for JSON (read by getAdminRoleFromGroups()).
+            // $roleMappingsNormalized uses the keys expected by replaceRoleMappings().
+            $roleMappings           = [];
+            $roleMappingsNormalized = [];
             if (!empty($data['oauth_role_mapping']) && is_array($data['oauth_role_mapping'])) {
                 foreach ($data['oauth_role_mapping'] as $row) {
                     $group = $this->sanitizeString($row['group'] ?? '');
                     $role  = $this->sanitizeString($row['role'] ?? '');
                     if ($group !== '' && $role !== '') {
-                        $roleMappings[] = ['group' => $group, 'role' => $role];
+                        $roleMappings[]           = ['group' => $group, 'role' => $role];
+                        $roleMappingsNormalized[] = ['oidc_group' => $group, 'magento_role_id' => $role];
                     }
                 }
             }
@@ -184,13 +196,17 @@ class Save extends Action implements HttpPostActionInterface
             $model->setData('default_group', $this->sanitizeString($data['default_group'] ?? ''));
 
             // Customer group mappings: oauth_customer_group_mapping[N][group/customerGroup] → JSON
-            $cgMappings = [];
+            // $cgMappings stores the legacy format for JSON.
+            // $cgMappingsNormalized uses the keys expected by replaceRoleMappings().
+            $cgMappings           = [];
+            $cgMappingsNormalized = [];
             if (!empty($data['oauth_customer_group_mapping']) && is_array($data['oauth_customer_group_mapping'])) {
                 foreach ($data['oauth_customer_group_mapping'] as $row) {
                     $group         = $this->sanitizeString($row['group'] ?? '');
                     $customerGroup = $this->sanitizeString($row['customerGroup'] ?? '');
                     if ($group !== '' && $customerGroup !== '') {
-                        $cgMappings[] = ['group' => $group, 'customerGroup' => $customerGroup];
+                        $cgMappings[]           = ['group' => $group, 'customerGroup' => $customerGroup];
+                        $cgMappingsNormalized[] = ['oidc_group' => $group, 'magento_role_id' => $customerGroup];
                     }
                 }
             }
@@ -209,6 +225,23 @@ class Save extends Action implements HttpPostActionInterface
             $model->setData('pkce_flow', $pkceFlow);
 
             $this->appResource->save($model);
+
+            // Phase 4 dual-write: mirror role/group mappings into normalized tables so
+            // that service classes can read from the new schema while legacy columns
+            // remain populated for backward compatibility.
+            $savedId = (int) $model->getId();
+            if ($savedId > 0) {
+                $this->mappingRepository->replaceRoleMappings(
+                    $savedId,
+                    RoleMappingResource::TYPE_ADMIN_ROLE,
+                    $roleMappingsNormalized
+                );
+                $this->mappingRepository->replaceRoleMappings(
+                    $savedId,
+                    RoleMappingResource::TYPE_CUSTOMER_GROUP,
+                    $cgMappingsNormalized
+                );
+            }
 
             $this->messageManager->addSuccessMessage((string) __('Provider saved successfully.'));
             $this->dataPersistor->clear('oidc_provider');
