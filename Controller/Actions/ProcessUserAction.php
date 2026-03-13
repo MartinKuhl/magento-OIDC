@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace MiniOrange\OAuth\Controller\Actions;
 
 use MiniOrange\OAuth\Model\Service\CustomerUserCreator;

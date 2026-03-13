@@ -120,15 +120,31 @@ class SendAuthorizationRequest extends BaseAction
 
         // Combine relayState with session ID, app name, login type, CSRF token, and provider ID
         $stateToken = $this->securityHelper->createStateToken($currentSessionId);
+        // H-02: Read login_type from params but clamp to known valid values.
+        // The admin SSO button legitimately passes login_type=admin via this frontend route.
+        // Any value other than LOGIN_TYPE_ADMIN is coerced to LOGIN_TYPE_CUSTOMER, preventing
+        // injection of unexpected values while preserving the admin login flow.
+        $loginType = (string) ($params['login_type'] ?? OAuthConstants::LOGIN_TYPE_CUSTOMER);
+        if ($loginType !== OAuthConstants::LOGIN_TYPE_ADMIN) {
+            $loginType = OAuthConstants::LOGIN_TYPE_CUSTOMER;
+        }
         $relayState = $this->securityHelper->encodeRelayState(
             $relayState,
             $currentSessionId,
             $app_name,
-            isset($params['login_type']) ? $params['login_type'] : OAuthConstants::LOGIN_TYPE_CUSTOMER,
+            $loginType,
             $stateToken,
             $providerId > 0 ? $providerId : null
         );
         $this->oauthUtility->customlog("SendAuthorizationRequest: Combined relayState: " . $relayState);
+
+        // H-01: Generate and store a per-flow nonce for id_token replay protection.
+        // The nonce is added to the authorization request params so the IdP includes
+        // it in the id_token. It is consumed in ReadAuthorizationResponse and passed
+        // to JwtVerifier::verifyAndDecode() for validation.
+        $oidcNonce = bin2hex(random_bytes(16));
+        $this->securityHelper->storeOidcNonce($stateToken, $oidcNonce);
+        $params['nonce'] = $oidcNonce;
 
         if (strpos($relayState, OAuthConstants::TEST_RELAYSTATE) !== false) {
             $this->oauthUtility->setStoreConfig(OAuthConstants::IS_TEST, true);

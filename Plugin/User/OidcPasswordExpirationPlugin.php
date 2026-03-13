@@ -35,6 +35,10 @@ class OidcPasswordExpirationPlugin
      * Skips password expiration check entirely for OIDC users.
      * Event: backend_auth_user_login_success
      *
+     * L-08: `around` is required (not `before`) because we need to prevent
+     * `$proceed` from being called at all — a `before` plugin cannot stop
+     * the original method from executing.
+     *
      * @param  AuthObserver   $subject
      * @param  callable       $proceed
      * @param  EventObserver  $observer

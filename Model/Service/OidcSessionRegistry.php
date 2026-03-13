@@ -18,7 +18,7 @@ use Magento\Framework\App\CacheInterface;
  *
  * API:
  *   register(sub, sid, phpSessionId, ttl)  — call at login time
- *   resolve(sub, sid)                       —final  call in back-channel handler
+ *   resolve(sub, sid)                       — call in back-channel handler
  *   revoke(sub, sid)                        — call after the session is destroyed
  */
 class OidcSessionRegistry
@@ -108,6 +108,6 @@ class OidcSessionRegistry
      */
     private function buildKey(string $sub, string $sid): string
     {
-        return self::KEY_PREFIX . sha1($sub . '|' . $sid);
+        return self::KEY_PREFIX . hash('sha256', $sub . '|' . $sid);
     }
 }

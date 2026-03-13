@@ -76,6 +76,7 @@
             <argument name="userFactory" xsi:type="object">Magento\User\Model\UserFactory</argument>
             <argument name="eventManager" xsi:type="object">Magento\Framework\Event\ManagerInterface</argument>
             <argument name="oauthUtility" xsi:type="object">MiniOrange\OAuth\Helper\OAuthUtility</argument>
+            <argument name="securityHelper" xsi:type="object">MiniOrange\OAuth\Helper\OAuthSecurityHelper</argument>
         </arguments>
     </type>
 
@@ -84,13 +85,13 @@
         <arguments>
             <argument name="oidcCredentialAdapter" xsi:type="object">MiniOrange\OAuth\Model\Auth\OidcCredentialAdapter</argument>
             <argument name="oauthUtility" xsi:type="object">MiniOrange\OAuth\Helper\OAuthUtility</argument>
+            <argument name="securityHelper" xsi:type="object">MiniOrange\OAuth\Helper\OAuthSecurityHelper</argument>
         </arguments>
     </type>
 
     <!-- OIDC Admin Callback Controller Configuration -->
     <type name="MiniOrange\OAuth\Controller\Adminhtml\Actions\Oidccallback">
         <arguments>
-            <argument name="userFactory" xsi:type="object">Magento\User\Model\UserFactory</argument>
             <argument name="auth" xsi:type="object">Magento\Backend\Model\Auth</argument>
             <argument name="resultFactory" xsi:type="object">Magento\Framework\Controller\ResultFactory</argument>
             <argument name="oauthUtility" xsi:type="object">MiniOrange\OAuth\Helper\OAuthUtility</argument>
@@ -130,6 +131,7 @@
         <arguments>
             <argument name="oauthUtility" xsi:type="object">MiniOrange\OAuth\Helper\OAuthUtility</argument>
             <argument name="logger" xsi:type="object">Psr\Log\LoggerInterface</argument>
+            <argument name="securityHelper" xsi:type="object">MiniOrange\OAuth\Helper\OAuthSecurityHelper</argument>
         </arguments>
     </type>
 

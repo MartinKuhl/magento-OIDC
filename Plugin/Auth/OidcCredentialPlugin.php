@@ -16,14 +16,18 @@ use Magento\Backend\Model\Auth;
 use Magento\Backend\Model\Auth\Credential\StorageInterface;
 use MiniOrange\OAuth\Model\Auth\OidcCredentialAdapter;
 use MiniOrange\OAuth\Helper\OAuthUtility;
+use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
 
 class OidcCredentialPlugin
 {
     /** @var OidcCredentialAdapter */
-    protected OidcCredentialAdapter $oidcCredentialAdapter;
+    private readonly OidcCredentialAdapter $oidcCredentialAdapter;
 
     /** @var OAuthUtility */
-    protected OAuthUtility $oauthUtility;
+    private readonly OAuthUtility $oauthUtility;
+
+    /** @var OAuthSecurityHelper */
+    private readonly OAuthSecurityHelper $securityHelper;
 
     /**
      * @var bool Flag indicating OIDC authentication is in progress
@@ -43,13 +47,16 @@ class OidcCredentialPlugin
      *
      * @param OidcCredentialAdapter $oidcCredentialAdapter
      * @param OAuthUtility          $oauthUtility
+     * @param OAuthSecurityHelper   $securityHelper
      */
     public function __construct(
         OidcCredentialAdapter $oidcCredentialAdapter,
-        OAuthUtility $oauthUtility
+        OAuthUtility $oauthUtility,
+        OAuthSecurityHelper $securityHelper
     ) {
         $this->oidcCredentialAdapter = $oidcCredentialAdapter;
         $this->oauthUtility = $oauthUtility;
+        $this->securityHelper = $securityHelper;
     }
 
     /**
@@ -74,7 +81,8 @@ class OidcCredentialPlugin
         $this->isOidcAuth    = false;
         $this->adapterLogged = false;
 
-        if ($password === OidcCredentialAdapter::OIDC_TOKEN_MARKER) {
+        // C-01: Detect OIDC login by checking for the ephemeral token format (non-consuming)
+        if ($this->securityHelper->isOidcAuthToken($password)) {
             $this->oauthUtility->customlog(
                 "OidcCredentialPlugin: OIDC authentication detected for: " . $username
             );

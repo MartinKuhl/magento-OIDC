@@ -7,6 +7,7 @@ namespace MiniOrange\OAuth\Plugin;
 use Magento\Backend\Model\Auth;
 use Magento\Framework\Exception\AuthenticationException;
 use MiniOrange\OAuth\Helper\OAuthUtility;
+use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -23,18 +24,24 @@ class AdminLoginRestrictionPlugin
     /** @var LoggerInterface */
     private readonly LoggerInterface $logger;
 
+    /** @var OAuthSecurityHelper */
+    private readonly OAuthSecurityHelper $securityHelper;
+
     /**
      * Constructor.
      *
-     * @param OAuthUtility    $oauthUtility
-     * @param LoggerInterface $logger
+     * @param OAuthUtility        $oauthUtility
+     * @param LoggerInterface     $logger
+     * @param OAuthSecurityHelper $securityHelper
      */
     public function __construct(
         OAuthUtility $oauthUtility,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        OAuthSecurityHelper $securityHelper
     ) {
         $this->oauthUtility = $oauthUtility;
         $this->logger = $logger;
+        $this->securityHelper = $securityHelper;
     }
 
     /**
@@ -50,8 +57,8 @@ class AdminLoginRestrictionPlugin
      */
     public function beforeLogin(Auth $subject, string $username, $password): null
     {
-        // Allow OIDC-authenticated logins (token marker from OidcCallback)
-        if ($password === \MiniOrange\OAuth\Model\Auth\OidcCredentialAdapter::OIDC_TOKEN_MARKER) {
+        // C-01: Allow OIDC-authenticated logins — detect by ephemeral token format (non-consuming)
+        if ($this->securityHelper->isOidcAuthToken($password)) {
             return null;
         }
 

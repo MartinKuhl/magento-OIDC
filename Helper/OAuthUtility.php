@@ -52,10 +52,8 @@ class OAuthUtility extends Data
     /** @var \Magento\Framework\App\Config\ReinitableConfigInterface */
     protected \Magento\Framework\App\Config\ReinitableConfigInterface $reinitableConfig;
 
-    /**
-     * @var \Psr\Log\LoggerInterface
-     */
-    protected $_logger;
+    /** @var \MiniOrange\OAuth\Logger\Logger */
+    private readonly \MiniOrange\OAuth\Logger\Logger $moduleLogger;
 
     /** @var \Magento\Framework\App\ProductMetadataInterface */
     protected \Magento\Framework\App\ProductMetadataInterface $productMetadata;
@@ -153,7 +151,7 @@ class OAuthUtility extends Data
         $this->fileSystem = $fileSystem;
         $this->logger = $logger;
         $this->reinitableConfig = $reinitableConfig;
-        $this->_logger = $logger2;
+        $this->moduleLogger = $logger2;
         $this->productMetadata = $productMetadata;
         $this->dateTime = $dateTime;
         $this->directoryList = $directoryList;
@@ -362,7 +360,7 @@ class OAuthUtility extends Data
                 'level'   => 'debug',
                 'message' => $txt,
             ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-            $this->_logger->debug($entry !== false ? $entry : $txt);
+            $this->moduleLogger->debug($entry !== false ? $entry : $txt);
         }
     }
 
@@ -397,7 +395,7 @@ class OAuthUtility extends Data
         );
 
         $entry = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-        $this->_logger->debug($entry !== false ? $entry : $event);
+        $this->moduleLogger->debug($entry !== false ? $entry : $event);
     }
 
     /**

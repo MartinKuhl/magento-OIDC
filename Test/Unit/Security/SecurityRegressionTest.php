@@ -202,9 +202,9 @@ class SecurityRegressionTest extends TestCase
         $file    = self::$root . '/Plugin/Auth/OidcCredentialPlugin.php';
         $content = $this->readFile($file);
 
-        // The unconditional reset must appear BEFORE the OIDC_TOKEN_MARKER check
+        // The unconditional reset must appear BEFORE the OIDC token detection check
         $resetPos  = strpos($content, '$this->isOidcAuth    = false;');
-        $markerPos = strpos($content, 'OIDC_TOKEN_MARKER');
+        $markerPos = strpos($content, 'isOidcAuthToken');
 
         $this->assertNotFalse($resetPos, 'SEC-06: isOidcAuth reset not found in beforeLogin()');
         $this->assertNotFalse($markerPos, 'SEC-06: OIDC_TOKEN_MARKER check not found');

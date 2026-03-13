@@ -39,7 +39,8 @@ use MiniOrange\OAuth\Model\Service\OidcSessionRegistry;
 class BackChannelLogout extends BaseAction implements HttpPostActionInterface, CsrfAwareActionInterface
 {
     /** OIDC Back-Channel Logout event URI (spec §2.4). */
-    private const string LOGOUT_EVENT_URI = 'http://schemas.openid.net/event/backchannel-logout';
+    // H-07: Typed constants (private const string) require PHP 8.3+. Magento 2.4 supports PHP 8.1+.
+    private const LOGOUT_EVENT_URI = 'http://schemas.openid.net/event/backchannel-logout';
 
     /** @var JsonFactory */
     private readonly JsonFactory $jsonFactory;
@@ -224,15 +225,23 @@ class BackChannelLogout extends BaseAction implements HttpPostActionInterface, C
     /**
      * Destroy a PHP session by its session ID.
      *
-     * Opens the target session file, clears its data, and deletes it.
-     * The current request's session is unaffected.
+     * C-02: Back-channel logout requires destroying a session that belongs to a
+     * different browser request. PHP does not provide an API for this; switching
+     * session IDs via session_id() is the de-facto standard approach used by
+     * Symfony, Laravel, and other frameworks.
+     *
+     * Thread safety: PHP's file-based session handler holds an exclusive flock()
+     * for the duration of the session_start() call, so concurrent reads from the
+     * target session's owner request will block until we call session_destroy().
+     * The try-finally below ensures the original session ID is always restored even
+     * if an exception is thrown (e.g. by an observer on session_start).
      *
      * @param string $phpSessionId Target PHP session ID
      */
     private function destroySession(string $phpSessionId): void
     {
         if (!preg_match('/^[a-zA-Z0-9,-]+$/', $phpSessionId)) {
-            // Reject malformed session IDs
+            // Reject malformed session IDs to prevent path traversal in file-based handlers
             $this->oauthUtility->customlog(
                 "BackChannelLogout: Rejected malformed session ID during destroy."
             );
@@ -244,13 +253,16 @@ class BackChannelLogout extends BaseAction implements HttpPostActionInterface, C
         $currentId = session_id();
         session_commit();
         session_id($phpSessionId);
-        session_start(['read_and_close' => false]);
-        $_SESSION = [];
-        session_destroy();
-        // Restore the original session for the current request
-        session_id($currentId !== false ? $currentId : '');
-        if ($currentId !== false && $currentId !== '') {
+        try {
             session_start(['read_and_close' => false]);
+            $_SESSION = [];
+            session_destroy();
+        } finally {
+            // C-02: Always restore original session ID, even if an exception is thrown
+            session_id($currentId !== false ? $currentId : '');
+            if ($currentId !== false && $currentId !== '') {
+                session_start(['read_and_close' => false]);
+            }
         }
         // phpcs:enable Magento2.Functions.DiscouragedFunction.Discouraged, Magento2.Security.Superglobal
     }

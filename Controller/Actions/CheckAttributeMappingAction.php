@@ -14,7 +14,7 @@ use Magento\Framework\Stdlib\CookieManagerInterface;
 use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
 
 /**
- * Check and process OAuth/OIDC attribute mapfinal ping
+ * Check and process OAuth/OIDC attribute mapping
  *
  * This controller handles attribute mapping after successful authentication.
  * Admin users are redirected to a separate login endpoint that runs in the
@@ -165,18 +165,14 @@ class CheckAttributeMappingAction extends BaseAction
         parent::__construct($context, $oauthUtility);
     }
 
+    /** @var bool Whether attribute mappings have been initialized for this request. */
+    private bool $attributesInitialized = false;
+
     /**
      * Lazy-initialize attribute mappings from the active provider context.
      *
      * Called at the start of execute() after setActiveProviderId() has been
      * set on oauthUtility. Ensures mappings come from the correct provider row.
-     *
-     * @var bool
-     */
-    private bool $attributesInitialized = false;
-
-    /**
-     * Initialize attribute mappings from active provider configuration.
      */
     private function initAttributeMappings(): void
     {
@@ -251,7 +247,7 @@ class CheckAttributeMappingAction extends BaseAction
                     $adminLoginUrl = $this->backendUrl->getUrl('admin');
                     return $this->resultRedirectFactory->create()->setUrl($adminLoginUrl);
                 }
-                $encodedError = base64_encode($denialMessage);
+                $encodedError = urlencode(base64_encode($denialMessage));
                 $loginUrl = $this->oauthUtility->getCustomerLoginUrl() . '?oidc_error=' . $encodedError;
                 return $this->resultRedirectFactory->create()->setUrl($loginUrl);
             }
@@ -361,7 +357,7 @@ class CheckAttributeMappingAction extends BaseAction
                             ['groups' => $groupList !== '' ? $groupList : '(none)']
                         );
                         $adminLoginUrl = $this->backendUrl->getUrl('admin')
-                            . '?oidc_error=' . base64_encode($errorMessage);
+                            . '?oidc_error=' . urlencode(base64_encode($errorMessage));
                         return $this->resultRedirectFactory->create()->setUrl($adminLoginUrl);
                     }
                 } else {
@@ -372,7 +368,8 @@ class CheckAttributeMappingAction extends BaseAction
                         'ADMIN_ACCOUNT_NOT_FOUND',
                         ['email' => $userEmail]
                     );
-                    $adminLoginUrl = $this->backendUrl->getUrl('admin') . '?oidc_error=' . base64_encode($errorMessage);
+                    $adminLoginUrl = $this->backendUrl->getUrl('admin')
+                        . '?oidc_error=' . urlencode(base64_encode($errorMessage));
                     return $this->resultRedirectFactory->create()->setUrl($adminLoginUrl);
                 }
             }
@@ -385,7 +382,7 @@ class CheckAttributeMappingAction extends BaseAction
             return $this->moOAuthCheckMapping($attrs, $flattenedAttrs, $userEmail ?? '');
         } catch (MissingAttributesException $e) {
             $this->oauthUtility->customlog("ERROR: Missing attributes - " . $e->getMessage());
-            $encodedError = base64_encode('Authentication failed: Required user attributes not received.');
+            $encodedError = urlencode(base64_encode('Authentication failed: Required user attributes not received.'));
             $loginUrl = $this->oauthUtility->getCustomerLoginUrl() . '?oidc_error=' . $encodedError;
             return $this->resultRedirectFactory->create()->setUrl($loginUrl);
         }
@@ -685,19 +682,28 @@ class CheckAttributeMappingAction extends BaseAction
                 continue;
             }
 
-            $actual    = $claims[$claim] ?? null;
-            $strActual = is_array($actual)
-                ? implode(',', $actual)
-                : (string) ($actual ?? '');
+            $actual = $claims[$claim] ?? null;
 
+            // M-02: Handle array-valued claims (e.g. groups: ["admin", "users"]).
+            // For equality/containment operators, check if *any* element matches
+            // rather than comparing against a comma-joined string, which would
+            // require the rule value to contain commas to match multi-valued claims.
             $passes = match ($operator) {
-                'eq'           => $strActual === $expected,
-                'neq'          => $strActual !== $expected,
-                'contains'     => str_contains($strActual, $expected),
-                'not_contains' => !str_contains($strActual, $expected),
-                'exists'       => $actual !== null,
-                'not_exists'   => $actual === null,
-                default        => false, // unknown operator: fail closed (deny on misconfiguration)
+                'eq'  => is_array($actual)
+                    ? in_array($expected, $actual, true)
+                    : ((string) ($actual ?? '')) === $expected,
+                'neq' => is_array($actual)
+                    ? !in_array($expected, $actual, true)
+                    : ((string) ($actual ?? '')) !== $expected,
+                'contains' => is_array($actual)
+                    ? (array_filter($actual, fn($v): bool => str_contains((string) $v, $expected)) !== [])
+                    : str_contains((string) ($actual ?? ''), $expected),
+                'not_contains' => is_array($actual)
+                    ? (array_filter($actual, fn($v): bool => str_contains((string) $v, $expected)) === [])
+                    : !str_contains((string) ($actual ?? ''), $expected),
+                'exists'     => $actual !== null,
+                'not_exists' => $actual === null,
+                default      => false, // unknown operator: fail closed (deny on misconfiguration)
             };
 
             if (!$passes) {

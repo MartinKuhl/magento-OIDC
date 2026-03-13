@@ -11,6 +11,7 @@ use Magento\User\Model\ResourceModel\User\Collection as UserCollection;
 use Magento\User\Model\ResourceModel\User\CollectionFactory as UserCollectionFactory;
 use Magento\User\Model\User;
 use Magento\User\Model\UserFactory;
+use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
 use MiniOrange\OAuth\Helper\OAuthUtility;
 use MiniOrange\OAuth\Model\Auth\OidcCredentialAdapter;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -38,6 +39,9 @@ class OidcCredentialAdapterTest extends TestCase
     /** @var UserCollectionFactory&MockObject */
     private UserCollectionFactory $userCollectionFactory;
 
+    /** @var OAuthSecurityHelper&MockObject */
+    private OAuthSecurityHelper $securityHelper;
+
     /** @var OidcCredentialAdapter */
     private OidcCredentialAdapter $adapter;
 
@@ -48,6 +52,12 @@ class OidcCredentialAdapterTest extends TestCase
         $this->userFactory           = $this->createMock(UserFactory::class);
         $this->userResource          = $this->createMock(UserResourceModel::class);
         $this->userCollectionFactory = $this->createMock(UserCollectionFactory::class);
+        $this->securityHelper        = $this->createMock(OAuthSecurityHelper::class);
+        $this->securityHelper->method('validateAndConsumeOidcAuthToken')
+            ->willReturnCallback(
+                static fn(string $username, string $password): bool
+                    => $password === OidcCredentialAdapter::OIDC_TOKEN_MARKER
+            );
 
         $this->oauthUtility->method('customlog');
 
@@ -56,7 +66,8 @@ class OidcCredentialAdapterTest extends TestCase
             $this->eventManager,
             $this->oauthUtility,
             $this->userResource,
-            $this->userCollectionFactory
+            $this->userCollectionFactory,
+            $this->securityHelper
         );
     }
 

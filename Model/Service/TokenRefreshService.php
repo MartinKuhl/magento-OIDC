@@ -21,14 +21,14 @@ use MiniOrange\OAuth\Helper\OAuthUtility;
  * updates the stored tokens, and returns the new access token.
  *
  * Storage: Magento customer session keys
- *   oidc_access_token           — current access token (plain text, short-lived)
+ *   oidc_access_token           — Magento-encrypted access token (M-01)
  *   oidc_access_token_expires   — Unix timestamp when it expires
  *   oidc_refresh_token          — Magento-encrypted refresh token
  *   oidc_provider_id            — provider row ID (set by CheckAttributeMappingAction)
  *
  * Design notes:
  *  - The service is stateless (no DB writes beyond the session).
- * final  - Refresh failures are logged but do not throw; callers get null and must
+ *  - Refresh failures are logged but do not throw; callers get null and must
  *    redirect to re-authentication.
  *  - A configurable threshold (default: 60 s) controls how early the refresh
  *    is triggered before actual expiry to account for clock skew.
@@ -103,7 +103,8 @@ class TokenRefreshService
             );
         }
         if ($accessToken !== '') {
-            $this->customerSession->setData(self::SESSION_ACCESS_TOKEN, $accessToken);
+            // M-01: Encrypt access token before storing — mirrors how refresh token is stored
+            $this->customerSession->setData(self::SESSION_ACCESS_TOKEN, $this->encryptor->encrypt($accessToken));
         }
         if ($expiresIn > 0) {
             $this->customerSession->setData(
@@ -129,12 +130,17 @@ class TokenRefreshService
             return null;
         }
 
-        $expiresAt   = (int) $this->customerSession->getData(self::SESSION_TOKEN_EXPIRES);
-        $accessToken = (string) ($this->customerSession->getData(self::SESSION_ACCESS_TOKEN) ?? '');
+        $expiresAt       = (int) $this->customerSession->getData(self::SESSION_TOKEN_EXPIRES);
+        $encryptedAccess = (string) ($this->customerSession->getData(self::SESSION_ACCESS_TOKEN) ?? '');
 
-        // Token is still fresh enough
-        if ($accessToken !== '' && $expiresAt > 0 && time() < ($expiresAt - self::REFRESH_THRESHOLD_SECS)) {
-            return $accessToken;
+        // Token is still fresh enough — decrypt before returning
+        if ($encryptedAccess !== '' && $expiresAt > 0 && time() < ($expiresAt - self::REFRESH_THRESHOLD_SECS)) {
+            try {
+                return $this->encryptor->decrypt($encryptedAccess);
+            } catch (\Exception $e) {
+                $this->oauthUtility->customlog('TokenRefreshService: Failed to decrypt access token.');
+                // Fall through to refresh below
+            }
         }
 
         return $this->refresh();

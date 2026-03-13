@@ -11,7 +11,7 @@ use MiniOrange\OAuth\Helper\OAuthUtility;
 /**
  * Service layer for OIDC authentication response processing.
  *
- * Encafinal psulates the core logic previously spread across controller-to-controller
+ * Encapsulates the core logic previously spread across controller-to-controller
  * chaining (ProcessResponseAction). Provides validation, attribute flattening,
  * email extraction, and login type detection as reusable service methods.
  */
@@ -105,9 +105,13 @@ class OidcAuthenticationService
             return $flattenedResponse[$emailAttribute];
         }
 
-        // Fallback to recursive search
+        // Fallback to recursive search — H-08: log a warning so operators know the mapping is misconfigured
         $email = $this->findEmailRecursive($rawResponse);
         if ($email !== '' && $email !== '0') {
+            $this->oauthUtility->customlog(
+                'OidcAuthenticationService: WARNING — email not found in configured attribute "'
+                . $emailAttribute . '", using recursive fallback value: ' . $email
+            );
             return $email;
         }
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace MiniOrange\OAuth\Controller\Actions;
 
 use Magento\Framework\App\Action\Context;
@@ -126,7 +128,7 @@ class ReadAuthorizationResponse extends BaseAction
                 "ReadAuthResponse: Rate limit exceeded for IP: " . $clientIp
             );
             $this->messageManager->addErrorMessage(
-                __('Too many authentication attempts. Please wait before trying again.')
+                (string) __('Too many authentication attempts. Please wait before trying again.')
             );
             return $this->resultRedirectFactory->create()->setPath('customer/account/login');
         }
@@ -152,7 +154,11 @@ class ReadAuthorizationResponse extends BaseAction
             }
 
             if (isset($params['error'])) {
-                $errorMsg = $params['error_description'] ?? $params['error'];
+                // H-05: Strip non-printable/non-ASCII characters from the IdP-supplied
+                // error_description before logging or embedding in any redirect URL.
+                $rawError = (string) ($params['error_description'] ?? $params['error']);
+                // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
+                $errorMsg = preg_replace('/[^\x20-\x7E]/', '', $rawError);
                 $encodedError = base64_encode((string) $errorMsg);
 
                 $isTest = (
@@ -161,13 +167,13 @@ class ReadAuthorizationResponse extends BaseAction
                 );
 
                 if ($isTest && strpos((string) $relayState, 'showTestResults') !== false) {
-                    // Test mode: redirect to showTestResults with error
+                    // Test mode: redirect to showTestResults with error (H-06: urlencode base64)
                     $errorUrl = $relayState . (strpos((string) $relayState, '?') !== false ? '&' : '?')
-                        . 'oidc_error=' . $encodedError;
+                        . 'oidc_error=' . urlencode($encodedError);
                     return $this->_redirect($errorUrl);
                 }
 
-                $query = ['_query' => ['oidc_error' => $encodedError]];
+                $query = ['_query' => ['oidc_error' => urlencode($encodedError)]];
                 if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
                     // Admin: redirect to admin login page
                     $loginUrl = $this->_url->getUrl('admin', $query);
@@ -213,7 +219,7 @@ class ReadAuthorizationResponse extends BaseAction
                 || !$this->securityHelper->validateStateToken($originalSessionId, $stateToken)
             ) {
                 $this->oauthUtility->customlog("ERROR: State token validation failed (CSRF protection)");
-                $encodedError = base64_encode('Security validation failed. Please try logging in again.');
+                $encodedError = urlencode(base64_encode('Security validation failed. Please try logging in again.'));
                 $query = ['_query' => ['oidc_error' => $encodedError]];
                 if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
                     $loginUrl = $this->_url->getUrl('admin', $query);
@@ -226,6 +232,11 @@ class ReadAuthorizationResponse extends BaseAction
             $this->oauthUtility->customlog(
                 "ReadAuthResponse: State token validation PASSED"
             );
+
+            // H-01: Consume the OIDC nonce that was stored when the authorization request was
+            // sent. Returns null when no nonce was stored (e.g. non-OIDC flow), in which case
+            // JwtVerifier will skip nonce validation rather than fail.
+            $expectedNonce = $this->securityHelper->consumeOidcNonce($stateToken);
 
             // MP-04: prefer direct-by-ID lookup
             $clientDetails = ($providerId > 0)
@@ -257,8 +268,8 @@ class ReadAuthorizationResponse extends BaseAction
             $clientID = $clientDetails["clientID"];
             $clientSecret = $clientDetails["client_secret"];
             $accessTokenURL = $clientDetails["access_token_endpoint"];
-            $header = $clientDetails["values_in_header"];
-            $body = $clientDetails["values_in_body"];
+            $header = (int) ($clientDetails["values_in_header"] ?? 1);
+            $body   = (int) ($clientDetails["values_in_body"] ?? 0);
             $redirectURL = $this->oauthUtility->getCallBackUrl();
 
             // PKCE (RFC 7636 §4.5): retrieve verifier from session (one-time, auto-removed).
@@ -365,7 +376,8 @@ class ReadAuthorizationResponse extends BaseAction
                             $clientDetails,
                             $clientID,
                             $relayState,
-                            $loginType
+                            $loginType,
+                            $expectedNonce
                         );
                         if ($idTokenResult instanceof \Magento\Framework\Controller\ResultInterface) {
                             return $idTokenResult;
@@ -392,9 +404,12 @@ class ReadAuthorizationResponse extends BaseAction
                 }
 
                 // ==== TEST REDIRECT LOGIC ====
+                // M-09: Removed user-controlled $params['option'] trigger. Test mode is now
+                // only activated by server-side config (IS_TEST) or a relay state that
+                // originates from the admin-only "Test Configuration" button
+                // (which embeds 'showTestResults' in the relay state it sends to the IdP).
                 $isTest = (
                     ($this->oauthUtility->getStoreConfig(OAuthConstants::IS_TEST) == true)
-                    || (isset($params['option']) && $params['option'] === OAuthConstants::TEST_CONFIG_OPT)
                     || (strpos((string) $relayState, 'showTestResults') !== false)
                 );
 
@@ -437,7 +452,7 @@ class ReadAuthorizationResponse extends BaseAction
                     );
                     $errorMsg = 'Authentication failed: Invalid user information received from identity provider.';
                     if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
-                        $this->messageManager->addErrorMessage(__($errorMsg));
+                        $this->messageManager->addErrorMessage((string) __($errorMsg));
                         return $this->resultRedirectFactory->create()->setPath('admin');
                     }
                     $encodedError = base64_encode($errorMsg);
@@ -537,11 +552,12 @@ class ReadAuthorizationResponse extends BaseAction
      * Returns the decoded claims array on success, a redirect ResultInterface on
      * verification failure, or null when no JWKS endpoint is configured.
      *
-     * @param  string $idToken       Raw JWT id_token from the token endpoint
-     * @param  array  $clientDetails Provider configuration row
-     * @param  string $clientID      OAuth client identifier
-     * @param  string $relayState    Relay state URL for test-mode error redirect
-     * @param  string $loginType     Login type (admin|customer) for error routing
+     * @param  string      $idToken        Raw JWT id_token from the token endpoint
+     * @param  array       $clientDetails  Provider configuration row
+     * @param  string      $clientID       OAuth client identifier
+     * @param  string      $relayState     Relay state URL for test-mode error redirect
+     * @param  string      $loginType      Login type (admin|customer) for error routing
+     * @param  string|null $expectedNonce  H-01: OIDC nonce to validate, null to skip
      * @return array|\Magento\Framework\App\ResponseInterface
      */
     private function resolveUserInfoFromIdToken(
@@ -549,7 +565,8 @@ class ReadAuthorizationResponse extends BaseAction
         array $clientDetails,
         string $clientID,
         string $relayState,
-        string $loginType
+        string $loginType,
+        ?string $expectedNonce = null
     ) {
         $jwksEndpoint = $clientDetails['jwks_uri'] ?? '';
         if (!empty($jwksEndpoint)) {
@@ -566,11 +583,13 @@ class ReadAuthorizationResponse extends BaseAction
                     );
                 }
             }
+            // H-01: Pass expectedNonce so JwtVerifier validates the nonce claim
             $decoded = $this->jwtVerifier->verifyAndDecode(
                 $idToken,
                 $jwksEndpoint,
                 $expectedIssuer,
-                $clientID
+                $clientID,
+                $expectedNonce
             );
             if ($decoded === null) {
                 $this->oauthUtility->customlog("ERROR: JWT signature verification failed");

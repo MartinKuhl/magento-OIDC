@@ -164,6 +164,14 @@ class SendAuthorizationRequest extends BaseAction
             $providerId
         );
 
+        // H-01: Generate and store a per-flow nonce for id_token replay protection.
+        // The nonce is added to the authorization request params so the IdP includes
+        // it in the id_token. It is consumed in ReadAuthorizationResponse and passed
+        // to JwtVerifier::verifyAndDecode() for validation.
+        $oidcNonce = bin2hex(random_bytes(16));
+        $this->securityHelper->storeOidcNonce($stateToken, $oidcNonce);
+        $params['nonce'] = $oidcNonce;
+
         $isTest = (
             ($this->oauthUtility->getStoreConfig(OAuthConstants::IS_TEST) == true)
             || (isset($params['option']) && $params['option'] === OAuthConstants::TEST_CONFIG_OPT)

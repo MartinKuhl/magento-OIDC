@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MiniOrange\OAuth\Test\Unit\Plugin;
 
 use Magento\Backend\Model\Auth;
+use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
 use MiniOrange\OAuth\Model\Auth\OidcCredentialAdapter;
 use MiniOrange\OAuth\Helper\OAuthUtility;
 use MiniOrange\OAuth\Plugin\Auth\OidcCredentialPlugin;
@@ -31,6 +32,9 @@ class OidcCredentialPluginTest extends TestCase
     /** @var OAuthUtility&MockObject */
     private OAuthUtility $oauthUtility;
 
+    /** @var OAuthSecurityHelper&MockObject */
+    private OAuthSecurityHelper $securityHelper;
+
     /** @var Auth&MockObject */
     private Auth $auth;
 
@@ -39,14 +43,20 @@ class OidcCredentialPluginTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->adapter      = $this->createMock(OidcCredentialAdapter::class);
-        $this->oauthUtility = $this->createMock(OAuthUtility::class);
+        $this->adapter        = $this->createMock(OidcCredentialAdapter::class);
+        $this->oauthUtility   = $this->createMock(OAuthUtility::class);
+        $this->securityHelper = $this->createMock(OAuthSecurityHelper::class);
         $this->oauthUtility->method('customlog');
+        $this->securityHelper->method('isOidcAuthToken')
+            ->willReturnCallback(
+                static fn(string $p): bool => $p === OidcCredentialAdapter::OIDC_TOKEN_MARKER
+            );
         $this->auth = $this->createMock(Auth::class);
 
         $this->plugin = new OidcCredentialPlugin(
             $this->adapter,
-            $this->oauthUtility
+            $this->oauthUtility,
+            $this->securityHelper
         );
     }
 

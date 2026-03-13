@@ -31,9 +31,6 @@ use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
  */
 class Oidccallback implements ActionInterface, HttpGetActionInterface
 {
-    /** @var \Magento\User\Model\UserFactory */
-    protected \Magento\User\Model\UserFactory $userFactory;
-
     /** @var \Magento\Backend\Model\Auth */
     protected \Magento\Backend\Model\Auth $auth;
 
@@ -67,13 +64,9 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
     /** @var \Magento\Framework\App\Config\ScopeConfigInterface */
     private readonly \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig;
 
-    /** @var \Magento\User\Model\ResourceModel\User\CollectionFactory */
-    protected \Magento\User\Model\ResourceModel\User\CollectionFactory $userCollectionFactory;
-
     /**
      * Initialize OIDC callback action.
      *
-     * @param \Magento\User\Model\UserFactory                                 $userFactory
      * @param \Magento\Backend\Model\Auth                                     $auth
      * @param ResultFactory                                                   $resultFactory
      * @param RequestInterface                                                $request
@@ -84,11 +77,9 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
      * @param CookieMetadataFactory                                           $cookieMetadataFactory
      * @param BackendUrlInterface                                             $backendUrl
      * @param OAuthSecurityHelper                                             $securityHelper
-     * @param \Magento\User\Model\ResourceModel\User\CollectionFactory        $userCollectionFactory
      * @param \Magento\Framework\App\Config\ScopeConfigInterface              $scopeConfig
      */
     public function __construct(
-        \Magento\User\Model\UserFactory $userFactory,
         \Magento\Backend\Model\Auth $auth,
         ResultFactory $resultFactory,
         RequestInterface $request,
@@ -99,10 +90,8 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
         CookieMetadataFactory $cookieMetadataFactory,
         BackendUrlInterface $backendUrl,
         OAuthSecurityHelper $securityHelper,
-        \Magento\User\Model\ResourceModel\User\CollectionFactory $userCollectionFactory,
         \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
     ) {
-        $this->userFactory = $userFactory;
         $this->auth = $auth;
         $this->resultFactory = $resultFactory;
         $this->request = $request;
@@ -113,7 +102,6 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
         $this->cookieMetadataFactory = $cookieMetadataFactory;
         $this->backendUrl = $backendUrl;
         $this->securityHelper = $securityHelper;
-        $this->userCollectionFactory = $userCollectionFactory;
         $this->scopeConfig = $scopeConfig;
     }
 
@@ -154,49 +142,31 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
         $this->oauthUtility->customlog("Email resolved from nonce: " . $email);
 
         try {
-            $this->oauthUtility->customlog("Searching for admin user with email: " . $email);
+            // C-01: Generate a single-use ephemeral auth token for this login attempt.
+            // The token is stored in cache (TTL 120s) keyed by hash(token) → email.
+            // OidcCredentialAdapter::authenticate() will validate and consume it.
+            $oidcAuthToken = $this->securityHelper->createOidcAuthToken($email);
 
-            // Find admin user by email using collection factory (avoid getCollection on model)
-            $userCollection = $this->userCollectionFactory->create()
-                ->addFieldToFilter('email', $email);
-
-            if ($userCollection->getSize() === 0) {
-                $this->oauthUtility->customlog("ERROR: Admin user not found for email: " . $email);
-
-                return $this->redirectToLoginWithError(
-                    __(
-                        'OIDC authentication failed. Please try again or contact your administrator.'
-                    )
-                );
-            }
-
-            $user = $userCollection->getFirstItem();
-            $this->oauthUtility->customlog(
-                "Admin user found - ID: " . $user->getId() . ", Username: " . $user->getUsername()
-            );
-
-            // Verify user is active
-            if (!$user->getIsActive()) {
-                $this->oauthUtility->customlog("ERROR: Admin user is inactive (ID: " . $user->getId() . ")");
-
-                return $this->redirectToLoginWithError(
-                    __('OIDC authentication failed. Please try again or contact your administrator.')
-                );
-            }
-
-            // Perform login via standard Auth orchestrator
-            $this->oauthUtility->customlog("Performing admin login via Auth::login() for user ID: " . $user->getId());
+            // Perform login via standard Auth orchestrator.
+            // OidcCredentialPlugin detects the ephemeral token format and injects
+            // OidcCredentialAdapter, which validates the token, checks the user is
+            // active, has a role, and fires all standard authentication events.
+            $this->oauthUtility->customlog("Performing admin login via Auth::login() for: " . $email);
 
             try {
-                // Use standard Auth::login() with OIDC token marker
-                // This triggers the OidcCredentialPlugin and fires all security events
-                $this->auth->login($email, 'OIDC_VERIFIED_USER');
+                $this->auth->login($email, $oidcAuthToken);
 
                 $this->oauthUtility->customlog("SUCCESS: Auth::login() completed successfully");
 
-                // Verify login success and set OIDC cookie
+                // Verify login success and set OIDC session/cookie data
                 if ($this->auth->isLoggedIn()) {
-                    
+
+                    // H-04: Mark session as OIDC-authenticated so OidcPasswordExpirationPlugin
+                    // (and any other plugin checking this flag) can skip inapplicable checks.
+                    /** @psalm-suppress UndefinedInterfaceMethod */
+                    // @phpstan-ignore-next-line
+                    $this->auth->getAuthStorage()->setData('is_oidc_authenticated', true);
+
                     // ── Persist id_token in post-login admin session ──
                     $encryptedIdToken = $this->cookieManager->getCookie('oidc_id_token_transport');
                     $providerId = (int) $this->cookieManager->getCookie('oidc_provider_id_transport');
@@ -218,7 +188,7 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
                                 'Oidccallback: Failed to decrypt id_token transport cookie: ' . $e->getMessage()
                             );
                         }
-                        
+
                         // Delete transport cookie immediately
                         $deleteMeta = $this->cookieMetadataFactory
                             ->createPublicCookieMetadata()
@@ -227,7 +197,7 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
                         $this->cookieManager->deleteCookie('oidc_provider_id_transport', $deleteMeta);
                     }
 
-                    // Set OIDC authentication cookie (persists across session boundary)
+                    // Set OIDC authentication cookie (persists across session boundary).
                     // Path MUST be '/' so the cookie is readable on all admin sub-paths.
                     // Using $adminPath (e.g. '/admin') caused the cookie to be invisible
                     // on sub-routes where performIdentityCheck() is triggered.
@@ -246,11 +216,17 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
                         "OIDC cookie set with path '/' and duration " . $adminSessionLifetime . "s"
                     );
 
-                    // Welcome message – Auth::getUser() may return a Proxy/Interceptor
-                    // that does not pass instanceof checks against the concrete User class.
-                    // Use the $user we already loaded from the collection instead.
+                    // H-03: Use post-login auth storage to get user for the welcome message.
+                    // The user was loaded and validated inside OidcCredentialAdapter::authenticate().
+                    /** @psalm-suppress UndefinedInterfaceMethod */
+                    // @phpstan-ignore-next-line
+                    $loggedInUser = $this->auth->getAuthStorage()->getUser();
+                    $displayName = ($loggedInUser !== null)
+                        ? ($loggedInUser->getFirstname() ?: $loggedInUser->getUsername())
+                        : $email;
+
                     $this->messageManager->addSuccessMessage(
-                        (string) __('Welcome back, %1!', $user->getFirstname() ?: $user->getUsername())
+                        (string) __('Welcome back, %1!', $displayName)
                     );
                 } else {
                     $this->oauthUtility->customlog("WARNING: Login processed but isLoggedIn() returned false");
@@ -301,7 +277,10 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
 */
         $resultRedirect = $this->resultFactory->create(ResultFactory::TYPE_REDIRECT);
 
-        $loginUrl = $this->url->getUrl('admin', ['_query' => ['oidc_error' => base64_encode((string) $message)]]);
+        $loginUrl = $this->url->getUrl(
+            'admin',
+            ['_query' => ['oidc_error' => urlencode(base64_encode((string) $message))]]
+        );
 
         $resultRedirect->setUrl($loginUrl);
         return $resultRedirect;

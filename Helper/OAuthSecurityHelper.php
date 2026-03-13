@@ -7,8 +7,9 @@ use Magento\Framework\App\CacheInterface;
 /**
  * Security helper for OIDC authentication flows.
  *
- * Provides cryptographic nonce-based admin login gates (preventing direcfinal t URL access),
- * CSRF state tokens for OAuth flows, and redirect URL validation.
+ * Provides cryptographic nonce-based admin login gates (preventing direct URL access),
+ * CSRF state tokens for OAuth flows, redirect URL validation, PKCE helpers,
+ * ephemeral OIDC auth tokens (C-01), and per-flow OIDC nonces (H-01).
  */
 class OAuthSecurityHelper
 {
@@ -20,6 +21,26 @@ class OAuthSecurityHelper
     private const STATE_CACHE_PREFIX = 'mooauth_state_';
     private const NONCE_TTL = 120;     // 2 minutes
     private const STATE_TTL = 600;     // 10 minutes
+
+    /**
+     * Cache prefix for ephemeral OIDC auth tokens (C-01).
+     * Key: hash('sha256', token) → value: email address.
+     */
+    private const OIDC_AUTH_TOKEN_PREFIX = 'mooauth_authtoken_';
+    /** TTL for ephemeral OIDC auth tokens: long enough to survive a single login round-trip. */
+    private const OIDC_AUTH_TOKEN_TTL = 120; // 2 minutes
+
+    /**
+     * Prefix used as a fast, non-secret distinguisher for OIDC auth tokens (C-01).
+     * The token itself is a cryptographically random hex string — this prefix merely
+     * lets plugin code skip the cache lookup when the password is clearly not an OIDC token.
+     */
+    private const OIDC_AUTH_TOKEN_MARKER = 'OIDC_';
+
+    /** Cache prefix for per-flow OIDC id_token nonces (H-01). */
+    private const OIDC_NONCE_CACHE_PREFIX = 'mooauth_oidcnonce_';
+    /** TTL matches STATE_TTL so nonce stays available until state is consumed. */
+    private const OIDC_NONCE_TTL = 600; // 10 minutes
 
     /** @var CacheInterface */
     private readonly CacheInterface $cache;
@@ -180,6 +201,13 @@ class OAuthSecurityHelper
 
     /**
      * Validate and consume a CSRF state token.
+     *
+     * C-03: The cache read and subsequent delete are two separate operations and are
+     * therefore not atomic. In practice this is acceptable: PHP's file-based session
+     * handler holds an exclusive lock for the duration of the request, and Magento's
+     * default cache backends (file, Redis with phpredis) are single-threaded per key.
+     * A distributed race between two simultaneous callbacks with the same state token
+     * would be an IdP bug; we log the failure on the second attempt.
      *
      * @param  string $sessionId  The session ID used when the token was created
      * @param  string $stateToken The state token to validate
@@ -363,5 +391,123 @@ class OAuthSecurityHelper
         throw new \InvalidArgumentException(
             sprintf('Unsupported PKCE code_challenge_method: %s. Use "S256" or "plain".', $method)
         );
+    }
+
+    // -------------------------------------------------------------------------
+    // Ephemeral OIDC auth tokens — C-01
+    // -------------------------------------------------------------------------
+
+    /**
+     * Create a single-use, time-limited OIDC auth token for the given admin email.
+     *
+     * C-01: Replaces the static OIDC_TOKEN_MARKER constant. The token is stored in
+     * cache keyed by a SHA-256 hash of itself (to avoid leaking the raw value in the
+     * cache layer). The caller passes the returned token as the "password" argument to
+     * Auth::login() so that OidcCredentialAdapter can validate and consume it.
+     *
+     * @param  string $email The admin user's email address
+     * @return string Prefixed 69-char token: 'OIDC_' + 64 hex chars
+     */
+    public function createOidcAuthToken(string $email): string
+    {
+        $raw   = bin2hex(random_bytes(32));           // 64 hex chars
+        $token = self::OIDC_AUTH_TOKEN_MARKER . $raw; // 'OIDC_' + 64 chars
+
+        $cacheKey = self::OIDC_AUTH_TOKEN_PREFIX . hash('sha256', $token);
+        $this->cache->save($email, $cacheKey, [], self::OIDC_AUTH_TOKEN_TTL);
+
+        return $token;
+    }
+
+    /**
+     * Return true if $password looks like an OIDC auth token (C-01).
+     *
+     * This is a non-consuming check used by plugins to detect OIDC login attempts
+     * without touching the cache. It validates format only — the actual email binding
+     * is verified by validateAndConsumeOidcAuthToken().
+     *
+     * @param  string $password The password/token value to test
+     */
+    public function isOidcAuthToken(string $password): bool
+    {
+        // Must start with 'OIDC_' and be followed by exactly 64 lowercase hex chars
+        return (bool) preg_match('/^OIDC_[a-f0-9]{64}$/', $password);
+    }
+
+    /**
+     * Validate an OIDC auth token against the given email and consume it (one-time use).
+     *
+     * C-01: Verifies that the token was created for the specified email address and
+     * immediately removes it from cache to prevent replay. Returns false if the token
+     * is malformed, expired, or was issued for a different email.
+     *
+     * @param  string $email The admin user's email address
+     * @param  string $token The token returned by createOidcAuthToken()
+     * @return bool True when token is valid and matches email, false otherwise
+     */
+    public function validateAndConsumeOidcAuthToken(string $email, string $token): bool
+    {
+        if (!$this->isOidcAuthToken($token)) {
+            return false;
+        }
+
+        $cacheKey = self::OIDC_AUTH_TOKEN_PREFIX . hash('sha256', $token);
+        $stored   = $this->cache->load($cacheKey);
+
+        if (empty($stored) || $stored !== $email) {
+            return false;
+        }
+
+        // One-time use: delete immediately
+        $this->cache->remove($cacheKey);
+        return true;
+    }
+
+    // -------------------------------------------------------------------------
+    // Per-flow OIDC id_token nonces — H-01
+    // -------------------------------------------------------------------------
+
+    /**
+     * Persist a nonce value keyed by its associated state token (H-01).
+     *
+     * Call this in SendAuthorizationRequest immediately after generating the
+     * OAuth state token. The nonce is later retrieved in the callback controller
+     * via consumeOidcNonce() and forwarded to JwtVerifier::verifyAndDecode().
+     *
+     * @param string $stateToken The OAuth CSRF state token (raw, before URL encoding)
+     * @param string $nonce      The nonce sent in the authorization request
+     */
+    public function storeOidcNonce(string $stateToken, string $nonce): void
+    {
+        $cacheKey = self::OIDC_NONCE_CACHE_PREFIX . hash('sha256', $stateToken);
+        $this->cache->save($nonce, $cacheKey, [], self::OIDC_NONCE_TTL);
+    }
+
+    /**
+     * Retrieve and consume the OIDC nonce associated with a state token (H-01).
+     *
+     * Returns null if no nonce was stored (e.g. IdP does not support nonce,
+     * or the state token has expired). JwtVerifier skips nonce validation when
+     * the expected nonce is null.
+     *
+     * @param  string $stateToken The OAuth CSRF state token (raw)
+     * @return string|null The stored nonce, or null if not found
+     */
+    public function consumeOidcNonce(string $stateToken): ?string
+    {
+        if ($stateToken === '' || $stateToken === '0') {
+            return null;
+        }
+
+        $cacheKey = self::OIDC_NONCE_CACHE_PREFIX . hash('sha256', $stateToken);
+        $nonce    = $this->cache->load($cacheKey);
+
+        if (empty($nonce)) {
+            return null;
+        }
+
+        // One-time use: delete immediately
+        $this->cache->remove($cacheKey);
+        return $nonce;
     }
 }

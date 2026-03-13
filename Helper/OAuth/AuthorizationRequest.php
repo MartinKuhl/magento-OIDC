@@ -1,12 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace MiniOrange\OAuth\Helper\OAuth;
 
-use MiniOrange\OAuth\Helper\OAuth\SAML2Utilities;
 use MiniOrange\OAuth\Helper\OAuthConstants;
-use MiniOrange\OAuth\Helper\Exception\InvalidRequestInstantException;
-use MiniOrange\OAuth\Helper\Exception\InvalidRequestVersionException;
-use MiniOrange\OAuth\Helper\Exception\MissingIssuerValueException;
 
 /**
  * This class is used to generate our AuthnRequest string.
@@ -99,8 +97,6 @@ class AuthorizationRequest
      * function and shouldn't be called directly. Call the @build function instead.
      * It returns the string format of the XML and encode it based on the sso
      * binding type.
-     *
-     * @todo - Have to convert this so that it's not a string value but an XML document
      */
     private function generateRequest(): string
     {

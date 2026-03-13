@@ -10,7 +10,7 @@ use MiniOrange\OAuth\Helper\OAuthMessages;
 /**
  * Pure PHP JWT verification using openssl_verify().
  *
- * Supports RS256, RS384, RS512 signaturfinal e verification via JWKS endpoints.
+ * Supports RS256, RS384, RS512 signature verification via JWKS endpoints.
  * No external composer dependencies required.
  */
 class JwtVerifier
@@ -44,14 +44,24 @@ class JwtVerifier
     /**
      * Verify and decode a JWT id_token using the provider's JWKS endpoint.
      *
-     * @param  string      $idToken  The raw JWT string
-     * @param  string      $jwksUrl  The JWKS endpoint URL
-     * @param  string|null $issuer   Expected issuer (iss claim), null to skip
-     * @param  string|null $audience Expected audience (aud claim), null to skip
+     * H-01: When $expectedNonce is non-null the nonce claim in the token payload
+     * MUST match exactly; a missing or mismatched nonce is rejected. Pass null
+     * to skip nonce validation (e.g. when the IdP does not support nonces).
+     *
+     * @param  string      $idToken       The raw JWT string
+     * @param  string      $jwksUrl       The JWKS endpoint URL
+     * @param  string|null $issuer        Expected issuer (iss claim), null to skip
+     * @param  string|null $audience      Expected audience (aud claim), null to skip
+     * @param  string|null $expectedNonce Expected nonce claim value (H-01), null to skip
      * @return array|null Decoded payload array, or null on failure
      */
-    public function verifyAndDecode(string $idToken, string $jwksUrl, ?string $issuer, ?string $audience): ?array
-    {
+    public function verifyAndDecode(
+        string $idToken,
+        string $jwksUrl,
+        ?string $issuer,
+        ?string $audience,
+        ?string $expectedNonce = null
+    ): ?array {
         $parts = explode('.', $idToken);
         if (count($parts) !== 3) {
             $this->oauthUtility->customlog("JwtVerifier: Invalid JWT format - expected 3 parts, got " . count($parts));
@@ -169,6 +179,24 @@ class JwtVerifier
                 $this->oauthUtility->customlog("JwtVerifier: Audience mismatch - expected: $audience");
                 return null;
             }
+        }
+
+        // H-01: Validate nonce — prevents id_token replay attacks (OIDC Core 1.0 §3.1.2.1)
+        if ($expectedNonce !== null) {
+            $tokenNonce = $payload['nonce'] ?? null;
+            if ($tokenNonce === null) {
+                $this->oauthUtility->customlog(
+                    "JwtVerifier: Nonce claim missing in id_token — expected nonce was set"
+                );
+                return null;
+            }
+            if ($tokenNonce !== $expectedNonce) {
+                $this->oauthUtility->customlog(
+                    "JwtVerifier: Nonce mismatch — token nonce does not match expected value"
+                );
+                return null;
+            }
+            $this->oauthUtility->customlog("JwtVerifier: Nonce validation PASSED");
         }
 
         return $payload;
