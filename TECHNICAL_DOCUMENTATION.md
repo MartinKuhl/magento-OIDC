@@ -246,10 +246,11 @@ This module solves real-world authentication challenges in enterprise and e-comm
 - IdP-initiated flow (user starts at IdP, receives SAML-style POST assertion) not implemented
 - Workaround: IdP can deep-link to Magento SSO URL, which is technically still SP-initiated
 
-**Federated Logout**
-- Partial support only: redirects to IdP logout URL (`endsession_endpoint`) for admin users
-- No back-channel logout (OIDC RP-Initiated Logout spec)
-- Customer logout does not redirect to IdP
+**Federated Logout** *(substantially implemented)*
+- **Admin RP-Initiated Logout**: `OidcLogoutPlugin` redirects to `endsession_endpoint` with `id_token_hint`; revokes access token via RFC 7009; supports Authelia Forward-Auth (`?rd=`) mode
+- **Customer RP-Initiated Logout**: `OAuthLogoutObserver` handles `customer_logout` event; reads id_token, revokes access token, redirects to IdP
+- **Back-Channel Logout** (FEAT-02): `POST /mooauth/actions/backchannel-logout` validates a signed JWT logout token (JWKS) and destroys the matching PHP session via `OidcSessionRegistry`
+- **Logout guard**: `oidc_logout_guard` cookie (120s) prevents auto-redirect loops after IdP logout on both admin and customer areas
 
 **Complex Claim Transformations**
 - No built-in conditional claim mapping (e.g., "if group = X, then map attribute Y differently")
@@ -830,20 +831,14 @@ This section documents remaining technical debt and potential enhancements. Item
 
 ### Testing & Code Quality
 
-**Extend Unit Test Coverage**
-- **Current state**: 0% test coverage — no `Test/Unit/` or `Test/Integration/` directories present
-- **Impact**: High risk of regressions from future changes
-- **Recommendation**: Start with Model and Helper classes
-  - `Model/Service/AdminUserCreator.php` — role mapping fallback chain
-  - `Model/Service/CustomerUserCreator.php` — address creation logic
-  - `Helper/JwtVerifier.php` — JWT signature validation
-  - `Model/Auth/OidcCredentialAdapter.php` — authentication flow
-
-**Extend Integration Tests**
-- Test full authentication flows (customer and admin)
-- Mock OIDC provider (Docker-based local test environment)
-- Verify security plugins fire correctly (CAPTCHA bypass, identity verification bypass)
-- Test JIT provisioning with various role mappings
+**Extend Unit Test Coverage** *(partially done)*
+- **Current state**: Core test coverage added in `Test/Unit/` and `Test/Integration/`. Covered:
+  - `OidcCredentialAdapterTest`, `OidcCredentialPluginTest`, `JwtVerifierTest`
+  - `AdminAttributeMapperTest`, `CustomerAttributeMapperTest`
+  - `AdminUserCreatorRoleMappingTest`, `CustomerUserCreatorAddressTest`
+  - Integration: `AdminOidcLoginFlowTest`, `CustomerOidcLoginFlowTest`, `SecurityPluginsTest`, `AccessControlRulesTest`
+- **Remaining gap**: `BackChannelLogout`, `OidcLogoutPlugin`, `OAuthLogoutObserver`, `OidcRateLimiter` have no dedicated tests
+- **Recommendation**: Add tests for the logout flow, rate limiter, and back-channel logout controller
 
 **Fix Unsafe ObjectManager Usage**
 - **Location**: `Model/Auth/OidcCredentialAdapter.php` `__wakeup()` method
@@ -851,50 +846,45 @@ This section documents remaining technical debt and potential enhancements. Item
 - **Risk**: Tight coupling, hard to test, violates dependency injection principle
 - **Fix**: Implement `Serializable` properly or use a factory pattern registered in DI
 
-**Extend Static Analysis Compliance**
-- Add PHPStan or Psalm configuration
-- Fix type hint inconsistencies (e.g., `OidcCredentialAdapter::$user` property)
-- Enable strict type checking for new code
-- Add return type declarations consistently
+**Extend Static Analysis Compliance** *(partially done)*
+- `phpstan.neon`, `phpstan.local.neon`, `phpstan-stubs.stub`, `psalm-stubs.stub` added
+- **Remaining**: Fix remaining type hint inconsistencies in `OidcCredentialAdapter` and ensure strict return types across new code
 
 ### Architecture & Scalability
 
-**Consolidate Multi-Provider Admin UI**
-- **Current state**: Database schema fully supports multiple active providers; the provider management grid in the admin panel may lack per-provider edit/delete/test actions
-- **Recommendation**: Extend the provider management grid with per-provider actions
-- **Benefit**: Enables multi-IdP setups without direct database manipulation
+**Multi-Provider Admin UI** *(implemented)*
+- Provider management grid with per-provider edit/delete/test actions is live at `/admin/mooauth/provider/index`
+- Full per-provider attribute and role mapping via normalized Phase 4 tables
 
-**Implement Strategy Pattern for Attribute Mapping**
-- **Current**: Attribute mapping partially hardcoded in `Model/Service/CustomerUserCreator.php` and `AdminUserCreator.php`
-- **Issue**: Difficult to extend for custom attributes without modifying service classes
-- **Recommendation**: `AttributeMapperInterface` with provider-specific implementations registered via DI
+**Attribute Mapping Strategy Pattern** *(implemented)*
+- `AttributeMapperInterface` with `AdminAttributeMapper` and `CustomerAttributeMapper` introduced
+- Accessed via `MappingRepository` backed by `miniorange_oauth_attribute_mappings` table
+- **Remaining**: DI-registered per-provider custom mapper implementations not yet exposed as a public extension point
 
-**Add Event-Driven Hooks for Extensibility**
-- Fire events at key points: pre-provisioning, post-provisioning, attribute-mapping
-- Allow custom modules to inject logic via observers
-- Examples: `oidc_admin_user_before_create`, `oidc_customer_attribute_mapping`
+**Event-Driven Hooks** *(implemented)*
+- `UserProvisioningService` fires `oidc_before_user_create` and `oidc_after_user_create` for both admin and customer paths
+- **Remaining**: Attribute-mapping hooks (`oidc_after_attribute_mapping`) not yet available
 
 ### Operational Improvements
 
-**Customer RP-Initiated Logout**
-- **Current**: Customer logout does not redirect to IdP — only local Magento session is cleared
-- **Recommendation**: Mirror admin `OidcLogoutPlugin` pattern for the customer session area
-- **Requires**: Store `oidc_id_token` in customer session during `CustomerOidcCallback`
+**Customer RP-Initiated Logout** *(implemented)*
+- `OAuthLogoutObserver` handles `customer_logout` event; reads id_token from customer session, revokes access token, redirects to IdP `end_session_endpoint`
+- Logout guard cookie prevents auto-redirect loop
 
-**Admin UI for Viewing Active OIDC Sessions**
-- **Use case**: Admins want to see who's logged in via OIDC, when, from where
-- **Data source**: `miniorange_oauth_user_provider` table + Magento session storage
+**Active OIDC Session Visibility** *(implemented)*
+- `/admin/mooauth/sessions/index` lists active OIDC sessions via `SessionDataProvider`
+- `OnlineStatus` UI column shows per-provider active user count in provider listing grid
 
 **Token Refresh Handling**
-- **Current state**: Access tokens stored in session but no refresh logic
+- **Current state**: `TokenRefreshService` exists; refresh tokens stored in session, but automatic refresh on expiry is not yet wired in
 - **Issue**: Long sessions may outlive access token expiration
-- **Recommendation**: Check token expiration before API calls, refresh if needed
-- **Requires**: Store refresh token securely, implement refresh flow
+- **Recommendation**: Check token expiration before upstream API calls and refresh silently
+- **Requires**: Hook into a Magento event that fires before authenticated API calls
 
 ### Developer Experience
 
-**Better Error Messages**
-- **Current**: Generic errors like "configuration error", "authentication failed"
-- **Improvement**: Specific, actionable error messages
+**Better Error Messages** *(partially done)*
+- `Helper/OAuthMessages.php` centralizes user-facing messages
+- **Remaining**: Error messages for attribute mapping mismatches and role-mapping failures are still generic in some paths
   - "OIDC provider returned email claim 'Email' but expected 'email' — check attribute mapping"
   - "Admin role mapping failed: no role found for group 'Engineers' — configure role mapping or set default role"
