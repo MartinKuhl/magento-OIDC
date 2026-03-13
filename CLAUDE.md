@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-This is a Magento 2 module that provides OAuth/OIDC authentication for both customer (frontend) and admin (backend) users. The module is registered as `MiniOrange_OAuth` and supports automatic admin login after successful OIDC authentication.
+This is a Magento 2 module that provides OAuth/OIDC authentication for both customer (frontend) and admin (backend) users. The module is registered as `MiniOrange_OAuth` and supports automatic admin and customer login after successful OIDC authentication, multi-provider configuration, RP-Initiated Logout, back-channel logout, and claims-based access control.
 
 ## Magento 2 Development Commands
 
@@ -58,177 +58,349 @@ The module implements a dual authentication flow for admin and customer users:
 
 1. **Customer Flow** (Frontend):
    - Route: `mooauth` (defined in etc/frontend/routes.xml)
-   - Entry: `SendAuthorizationRequest` → Redirects to OIDC provider
-   - Callback: `ReadAuthorizationResponse` → Receives auth code
-   - Processing: `ProcessResponseAction` → Exchanges code for token
-   - Attribute Mapping: `CheckAttributeMappingAction` → Maps OIDC claims
-   - Login: `CustomerLoginAction` → Creates Magento customer session
+   - Entry: `SendAuthorizationRequest` → Redirects to OIDC provider with PKCE + state
+   - Callback: `ReadAuthorizationResponse` → Validates state/nonce, exchanges code for token, verifies JWT
+   - Processing: `ProcessResponseAction` → Extracts and flattens OIDC attributes
+   - Attribute Mapping: `CheckAttributeMappingAction` → Maps claims, evaluates access control rules
+   - User Management: `ProcessUserAction` → Creates or updates Magento customer via `CustomerUserCreator`
+   - **Dedicated Login Callback**: `CustomerOidcCallback` → Validates ephemeral nonce cookie, calls `CustomerSession::setCustomerAsLoggedIn()` in a clean HTTP context
+   - Sets `oidc_customer_authenticated` cookie (1h duration)
 
 2. **Admin Flow** (Backend) - **Uses Native Magento Authentication:**
    - Route: `mooauth` (defined in etc/adminhtml/routes.xml)
-   - Same initial flow as customer
-   - **Critical difference**: In `CheckAttributeMappingAction:101-130`, admin users are detected by checking if email exists in `admin_user` table
+   - Same initial flow as customer through `CheckAttributeMappingAction`
+   - **Critical difference**: Admin users are detected by checking if email exists in `admin_user` table
    - Admin users are redirected to `Oidccallback` controller in adminhtml area
-   - **Native integration**: `Oidccallback` calls `Auth::login($email, 'OIDC_VERIFIED_USER')`
-   - `OidcCredentialPlugin` detects the special token marker and injects `OidcCredentialAdapter`
+   - **Native integration**: `Oidccallback` calls `Auth::login($email, $ephemeralToken)` with a single-use ephemeral token
+   - `OidcCredentialPlugin` detects the ephemeral token and injects `OidcCredentialAdapter`
    - `OidcCredentialAdapter` authenticates the user without password verification (already done at IdP)
    - `OidcCaptchaBypassPlugin` skips CAPTCHA validation for OIDC auth
    - All standard Magento security events fire correctly
+
+3. **RP-Initiated Logout (Admin)**:
+   - `OidcLogoutPlugin` intercepts `Auth::logout()` via `aroundLogout`
+   - Reads `oidc_id_token`, `oidc_access_token`, `oidc_provider_id` from session **before** session is destroyed
+   - Calls original `logout()`, then deletes `oidc_authenticated` cookie
+   - Sets `oidc_logout_guard` cookie (120s TTL) to prevent auto-redirect loops
+   - Revokes access token via RFC 7009 revocation endpoint (fire-and-forget)
+   - Redirects to IdP `end_session_endpoint` with `id_token_hint` and `post_logout_redirect_uri`
+   - **Authelia detection**: If endpoint path ends with `/logout` (without `/oauth2/` or `/oidc/`), uses `?rd=<adminBaseUrl>` instead of standard params
+
+4. **RP-Initiated Logout (Customer)**:
+   - `OAuthLogoutObserver` handles `customer_logout` event
+   - Reads id_token + provider_id from customer session
+   - Performs token revocation and IdP redirect (same logic as admin)
+   - Sets `oidc_logout_guard` cookie; `CustomerLoginAutoRedirectObserver` checks this to suppress re-login
+
+5. **Back-Channel Logout** (FEAT-02):
+   - Route: `POST /mooauth/actions/backchannel-logout`
+   - `BackChannelLogout` controller implements `CsrfAwareActionInterface` (opts out of form-key CSRF)
+   - Decodes logout token without verification to extract `iss`; resolves matching provider
+   - Verifies JWT signature via provider's JWKS endpoint
+   - Validates `events` claim contains `http://schemas.openid.net/event/backchannel-logout`
+   - Resolves PHP session ID from `OidcSessionRegistry` via `sub`/`sid` claims
+   - Destroys target session by temporarily switching session IDs (C-02)
 
 ### Key Components
 
 #### Controllers (Controller/Actions/)
 - `BaseAction.php` / `BaseAdminAction.php`: Base classes for OAuth actions
-- `SendAuthorizationRequest.php`: Initiates OAuth flow
-- `ReadAuthorizationResponse.php`: Handles OAuth callback
-- `ProcessResponseAction.php`: Exchanges authorization code for access token
-- `CheckAttributeMappingAction.php`: Routes users based on admin/customer detection, maps OIDC attributes, and handles admin auto-creation with group-to-role mapping
-- `ProcessUserAction.php`: Creates or updates Magento users based on OIDC data
-- `ShowTestResults.php`: Displays test results for attribute mapping
-- `Adminhtml/Actions/Oidccallback.php`: Admin callback that performs native Magento login via `Auth::login()`
+- `SendAuthorizationRequest.php`: Initiates OAuth flow; generates PKCE challenge (S256/PLAIN), encodes relay state as `{r, s, a, l, t, p}` JSON+Base64, supports multi-provider via `provider_id` param
+- `ReadAuthorizationResponse.php`: Handles OAuth callback; validates state token, consumes PKCE verifier, verifies JWT, applies rate limiting via `OidcRateLimiter`, stores id_token in transport cookie (2-min TTL)
+- `ProcessResponseAction.php`: Extracts OIDC attributes; delegates to `CheckAttributeMappingAction`
+- `CheckAttributeMappingAction.php`: Routes users based on admin/customer detection; evaluates claims-based access control rules (FEAT-04); handles admin/customer auto-creation; sets ephemeral nonce cookies for secure callback handoff
+- `ProcessUserAction.php`: Creates or updates Magento customers via `CustomerUserCreator`
+- `CustomerLoginAction.php`: Legacy customer login (superseded by `CustomerOidcCallback`)
+- `CustomerOidcCallback.php`: Customer login in clean HTTP context; validates `oidc_customer_nonce` cookie via `OAuthSecurityHelper::redeemCustomerLoginNonce()`; enforces website context (SEC-08); sets `oidc_customer_authenticated` cookie
+- `ShowTestResults.php`: Displays test results for attribute mapping; stores received OIDC claims in `received_oidc_claims` column
+- `BackChannelLogout.php`: OIDC Back-Channel Logout (FEAT-02); POST endpoint for IdP server-side logout
+- `Controller/Health/Check.php`: Health check endpoint; verifies OIDC configuration, database connectivity
+
+#### Admin Controllers (Controller/Adminhtml/)
+- `Actions/Oidccallback.php`: Admin callback that performs native Magento login via `Auth::login()` with ephemeral token; persists id_token in admin session
+- `Actions/SendAuthorizationRequest.php`: Admin-initiated OAuth flow; PKCE verifier stored in DB (admin flow isolation)
+- `Attrsettings/Index.php`: Saves attribute mapping configuration including admin role mappings as JSON
+- `Provider/Index.php`, `Provider/Edit.php`, `Provider/Save.php`, `Provider/Delete.php`: Multi-provider management grid and CRUD
+- `Sessions/Index.php`: Admin UI listing of active OIDC sessions via `SessionDataProvider`
+- `Adminhtml/Actions/HealthCheck.php`: Admin health check with configuration diagnostics
+
+#### Authentication Integration (Model/Auth/)
+- `OidcCredentialAdapter.php`: Implements `StorageInterface` to bridge OIDC with Magento's native auth
+  - Validates ephemeral auth token (single-use, 120s TTL from cache) — never checks password
+  - Fires `admin_user_authenticate_before` and `admin_user_authenticate_after` events with `oidc_auth` marker
+  - Handles serialization for session storage via `__sleep()` and `__wakeup()`
+  - Proxies User model methods via `__call()` magic method
+
+#### Plugins (Plugin/)
+- `Auth/OidcCredentialPlugin.php`: Intercepts `Auth::getCredentialStorage()` to inject OIDC adapter; detects ephemeral token format (non-consuming); unconditionally clears OIDC flag in `afterLogin()` (SEC-06: guards against stale state in recycled PHP-FPM workers)
+- `Auth/OidcLogoutPlugin.php`: `aroundLogout` on `Magento\Backend\Model\Auth`; orchestrates RP-Initiated Logout; reads session **before** `proceed()`; handles Authelia forward-auth detection; calls RFC 7009 revocation
+- `AdminLoginRestrictionPlugin.php`: `beforeLogin` on `Magento\Backend\Model\Auth`; blocks non-OIDC logins when `mo_disable_non_oidc_admin_login` is set; safety net allows normal login if no OIDC button is shown (prevents lockout)
+- `CustomerLoginRestrictionPlugin.php`: Blocks non-OIDC customer logins when configured; analogous to admin restriction
+- `Captcha/OidcCaptchaBypassPlugin.php`: Bypasses CAPTCHA for OIDC-authenticated admin users
+- `Captcha/CustomerCaptchaBypassPlugin.php`: Bypasses CAPTCHA for OIDC-authenticated customer logins
+- `User/OidcPasswordExpirationPlugin.php`: Suppresses password expiration warnings for OIDC users
+- `User/OidcForcePasswordChangePlugin.php`: Suppresses forced password change redirect for OIDC users
+- `User/OidcIdentityVerificationPlugin.php`: Bypasses identity verification prompts for OIDC admin users
+- `User/Block/OidcIdentityFieldPlugin.php`: Hides identity verification form field for OIDC users
+- `User/Block/OidcUserInfoPlugin.php`: Injects OIDC info block into admin user profile page
+- `Customer/Block/OidcInfoPlugin.php`: Injects OIDC info block into customer account page
+- `Csp/OidcCspPolicyCollector.php`: Adds IdP domains to Content Security Policy whitelist dynamically
+
+#### Helpers (Helper/)
+- `OAuthUtility.php`: Core utility class; provider-aware config resolution (MP-05) via `setActiveProviderId()`/`resolveActiveProvider()`; maps 40+ config keys to `miniorange_oauth_client_apps` columns; multi-provider support via `getAllActiveProviders()`; structured JSON logging with sensitive field masking
+- `OAuthSecurityHelper.php`: Security primitives — PKCE generation/verification (S256/PLAIN), state token create/validate/consume (one-time use), relay state encode/decode (JSON+Base64 with legacy pipe-delimited fallback), OIDC nonce store/consume, **ephemeral admin login tokens** (C-01: `createOidcAuthToken()` / `validateAndConsumeOidcAuthToken()` with 120s cache TTL), **customer login nonces** (`createCustomerLoginNonce()` / `redeemCustomerLoginNonce()`), redirect URL validation (same-origin check)
+- `JwtVerifier.php`: Fetches JWKS (cached), verifies JWT signature, validates issuer/audience/nonce
+- `SessionHelper.php`: Cross-origin SSO cookie helpers (SameSite=None); `updateSessionCookies()` re-sets cookies for cross-origin flows
+- `OAuthConstants.php`: Constants for config paths and defaults
+- `OAuthMessages.php`: Centralized user-facing messages
+- `Data.php`: Data access layer for configuration
+- `Curl.php`: HTTP client wrapper for token endpoint calls
+- `TestResults.php`: Test configuration helpers
+- `OAuth/AuthorizationRequest.php`, `OAuth/AccessTokenRequest.php`, `OAuth/AccessTokenRequestBody.php`: OAuth protocol request builders
+- `Exception/`: Custom exception types (RequiredFields, MissingAttributes, IncorrectUserInfo, etc.)
+
+#### Models & Services
+
+**Services (Model/Service/):**
+- `AdminUserCreator.php`: Creates admin users during OIDC auth; `getAdminRoleFromGroups()` resolves role via normalized `miniorange_oauth_role_mappings` table (Phase 4) with fallback to legacy JSON column; case-insensitive group matching; fallback chain: configured mapping → default role → "Administrators" → role ID 1
+- `CustomerUserCreator.php`: Creates/updates customers; uses `CustomerAttributeMapper` (Phase 3.2); supports DOB, gender, billing address; customer group resolution from claims; can deny creation if group not mapped (`mo_oauth_dont_create_customer_if_group_not_mapped`); profile sync on SSO login
+- `UserProvisioningService.php`: Orchestrates admin/customer creation; fires `oidc_before_user_create` and `oidc_after_user_create` events; tracks provider ID
+- `OidcAuthenticationService.php`: Validates user info structure; extracts email; flattens nested OIDC attributes
+- `OidcSessionRegistry.php`: Tracks active OIDC sessions (sub/sid → PHP session ID mapping); used by `BackChannelLogout` for session destruction
+- `TokenRefreshService.php`: Stores/manages refresh tokens in session
+
+**Attribute Mapping (Model/Attribute/):**
+- `AttributeMapperInterface.php`: Shared interface for attribute mappers
+- `AdminAttributeMapper.php`: Maps OIDC claims to admin user attributes
+- `CustomerAttributeMapper.php`: Maps OIDC claims to customer attributes including address fields
+
+**Security (Model/Security/):**
+- `OidcRateLimiter.php`: IP-based rate limiting for authentication attempts on the callback endpoint
+
+**Provider/Repository (Model/Provider/):**
+- `MappingRepository.php`: Repository for accessing normalized attribute/role mappings (Phase 4); reads from `miniorange_oauth_attribute_mappings` and `miniorange_oauth_role_mappings` tables
+
+**ORM Models:**
+- `MiniorangeOauthClientApps.php` + ResourceModel: Primary provider configuration model
+- `OauthAttributeMapping.php` + ResourceModel: Normalized attribute mappings (Phase 4)
+- `OauthRoleMapping.php` + ResourceModel: Normalized role/group mappings (Phase 4)
+- `UserProvider.php` + ResourceModel: Tracks which provider created each Magento user (`miniorange_oauth_user_provider` table)
+
+**GraphQL (Model/Resolver/):**
+- `OidcLoginUrl.php`: Resolver for `oidcLoginUrl(relayState: String)` query
+- `OidcProviders.php`: Resolver for listing active OIDC providers
+
+#### Observers (Observer/)
+- `OAuthLogoutObserver.php`: Handles customer RP-Initiated Logout (`customer_logout` event); reads id_token from session, revokes access token, redirects to IdP
+- `CustomerSetLogoutFlagObserver.php`: Sets logout flag on customer session destruction
+- `AdminSetLogoutFlagObserver.php`: Sets logout flag on admin session destruction
+- `CustomerLoginAutoRedirectObserver.php`: Auto-redirects unauthenticated customers to IdP; checks `oidc_logout_guard` cookie to suppress redirect after OIDC logout
+- `AdminLoginAutoRedirectObserver.php`: Auto-redirects unauthenticated admin users to IdP; respects `oidc_logout_guard` cookie
+- `SessionCookieObserver.php`: Enforces SameSite=None on session cookies for cross-origin OAuth (`controller_front_send_response_before` event)
+- `OAuthObserver.php`: Handles OAuth-specific events
+
+#### UI Components (Ui/)
+- `Ui/Component/DataProvider.php`: Data provider for provider management grid
+- `Ui/Component/DataProvider/SessionDataProvider.php`: Data provider for active sessions admin UI
+- `Ui/Component/Listing/Column/Actions.php`: Provider grid row actions
+- `Ui/Component/Listing/Column/OnlineStatus.php`: Shows active OIDC session status in provider listing
+- `Ui/Component/Listing/Column/ActiveUserCount.php`: Shows count of active OIDC users per provider
+- `Ui/Component/Listing/Column/PkceStatus.php`: Shows PKCE configuration status
+- `Ui/Component/Listing/Column/JwksStatus.php`: Shows JWKS endpoint status
+- `Ui/Component/Listing/Column/TestStatusOptions.php`: Test status badge column
 
 #### Blocks (Block/)
 - `OAuth.php`: Template block class for admin configuration pages
   - `getAdminRoleMappings()`: Returns OIDC group to Magento admin role mappings from configuration
 
-#### Admin Controllers (Controller/Adminhtml/)
-- `Attrsettings/Index.php`: Saves attribute mapping configuration including admin role mappings as JSON
-
-#### Authentication Integration (Model/Auth/)
-- `OidcCredentialAdapter.php`: Implements `StorageInterface` to bridge OIDC with Magento's native auth
-  - Validates OIDC token marker instead of password verification
-  - Fires all standard authentication events
-  - Handles serialization for session storage
-  - Proxies User model methods via `__call()` magic method
-
-#### Plugins (Plugin/)
-- `Auth/OidcCredentialPlugin.php`: Intercepts `Auth::getCredentialStorage()` to inject OIDC adapter
-  - `beforeLogin()`: Detects OIDC token marker and sets flag
-  - `aroundGetCredentialStorage()`: Returns OIDC adapter when flag is set
-  - `afterLogin()`: Cleans up flag after login completes
-- `Captcha/OidcCaptchaBypassPlugin.php`: Bypasses CAPTCHA for OIDC-authenticated users
-  - Intercepts `CheckUserLoginBackendObserver::execute()`
-  - Skips CAPTCHA validation when `oidc_auth` marker is present in event data
-
-#### Helpers (Helper/)
-- `OAuthUtility.php`: Core utility class extending Data class, provides common functions
-- `SessionHelper.php`: Manages session cookies with SameSite=None for cross-origin SSO
-- `OAuthConstants.php`: Constants for config paths and defaults
-- `OAuthMessages.php`: User-facing messages
-- `Data.php`: Data access layer for configuration
-- `OAuth/`: Contains OAuth protocol implementation classes
-
-#### Models & Database
-- Table: `miniorange_oauth_client_apps` (defined in etc/db_schema.xml)
-- Stores OIDC provider configuration: endpoints, client credentials, scopes, attribute mappings, role/group mappings
-- Model: `Model/MiniorangeOauthClientApps.php`
-
-#### Observers (Observer/)
-- `SessionCookieObserver.php`: Forces SameSite=None on cookies (event: `controller_front_send_response_before`)
-- `OAuthObserver.php`: Handles OAuth-specific events
-- `OAuthLogoutObserver.php`: Manages logout flow with OIDC provider
-
-#### Configuration
-- Dependency injection: `etc/di.xml` defines:
-  - Constructor arguments for `CheckAttributeMappingAction` with admin-related dependencies:
-    - `userFactory`, `backendUrl` for admin user operations
-    - `roleCollection` for querying available admin roles
-    - `randomUtility` for secure password generation during admin auto-creation
-  - DI configuration for `OidcCredentialAdapter`, `OidcCredentialPlugin`, and `Oidccallback` controller
-  - Plugin configuration:
-    - `oidc_credential_interceptor` plugin on `Magento\Backend\Model\Auth` (sortOrder: 10)
-    - `oidc_captcha_bypass` plugin on `Magento\Captcha\Observer\CheckUserLoginBackendObserver` (sortOrder: 10)
-- Events: `etc/events.xml` and `etc/adminhtml/events.xml`
-- Routes: `etc/frontend/routes.xml` and `etc/adminhtml/routes.xml` both use `mooauth` as frontName
-- ACL: `etc/acl.xml`
-- CSP: `etc/csp_whitelist.xml` and `etc/adminhtml/csp_whitelist.xml`
-
 #### Logging
 - Custom logger: `Logger/Logger.php` and `Logger/Handler.php`
 - Configured via DI to write to `var/log/mo_oauth.log`
-- Use `$oauthUtility->customlog()` for logging throughout the module
+- Use `$oauthUtility->customlog()` for plain logs; `$oauthUtility->customlogContext()` for structured logs with fields
+- Sensitive fields (client_secret, tokens, password) are automatically masked
+
+### Database Schema
+
+**Primary Table: `miniorange_oauth_client_apps`**
+- Core OAuth: `app_name`, `clientID`, `client_secret`, `scope`, `authorize_endpoint`, `access_token_endpoint`, `user_info_endpoint`, `jwks_endpoint`, `endsession_endpoint`, `revocation_endpoint`, `well_known_config_url`, `issuer`
+- PKCE: `pkce_flow`, `pkce_code_verifier` (temporary admin-flow storage)
+- Attribute mappings (legacy): `email_attribute`, `username_attribute`, `firstname_attribute`, `lastname_attribute`, `group_attribute`, `dob_attribute`, `gender_attribute`, `billing_*_attribute` (city, state, country, address, phone, zip)
+- Role/group mappings (legacy): `oauth_admin_role_mapping` (JSON), `oauth_customer_group_mapping` (JSON), `default_role`, `default_group`
+- Login behavior: `show_admin_link`, `show_customer_link`, `autoredirect_admin`, `autoredirect_customer`, `mo_oauth_auto_create_admin`, `mo_oauth_auto_create_customer`, `mo_disable_non_oidc_admin_login`, `mo_disable_non_oidc_customer_login`
+- Profile sync: `sync_customer_profile_on_sso`, `sync_customer_address_on_sso`, `sync_customer_group_on_sso`, `sync_admin_profile_on_sso`, `sync_admin_role_on_sso`
+- Multi-provider: `display_name`, `is_active`, `login_type` ('customer'|'admin'|'both'), `sort_order`, `button_label`, `button_color`
+- Testing: `last_test_status`, `last_test_at`, `received_oidc_claims` (JSON array of claim keys from last test)
+
+**Normalized Tables (Phase 4):**
+
+`miniorange_oauth_attribute_mappings`:
+- FK: `provider_id` → `miniorange_oauth_client_apps.id`
+- `attribute_type`: 'email', 'username', 'firstname', 'lastname', 'group', 'dob', 'gender', 'billing_*'
+- `attribute_name`: OIDC claim key
+- `sync_on_sso`: 1 = re-sync this attribute on every login
+
+`miniorange_oauth_role_mappings`:
+- FK: `provider_id`
+- `mapping_type`: 'admin_role' | 'customer_group'
+- `oidc_group`: OIDC group claim value
+- `magento_role_id`: Magento role or customer group ID
+- `sort_order`: evaluation order
+
+`miniorange_oauth_user_provider`:
+- Tracks which OIDC provider created each Magento user
+- `user_type`: 'customer' | 'admin'
+- `user_id`: customer entity_id or admin user_id
+- `provider_id`: FK to provider
+- `created_at`: timestamp
+
+### Configuration
+
+**Dependency injection (etc/di.xml):**
+- `CheckAttributeMappingAction`: Injected with `UserProvisioningService`, admin factories, cookie managers, `OAuthSecurityHelper`
+- `AdminUserCreator`/`CustomerUserCreator`: Injected with `MappingRepository` for Phase 4 normalized lookups
+- `OidcCredentialPlugin`/`OidcCredentialAdapter`: Full DI for auth integration
+- `Oidccallback`: Injected with `Auth`, `OAuthSecurityHelper`, `ScopeConfigInterface`
+- Plugins registered on:
+  - `Magento\Backend\Model\Auth`: `AdminLoginRestrictionPlugin` (sortOrder 5), `OidcCredentialPlugin` (10), `OidcLogoutPlugin` (20)
+  - `Magento\Captcha\Observer\CheckUserLoginBackendObserver`: `OidcCaptchaBypassPlugin` (10)
+  - `Magento\Customer\Api\AccountManagementInterface`: `CustomerLoginRestrictionPlugin` (5)
+  - `Magento\User\Model\User`: `OidcIdentityVerificationPlugin` (10), `OidcForcePasswordChangePlugin`, `OidcPasswordExpirationPlugin`
+
+**Events (etc/events.xml and etc/adminhtml/events.xml):**
+- `customer_logout` → `OAuthLogoutObserver`
+- `controller_front_send_response_before` → `SessionCookieObserver`
+- `oidc_before_user_create`, `oidc_after_user_create` (custom events fired by `UserProvisioningService`)
+
+**Routes:**
+- `etc/frontend/routes.xml`: `mooauth` frontName (customer area)
+- `etc/adminhtml/routes.xml`: `mooauth` frontName (admin area)
+
+**Admin Panel Path:** `Stores → Configuration → MiniOrange → OAuth/OIDC`
+
+**Admin UI Pages:**
+- Provider Management: `/admin/mooauth/provider/index` (grid), `/admin/mooauth/provider/edit` (per-provider config)
+- OAuth Settings: `/admin/mooauth/oauthsettings/index`
+- Attribute Mapping: `/admin/mooauth/attrsettings/index`
+- Sign In Settings: `/admin/mooauth/signinsettings/index`
+- Sessions: `/admin/mooauth/sessions/index` (active OIDC sessions)
+- Health Check: `/admin/mooauth/actions/healthcheck`
+
+### Security Features
+
+| Feature | Status | Details |
+|---------|--------|---------|
+| **CSRF Protection** | Active | State token per request; validated and consumed before token exchange |
+| **Replay Protection** | Active | OIDC nonce in id_token; one-time nonce cookies for callback handoff |
+| **JWT Verification** | Active | JWKS endpoint required; validates issuer, audience, nonce, signature |
+| **PKCE** | Active | S256 (SHA256) preferred, PLAIN fallback; verifier stored per session/provider |
+| **Ephemeral Auth Tokens** | Active (C-01) | Admin login uses single-use tokens with 120s cache TTL — no static markers |
+| **Rate Limiting** | Active | IP-based throttle via `OidcRateLimiter` on callback endpoint |
+| **Back-Channel Logout** | Active (FEAT-02) | Server-to-server logout via JWT logout token; session destruction by ID |
+| **RP-Initiated Logout** | Active | Admin + customer; id_token_hint; RFC 7009 token revocation; Authelia compat |
+| **Logout Guard** | Active | `oidc_logout_guard` cookie (120s) prevents auto-redirect loop after IdP logout |
+| **Login Restriction** | Configurable | Block non-OIDC logins per provider; safety net prevents lockout |
+| **Claims Access Control** | Active (FEAT-04) | Rules engine with 6 operators (eq, neq, contains, not_contains, exists, not_exists); AND-combined |
+| **Cross-Website Guard** | Active (SEC-08) | Customer login rejects cross-website account login attempts |
+| **XSS Prevention** | Active | Error messages sanitized; non-printable chars removed |
+| **Open Redirect** | Protected | `validateRedirectUrl()` enforces same-origin; rejects login-page relay states |
+| **CAPTCHA Bypass** | Controlled | Intentional bypass for OIDC (auth already done at IdP) |
+| **Password Bypass** | Protected | `OidcPasswordExpirationPlugin`, `OidcForcePasswordChangePlugin` suppress password flows for OIDC users |
+| **Stale Flag Guard** | Active (SEC-06) | `OidcCredentialPlugin` unconditionally clears OIDC flag in `afterLogin()` |
 
 ### Admin Auto-Login Implementation
 
 **Current Implementation (Native Magento Integration):**
 
-The admin auto-login now uses Magento's native authentication system:
-
-1. **Detection** (`Controller/Actions/CheckAttributeMappingAction.php:101-130`):
+1. **Detection** (`Controller/Actions/CheckAttributeMappingAction.php`):
    - Checks if authenticated email exists in `admin_user` table
-   - If admin exists, stores user info in session and redirects to admin callback
+   - If admin exists, stores user info in session, creates ephemeral nonce cookie, and redirects to admin callback
    - If admin doesn't exist and auto-create is enabled, creates admin user first (see Admin Auto-Creation below)
 
 2. **Native Authentication Flow** (`Controller/Adminhtml/Actions/Oidccallback.php`):
-   - Calls `Auth::login($email, 'OIDC_VERIFIED_USER')` with special token marker
-   - Plugin system intercepts and injects OIDC credential adapter
-   - All security events fire properly (pre/post authentication, ACL refresh, etc.)
-   - CAPTCHA is automatically bypassed via plugin
+   - Validates and consumes ephemeral admin nonce (one-time use, 120s TTL) via `OAuthSecurityHelper`
+   - Creates ephemeral OIDC auth token (`OIDC_TOKEN_<random>`) stored in cache with 120s TTL
+   - Calls `Auth::login($email, $ephemeralToken)` — plugin system intercepts
+   - All security events fire properly; CAPTCHA is automatically bypassed via plugin
+   - Persists id_token in admin session for logout flow
 
 3. **OIDC Adapter** (`Model/Auth/OidcCredentialAdapter.php`):
-   - Implements `StorageInterface` required by Magento's Auth class
-   - Validates OIDC token marker instead of password
+   - Validates ephemeral auth token (single-use via cache delete-on-read)
    - Loads user from database, checks active status and role assignment
    - Records login and reloads user data
-   - Handles session serialization via `__sleep()` and `__wakeup()`
 
 4. **Plugin Orchestration**:
-   - `OidcCredentialPlugin` detects token marker and injects adapter
+   - `OidcCredentialPlugin` detects ephemeral token format and injects adapter
    - `OidcCaptchaBypassPlugin` skips CAPTCHA for OIDC auth
    - Fires `admin_user_authenticate_before` and `admin_user_authenticate_after` events with `oidc_auth` marker
 
 ### Admin Auto-Creation
 
-When "Auto Create Admin users while SSO" is enabled in Sign In Settings, admin users are automatically created during OIDC authentication:
+When "Auto Create Admin users while SSO" is enabled, admin users are automatically created during OIDC authentication:
 
-**Flow** (`Controller/Actions/CheckAttributeMappingAction.php:152-215`):
-1. **Attribute Extraction**: Uses configured attribute mappings for firstName, lastName, userName
-2. **Name Fallbacks**: If names are empty, uses `explode("@", $email)` - email prefix for firstName, domain for lastName
+**Flow** (`Controller/Actions/CheckAttributeMappingAction.php` → `UserProvisioningService` → `AdminUserCreator`):
+1. **Attribute Extraction**: Uses `AdminAttributeMapper` with configured attribute mappings for firstName, lastName, userName
+2. **Name Fallbacks**: If names are empty, uses `explode("@", $email)` — email prefix for firstName, domain for lastName
 3. **Group Extraction**: Reads OIDC groups from configured group attribute claim
-4. **Role Assignment**: Maps OIDC groups to Magento admin roles using configured mappings
+4. **Role Assignment**: `AdminUserCreator::getAdminRoleFromGroups()` resolves role
 5. **User Creation**: Creates admin user with random secure password (authentication is via OIDC, not password)
 6. **Login Redirect**: Redirects to admin callback for standard OIDC login flow
 
 **Role Mapping Fallback Chain**:
-1. Configured group-to-role mapping (case-insensitive group matching)
-2. Default admin role (if configured)
-3. "Administrators" role (searched by name)
-4. Role ID 1 (ultimate fallback)
+1. Normalized `miniorange_oauth_role_mappings` table (Phase 4, case-insensitive)
+2. Legacy JSON `oauth_admin_role_mapping` column (case-insensitive)
+3. Default admin role (if configured per provider)
+4. "Administrators" role (searched by name)
+5. Role ID 1 (ultimate fallback)
 
-**Configuration UI** (Attribute Mapping page - `view/adminhtml/templates/attrsettings.phtml`):
+**Configuration UI** (Attribute Mapping page):
 - **Group Attribute Name**: OIDC claim containing group/role information (e.g., `groups`, `roles`, `memberOf`)
 - **Default Admin Role**: Dropdown to select fallback role when no mapping matches
 - **Role Mappings**: Dynamic rows mapping OIDC group names to Magento admin roles
 
-**Technical Benefits:**
-- ✅ All standard Magento authentication events fire correctly
-- ✅ No need for external PHP scripts or bootstrap bypassing
-- ✅ Works seamlessly with Magento's security layer (CAPTCHA, rate limiting, etc.)
-- ✅ Proper ACL initialization and session management
-- ✅ Maintains compatibility with other authentication plugins
-- ✅ Clean separation of concerns via adapter pattern
+### Customer Auto-Creation
 
-**Session Management** (`Helper/SessionHelper.php`):
-- `configureSSOSession()`: Sets SameSite=None on session cookies
-- `updateSessionCookies()`: Updates existing cookies for cross-origin compatibility
-- `forceSameSiteNone()`: Response observer hook to enforce cookie settings
+When "Auto Create Customer users while SSO" is enabled:
+
+**Flow** (`ProcessUserAction` → `UserProvisioningService` → `CustomerUserCreator`):
+1. `CustomerAttributeMapper` extracts attributes from OIDC claims
+2. Customer group resolved via `miniorange_oauth_role_mappings` (mapping_type='customer_group')
+3. Falls back to legacy JSON column, then default group, then Magento "General" group
+4. If `mo_oauth_dont_create_customer_if_group_not_mapped` is set, creation is denied when no group match
+5. Optional address creation (billing/shipping) from mapped claims
+6. Customer nonce set, redirect to `CustomerOidcCallback`
+
+### Session Management
+
+- `SessionHelper.php`: `updateSessionCookies()` re-sets existing cookies with SameSite=None for cross-origin OIDC
+- `OidcSessionRegistry`: Maps OIDC `sub`/`sid` claims to PHP session IDs for back-channel logout
+- Admin session stores: `oidc_id_token`, `oidc_access_token`, `oidc_provider_id` for logout flow
+- Customer session stores: analogous keys for customer RP-Initiated Logout
 
 ### Attribute Mapping
 
-OIDC claims are mapped to Magento user attributes via configuration stored in the database:
+OIDC claims are mapped to Magento user attributes via configuration:
 - Email: `email_attribute` (default: "email")
 - Username: `username_attribute` (default: "preferred_username")
 - First name: `firstname_attribute` (default: "name" with split)
 - Last name: `lastname_attribute` (default: "name" with split)
 - Groups: `group_attribute` (for role/group mapping)
+- DOB: `dob_attribute`; Gender: `gender_attribute`
+- Billing address: `billing_city_attribute`, `billing_state_attribute`, `billing_country_attribute`, `billing_address_attribute`, `billing_phone_attribute`, `billing_zip_attribute`
 
-**Admin Role Mapping** (for auto-created admin users):
-- Group Attribute Name: OIDC claim containing groups (e.g., `groups`, `roles`)
-- Default Admin Role: Fallback role when no group mapping matches
-- Role Mappings: JSON-stored array of `{group: "OIDC_GROUP", role: "MAGENTO_ROLE_ID"}` pairs
-- Configuration saved via `Attrsettings/Index.php` controller as `adminRoleMapping` config key
+**Phase 4 Normalized Storage** (in `miniorange_oauth_attribute_mappings`):
+- `attribute_type` + `attribute_name` per provider
+- `sync_on_sso` flag for profile update on every login
+- Accessed via `MappingRepository`; falls back to legacy columns
 
-The module configuration is accessed via: **Stores → Configuration → MiniOrange → OAuth/OIDC**
+### Multi-Provider Support
+
+The module fully supports multiple OIDC providers per Magento installation:
+- Each provider is a row in `miniorange_oauth_client_apps` with its own `clientID`, endpoints, attribute mappings, role mappings
+- `SendAuthorizationRequest` accepts `provider_id` parameter; relay state encodes `p` (provider ID)
+- `ReadAuthorizationResponse` reconstructs provider context from relay state
+- `OAuthUtility::setActiveProviderId()` sets per-request provider context for config resolution
+- `OAuthUtility::getAllActiveProviders($loginType)` returns providers filtered by login type
+- Provider management grid at `/admin/mooauth/provider/index`
 
 ## Use Cases for This Module
 
@@ -236,26 +408,29 @@ The module configuration is accessed via: **Stores → Configuration → MiniOra
 
 You'll interact with this module when:
 
-- **Integrating a new OIDC provider** (Okta, Azure AD, Google, custom IdP)
-  - Configure endpoints in `miniorange_oauth_client_apps` table
-  - Test with `ShowTestResults.php` controller
+- **Integrating a new OIDC provider** (Okta, Azure AD, Google, Authelia, custom IdP)
+  - Create provider row via `/admin/mooauth/provider/edit`
+  - Test with Test Configuration button (stores received claims in `received_oidc_claims`)
 
 - **Adding custom attribute mappings** (e.g., employee ID, department, custom fields)
-  - Modify `Model/Service/CustomerUserCreator.php` or `AdminUserCreator.php`
+  - Modify `Model/Attribute/AdminAttributeMapper.php` or `CustomerAttributeMapper.php`
   - Add columns to `etc/db_schema.xml` if new database fields needed
 
 - **Debugging failed logins**
   - Enable debug logging: **Stores > Configuration > MiniOrange > OAuth/OIDC > Sign In Settings > Enable debug logging**
   - Check `var/log/mo_oauth.log` for detailed flow logs
-  - Common issues logged: email mismatch, attribute mapping failures, role mapping failures
+  - Key log entries: "State token validation PASSED", "PKCE code_verifier loaded", "Authentication successful for:", "SUCCESS: Auth::login() completed"
 
-- **Extending JIT provisioning logic** (custom default values, conditional logic)
-  - Create plugins on `CheckAttributeMappingAction::execute()` method
-  - Or observe authentication events: `admin_user_authenticate_before`, `admin_user_authenticate_after`
+- **Extending JIT provisioning logic**
+  - Create plugins on `CheckAttributeMappingAction::execute()` or observe `oidc_before_user_create` / `oidc_after_user_create`
 
 - **Adding new security bypasses** (e.g., 2FA module integration for OIDC users)
   - Follow pattern from `Plugin/Captcha/OidcCaptchaBypassPlugin.php`
   - Check for `oidc_authenticated` cookie or `oidc_auth` event marker
+
+- **Implementing claims-based access control**
+  - Configure rules in Sign In Settings (FEAT-04); operators: `eq`, `neq`, `contains`, `not_contains`, `exists`, `not_exists`
+  - Rules are AND-combined; first failing rule blocks login with configured error message
 
 ### Common Modification Scenarios
 
@@ -264,35 +439,27 @@ You'll interact with this module when:
 **Goal**: Map a custom OIDC claim (e.g., `employee_id`) to a custom customer attribute.
 
 **Files to modify**:
-- [Model/Service/CustomerUserCreator.php](Model/Service/CustomerUserCreator.php) (lines 162-250)
-- [etc/db_schema.xml](etc/db_schema.xml) (add column to `customer_entity` or create EAV attribute)
-- [view/adminhtml/templates/attrsettings.phtml](view/adminhtml/templates/attrsettings.phtml) (add UI field for mapping)
+- [Model/Attribute/CustomerAttributeMapper.php](Model/Attribute/CustomerAttributeMapper.php)
+- [etc/db_schema.xml](etc/db_schema.xml) (add column to `miniorange_oauth_client_apps` or use Phase 4 `miniorange_oauth_attribute_mappings`)
+- [view/adminhtml/templates/attrsettings.phtml](view/adminhtml/templates/attrsettings.phtml) (add UI field)
 
 **Pattern to follow**:
 ```php
-// In CustomerUserCreator.php, follow the DOB mapping pattern:
+// In CustomerAttributeMapper.php, follow the DOB mapping pattern:
 $employeeId = $flattenedAttrs[$this->oauthUtility->getStoreConfig('employee_id_attribute')] ?? '';
 if (!empty($employeeId)) {
     $customer->setCustomAttribute('employee_id', $employeeId);
 }
 ```
 
-**Steps**:
-1. Add `employee_id_attribute` column to `miniorange_oauth_client_apps` table in `etc/db_schema.xml`
-2. Add mapping logic in `CustomerUserCreator::createCustomer()` method
-3. Add UI field in attribute mapping admin page
-4. Test with **Test Configuration** to verify claim name from IdP
-5. Run `bin/magento setup:upgrade && bin/magento setup:di:compile`
-
 ---
 
 #### Scenario 2: Customize Admin Role Mapping Logic
 
-**Goal**: Add custom logic to admin role assignment (e.g., map based on email domain, not just groups).
+**Goal**: Add custom logic to admin role assignment (e.g., map based on email domain).
 
 **Files to modify**:
-- [Model/Service/AdminUserCreator.php](Model/Service/AdminUserCreator.php) (lines 142-185)
-- Method: `getAdminRoleFromGroups(array $userGroups): ?int`
+- [Model/Service/AdminUserCreator.php](Model/Service/AdminUserCreator.php) — method `getAdminRoleFromGroups()`
 
 **Pattern to follow**:
 ```php
@@ -304,18 +471,9 @@ private function getAdminRoleFromGroups(array $userGroups): ?int
     if (str_ends_with($email, '@executives.example.com')) {
         return 1; // Administrators role
     }
-
-    // Continue with existing group mapping logic...
-    $roleMappingsJson = $this->oauthUtility->getStoreConfig('adminRoleMapping');
-    // ... rest of method
+    // Continue with existing Phase 4 / legacy mapping logic...
 }
 ```
-
-**Testing**:
-1. Enable debug logging
-2. Test login with users from different groups/domains
-3. Check `var/log/mo_oauth.log` for "AdminUserCreator: Role ID assigned: X" messages
-4. Verify user created with correct role in **System > Permissions > All Users**
 
 ---
 
@@ -323,33 +481,20 @@ private function getAdminRoleFromGroups(array $userGroups): ?int
 
 **Goal**: Display "Login with SSO" button on custom login page.
 
-**Files to modify**:
-- Your theme's `.phtml` template (e.g., `app/design/frontend/YourVendor/YourTheme/Magento_Customer/templates/form/login.phtml`)
-
 **Code to add**:
 ```php
 <?php
-// Inject OAuthUtility helper via layout XML or get from ObjectManager
-$oauthHelper = $block->getData('oauth_helper'); // Configure via layout XML
-
-// For customer login (frontend):
-$customerLoginUrl = $oauthHelper->getSPInitiatedUrl();
-
-// For admin login (backend):
-$adminLoginUrl = $oauthHelper->getAdminSPInitiatedUrl();
+$oauthHelper = $block->getData('oauth_helper');
+$providers = $oauthHelper->getAllActiveProviders('customer');
+foreach ($providers as $provider) {
+    $loginUrl = $oauthHelper->getSPInitiatedUrlForProvider($provider['id']);
+    $label = $provider['button_label'] ?: __('Login with SSO');
+    echo '<a href="' . $escaper->escapeUrl($loginUrl) . '">' . $escaper->escapeHtml($label) . '</a>';
+}
 ?>
-
-<!-- Customer SSO Button -->
-<div class="sso-login-button">
-    <a href="<?= $escaper->escapeUrl($customerLoginUrl) ?>"
-       class="action primary"
-       title="<?= $escaper->escapeHtml(__('Login with SSO')) ?>">
-        <span><?= $escaper->escapeHtml(__('Login with SSO')) ?></span>
-    </a>
-</div>
 ```
 
-**Layout XML injection** (in your theme's `Magento_Customer/layout/customer_account_login.xml`):
+**Layout XML injection** (in `Magento_Customer/layout/customer_account_login.xml`):
 ```xml
 <referenceBlock name="customer_form_login">
     <arguments>
@@ -364,38 +509,26 @@ $adminLoginUrl = $oauthHelper->getAdminSPInitiatedUrl();
 
 **Goal**: Token exchange fails with "configuration error" or "invalid_grant".
 
-**Files to check**:
-- [Controller/Actions/ProcessResponseAction.php](Controller/Actions/ProcessResponseAction.php) (lines 60-120)
-- [Helper/Curl.php](Helper/Curl.php) — HTTP client for token endpoint
-
 **Debugging steps**:
-1. **Enable debug logging**: **Stores > Configuration > MiniOrange > OAuth/OIDC > Sign In Settings > Enable debug logging**
-
-2. **Trigger auth flow** and check `var/log/mo_oauth.log`:
-   ```bash
-   tail -f var/log/mo_oauth.log
-   ```
-
+1. **Enable debug logging**: **Stores > Configuration > MiniOrange > OAuth/OIDC > Sign In Settings**
+2. **Trigger auth flow** and check `var/log/mo_oauth.log`
 3. **Look for these log entries**:
-   - "Authorization code received: [code]" — confirms callback received code
-   - "Token endpoint: [url]" — verify correct endpoint
-   - "Token exchange response: [json]" — check for error messages
-   - Common errors:
-     - `invalid_grant`: Authorization code expired or already used
-     - `invalid_client`: Client ID/Secret mismatch
-     - `redirect_uri_mismatch`: Callback URL doesn't match IdP configuration
+   - "ReadAuthResponse: State token validation PASSED" — confirms CSRF passed
+   - "ReadAuthResponse: PKCE code_verifier loaded from session/DB" — confirms verifier found
+   - "ReadAuthResponse: id_token stored in transport cookie" — confirms token exchange succeeded
+   - Common errors: `invalid_grant` (code expired/reused), `invalid_client` (wrong credentials), `redirect_uri_mismatch`
+4. **Verify configuration**: Callback URL must be `https://your-site.com/mooauth/actions/ReadAuthorizationResponse`
+5. **Common fixes**: Re-save OAuth Settings, check `values_in_header` vs `values_in_body`, verify HTTPS
 
-4. **Check IdP logs** for corresponding errors
+---
 
-5. **Verify configuration**:
-   - Client ID and Secret match IdP
-   - Callback URL matches: `https://your-site.com/mooauth/actions/ReadAuthorizationResponse`
-   - Token endpoint URL correct (check for trailing slashes)
+#### Scenario 5: Integrate with Authelia RP-Initiated Logout
 
-6. **Common fixes**:
-   - Re-save OAuth Settings in admin panel (re-encrypts client secret)
-   - Check `values_in_header` vs `values_in_body` setting (some IdPs require credentials in header)
-   - Verify HTTPS configured correctly (HTTP will fail in production)
+**Detection is automatic**: If the `endsession_endpoint` path ends with `/logout` (without `/oauth2/` or `/oidc/`), Authelia's forward-auth mode is assumed.
+
+- `OidcLogoutPlugin` uses `?rd=<adminBaseUrl>` parameter instead of standard OIDC `post_logout_redirect_uri`
+- The `post_logout_redirect_uri` is resolved to the static admin base URL (e.g., `https://your-site.com/admin/`) — **never** the dynamic request URL (which contains tokens that cannot be registered as allowed redirect URIs)
+- Configure: set `endsession_endpoint` = `https://auth.example.com/logout` in provider settings
 
 ---
 
@@ -403,254 +536,111 @@ $adminLoginUrl = $oauthHelper->getAdminSPInitiatedUrl();
 
 Before deploying OIDC changes, verify:
 
-- [ ] **Enable debug logging**: **Stores > Configuration > MiniOrange > OAuth/OIDC > Sign In Settings > Enable debug logging**
+- [ ] **Enable debug logging**: **Stores > Configuration > MiniOrange > OAuth/OIDC > Sign In Settings**
 
 - [ ] **Test customer flow**:
-  - Navigate to frontend SSO link (or add SSO button to login page)
+  - Navigate to frontend SSO link
   - Redirected to IdP, authenticate successfully
-  - Returned to Magento, customer session established
-  - Check `var/log/mo_oauth.log` for "Customer login successful for: [email]"
-  - Verify customer created in **Customers > All Customers** (if auto-create enabled)
+  - Returned to Magento via `CustomerOidcCallback`, customer session established
+  - Check `var/log/mo_oauth.log` for "CustomerOidcCallback: Login successful"
+  - Verify `oidc_customer_authenticated` cookie set
 
 - [ ] **Test admin flow**:
-  - Navigate to admin SSO link (`/admin/mooauth/actions/SendAuthorizationRequest`)
-  - Redirected to IdP, authenticate successfully
+  - Navigate to admin SSO link
   - Returned to Magento admin dashboard
-  - Check `var/log/mo_oauth.log` for "Admin login successful for: [email]"
-  - Verify admin created in **System > Permissions > All Users** (if auto-create enabled)
+  - Check `var/log/mo_oauth.log` for "SUCCESS: Auth::login() completed successfully"
+  - Verify `oidc_authenticated` cookie set
+
+- [ ] **Test RP-Initiated Logout**:
+  - Log in via OIDC, then click "Sign Out"
+  - Verify redirected to IdP logout URL
+  - Verify Magento session cleared and `oidc_logout_guard` cookie present
+  - Verify auto-redirect does NOT trigger immediately after logout
 
 - [ ] **Test auto-creation** (if enabled):
   - Use a new user email not in Magento database
-  - Complete OIDC login flow
-  - Verify user created with correct role/group
-  - Check `var/log/mo_oauth.log` for "AdminUserCreator: User created successfully" or "CustomerUserCreator: Customer created"
+  - Check `var/log/mo_oauth.log` for "UserProvisioningService: User created successfully"
 
 - [ ] **Test attribute mapping**:
-  - Click **Test Configuration** button in **Stores > Configuration > MiniOrange > OAuth/OIDC > OAuth Settings**
-  - Verify all expected OIDC claims displayed correctly
-  - Check claim names match your attribute mapping configuration (case-sensitive)
-  - Update mappings if claim names differ from expected
-
-- [ ] **Test logout**:
-  - Log in via OIDC, then log out
-  - Verify redirected to IdP logout URL (if `post_logout_url` configured)
-  - Verify Magento session cleared (cannot access protected pages)
-  - Check `oidc_authenticated` cookie deleted (for admin users)
+  - Click **Test Configuration** button
+  - Verify all expected OIDC claims displayed
+  - Check `received_oidc_claims` column populated in database
 
 - [ ] **Test error scenarios**:
-  - Try login with user not in `admin_user` table (auto-create disabled) → should show "Admin account not found"
-  - Try login with inactive admin user → should show "Admin account is inactive"
-  - Try login with admin user with no role assigned → should show "Admin user has no assigned role"
+  - Admin account not found + auto-create disabled → "Admin account not found"
+  - Inactive admin user → "Admin account is inactive"
+  - No role assigned → "Admin user has no assigned role"
+  - Claims access control rule fails → configured error message shown
+
+---
+
+## Testing Structure
+
+**Unit Tests** (`Test/Unit/`):
+- `Plugin/OidcCredentialPluginTest.php`: Plugin behavior and flag cleanup
+- `Helper/OAuthUtilityExtractNameTest.php`: Email parsing
+- `Helper/JwtVerifierTest.php`: JWT validation (JWKS, issuer, audience, nonce)
+- `Model/Attribute/AdminAttributeMapperTest.php`: Admin attribute mapping
+- `Model/Attribute/CustomerAttributeMapperTest.php`: Customer attribute mapping including address
+- `Model/Auth/OidcCredentialAdapterTest.php`: Adapter authentication logic and ephemeral tokens
+- `Model/Service/AdminUserCreatorRoleMappingTest.php`: Role mapping logic including fallback chain
+- `Model/Service/CustomerUserCreatorAddressTest.php`: Address creation from OIDC claims
+
+**Integration Tests** (`Test/Integration/`):
+- `AdminOidcLoginFlowTest.php`: Full admin login flow
+- `CustomerOidcLoginFlowTest.php`: Full customer login flow
+- `SecurityPluginsTest.php`: Plugin security behaviors
+- `AccessControlRulesTest.php`: Claims-based access control rules engine
 
 ---
 
 ## Future Improvements to Consider
 
-When asked to enhance this module, consider these common scenarios and recommended approaches:
-
-### If Asked to Add Tests
-
-**Recommendation**:
-- Use PHPUnit for Model and Helper classes
-- Use Magento's integration testing framework for Controllers
-- Create mock OIDC provider (Docker-based) for local testing
-
-**Key test scenarios**:
-```php
-// Unit test example for AdminUserCreator
-public function testCreateAdminUserWithGroupMapping()
-{
-    $userGroups = ['Engineering', 'Developers'];
-    $email = 'test@example.com';
-
-    // Mock role mapping: Engineering -> Role ID 2
-    $this->configureRoleMapping(['Engineering' => 2]);
-
-    $user = $this->adminUserCreator->createAdminUser($email, 'testuser', 'Test', 'User', $userGroups);
-
-    $this->assertNotNull($user);
-    $this->assertEquals(2, $user->getRoleId());
-}
-```
-
-**Integration test example**:
-```php
-// Test full auth flow with mock IdP
-public function testAdminOidcLoginFlow()
-{
-    $this->mockIdpResponse(['email' => 'admin@example.com', 'groups' => ['Administrators']]);
-
-    $response = $this->dispatch('/admin/mooauth/actions/SendAuthorizationRequest');
-    $this->assertRedirect(); // Redirected to IdP
-
-    // Simulate callback
-    $response = $this->dispatchCallback('/mooauth/actions/ReadAuthorizationResponse?code=mock_code&state=...');
-    $this->assertRedirect('/admin'); // Redirected to admin dashboard
-
-    $this->assertTrue($this->backendAuthSession->isLoggedIn());
-}
-```
-
----
-
 ### If Asked About Multi-Provider Support
 
-**Current limitation**: Single provider per store (one row in `miniorange_oauth_client_apps` table).
-
-**Refactoring needed**:
-1. **Database schema change**:
-   - Rename table to `miniorange_oauth_providers` (plural)
-   - Add `provider_id` column as primary key
-   - Add `provider_name` column for UI display
-   - Migrate existing configuration to new schema with `provider_id = 1`
-
-2. **Controller changes**:
-   - Modify `SendAuthorizationRequest` to accept `provider_id` parameter
-   - Store `provider_id` in OAuth state parameter
-   - Retrieve correct provider config in `ReadAuthorizationResponse` based on state
-
-3. **Admin UI changes**:
-   - Add provider management grid: **Stores > Configuration > MiniOrange > OAuth/OIDC > Manage Providers**
-   - Each provider has separate configuration page
-   - Add provider selection dropdown on SSO buttons
-
-**Example API**:
-```php
-// Generate SSO URL for specific provider
-$loginUrl = $oauthHelper->getSPInitiatedUrl($relayState, $providerId);
-```
-
----
+Multi-provider is fully implemented. The `provider_id` parameter flows through the entire auth pipeline. Admin UI at `/admin/mooauth/provider/index` manages providers. Phase 4 normalization (`miniorange_oauth_attribute_mappings`, `miniorange_oauth_role_mappings`) supports per-provider attribute and role mappings independently.
 
 ### If Asked About Security Improvements
 
-**CSRF Token Validation**:
-- Add explicit CSRF token to `ReadAuthorizationResponse` controller
-- Generate token in `SendAuthorizationRequest`, store in session
-- Validate token in callback before processing authorization code
-```php
-// In SendAuthorizationRequest
-$csrfToken = bin2hex(random_bytes(16));
-$this->session->setCsrfToken($csrfToken);
-$state = "$relayState|$sessionId|$appName|$loginType|$csrfToken";
+**CSRF Token Validation**: Already implemented via state token in `OAuthSecurityHelper`. Encodes session ID, app name, login type, state token, and provider ID in relay state.
 
-// In ReadAuthorizationResponse
-$stateParts = explode('|', $state);
-$csrfToken = $stateParts[4] ?? '';
-if ($csrfToken !== $this->session->getCsrfToken()) {
-    throw new SecurityException('CSRF token mismatch');
-}
-```
+**Rate Limiting**: Already implemented via `OidcRateLimiter` on the callback endpoint.
 
 **Scope Cookie Observer to OIDC Paths Only**:
-- Modify `SessionCookieObserver::forceSameSiteNone()` to check request path
 ```php
-public function forceSameSiteNone()
+public function execute(\Magento\Framework\Event\Observer $observer): void
 {
     $requestPath = $this->request->getRequestUri();
-
-    // Only apply to OIDC routes
     if (strpos($requestPath, '/mooauth/') === false) {
         return; // Skip for non-OIDC requests
     }
-
     // Continue with cookie rewrite...
 }
 ```
 
-**Rate Limiting**:
-- Use Magento's built-in rate limiting or integrate with Cloudflare
-- Add rate limiter to `ReadAuthorizationResponse` controller
-```php
-// In ReadAuthorizationResponse::execute()
-if (!$this->rateLimiter->isAllowed($this->request->getClientIp(), 'oidc_callback')) {
-    throw new TooManyRequestsException('Rate limit exceeded');
-}
-```
-
----
-
 ### If Asked About GraphQL Support
 
-**Goal**: Headless commerce needs SSO URL generation via GraphQL.
+**Already implemented** in `Model/Resolver/`:
+- `OidcLoginUrl.php`: Resolves `oidcLoginUrl(relayState: String)` query
+- `OidcProviders.php`: Resolves list of active OIDC providers
 
-**Implementation**:
-
-1. **Add schema** in `etc/schema.graphqls`:
-```graphql
-type Query {
-    oidcLoginUrl(relayState: String): String @resolver(class: "MiniOrange\\OAuth\\Model\\Resolver\\OidcLoginUrl")
-}
-```
-
-2. **Create resolver** in `Model/Resolver/OidcLoginUrl.php`:
-```php
-namespace MiniOrange\OAuth\Model\Resolver;
-
-use Magento\Framework\GraphQl\Query\ResolverInterface;
-use MiniOrange\OAuth\Helper\OAuthUtility;
-
-class OidcLoginUrl implements ResolverInterface
-{
-    public function __construct(private OAuthUtility $oauthUtility) {}
-
-    public function resolve($field, $context, $info, $value = null, $args = null)
-    {
-        $relayState = $args['relayState'] ?? null;
-        return $this->oauthUtility->getSPInitiatedUrl($relayState);
-    }
-}
-```
-
-3. **Usage in frontend**:
-```graphql
-query {
-  oidcLoginUrl(relayState: "/checkout")
-}
-
-# Returns: "https://your-site.com/mooauth/actions/SendAuthorizationRequest?relayState=%2Fcheckout"
-```
-
----
+Schema defined in `etc/schema.graphqls`.
 
 ### If Asked About Performance Optimization
 
-**Common bottlenecks**:
+1. **JWKS Caching**: `JwtVerifier` already caches JWKS responses. Consider configuring longer TTL or Redis backend.
 
-1. **JWKS Fetching**: Currently fetches on every login
-   - Add configurable cache TTL for JWKS responses
-   - Cache in Redis or Magento cache instead of HTTP cache only
+2. **Global Cookie Rewrite** (`SessionCookieObserver`): Scope to OIDC paths only using the pattern above.
 
-2. **Global Cookie Rewrite**: Rewrites all cookies on every response
-   - Scope to OIDC paths only (see security improvements above)
-   - Or apply only to session cookies, not all cookies
+3. **Attribute Mapper Phase 4**: `MappingRepository` uses normalized tables which are more query-efficient than JSON column parsing.
 
-3. **Email Lookup Fallback**: Recursively searches entire OIDC response if email not in mapped attribute
-   - Fail fast if email not in standard location
-   - Require explicit configuration instead of fallback search
+### If Asked About Back-Channel Logout
 
-**Example optimization**:
-```php
-// In JwtVerifier.php, add Redis caching:
-public function getJwks(string $jwksUrl): array
-{
-    $cacheKey = 'oidc_jwks_' . md5($jwksUrl);
-
-    // Check Redis cache first
-    if ($cachedJwks = $this->cache->load($cacheKey)) {
-        return json_decode($cachedJwks, true);
-    }
-
-    // Fetch from IdP
-    $jwks = $this->fetchJwksFromIdp($jwksUrl);
-
-    // Cache for 24 hours
-    $this->cache->save(json_encode($jwks), $cacheKey, [], 86400);
-
-    return $jwks;
-}
-```
-
----
+**Already implemented** (`Controller/Actions/BackChannelLogout.php`):
+- POST endpoint: `/mooauth/actions/backchannel-logout`
+- Validates logout token JWT via JWKS
+- Resolves PHP session via `OidcSessionRegistry` (sub/sid → session ID)
+- Destroys target session by switching PHP session IDs (C-02 pattern)
+- Returns HTTP 200 (success), 400 (invalid token), 501 (unknown provider)
 
 **For detailed technical specifications, refer to** [TECHNICAL_DOCUMENTATION.md](TECHNICAL_DOCUMENTATION.md).
