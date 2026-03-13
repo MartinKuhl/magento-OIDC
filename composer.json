@@ -1,17 +1,17 @@
 {
-    "name": "miniorange_inc/miniorange-oauth-sso",
-    "description": "miniOrange OAuth free SSO extension support login into Magento using any OAuth or OpenID Connect provider",
+    "name": "martinkuhl/magento2-oidc-sso",
+    "description": "Magento 2 OIDC - SSO extension support login into Magento using any OAuth or OpenID Connect provider",
     "type": "magento2-module",
-    "version": "4.3.0",
+    "version": "1.0.0",
     "license": [
-        "Commercial"
+        "MIT"
     ],
     "autoload": {
         "files": [
             "registration.php"
         ],
         "psr-4": {
-            "MiniOrange\\OAuth\\": ""
+            "M2Oidc\\OAuth\\": ""
         }
     },
     "require": {

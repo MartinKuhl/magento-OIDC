@@ -179,3 +179,18 @@ Psalm:   Level 4
 Langfristig (Ziel für sauberen Code):
 PHPStan: Level 6
 Psalm:   Level 3
+
+
+MiniOrange --> M2Oidc
+
+mo_oauth.log --> M2Oidc.log
+
+miniorange --> m2oidc
+
+miniorange_oauth_client_apps --> m2oidc_client_apps
+miniorange_oauth_attribute_mappings --> m2oidc_oauth_attribute_mappings
+miniorange_oauth_role_mappings --> m2oidc_oauth_role_mappings
+miniorange_oauth_user_provider --> m2oidc_oauth_user_provider
+
+MOOAUTH --> M2OIDC
+mooauth --> m2oidc
