@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Test\Unit\Model\Service;
+namespace M2Oidc\OAuth\Test\Unit\Model\Service;
 
 use Magento\Framework\Math\Random;
 use Magento\User\Model\ResourceModel\User;
 use Magento\User\Model\ResourceModel\User\CollectionFactory as UserCollectionFactory;
 use Magento\User\Model\UserFactory;
-use MiniOrange\OAuth\Helper\OAuthUtility;
-use MiniOrange\OAuth\Model\Attribute\AttributeMapperInterface;
-use MiniOrange\OAuth\Model\Provider\MappingRepository;
-use MiniOrange\OAuth\Model\Service\AdminUserCreator;
+use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Model\Attribute\AttributeMapperInterface;
+use M2Oidc\OAuth\Model\Provider\MappingRepository;
+use M2Oidc\OAuth\Model\Service\AdminUserCreator;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -21,7 +21,7 @@ use PHPUnit\Framework\TestCase;
  * Tests that applyNameFallbacks() correctly delegates to
  * OAuthUtility::extractNameFromEmail() when first/last name are empty.
  *
- * @covers \MiniOrange\OAuth\Model\Service\AdminUserCreator
+ * @covers \M2Oidc\OAuth\Model\Service\AdminUserCreator
  */
 class AdminUserCreatorApplyNameFallbacksTest extends TestCase
 {
@@ -44,7 +44,7 @@ class AdminUserCreatorApplyNameFallbacksTest extends TestCase
             $this->createMock(Random::class),
             $this->createMock(User::class),
             $this->createMock(UserCollectionFactory::class),
-            $this->createMock(\MiniOrange\OAuth\Model\ResourceModel\UserProvider::class),
+            $this->createMock(\M2Oidc\OAuth\Model\ResourceModel\UserProvider::class),
             $this->createMock(MappingRepository::class),
             $this->createMock(AttributeMapperInterface::class)
         );
@@ -107,7 +107,7 @@ class AdminUserCreatorApplyNameFallbacksTest extends TestCase
             $this->createMock(Random::class),
             $this->createMock(User::class),
             $collectionFactory,
-            $this->createMock(\MiniOrange\OAuth\Model\ResourceModel\UserProvider::class),
+            $this->createMock(\M2Oidc\OAuth\Model\ResourceModel\UserProvider::class),
             $this->createMock(MappingRepository::class),
             $this->createMock(AttributeMapperInterface::class)
         );

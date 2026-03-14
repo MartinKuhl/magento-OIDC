@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Observer;
+namespace M2Oidc\OAuth\Observer;
 
 use Magento\Customer\Model\Session as CustomerSession;
 use Magento\Framework\Event\Observer;

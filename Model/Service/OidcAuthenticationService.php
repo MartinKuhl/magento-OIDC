@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Model\Service;
+namespace M2Oidc\OAuth\Model\Service;
 
-use MiniOrange\OAuth\Helper\Exception\IncorrectUserInfoDataException;
-use MiniOrange\OAuth\Helper\OAuthConstants;
-use MiniOrange\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Helper\Exception\IncorrectUserInfoDataException;
+use M2Oidc\OAuth\Helper\OAuthConstants;
+use M2Oidc\OAuth\Helper\OAuthUtility;
 
 /**
  * Service layer for OIDC authentication response processing.
@@ -19,8 +19,8 @@ class OidcAuthenticationService
 {
     private const MAX_RECURSION_DEPTH = 5;
 
-    /** @var \MiniOrange\OAuth\Helper\OAuthUtility */
-    private readonly \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
+    /** @var \M2Oidc\OAuth\Helper\OAuthUtility */
+    private readonly \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility;
 
     /**
      * Initialize OIDC authentication service.

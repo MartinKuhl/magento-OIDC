@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Model\Service;
+namespace M2Oidc\OAuth\Model\Service;
 
-use MiniOrange\OAuth\Helper\OAuthConstants;
-use MiniOrange\OAuth\Helper\OAuthUtility;
-use MiniOrange\OAuth\Model\Attribute\AttributeMapperInterface;
-use MiniOrange\OAuth\Model\Provider\MappingRepository;
+use M2Oidc\OAuth\Helper\OAuthConstants;
+use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Model\Attribute\AttributeMapperInterface;
+use M2Oidc\OAuth\Model\Provider\MappingRepository;
 use Magento\Customer\Model\CustomerFactory;
 use Magento\Customer\Api\Data\AddressInterfaceFactory;
 use Magento\Customer\Api\AddressRepositoryInterface;
@@ -15,7 +15,7 @@ use Magento\Store\Model\StoreManagerInterface;
 use Magento\Framework\Math\Random;
 use Magento\Directory\Helper\Data as DirectoryData;
 use Magento\Customer\Api\Data\CustomerInterface;
-use MiniOrange\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
+use M2Oidc\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
 
 /**
  * Service class for creating Customer Users via OAuth/OIDC
@@ -37,8 +37,8 @@ class CustomerUserCreator
     /** @var \Magento\Framework\Math\Random */
     private readonly \Magento\Framework\Math\Random $randomUtility;
 
-    /** @var \MiniOrange\OAuth\Helper\OAuthUtility */
-    private readonly \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
+    /** @var \M2Oidc\OAuth\Helper\OAuthUtility */
+    private readonly \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility;
 
     /** @var DirectoryData */
     private readonly DirectoryData $directoryData;
@@ -76,7 +76,7 @@ class CustomerUserCreator
     /** @var \Magento\Customer\Api\CustomerRepositoryInterface */
     private readonly \Magento\Customer\Api\CustomerRepositoryInterface $customerRepository;
 
-    /** @var \MiniOrange\OAuth\Model\ResourceModel\UserProvider */
+    /** @var \M2Oidc\OAuth\Model\ResourceModel\UserProvider */
     private readonly UserProviderResource $userProviderResource;
 
     /** @var MappingRepository */
@@ -274,7 +274,7 @@ class CustomerUserCreator
     /**
      * Resolve Magento customer group ID from OIDC group claims.
      *
-     * Reads from the normalized miniorange_oauth_role_mappings table first (Phase 4).
+     * Reads from the normalized m2oidc_oauth_role_mappings table first (Phase 4).
      * Falls back to the legacy JSON column when the new table has no data for this provider.
      *
      * @param  string[] $userGroups OIDC group claim values
@@ -326,7 +326,7 @@ class CustomerUserCreator
             }
         }
 
-        // No match – check deny policy via mo_oauth_dont_create_customer_if_group_not_mapped
+        // No match – check deny policy via m2oidc_dont_create_customer_if_group_not_mapped
         $dontCreate = $this->oauthUtility->getStoreConfig(OAuthConstants::CREATEIFNOTMAP_CUSTOMER);
         if (!$this->oauthUtility->isBlank($dontCreate) && $dontCreate === 'checked') {
             $this->oauthUtility->customlog(

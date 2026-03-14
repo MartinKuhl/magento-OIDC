@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Model\ResourceModel;
+namespace M2Oidc\OAuth\Model\ResourceModel;
 
 use Magento\Framework\Model\ResourceModel\Db\AbstractDb;
 
 /**
- * Resource model for miniorange_oauth_role_mappings.
+ * Resource model for m2oidc_oauth_role_mappings.
  *
  * Provides low-level DB operations for the normalized role/group mapping table.
  * Higher-level callers should use MappingRepository for cached access.
  */
 class OauthRoleMapping extends AbstractDb
 {
-    private const string TABLE_NAME = 'miniorange_oauth_role_mappings';
+    private const string TABLE_NAME = 'm2oidc_oauth_role_mappings';
 
     /** Mapping type constant for admin role mappings. */
     public const string TYPE_ADMIN_ROLE = 'admin_role';

@@ -9,7 +9,7 @@ declare(strict_types=1);
  * framework is NOT available (e.g. in CI where only phpunit/phpunit is
  * installed).  Each stub provides just enough structure so that:
  *
- *  1. PHP can parse and define MiniOrange\OAuth\* classes whose parent
+ *  1. PHP can parse and define M2Oidc\OAuth\* classes whose parent
  *     classes or implemented interfaces live in the Magento namespace.
  *  2. PHPUnit can create mock objects for those Magento types directly.
  *

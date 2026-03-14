@@ -2,6 +2,6 @@
 <page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
       xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
     <head>
-        <css src="MiniOrange_OAuth::css/frontend.css"/>
+        <css src="M2Oidc_OAuth::css/frontend.css"/>
     </head>
 </page>

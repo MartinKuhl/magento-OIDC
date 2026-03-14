@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Model\Resolver;
+namespace M2Oidc\OAuth\Model\Resolver;
 
 use Magento\Framework\GraphQl\Config\Element\Field;
 use Magento\Framework\GraphQl\Exception\GraphQlInputException;
 use Magento\Framework\GraphQl\Exception\GraphQlNoSuchEntityException;
 use Magento\Framework\GraphQl\Query\ResolverInterface;
 use Magento\Framework\GraphQl\Schema\Type\ResolveInfo;
-use MiniOrange\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Helper\OAuthUtility;
 
 /**
  * GraphQL resolver: oidcLoginUrl (FEAT-08).

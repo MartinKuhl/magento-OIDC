@@ -1,14 +1,14 @@
 <?xml version="1.0"?>
 <!--
-    Layout for the OIDC Session Activity grid (mooauth/sessions/index).
-    Renders the Magento UI Grid component (mooauth_session_listing).
+    Layout for the OIDC Session Activity grid (m2oidc/sessions/index).
+    Renders the Magento UI Grid component (m2oidc_session_listing).
 -->
 <page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
       xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
     <update handle="styles"/>
     <body>
         <referenceContainer name="content">
-            <uiComponent name="mooauth_session_listing"/>
+            <uiComponent name="m2oidc_session_listing"/>
         </referenceContainer>
     </body>
 </page>

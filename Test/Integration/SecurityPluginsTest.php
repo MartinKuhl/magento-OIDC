@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Test\Integration;
+namespace M2Oidc\OAuth\Test\Integration;
 
 use Magento\Framework\App\CacheInterface;
-use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
-use MiniOrange\OAuth\Helper\OAuthUtility;
-use MiniOrange\OAuth\Model\Security\OidcRateLimiter;
+use M2Oidc\OAuth\Helper\OAuthSecurityHelper;
+use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Model\Security\OidcRateLimiter;
 use PHPUnit\Framework\TestCase;
 
 /**

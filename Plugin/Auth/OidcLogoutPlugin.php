@@ -16,12 +16,12 @@
  * fires AFTER Auth::logout() has already destroyed the session — at that
  * point oidc_id_token and oidc_provider_id are no longer readable.
  *
- * @package MiniOrange\OAuth\Plugin\Auth
+ * @package M2Oidc\OAuth\Plugin\Auth
  */
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Plugin\Auth;
+namespace M2Oidc\OAuth\Plugin\Auth;
 
 use Magento\Backend\Model\Auth;
 use Magento\Backend\Model\Auth\Session as AuthSession;
@@ -31,8 +31,8 @@ use Magento\Framework\HTTP\Adapter\CurlFactory;
 use Magento\Framework\HTTP\PhpEnvironment\Response as HttpResponse;
 use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
 use Magento\Framework\Stdlib\CookieManagerInterface;
-use MiniOrange\OAuth\Helper\OAuthConstants;
-use MiniOrange\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Helper\OAuthConstants;
+use M2Oidc\OAuth\Helper\OAuthUtility;
 use Magento\Backend\App\Area\FrontNameResolver;
 
 class OidcLogoutPlugin

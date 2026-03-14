@@ -12,17 +12,17 @@
  * This plugin intercepts Magento's CheckUserLoginBackendObserver and skips CAPTCHA
  * validation when it detects the OIDC authentication marker in event data.
  *
- * @package MiniOrange\OAuth\Plugin\Captcha
+ * @package M2Oidc\OAuth\Plugin\Captcha
  */
-namespace MiniOrange\OAuth\Plugin\Captcha;
+namespace M2Oidc\OAuth\Plugin\Captcha;
 
 use Magento\Captcha\Observer\CheckUserLoginBackendObserver;
-use MiniOrange\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Helper\OAuthUtility;
 
 class OidcCaptchaBypassPlugin
 {
-    /** @var \MiniOrange\OAuth\Helper\OAuthUtility */
-    protected \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
+    /** @var \M2Oidc\OAuth\Helper\OAuthUtility */
+    protected \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility;
 
     /**
      * Initialize OIDC CAPTCHA bypass plugin.

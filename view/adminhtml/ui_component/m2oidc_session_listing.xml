@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
     UI Grid component for the OIDC Session Activity list.
-    Data source: JOIN query across miniorange_oauth_user_provider,
-                 miniorange_oauth_client_apps, customer_entity, admin_user.
-    Route: mooauth/sessions/index
+    Data source: JOIN query across m2oidc_oauth_user_provider,
+                 m2oidc_oauth_client_apps, customer_entity, admin_user.
+    Route: m2oidc/sessions/index
     Read-only grid — no mass-actions or row-level actions.
 -->
 <listing xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -12,19 +12,19 @@
     <argument name="data" xsi:type="array">
         <item name="js_config" xsi:type="array">
             <item name="provider" xsi:type="string">
-                mooauth_session_listing.mooauth_session_listing_data_source
+                m2oidc_session_listing.m2oidc_session_listing_data_source
             </item>
         </item>
     </argument>
 
     <settings>
-        <spinner>mooauth_session_columns</spinner>
+        <spinner>m2oidc_session_columns</spinner>
         <deps>
-            <dep>mooauth_session_listing.mooauth_session_listing_data_source</dep>
+            <dep>m2oidc_session_listing.m2oidc_session_listing_data_source</dep>
         </deps>
     </settings>
 
-    <dataSource name="mooauth_session_listing_data_source"
+    <dataSource name="m2oidc_session_listing_data_source"
                 component="Magento_Ui/js/grid/provider">
         <settings>
             <storageConfig>
@@ -32,9 +32,9 @@
             </storageConfig>
             <updateUrl path="mui/index/render"/>
         </settings>
-        <aclResource>MiniOrange_OAuth::oidc_sessions</aclResource>
-        <dataProvider class="MiniOrange\OAuth\Ui\Component\DataProvider\SessionDataProvider"
-                      name="mooauth_session_listing_data_source">
+        <aclResource>M2Oidc_OAuth::oidc_sessions</aclResource>
+        <dataProvider class="M2Oidc\OAuth\Ui\Component\DataProvider\SessionDataProvider"
+                      name="m2oidc_session_listing_data_source">
             <settings>
                 <requestFieldName>id</requestFieldName>
                 <primaryFieldName>id</primaryFieldName>
@@ -52,7 +52,7 @@
         <paging name="listing_paging"/>
     </listingToolbar>
 
-    <columns name="mooauth_session_columns">
+    <columns name="m2oidc_session_columns">
 
         <column name="id">
             <settings>
@@ -109,7 +109,7 @@
         </column>
 
         <column name="is_online"
-                class="MiniOrange\OAuth\Ui\Component\Listing\Column\OnlineStatus">
+                class="M2Oidc\OAuth\Ui\Component\Listing\Column\OnlineStatus">
             <settings>
                 <label translate="true">Status</label>
                 <sortable>true</sortable>

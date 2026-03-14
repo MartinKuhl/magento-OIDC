@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Controller\Adminhtml\Provider;
+namespace M2Oidc\OAuth\Controller\Adminhtml\Provider;
 
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
@@ -11,13 +11,13 @@ use Magento\Framework\Controller\Result\Redirect;
 use Magento\Framework\Registry;
 use Magento\Framework\View\Result\Page;
 use Magento\Framework\View\Result\PageFactory;
-use MiniOrange\OAuth\Model\MiniorangeOauthClientAppsFactory;
-use MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps as AppResource;
+use M2Oidc\OAuth\Model\MiniorangeOauthClientAppsFactory;
+use M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps as AppResource;
 
 /**
  * Admin controller — Edit / Add OIDC Provider form (MP-06).
  *
- * Route: GET /admin/mooauth/provider/edit[/id/<providerId>]
+ * Route: GET /admin/m2oidc/provider/edit[/id/<providerId>]
  *
  * When `id` is absent or 0 the form opens in "Add new provider" mode.
  * When `id` is present the provider is loaded and stored in the Core Registry
@@ -28,7 +28,7 @@ use MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps as AppResourc
  */
 class Edit extends Action implements HttpGetActionInterface
 {
-    public const string ADMIN_RESOURCE = 'MiniOrange_OAuth::oauth_settings';
+    public const string ADMIN_RESOURCE = 'M2Oidc_OAuth::oauth_settings';
 
     /** @var PageFactory */
     private readonly PageFactory $pageFactory;
@@ -87,7 +87,7 @@ class Edit extends Action implements HttpGetActionInterface
 
         $page = $this->pageFactory->create();
         /** @var \Magento\Backend\Model\View\Result\Page $page */
-        $page->setActiveMenu('MiniOrange_OAuth::provider_management');
+        $page->setActiveMenu('M2Oidc_OAuth::provider_management');
 
         $providerName = $providerId > 0
             ? ($model->getData('display_name') ?: $model->getData('app_name') ?: (string) $providerId)
@@ -97,7 +97,7 @@ class Edit extends Action implements HttpGetActionInterface
             : __('Add New OIDC Provider');
 
         $page->getConfig()->getTitle()->prepend((string) $title);
-        $page->addBreadcrumb((string) __('MiniOrange OIDC'), (string) __('MiniOrange OIDC'));
+        $page->addBreadcrumb((string) __('M2Oidc OIDC'), (string) __('M2Oidc OIDC'));
         $page->addBreadcrumb(
             (string) __('Manage Providers'),
             (string) __('Manage Providers'),

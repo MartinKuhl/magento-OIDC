@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Plugin;
+namespace M2Oidc\OAuth\Plugin;
 
 use Magento\Backend\Model\Auth;
 use Magento\Framework\Exception\AuthenticationException;
-use MiniOrange\OAuth\Helper\OAuthUtility;
-use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
+use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Helper\OAuthSecurityHelper;
 use Psr\Log\LoggerInterface;
 
 /**
  * Restricts non-OIDC admin logins when the setting is enabled.
  *
- * Reads per-provider `mo_disable_non_oidc_admin_login` from the
- * miniorange_oauth_client_apps table. No core_config_data fallbacks.
+ * Reads per-provider `m2oidc_disable_non_oidc_admin_login` from the
+ * m2oidc_oauth_client_apps table. No core_config_data fallbacks.
  */
 class AdminLoginRestrictionPlugin
 {
@@ -67,7 +67,7 @@ class AdminLoginRestrictionPlugin
         $anyRestricted = false;
         $anyButtonShown = false;
         foreach ($adminProviders as $provider) {
-            if (!empty($provider['mo_disable_non_oidc_admin_login'])) {
+            if (!empty($provider['m2oidc_disable_non_oidc_admin_login'])) {
                 $anyRestricted = true;
             }
             if (!empty($provider['show_admin_link'])) {
@@ -82,7 +82,7 @@ class AdminLoginRestrictionPlugin
         // Safety net: if no provider shows the OIDC button, allow login
         if (!$anyButtonShown) {
             $this->logger->warning(
-                'MiniOrange OIDC: OIDC-only admin login is enabled but no OIDC '
+                'M2Oidc OIDC: OIDC-only admin login is enabled but no OIDC '
                 . 'button is shown. Allowing normal login to prevent lockout. '
                 . 'User: ' . $username
             );

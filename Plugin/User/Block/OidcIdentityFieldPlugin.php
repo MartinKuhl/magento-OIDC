@@ -11,20 +11,20 @@
  * - Magento\User\Block\Role\Tab\Info (Role edit form)
  * - Magento\Backend\Block\System\Account\Edit\Form (Account settings form)
  *
- * @package MiniOrange\OAuth\Plugin\User\Block
+ * @package M2Oidc\OAuth\Plugin\User\Block
  */
-namespace MiniOrange\OAuth\Plugin\User\Block;
+namespace M2Oidc\OAuth\Plugin\User\Block;
 
 use Magento\Framework\Stdlib\CookieManagerInterface;
-use MiniOrange\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Helper\OAuthUtility;
 
 class OidcIdentityFieldPlugin
 {
     /** @var \Magento\Framework\Stdlib\CookieManagerInterface */
     protected \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager;
 
-    /** @var \MiniOrange\OAuth\Helper\OAuthUtility */
-    protected \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
+    /** @var \M2Oidc\OAuth\Helper\OAuthUtility */
+    protected \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility;
 
     /**
      * Initialize OIDC identity field plugin.

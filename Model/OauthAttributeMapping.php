@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Model;
+namespace M2Oidc\OAuth\Model;
 
 use Magento\Framework\Model\AbstractModel;
 
 /**
- * Model for miniorange_oauth_attribute_mappings table.
+ * Model for m2oidc_oauth_attribute_mappings table.
  *
  * Each row represents one OIDC claim → Magento attribute mapping for a specific
  * provider. The attribute_type column identifies which claim slot (e.g. 'email',
@@ -22,6 +22,6 @@ class OauthAttributeMapping extends AbstractModel
     #[\Override]
     protected function _construct(): void
     {
-        $this->_init(\MiniOrange\OAuth\Model\ResourceModel\OauthAttributeMapping::class);
+        $this->_init(\M2Oidc\OAuth\Model\ResourceModel\OauthAttributeMapping::class);
     }
 }

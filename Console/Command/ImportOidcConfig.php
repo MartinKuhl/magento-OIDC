@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Console\Command;
+namespace M2Oidc\OAuth\Console\Command;
 
 use Magento\Framework\App\State;
 use Magento\Framework\Encryption\EncryptorInterface;
@@ -10,11 +10,11 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use MiniOrange\OAuth\Helper\OAuthUtility;
-use MiniOrange\OAuth\Model\MiniorangeOauthClientAppsFactory;
-use MiniOrange\OAuth\Model\Provider\MappingRepository;
-use MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps as AppResource;
-use MiniOrange\OAuth\Model\ResourceModel\OauthRoleMapping as RoleMappingResource;
+use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Model\MiniorangeOauthClientAppsFactory;
+use M2Oidc\OAuth\Model\Provider\MappingRepository;
+use M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps as AppResource;
+use M2Oidc\OAuth\Model\ResourceModel\OauthRoleMapping as RoleMappingResource;
 
 /**
  * CLI command: import OIDC provider configurations from a JSON file (FEAT-07).
@@ -268,13 +268,13 @@ class ImportOidcConfig extends Command
      *
      * Extracted from execute() to keep nesting level within coding-standard limits.
      *
-     * @param \MiniOrange\OAuth\Model\MiniorangeOauthClientApps $model
+     * @param \M2Oidc\OAuth\Model\MiniorangeOauthClientApps $model
      * @param array $importData
      * @param array $attributeMappings
      * @param array $roleMappings
      */
     private function persistProvider(
-        \MiniOrange\OAuth\Model\MiniorangeOauthClientApps $model,
+        \M2Oidc\OAuth\Model\MiniorangeOauthClientApps $model,
         array $importData,
         array $attributeMappings,
         array $roleMappings

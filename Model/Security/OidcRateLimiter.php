@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Model\Security;
+namespace M2Oidc\OAuth\Model\Security;
 
 use Magento\Framework\App\CacheInterface;
 

@@ -1,9 +1,9 @@
 <?php
 
-namespace MiniOrange\OAuth\Model;
+namespace M2Oidc\OAuth\Model;
 
 /**
- * Model fofinal r MiniOrange OAuth client app records
+ * Model fofinal r M2Oidc OAuth client app records
  */
 class MiniorangeOauthClientApps extends \Magento\Framework\Model\AbstractModel
 {
@@ -13,6 +13,6 @@ class MiniorangeOauthClientApps extends \Magento\Framework\Model\AbstractModel
     #[\Override]
     public function _construct(): void
     {
-        $this->_init("MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps");
+        $this->_init("M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps");
     }
 }

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Plugin\Customer\Block;
+namespace M2Oidc\OAuth\Plugin\Customer\Block;
 
 use Magento\Customer\Block\Adminhtml\Edit\Tab\View;
 use Magento\Framework\App\RequestInterface;
 use Magento\Framework\Escaper;
-use MiniOrange\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
+use M2Oidc\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
 
 /**
  * Injects an "OIDC Provider" row into the Personal Information table

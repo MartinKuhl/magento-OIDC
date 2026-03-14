@@ -1,8 +1,8 @@
 <?php
 
-namespace MiniOrange\OAuth\Helper\Exception;
+namespace M2Oidc\OAuth\Helper\Exception;
 
-use MiniOrange\OAuth\Helper\OAuthMessages;
+use M2Oidc\OAuth\Helper\OAuthMessages;
 
 /**
  * Exception denotes that user has not completed his registration.

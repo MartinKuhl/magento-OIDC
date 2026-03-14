@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Test\Unit\Model\Attribute;
+namespace M2Oidc\OAuth\Test\Unit\Model\Attribute;
 
-use MiniOrange\OAuth\Helper\OAuthUtility;
-use MiniOrange\OAuth\Model\Attribute\AdminAttributeMapper;
+use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Model\Attribute\AdminAttributeMapper;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 /**
  * Unit tests for AdminAttributeMapper (Phase 3.2).
  *
- * @covers \MiniOrange\OAuth\Model\Attribute\AdminAttributeMapper
+ * @covers \M2Oidc\OAuth\Model\Attribute\AdminAttributeMapper
  */
 class AdminAttributeMapperTest extends TestCase
 {

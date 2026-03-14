@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Ui\Component;
+namespace M2Oidc\OAuth\Ui\Component;
 
 use Magento\Framework\Api\Search\SearchResultInterface;
 use Magento\Framework\View\Element\UiComponent\DataProvider\DataProvider as BaseDataProvider;

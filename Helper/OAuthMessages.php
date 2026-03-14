@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Helper;
+namespace M2Oidc\OAuth\Helper;
 
 /**
  * This class lists down all of our messages to be shown to the admin or
@@ -20,7 +20,7 @@ class OAuthMessages
     public const PASS_MISMATCH = 'Passwords do not match.';
     public const INVALID_EMAIL = 'Please match the format of Email.'
         . ' No special characters are allowed.';
-    public const ACCOUNT_EXISTS = 'You already have an account with miniOrange.'
+    public const ACCOUNT_EXISTS = 'You already have an account with m2Oidc.'
         . ' Please enter a valid password.';
     public const TRANSACTION_LIMIT_EXCEEDED = 'You have reached the maximum transaction limit';
     public const ERROR_PHONE_FORMAT = '{{phone}} is not a valid phone number.'

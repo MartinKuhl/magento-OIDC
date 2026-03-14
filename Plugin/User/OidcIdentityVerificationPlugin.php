@@ -12,22 +12,22 @@
  * - Still validates user is active and has assigned role
  * - Non-OIDC users are unaffected (normal password verification applies)
  *
- * @package MiniOrange\OAuth\Plugin\User
+ * @package M2Oidc\OAuth\Plugin\User
  */
-namespace MiniOrange\OAuth\Plugin\User;
+namespace M2Oidc\OAuth\Plugin\User;
 
 use Magento\User\Model\User;
 use Magento\Framework\Exception\AuthenticationException;
 use Magento\Framework\Stdlib\CookieManagerInterface;
-use MiniOrange\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Helper\OAuthUtility;
 
 class OidcIdentityVerificationPlugin
 {
     /** @var \Magento\Framework\Stdlib\CookieManagerInterface */
     protected \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager;
 
-    /** @var \MiniOrange\OAuth\Helper\OAuthUtility */
-    protected \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
+    /** @var \M2Oidc\OAuth\Helper\OAuthUtility */
+    protected \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility;
 
     /**
      * Initialize OIDC identity verification plugin.

@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Controller\Adminhtml\Provider;
+namespace M2Oidc\OAuth\Controller\Adminhtml\Provider;
 
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
 use Magento\Framework\Controller\Result\Redirect;
-use MiniOrange\OAuth\Helper\OAuthUtility;
-use MiniOrange\OAuth\Model\MiniorangeOauthClientAppsFactory;
-use MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps as AppResource;
+use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Model\MiniorangeOauthClientAppsFactory;
+use M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps as AppResource;
 
 /**
  * Admin controller — Delete OIDC Provider (MP-06).
  *
- * Route: POST /admin/mooauth/provider/delete
+ * Route: POST /admin/m2oidc/provider/delete
  *
  * Requires a valid CSRF form key (Magento validates this automatically for
  * admin POST actions). Guards against deleting the last remaining provider
@@ -23,7 +23,7 @@ use MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps as AppResourc
  */
 class Delete extends Action implements HttpPostActionInterface
 {
-    public const string ADMIN_RESOURCE = 'MiniOrange_OAuth::oauth_settings';
+    public const string ADMIN_RESOURCE = 'M2Oidc_OAuth::oauth_settings';
 
     /** @var MiniorangeOauthClientAppsFactory */
     private readonly MiniorangeOauthClientAppsFactory $clientAppsFactory;

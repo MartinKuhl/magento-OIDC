@@ -11,9 +11,9 @@ declare(strict_types=1);
  * This adapter bridges external OIDC authentication with Magento's internal
  * authentication system, ensuring all security checks and events fire properly.
  *
- * @package MiniOrange\OAuth\Model\Auth
+ * @package M2Oidc\OAuth\Model\Auth
  */
-namespace MiniOrange\OAuth\Model\Auth;
+namespace M2Oidc\OAuth\Model\Auth;
 
 use Magento\Backend\Model\Auth\Credential\StorageInterface;
 use Magento\Framework\Event\ManagerInterface;
@@ -21,8 +21,8 @@ use Magento\Framework\Exception\AuthenticationException;
 use Magento\User\Model\UserFactory;
 use Magento\User\Model\ResourceModel\User as UserResourceModel;
 use Magento\User\Model\ResourceModel\User\CollectionFactory as UserCollectionFactory;
-use MiniOrange\OAuth\Helper\OAuthUtility;
-use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
+use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Helper\OAuthSecurityHelper;
 
 class OidcCredentialAdapter implements StorageInterface
 {

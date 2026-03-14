@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Model\Service;
+namespace M2Oidc\OAuth\Model\Service;
 
 use Magento\Customer\Model\Session as CustomerSession;
 use Magento\Framework\Encryption\EncryptorInterface;
-use MiniOrange\OAuth\Helper\Curl;
-use MiniOrange\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Helper\Curl;
+use M2Oidc\OAuth\Helper\OAuthUtility;
 
 /**
  * Token refresh service for OIDC access token renewal (FEAT-03).

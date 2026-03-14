@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Test\Unit\Controller;
+namespace M2Oidc\OAuth\Test\Unit\Controller;
 
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Request\Http as HttpRequest;
 use Magento\Framework\Message\ManagerInterface;
 use Magento\Framework\View\Result\Page;
 use Magento\Framework\View\Result\PageFactory;
-use MiniOrange\OAuth\Controller\Adminhtml\Providersettings\Index;
-use MiniOrange\OAuth\Helper\OAuthUtility;
-use MiniOrange\OAuth\Model\MiniorangeOauthClientApps;
-use MiniOrange\OAuth\Model\MiniorangeOauthClientAppsFactory;
-use MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps as AppResource;
+use M2Oidc\OAuth\Controller\Adminhtml\Providersettings\Index;
+use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Model\MiniorangeOauthClientApps;
+use M2Oidc\OAuth\Model\MiniorangeOauthClientAppsFactory;
+use M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps as AppResource;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -29,7 +29,7 @@ use Psr\Log\LoggerInterface;
  *  - login_type is sanitised to 'customer' when invalid value is submitted
  *  - button_color is cleared when not a valid hex colour
  *
- * @covers \MiniOrange\OAuth\Controller\Adminhtml\Providersettings\Index
+ * @covers \M2Oidc\OAuth\Controller\Adminhtml\Providersettings\Index
  */
 class ProviderSettingsIndexTest extends TestCase
 {

@@ -1,7 +1,7 @@
 <?php
-namespace MiniOrange\OAuth\Block;
+namespace M2Oidc\OAuth\Block;
 
-use MiniOrange\OAuth\Helper\OAuthConstants;
+use M2Oidc\OAuth\Helper\OAuthConstants;
 use Magento\Customer\Model\Session;
 use Magento\Framework\Escaper;
 
@@ -13,8 +13,8 @@ use Magento\Framework\Escaper;
  */
 class OAuth extends \Magento\Framework\View\Element\Template
 {
-    /** @var \MiniOrange\OAuth\Helper\OAuthUtility */
-    private readonly \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
+    /** @var \M2Oidc\OAuth\Helper\OAuthUtility */
+    private readonly \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility;
 
     /** @var \Magento\Authorization\Model\ResourceModel\Role\Collection */
     private readonly \Magento\Authorization\Model\ResourceModel\Role\Collection $adminRoleModel;
@@ -35,7 +35,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
      * Initialize OAuth block.
      *
      * @param \Magento\Framework\View\Element\Template\Context $context
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     * @param \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility
      * @param \Magento\Authorization\Model\ResourceModel\Role\Collection $adminRoleModel
      * @param \Magento\Customer\Model\ResourceModel\Group\Collection $userGroupModel
      * @param Session $customerSession
@@ -45,7 +45,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
      */
     public function __construct(
         \Magento\Framework\View\Element\Template\Context $context,
-        \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
+        \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility,
         \Magento\Authorization\Model\ResourceModel\Role\Collection $adminRoleModel,
         \Magento\Customer\Model\ResourceModel\Group\Collection $userGroupModel,
         Session $customerSession,
@@ -171,7 +171,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     }
 
     /**
-     * Plugin is always enabled (MiniOrange registration removed)
+     * Plugin is always enabled (M2Oidc registration removed)
      *
      * @return true
      */
@@ -282,7 +282,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     /**
      * Get OIDC claims for dropdown selection.
      *
-     * Loads claims per-provider from the miniorange_oauth_client_apps table.
+     * Loads claims per-provider from the m2oidc_oauth_client_apps table.
      * Falls back to the static OIDC_STANDARD_CLAIMS list if no test was run yet.
      *
      * @return string[]
@@ -459,7 +459,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
      */
     public function getTestUrl()
     {
-        return $this->getUrl('mooauth/actions/sendAuthorizationRequest');
+        return $this->getUrl('m2oidc/actions/sendAuthorizationRequest');
     }
 
     /**
@@ -486,7 +486,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
      */
     public function getExtensionPageUrl(string $page): string
     {
-        return $this->oauthUtility->getAdminUrl('mooauth/' . $page . '/index');
+        return $this->oauthUtility->getAdminUrl('m2oidc/' . $page . '/index');
     }
 
     /**
@@ -540,7 +540,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     {
         $providerId = $this->getActiveProviderId();
         if ($providerId > 0) {
-            return $this->getUrl('mooauth/' . $page . '/index', ['provider_id' => $providerId]);
+            return $this->getUrl('m2oidc/' . $page . '/index', ['provider_id' => $providerId]);
         }
         return $this->getExtensionPageUrl($page);
     }
@@ -551,7 +551,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     public function getCurrentActiveTab(): string
     {
         $page = $this->getUrl('*/*/*', ['_current' => true, '_use_rewrite' => false]);
-        $start = strpos($page, '/mooauth') + 9;
+        $start = strpos($page, '/m2oidc') + 9;
         $end = strpos($page, '/index/key');
         return substr($page, $start, $end - $start);
     }
@@ -562,7 +562,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     public function autoCreateAdmin(): bool
     {
         foreach ($this->oauthUtility->getAllActiveProviders('admin') as $provider) {
-            if (!empty($provider['mo_oauth_auto_create_admin'])) {
+            if (!empty($provider['m2oidc_auto_create_admin'])) {
                 return true;
             }
         }
@@ -575,7 +575,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     public function autoCreateCustomer(): bool
     {
         foreach ($this->oauthUtility->getAllActiveProviders('customer') as $provider) {
-            if (!empty($provider['mo_oauth_auto_create_customer'])) {
+            if (!empty($provider['m2oidc_auto_create_customer'])) {
                 return true;
             }
         }
@@ -611,7 +611,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
      * Check if non-OIDC admin login is disabled.
      *
      * Aggregator: returns true if ANY active admin provider (with visible button)
-     * has mo_disable_non_oidc_admin_login = 1.
+     * has m2oidc_disable_non_oidc_admin_login = 1.
      */
     public function isNonOidcAdminLoginDisabled(): bool
     {
@@ -619,7 +619,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
             if ((int) ($provider['show_admin_link'] ?? 0) !== 1) {
                 continue;
             }
-            if ((int) ($provider['mo_disable_non_oidc_admin_login'] ?? 0) === 1) {
+            if ((int) ($provider['m2oidc_disable_non_oidc_admin_login'] ?? 0) === 1) {
                 return true;
             }
         }
@@ -668,7 +668,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     /**
      * Get the configuration of OAuth Server.
      */
-    public function getAllIdpConfiguration(): \MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps\Collection
+    public function getAllIdpConfiguration(): \M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps\Collection
     {
         return $this->oauthUtility->getOAuthClientApps();
     }
@@ -957,7 +957,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
      * Check if non-OIDC customer login is disabled.
      *
      * Aggregator: returns true if ANY active customer provider (with visible button)
-     * has mo_disable_non_oidc_customer_login = 1.
+     * has m2oidc_disable_non_oidc_customer_login = 1.
      */
     public function isNonOidcCustomerLoginDisabled(): bool
     {
@@ -965,7 +965,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
             if ((int) ($provider['show_customer_link'] ?? 0) !== 1) {
                 continue;
             }
-            if ((int) ($provider['mo_disable_non_oidc_customer_login'] ?? 0) === 1) {
+            if ((int) ($provider['m2oidc_disable_non_oidc_customer_login'] ?? 0) === 1) {
                 return true;
             }
         }

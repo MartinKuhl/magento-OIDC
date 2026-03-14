@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Setup\Patch\Data;
+namespace M2Oidc\OAuth\Setup\Patch\Data;
 
 use Magento\Framework\Setup\ModuleDataSetupInterface;
 use Magento\Framework\Setup\Patch\DataPatchInterface;
@@ -10,8 +10,8 @@ use Magento\Framework\Setup\Patch\PatchRevertableInterface;
 
 /**
  * Migrate JSON role/group mappings and attribute columns into the two new
- * normalized tables (miniorange_oauth_attribute_mappings and
- * miniorange_oauth_role_mappings).
+ * normalized tables (m2oidc_oauth_attribute_mappings and
+ * m2oidc_oauth_role_mappings).
  *
  * Idempotent: uses INSERT ON DUPLICATE KEY UPDATE keyed on (provider_id,
  * attribute_type) / (provider_id, mapping_type, oidc_group) so re-running
@@ -24,9 +24,9 @@ use Magento\Framework\Setup\Patch\PatchRevertableInterface;
  */
 class MigrateToNormalizedSchema implements DataPatchInterface, PatchRevertableInterface
 {
-    private const string PROVIDER_TABLE = 'miniorange_oauth_client_apps';
-    private const string ATTR_TABLE     = 'miniorange_oauth_attribute_mappings';
-    private const string ROLE_TABLE     = 'miniorange_oauth_role_mappings';
+    private const string PROVIDER_TABLE = 'm2oidc_oauth_client_apps';
+    private const string ATTR_TABLE     = 'm2oidc_oauth_attribute_mappings';
+    private const string ROLE_TABLE     = 'm2oidc_oauth_role_mappings';
 
     /**
      * Maps attribute_type slug → provider table column name.

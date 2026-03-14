@@ -61,11 +61,11 @@ vendor/bin/phpcbf
 # PHPSTan
 /var/www/html/vendor/bin/phpstan clear-result-cache
 cd /var/www/html/github/OIDC && /var/www/html/vendor/bin/phpstan analyse --memory-limit=1G --configuration=phpstan.local.neon
-cd /var/www/html/github/miniorange-oauth-sso && /var/www/html/vendor/bin/phpstan analyse --memory-limit=1G --configuration=phpstan.local.neon
+cd /var/www/html/github/m2oidc-oauth-sso && /var/www/html/vendor/bin/phpstan analyse --memory-limit=1G --configuration=phpstan.local.neon
 
 # Psalm
-/var/www/html/vendor/bin/psalm --no-cache --config=github/miniorange-oauth-sso/psalm.xml
-/var/www/html/vendor/bin/psalm --no-cache --config=github/miniorange-oauth-sso/psalm.xml --alter --issues=MissingReturnType,MissingParamType
+/var/www/html/vendor/bin/psalm --no-cache --config=github/m2oidc-oauth-sso/psalm.xml
+/var/www/html/vendor/bin/psalm --no-cache --config=github/m2oidc-oauth-sso/psalm.xml --alter --issues=MissingReturnType,MissingParamType
 
 /var/www/html/vendor/bin/psalm --no-cache --config=github/OIDC/psalm.xml
 /var/www/html/vendor/bin/psalm --no-cache --config=github/OIDC/psalm.xml --alter --issues=MissingReturnType,MissingParamType
@@ -95,8 +95,8 @@ However, Psalm needs to find the Composer autoloader, so it must run from the Ma
 /var/www/html/vendor/bin/phpcs  --extensions=php,phtml /var/www/html/github/OIDC/
 /var/www/html/vendor/bin/phpcbf  --extensions=php,phtml /var/www/html/github/OIDC/
 
-/var/www/html/vendor/bin/phpcs  --extensions=php,phtml /var/www/html/github/miniorange-oauth-sso/
-/var/www/html/vendor/bin/phpcbf  --extensions=php,phtml /var/www/html/github/miniorange-oauth-sso/
+/var/www/html/vendor/bin/phpcs  --extensions=php,phtml /var/www/html/github/m2oidc-oauth-sso/
+/var/www/html/vendor/bin/phpcbf  --extensions=php,phtml /var/www/html/github/m2oidc-oauth-sso/
 
 /var/www/html/vendor/bin/phpcs --extensions=php,phtml --standard=phpcs.xml .
 
@@ -133,7 +133,7 @@ cd /var/www/html/github/OIDC && /var/www/html/vendor/bin/phpcs --extensions=php,
 cd /var/www/html/github/OIDC && /var/www/html/vendor/bin/rector process --dry-run
 
 ## Run PHPUnit:
-cd /var/www/html/github/OIDC && /var/www/html/vendor/bin/phpunit --configuration phpunit.xml --testsuite "MiniOrange OIDC Unit Tests"
+cd /var/www/html/github/OIDC && /var/www/html/vendor/bin/phpunit --configuration phpunit.xml --testsuite "M2Oidc OIDC Unit Tests"
 
 
 ####### check all ######
@@ -151,7 +151,7 @@ cd /var/www/html/github/OIDC && /var/www/html/vendor/bin/phpcs --extensions=php,
 cd /var/www/html/github/OIDC && /var/www/html/vendor/bin/rector process --dry-run
 
 ## Run PHPUnit:
-cd /var/www/html/github/OIDC && /var/www/html/vendor/bin/phpunit --configuration phpunit.xml --testsuite "MiniOrange OIDC Unit Tests"
+cd /var/www/html/github/OIDC && /var/www/html/vendor/bin/phpunit --configuration phpunit.xml --testsuite "M2Oidc OIDC Unit Tests"
 
 
 Fix all the mentioned issue and warnings. Use sub-agents where applicable. DO not create new issue for PHPStan, PHPUnit, Psalm, PHPCS and Rector.
@@ -181,16 +181,16 @@ PHPStan: Level 6
 Psalm:   Level 3
 
 
-MiniOrange --> M2Oidc
+M2Oidc --> M2Oidc
 
-mo_oauth.log --> M2Oidc.log
+M2Oidc.log --> M2Oidc.log
 
-miniorange --> m2oidc
+m2oidc --> m2oidc
 
-miniorange_oauth_client_apps --> m2oidc_client_apps
-miniorange_oauth_attribute_mappings --> m2oidc_oauth_attribute_mappings
-miniorange_oauth_role_mappings --> m2oidc_oauth_role_mappings
-miniorange_oauth_user_provider --> m2oidc_oauth_user_provider
+m2oidc_oauth_client_apps --> m2oidc_client_apps
+m2oidc_oauth_attribute_mappings --> m2oidc_oauth_attribute_mappings
+m2oidc_oauth_role_mappings --> m2oidc_oauth_role_mappings
+m2oidc_oauth_user_provider --> m2oidc_oauth_user_provider
 
 MOOAUTH --> M2OIDC
-mooauth --> m2oidc
+m2oidc --> m2oidc

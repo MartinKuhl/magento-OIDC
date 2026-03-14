@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Helper;
+namespace M2Oidc\OAuth\Helper;
 
 use Magento\Backend\Helper\Data as BackendHelper;
 use Magento\Customer\Model\CustomerFactory;
@@ -19,9 +19,9 @@ use Magento\Framework\View\Asset\Repository as AssetRepository;
 use Magento\Store\Model\ScopeInterface;
 use Magento\User\Model\ResourceModel\User as UserResource;
 use Magento\User\Model\UserFactory;
-use MiniOrange\OAuth\Model\MiniorangeOauthClientAppsFactory;
-use MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps as AppResource;
-use MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps\CollectionFactory as ClientCollectionFactory;
+use M2Oidc\OAuth\Model\MiniorangeOauthClientAppsFactory;
+use M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps as AppResource;
+use M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps\CollectionFactory as ClientCollectionFactory;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -202,7 +202,7 @@ class Data extends AbstractHelper
     /**
      * Get all entries from the OAuthClientApp table.
      *
-     * @return \MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps\Collection
+     * @return \M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps\Collection
      */
     public function getOAuthClientApps()
     {
@@ -392,7 +392,7 @@ class Data extends AbstractHelper
     public function getStoreConfig(string $config)
     {
         return $this->scopeConfig->getValue(
-            'miniorange/oauth/' . $config,
+            'm2oidc/oauth/' . $config,
             ScopeInterface::SCOPE_STORE
         );
     }
@@ -401,7 +401,7 @@ class Data extends AbstractHelper
      * Store data in the store config table (core_config_data).
      *
      * Only writes global keys. Provider-specific values must be
-     * persisted directly to the miniorange_oauth_client_apps table.
+     * persisted directly to the m2oidc_oauth_client_apps table.
      *
      * @param string $config
      * @param mixed  $value
@@ -410,7 +410,7 @@ class Data extends AbstractHelper
     public function setStoreConfig(string $config, $value, bool $skipSanitize = false): void
     {
         $finalValue = $skipSanitize ? $value : $this->sanitize($value);
-        $this->configWriter->save('miniorange/oauth/' . $config, $finalValue);
+        $this->configWriter->save('m2oidc/oauth/' . $config, $finalValue);
     }
 
     /**
@@ -595,7 +595,7 @@ class Data extends AbstractHelper
     /**
      * Build the SP-initiated URL for a specific provider by its numeric ID.
      *
-     * @param  int         $providerId  Row `id` from miniorange_oauth_client_apps
+     * @param  int         $providerId  Row `id` from m2oidc_oauth_client_apps
      * @param  string|null $relayState  Optional post-login redirect URL
      * @param  string      $loginType   'customer' or 'admin'
      * @return string Frontend SSO URL with provider_id + login_type query params

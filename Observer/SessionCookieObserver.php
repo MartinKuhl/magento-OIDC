@@ -2,23 +2,23 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Observer;
+namespace M2Oidc\OAuth\Observer;
 
 use Magento\Framework\App\RequestInterface;
 use Magento\Framework\Event\ObserverInterface;
-use MiniOrange\OAuth\Helper\SessionHelper;
+use M2Oidc\OAuth\Helper\SessionHelper;
 
 /**
  * Observer for session cookie adjustment.
  *
  * Called before final the HTTP response is sent to ensure the session cookie
  * carries the correct SameSite attribute for cross-origin OIDC redirects.
- * Scoped to /mooauth/ routes only to avoid overhead on non-OIDC pages.
+ * Scoped to /m2oidc/ routes only to avoid overhead on non-OIDC pages.
  */
 class SessionCookieObserver implements ObserverInterface
 {
-    /** @var \MiniOrange\OAuth\Helper\OAuthUtility */
-    private readonly \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
+    /** @var \M2Oidc\OAuth\Helper\OAuthUtility */
+    private readonly \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility;
 
     /** @var SessionHelper */
     private readonly SessionHelper $sessionHelper;
@@ -29,12 +29,12 @@ class SessionCookieObserver implements ObserverInterface
     /**
      * Initialize session cookie observer.
      *
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     * @param \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility
      * @param SessionHelper                         $sessionHelper
      * @param RequestInterface                      $request
      */
     public function __construct(
-        \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
+        \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility,
         SessionHelper $sessionHelper,
         RequestInterface $request
     ) {
@@ -46,7 +46,7 @@ class SessionCookieObserver implements ObserverInterface
     /**
      * Force SameSite=None on the session cookie before the response is sent.
      *
-     * Only applies to /mooauth/ routes — no overhead on catalog, checkout, or account pages.
+     * Only applies to /m2oidc/ routes — no overhead on catalog, checkout, or account pages.
      *
      * @param \Magento\Framework\Event\Observer $observer
      */
@@ -56,7 +56,7 @@ class SessionCookieObserver implements ObserverInterface
         // Only rewrite cookies on OIDC callback routes
         /** @psalm-suppress UndefinedInterfaceMethod */
         // @phpstan-ignore-next-line
-        if (!str_contains((string) $this->request->getRequestUri(), '/mooauth/')) {
+        if (!str_contains((string) $this->request->getRequestUri(), '/m2oidc/')) {
             return;
         }
 

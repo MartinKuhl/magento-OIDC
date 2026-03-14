@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Block\Adminhtml\Provider;
+namespace M2Oidc\OAuth\Block\Adminhtml\Provider;
 
 use Magento\Backend\Block\Widget\Context;
 use Magento\Backend\Block\Widget\Form\Container;
@@ -10,14 +10,14 @@ use Magento\Framework\Data\Form\FormKey;
 use Magento\Framework\Phrase;
 use Magento\Framework\Registry;
 use Magento\Store\Model\StoreManagerInterface;
-use MiniOrange\OAuth\Helper\OAuthConstants;
+use M2Oidc\OAuth\Helper\OAuthConstants;
 
 /**
  * Admin edit-form container for the OIDC Provider.
  *
  * Renders the Magento-standard page header (breadcrumbs, action buttons) and
  * wraps the Widget\Tabs sidebar form in a <form> element that posts to
- * mooauth/provider/save.
+ * m2oidc/provider/save.
  */
 class Edit extends Container
 {
@@ -60,7 +60,7 @@ class Edit extends Container
     protected function _construct(): void
     {
         $this->_objectId   = 'id';
-        $this->_blockGroup = 'MiniOrange_OAuth';
+        $this->_blockGroup = 'M2Oidc_OAuth';
         $this->_controller = 'adminhtml_provider';
 
         parent::_construct();
@@ -134,13 +134,13 @@ class Edit extends Container
 
         /** @psalm-suppress UndefinedInterfaceMethod */
         // @phpstan-ignore-next-line
-        $relayState = $store->getUrl('mooauth/actions/showTestResults')
+        $relayState = $store->getUrl('m2oidc/actions/showTestResults')
             . OAuthConstants::TEST_RELAYSTATE;
 
         /** @psalm-suppress UndefinedInterfaceMethod */
         // @phpstan-ignore-next-line
         return $store->getUrl(
-            'mooauth/actions/sendAuthorizationRequest',
+            'm2oidc/actions/sendAuthorizationRequest',
             [
                 'option'      => OAuthConstants::TEST_CONFIG_OPT,
                 'app_name'    => $provider->getData('app_name'),
@@ -177,7 +177,7 @@ class Edit extends Container
     public function getFormHtml(): string
     {
         $providerId = (int) $this->getRequest()->getParam('id', 0);
-        $url        = $this->escapeUrl($this->getUrl('mooauth/provider/save'));
+        $url        = $this->escapeUrl($this->getUrl('m2oidc/provider/save'));
         $formKey    = $this->escapeHtmlAttr($this->formKeyHelper->getFormKey());
 
         return '<form id="edit_form"'
@@ -189,7 +189,7 @@ class Edit extends Container
             // Hidden submit buttons — triggered by toolbar onclick
             . '<input type="submit" id="btn_save" name="back" value="" style="display:none">'
             . '<input type="submit" id="btn_save_continue" name="back" value="edit" style="display:none">'
-            . $this->getChildHtml('mooauth_provider_edit_tabs')
+            . $this->getChildHtml('m2oidc_provider_edit_tabs')
             . '</form>';
     }
 }

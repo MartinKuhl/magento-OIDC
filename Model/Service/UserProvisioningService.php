@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Model\Service;
+namespace M2Oidc\OAuth\Model\Service;
 
 use Magento\Framework\DataObject;
 use Magento\Framework\Event\ManagerInterface as EventManager;
-use MiniOrange\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Helper\OAuthUtility;
 
 /**
  * Facade for JIT (Just-In-Time) user provisioning during OIDC authentication.

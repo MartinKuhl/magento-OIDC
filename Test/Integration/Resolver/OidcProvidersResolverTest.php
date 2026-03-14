@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Test\Integration\Resolver;
+namespace M2Oidc\OAuth\Test\Integration\Resolver;
 
 use PHPUnit\Framework\TestCase;
-use MiniOrange\OAuth\Model\Resolver\OidcLoginUrl;
-use MiniOrange\OAuth\Model\Resolver\OidcProviders;
+use M2Oidc\OAuth\Model\Resolver\OidcLoginUrl;
+use M2Oidc\OAuth\Model\Resolver\OidcProviders;
 
 /**
  * Unit tests for the FEAT-08 GraphQL resolvers (TEST-06).
@@ -45,7 +45,7 @@ class OidcProvidersResolverTest extends TestCase
 
     public function testOidcProvidersReturnsEmptyArrayWhenNoProvidersExist(): void
     {
-        $utility = $this->createMock(\MiniOrange\OAuth\Helper\OAuthUtility::class);
+        $utility = $this->createMock(\M2Oidc\OAuth\Helper\OAuthUtility::class);
         $utility->method('getAllActiveProviders')->willReturn([]);
 
         $resolver = new OidcProviders($utility);
@@ -56,7 +56,7 @@ class OidcProvidersResolverTest extends TestCase
 
     public function testOidcProvidersReturnsCorrectStructure(): void
     {
-        $utility = $this->createMock(\MiniOrange\OAuth\Helper\OAuthUtility::class);
+        $utility = $this->createMock(\M2Oidc\OAuth\Helper\OAuthUtility::class);
         $utility->method('getAllActiveProviders')->willReturn([
             [
                 'id'           => 1,
@@ -82,7 +82,7 @@ class OidcProvidersResolverTest extends TestCase
 
     public function testOidcProvidersThrowsOnInvalidLoginType(): void
     {
-        $utility  = $this->createMock(\MiniOrange\OAuth\Helper\OAuthUtility::class);
+        $utility  = $this->createMock(\M2Oidc\OAuth\Helper\OAuthUtility::class);
         $resolver = new OidcProviders($utility);
 
         $this->expectException(\Magento\Framework\GraphQl\Exception\GraphQlInputException::class);
@@ -91,7 +91,7 @@ class OidcProvidersResolverTest extends TestCase
 
     public function testOidcProvidersStripsInvalidHexColor(): void
     {
-        $utility = $this->createMock(\MiniOrange\OAuth\Helper\OAuthUtility::class);
+        $utility = $this->createMock(\M2Oidc\OAuth\Helper\OAuthUtility::class);
         $utility->method('getAllActiveProviders')->willReturn([
             ['id' => 2, 'display_name' => 'IdP', 'button_label' => null, 'button_color' => 'not-a-hex'],
         ]);
@@ -109,7 +109,7 @@ class OidcProvidersResolverTest extends TestCase
      */
     public function testOidcProvidersNormalizesEmptyButtonColorToNull(): void
     {
-        $utility = $this->createMock(\MiniOrange\OAuth\Helper\OAuthUtility::class);
+        $utility = $this->createMock(\M2Oidc\OAuth\Helper\OAuthUtility::class);
         $utility->method('getAllActiveProviders')->willReturn([
             ['id' => 3, 'display_name' => 'IdP', 'button_label' => null, 'button_color' => ''],
         ]);
@@ -130,7 +130,7 @@ class OidcProvidersResolverTest extends TestCase
      */
     public function testOidcProvidersNormalizesEmptyDisplayNameToNull(): void
     {
-        $utility = $this->createMock(\MiniOrange\OAuth\Helper\OAuthUtility::class);
+        $utility = $this->createMock(\M2Oidc\OAuth\Helper\OAuthUtility::class);
         $utility->method('getAllActiveProviders')->willReturn([
             ['id' => 4, 'display_name' => '', 'button_label' => '', 'button_color' => '#000000'],
         ]);
@@ -150,7 +150,7 @@ class OidcProvidersResolverTest extends TestCase
      */
     public function testOidcProvidersAcceptsLoginTypeBoth(): void
     {
-        $utility = $this->createMock(\MiniOrange\OAuth\Helper\OAuthUtility::class);
+        $utility = $this->createMock(\M2Oidc\OAuth\Helper\OAuthUtility::class);
         $utility->method('getAllActiveProviders')->willReturn([
             [
                 'id' => 5, 'display_name' => 'Dual IdP', 'button_label' => null,
@@ -172,7 +172,7 @@ class OidcProvidersResolverTest extends TestCase
 
     public function testOidcLoginUrlReturnsUrlForExplicitProvider(): void
     {
-        $utility = $this->createMock(\MiniOrange\OAuth\Helper\OAuthUtility::class);
+        $utility = $this->createMock(\M2Oidc\OAuth\Helper\OAuthUtility::class);
         $utility->method('getClientDetailsById')->with(5)->willReturn([
             'id'           => 5,
             'button_label' => 'Sign in with Okta',
@@ -190,7 +190,7 @@ class OidcProvidersResolverTest extends TestCase
 
     public function testOidcLoginUrlThrowsWhenProviderNotFound(): void
     {
-        $utility = $this->createMock(\MiniOrange\OAuth\Helper\OAuthUtility::class);
+        $utility = $this->createMock(\M2Oidc\OAuth\Helper\OAuthUtility::class);
         $utility->method('getClientDetailsById')->willReturn(null);
 
         $resolver = new OidcLoginUrl($utility);
@@ -201,7 +201,7 @@ class OidcProvidersResolverTest extends TestCase
 
     public function testOidcLoginUrlThrowsOnNonPositiveProviderId(): void
     {
-        $utility  = $this->createMock(\MiniOrange\OAuth\Helper\OAuthUtility::class);
+        $utility  = $this->createMock(\M2Oidc\OAuth\Helper\OAuthUtility::class);
         $resolver = new OidcLoginUrl($utility);
 
         $this->expectException(\Magento\Framework\GraphQl\Exception\GraphQlInputException::class);
@@ -210,7 +210,7 @@ class OidcProvidersResolverTest extends TestCase
 
     public function testOidcLoginUrlDefaultsToFirstActiveProvider(): void
     {
-        $utility = $this->createMock(\MiniOrange\OAuth\Helper\OAuthUtility::class);
+        $utility = $this->createMock(\M2Oidc\OAuth\Helper\OAuthUtility::class);
         $utility->method('getAllActiveProviders')->willReturn([
             ['id' => 3, 'button_label' => 'Google SSO'],
         ]);
@@ -229,7 +229,7 @@ class OidcProvidersResolverTest extends TestCase
      */
     public function testOidcLoginUrlNormalizesEmptyButtonLabelToNull(): void
     {
-        $utility = $this->createMock(\MiniOrange\OAuth\Helper\OAuthUtility::class);
+        $utility = $this->createMock(\M2Oidc\OAuth\Helper\OAuthUtility::class);
         $utility->method('getClientDetailsById')->with(6)->willReturn([
             'id'           => 6,
             'button_label' => '',   // stored as '' by Providersettings controller
@@ -245,7 +245,7 @@ class OidcProvidersResolverTest extends TestCase
 
     public function testOidcLoginUrlFallsBackToLegacyWhenNoProviders(): void
     {
-        $utility = $this->createMock(\MiniOrange\OAuth\Helper\OAuthUtility::class);
+        $utility = $this->createMock(\M2Oidc\OAuth\Helper\OAuthUtility::class);
         $utility->method('getAllActiveProviders')->willReturn([]);
         $utility->method('getSPInitiatedUrl')->willReturn('https://example.com/sso');
 

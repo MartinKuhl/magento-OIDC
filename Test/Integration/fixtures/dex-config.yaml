@@ -1,4 +1,4 @@
-# Dex OIDC provider configuration for MiniOrange OIDC integration tests (TEST-06).
+# Dex OIDC provider configuration for M2Oidc OIDC integration tests (TEST-06).
 #
 # This is a minimal Dex setup with:
 #   - Static password store (no external LDAP/DB needed)
@@ -50,12 +50,12 @@ staticPasswords:
       userID: "adminuser-uid-0002"
 
 staticClients:
-    - id: miniorange-test-client
-      secret: miniorange-test-secret
-      name: "MiniOrange OIDC Test Client"
+    - id: m2oidc-test-client
+      secret: m2oidc-test-secret
+      name: "M2Oidc OIDC Test Client"
       redirectURIs:
-          - "http://localhost/mooauth/actions/readauthresponse"
-          - "http://localhost/mooauth/actions/backchannel-logout"
+          - "http://localhost/m2oidc/actions/readauthresponse"
+          - "http://localhost/m2oidc/actions/backchannel-logout"
       # Grant types — password is required for the ROPC flow used by integration tests
       grantTypes:
           - authorization_code

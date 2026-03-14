@@ -1,13 +1,13 @@
 <?php
 
-namespace MiniOrange\OAuth\Controller\Actions;
+namespace M2Oidc\OAuth\Controller\Actions;
 
 use Magento\Framework\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
 use Magento\Framework\Stdlib\CookieManagerInterface;
 use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
-use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
-use MiniOrange\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Helper\OAuthSecurityHelper;
+use M2Oidc\OAuth\Helper\OAuthUtility;
 
 /**
  * @psalm-suppress ImplicitToStringCast Magento's __() returns Phrase with __toString()
@@ -24,8 +24,8 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
      */
     private $relayState;
 
-    /** @var \MiniOrange\OAuth\Helper\OAuthSecurityHelper */
-    private readonly \MiniOrange\OAuth\Helper\OAuthSecurityHelper $securityHelper;
+    /** @var \M2Oidc\OAuth\Helper\OAuthSecurityHelper */
+    private readonly \M2Oidc\OAuth\Helper\OAuthSecurityHelper $securityHelper;
 
     /** @var CookieManagerInterface */
     private readonly CookieManagerInterface $cookieManager;
@@ -129,7 +129,7 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
 
         // Redirect to customer callback endpoint
         $callbackUrl = $this->oauthUtility->getBaseUrl()
-            . 'mooauth/actions/CustomerOidcCallback';
+            . 'm2oidc/actions/CustomerOidcCallback';
         $this->oauthUtility->customlog(
             "CustomerLoginAction: Redirecting to callback: "
             . $callbackUrl

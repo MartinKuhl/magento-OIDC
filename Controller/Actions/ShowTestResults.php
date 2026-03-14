@@ -1,9 +1,9 @@
 <?php
 
-namespace MiniOrange\OAuth\Controller\Actions;
+namespace M2Oidc\OAuth\Controller\Actions;
 
-use MiniOrange\OAuth\Helper\OAuthConstants;
-use MiniOrange\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Helper\OAuthConstants;
+use M2Oidc\OAuth\Helper\OAuthUtility;
 
 use Magento\Framework\App\Action\Action;
 use Magento\Framework\App\Action\Context;
@@ -98,7 +98,7 @@ class ShowTestResults extends Action
 
         // Read the session key from the URL parameter
         $key        = $this->request->getParam('key');
-        $testResults = $this->customerSession->getData('mooauth_test_results');
+        $testResults = $this->customerSession->getData('m2oidc_test_results');
         $attrs      = (is_array($testResults) && isset($testResults[$key])) ? $testResults[$key] : null;
         $this->setAttrs($attrs);
         if ($attrs !== null) {
@@ -112,7 +112,7 @@ class ShowTestResults extends Action
             $providerId = (int) $this->request->getParam('provider_id');
 
             if ($providerId > 0) {
-                // Per-provider: save to miniorange_oauth_client_apps.received_oidc_claims
+                // Per-provider: save to m2oidc_oauth_client_apps.received_oidc_claims
                 $this->oauthUtility->saveReceivedOidcClaims($providerId, $claimKeys);
                 $this->oauthUtility->customlog(
                     'Stored received OIDC claims for provider ID=' . $providerId . ': ' . json_encode($claimKeys)

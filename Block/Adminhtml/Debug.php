@@ -1,17 +1,17 @@
 <?php
-namespace MiniOrange\OAuth\Block\Adminhtml;
+namespace M2Oidc\OAuth\Block\Adminhtml;
 
 use Magento\Backend\Block\Template;
 use Magento\Backend\Block\Template\Context;
 use Magento\Framework\App\Filesystem\DirectoryList;
-use MiniOrange\OAuth\Helper\OAuthUtility;
-use MiniOrange\OAuth\Helper\OAuthConstants;
+use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Helper\OAuthConstants;
 
 /**
  * Debug block for OIDC response data and connectivity tests.
  *
  * All provider-specific values are read exclusively from the
- * miniorange_oauth_client_apps table — no core_config_data fallback.
+ * m2oidc_oauth_client_apps table — no core_config_data fallback.
  *
  * @psalm-suppress DeprecatedClass
  */
@@ -19,9 +19,9 @@ class Debug extends Template
 {
     /**
      * @psalm-suppress PropertyNotSetInConstructor
-     * @var \MiniOrange\OAuth\Helper\OAuthUtility
+     * @var \M2Oidc\OAuth\Helper\OAuthUtility
      */
-    protected \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
+    protected \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility;
 
     /**
      * @psalm-suppress PropertyNotSetInConstructor
@@ -135,7 +135,7 @@ class Debug extends Template
         $authorizeEndpoint  = $clientDetails['authorize_endpoint'] ?? null;
         $tokenEndpoint      = $clientDetails['access_token_endpoint'] ?? null;
         $userInfoEndpoint   = $clientDetails['user_info_endpoint'] ?? null;
-        $callbackUrl        = $this->getUrl('', ['_direct' => 'mooauth/actions/readauthorizationresponse']);
+        $callbackUrl        = $this->getUrl('', ['_direct' => 'm2oidc/actions/readauthorizationresponse']);
         $scope              = $clientDetails['scope'] ?? null;
         $emailMapping       = $clientDetails['email_attribute'] ?? OAuthConstants::DEFAULT_MAP_EMAIL;
         $usernameMapping    = $clientDetails['username_attribute'] ?? OAuthConstants::DEFAULT_MAP_USERN;
@@ -151,7 +151,7 @@ class Debug extends Template
             'Email Attribute Mapping'   => $emailMapping,
             'Username Attribute Mapping' => $usernameMapping,
             'Logging Enabled'           => $this->oauthUtility->isLogEnable() ? 'Yes' : 'No',
-            'Log File'                  => '/var/log/mo_oauth.log'
+            'Log File'                  => '/var/log/M2Oidc.log'
         ];
     }
 
@@ -166,7 +166,7 @@ class Debug extends Template
             $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
             $customerSession = $objectManager->get(\Magento\Customer\Model\Session::class);
 
-            $response = $customerSession->getData('mo_oauth_debug_response');
+            $response = $customerSession->getData('m2oidc_debug_response');
             if ($response !== null && $response !== false) {
                 return json_decode((string) $response, true);
             }
@@ -182,7 +182,7 @@ class Debug extends Template
      */
     public function getRecentLogEntries(): array
     {
-        $logFile = $this->directoryList->getPath(DirectoryList::VAR_DIR) . '/log/mo_oauth.log';
+        $logFile = $this->directoryList->getPath(DirectoryList::VAR_DIR) . '/log/M2Oidc.log';
         $entries = [];
 
         try {

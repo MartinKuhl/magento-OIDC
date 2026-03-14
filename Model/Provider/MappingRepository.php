@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Model\Provider;
+namespace M2Oidc\OAuth\Model\Provider;
 
-use MiniOrange\OAuth\Model\ResourceModel\OauthAttributeMapping as AttrMappingResource;
-use MiniOrange\OAuth\Model\ResourceModel\OauthRoleMapping as RoleMappingResource;
+use M2Oidc\OAuth\Model\ResourceModel\OauthAttributeMapping as AttrMappingResource;
+use M2Oidc\OAuth\Model\ResourceModel\OauthRoleMapping as RoleMappingResource;
 
 /**
  * Facade for reading normalized attribute and role/group mappings.

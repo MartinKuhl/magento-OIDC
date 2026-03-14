@@ -1,5 +1,5 @@
 <schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
-   <table name="miniorange_oauth_client_apps" resource="default" engine="innodb" comment="Miniorange OAuth Client Apps">
+   <table name="m2oidc_oauth_client_apps" resource="default" engine="innodb" comment="Miniorange OAuth Client Apps">
       <column xsi:type="smallint" name="id" padding="7" unsigned="true" nullable="false" identity="true" comment="ID" />
       <column xsi:type="text" name="app_name" nullable="false" comment="The type of app" />
       <column xsi:type="text" name="callback_uri" nullable="false" comment="The callback uri of the Provider" />
@@ -19,7 +19,7 @@
       <column xsi:type="varchar" name="pkce_code_verifier" nullable="true" length="128" comment="Temporary PKCE code_verifier for active flow"/>
       <column xsi:type="text" name="well_known_config_url" nullable="false" comment="Well Known Config URL" />
       <column xsi:type="text" name="issuer" nullable="false" comment="OIDC Issuer from discovery document" />
-      <!-- Attribute mapping columns — nullable after Phase 4 normalization; rows use miniorange_oauth_attribute_mappings -->
+      <!-- Attribute mapping columns — nullable after Phase 4 normalization; rows use m2oidc_oauth_attribute_mappings -->
       <column xsi:type="text" name="email_attribute" nullable="true" comment="The email attribute of the provider" />
       <column xsi:type="text" name="username_attribute" nullable="true" comment="The username attribute of the provider" />
       <column xsi:type="text" name="firstname_attribute" nullable="true" comment="The first name attribute of the provider" />
@@ -32,13 +32,13 @@
       <column xsi:type="text" name="billing_phone_attribute" nullable="true" comment="The billing_Telephone attribute" />
       <column xsi:type="text" name="billing_zip_attribute" nullable="true" comment="The billing_zip code attribute" />
 
-      <!-- Role/group mapping columns — nullable after Phase 4; rows use miniorange_oauth_role_mappings -->
+      <!-- Role/group mapping columns — nullable after Phase 4; rows use m2oidc_oauth_role_mappings -->
       <column xsi:type="text" name="default_group" nullable="true" comment="Default Group for Frontend Users" />
       <column xsi:type="text" name="default_role" nullable="true" comment="Default Role for Backend Users" />
       <column xsi:type="text" name="oauth_customer_group_mapping" nullable="true" comment="Group Mapping for Frontend Users" />
       <column xsi:type="text" name="oauth_admin_role_mapping" nullable="true" comment="Role Mapping for Backend Users" />
-      <column xsi:type="text" name="mo_oauth_auto_create_customer" nullable="false" comment="Auto create Customer" />
-      <column xsi:type="text" name="mo_oauth_auto_create_admin" nullable="false" comment="Auto create Admin" />
+      <column xsi:type="text" name="m2oidc_auto_create_customer" nullable="false" comment="Auto create Customer" />
+      <column xsi:type="text" name="m2oidc_auto_create_admin" nullable="false" comment="Auto create Admin" />
       <column xsi:type="text" name="show_customer_link" nullable="false" comment="Show Customer SSO Link" />
       <column xsi:type="text" name="show_admin_link" nullable="false" comment="Show Admin SSO Link" />
       <column xsi:type="text" name="autoredirect_admin" nullable="false" comment="Auto redirect admins from login page to IdP" />
@@ -54,8 +54,8 @@
       <!-- Per-provider login options -->
       <column xsi:type="text" name="dob_attribute" nullable="true" comment="OIDC claim name for date of birth" />
       <column xsi:type="text" name="gender_attribute" nullable="true" comment="OIDC claim name for gender" />
-      <column xsi:type="text" name="mo_disable_non_oidc_admin_login" nullable="false" default="0" comment="Block non-OIDC admin login for this provider (1=enabled)" />
-      <column xsi:type="text" name="mo_disable_non_oidc_customer_login" nullable="false" default="0" comment="Block non-OIDC customer login for this provider (1=enabled)" />
+      <column xsi:type="text" name="m2oidc_disable_non_oidc_admin_login" nullable="false" default="0" comment="Block non-OIDC admin login for this provider (1=enabled)" />
+      <column xsi:type="text" name="m2oidc_disable_non_oidc_customer_login" nullable="false" default="0" comment="Block non-OIDC customer login for this provider (1=enabled)" />
 
       <!-- Multi-provider support columns -->
       <column xsi:type="varchar" name="display_name" length="255" nullable="true" comment="Human-readable provider label (e.g. Okta, Google)" />
@@ -77,7 +77,7 @@
       </constraint>
 
       <!-- Index for active-provider queries (getAllActiveProviders) -->
-      <index referenceId="MINIORANGE_OAUTH_CLIENT_APPS_IS_ACTIVE_LOGIN_TYPE" indexType="btree">
+      <index referenceId="M2OIDC_OAUTH_CLIENT_APPS_IS_ACTIVE_LOGIN_TYPE" indexType="btree">
          <column name="is_active" />
          <column name="login_type" />
          <column name="sort_order" />
@@ -91,12 +91,12 @@
                         'billing_phone'|'billing_zip'
         attribute_name: the OIDC claim key (e.g. 'email', 'given_name', 'custom:dept')
         sync_on_sso: 1 = re-sync this attribute from OIDC on every login -->
-   <table name="miniorange_oauth_attribute_mappings" resource="default" engine="innodb"
+   <table name="m2oidc_oauth_attribute_mappings" resource="default" engine="innodb"
           comment="Normalized OIDC attribute mappings per provider">
       <column xsi:type="int" name="id" padding="10" unsigned="true" nullable="false"
               identity="true" comment="Row ID"/>
       <column xsi:type="smallint" name="provider_id" padding="7" unsigned="true" nullable="false"
-              comment="OIDC Provider ID (FK to miniorange_oauth_client_apps.id)"/>
+              comment="OIDC Provider ID (FK to m2oidc_oauth_client_apps.id)"/>
       <column xsi:type="varchar" name="attribute_type" length="30" nullable="false"
               comment="Attribute slot: email, firstname, billing_city, etc."/>
       <column xsi:type="varchar" name="attribute_name" length="255" nullable="false"
@@ -111,8 +111,8 @@
          <column name="attribute_type"/>
       </constraint>
       <constraint xsi:type="foreign" referenceId="MOOAUTH_ATTR_MAPPING_PROVIDER_ID_FK"
-                  table="miniorange_oauth_attribute_mappings" column="provider_id"
-                  referenceTable="miniorange_oauth_client_apps" referenceColumn="id"
+                  table="m2oidc_oauth_attribute_mappings" column="provider_id"
+                  referenceTable="m2oidc_oauth_client_apps" referenceColumn="id"
                   onDelete="CASCADE"/>
    </table>
 
@@ -120,12 +120,12 @@
         One row per provider × mapping_type × OIDC group.
         mapping_type: 'admin_role' or 'customer_group'
         magento_role_id: Magento role ID (admin_role) or customer group ID (customer_group) -->
-   <table name="miniorange_oauth_role_mappings" resource="default" engine="innodb"
+   <table name="m2oidc_oauth_role_mappings" resource="default" engine="innodb"
           comment="Normalized OIDC role and customer group mappings per provider">
       <column xsi:type="int" name="id" padding="10" unsigned="true" nullable="false"
               identity="true" comment="Row ID"/>
       <column xsi:type="smallint" name="provider_id" padding="7" unsigned="true" nullable="false"
-              comment="OIDC Provider ID (FK to miniorange_oauth_client_apps.id)"/>
+              comment="OIDC Provider ID (FK to m2oidc_oauth_client_apps.id)"/>
       <column xsi:type="varchar" name="mapping_type" length="20" nullable="false"
               comment="admin_role or customer_group"/>
       <column xsi:type="varchar" name="oidc_group" length="255" nullable="false"
@@ -143,8 +143,8 @@
          <column name="oidc_group"/>
       </constraint>
       <constraint xsi:type="foreign" referenceId="MOOAUTH_ROLE_MAPPING_PROVIDER_ID_FK"
-                  table="miniorange_oauth_role_mappings" column="provider_id"
-                  referenceTable="miniorange_oauth_client_apps" referenceColumn="id"
+                  table="m2oidc_oauth_role_mappings" column="provider_id"
+                  referenceTable="m2oidc_oauth_client_apps" referenceColumn="id"
                   onDelete="CASCADE"/>
       <index referenceId="MOOAUTH_ROLE_MAPPING_PROVIDER_ID_TYPE" indexType="btree">
          <column name="provider_id"/>
@@ -153,7 +153,7 @@
    </table>
 
    <!-- Tracks which OIDC provider created each Magento user (customer or admin) -->
-   <table name="miniorange_oauth_user_provider" resource="default" engine="innodb"
+   <table name="m2oidc_oauth_user_provider" resource="default" engine="innodb"
           comment="Tracks which OIDC provider created each Magento user">
       <column xsi:type="int" name="id" padding="10" unsigned="true" nullable="false"
               identity="true" comment="ID"/>
@@ -162,7 +162,7 @@
       <column xsi:type="int" name="user_id" padding="10" unsigned="true" nullable="false"
               comment="Magento user ID (customer entity_id or admin user_id)"/>
       <column xsi:type="smallint" name="provider_id" padding="7" unsigned="true" nullable="false"
-              comment="OIDC Provider ID (references miniorange_oauth_client_apps.id)"/>
+              comment="OIDC Provider ID (references m2oidc_oauth_client_apps.id)"/>
       <column xsi:type="timestamp" name="created_at" nullable="false"
               default="CURRENT_TIMESTAMP" comment="Timestamp when the user was created via OIDC"/>
       <constraint xsi:type="primary" referenceId="PRIMARY">

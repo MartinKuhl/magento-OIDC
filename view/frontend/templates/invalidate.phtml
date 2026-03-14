@@ -1,6 +1,6 @@
 <script>
-    // Define the mo_invalidate function
-    function mo_invalidate($, fullname, firstname) {
+    // Define the m2oidc_invalidate function
+    function m2oidc_invalidate($, fullname, firstname) {
         var welcomeHtml = '<span data-bind="text: new String(\'Welcome, %1!\')'
             + '.replace(\'%1\', customer().firstname)">Welcome, '
             + firstname + '!</span>';
@@ -41,7 +41,7 @@ if ($customerSession->isLoggedIn()) {
             while (delay < 5000) {
                 (function(d) {
                     setTimeout(function() {
-                        mo_invalidate(
+                        m2oidc_invalidate(
                             jQuery,
                             "<?= $escaper->escapeJs($fullname); ?>",
                             "<?= $escaper->escapeJs($fname); ?>"

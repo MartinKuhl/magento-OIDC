@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Model\Attribute;
+namespace M2Oidc\OAuth\Model\Attribute;
 
 /**
  * Strategy interface for mapping flattened OIDC claims to Magento attribute values.
@@ -10,7 +10,7 @@ namespace MiniOrange\OAuth\Model\Attribute;
  * Third-party modules can replace the default mapping logic by declaring a DI
  * preference for the concrete implementation class:
  *
- *   <preference for="MiniOrange\OAuth\Model\Attribute\CustomerAttributeMapper"
+ *   <preference for="M2Oidc\OAuth\Model\Attribute\CustomerAttributeMapper"
  *               type="Vendor\Module\Model\Attribute\CustomCustomerMapper"/>
  */
 interface AttributeMapperInterface

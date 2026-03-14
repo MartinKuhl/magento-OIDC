@@ -3,50 +3,50 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
     <menu>
         <!-- Adding a OAuth Client menu item in admin backend for access to other sub settings -->
-        <add id="MiniOrange_OAuth::OAuth"
+        <add id="M2Oidc_OAuth::OAuth"
             title="Authelia OIDC"
-            module="MiniOrange_OAuth"
+            module="M2Oidc_OAuth"
             sortOrder="52"
-            resource="MiniOrange_OAuth::OAuth" />
+            resource="M2Oidc_OAuth::OAuth" />
 
         <!--
             Adding a OAuth Provider sub menu item to show settings that IDP needs
-            Parent Menu Item is the miniOrange OAuth menu item mentioned above.
+            Parent Menu Item is the m2Oidc OAuth menu item mentioned above.
             Action is the controllerAction to be called when menu item is clicked.
         -->
         <!--
             MP-06: Provider management — list, add, edit, delete OIDC providers.
-            Routes to Controller/Adminhtml/Provider/Index.php via mooauth/provider/index.
+            Routes to Controller/Adminhtml/Provider/Index.php via m2oidc/provider/index.
         -->
-        <add id="MiniOrange_OAuth::provider_management"
+        <add id="M2Oidc_OAuth::provider_management"
             title="Manage Providers"
-            module="MiniOrange_OAuth"
+            module="M2Oidc_OAuth"
             sortOrder="0"
-            parent="MiniOrange_OAuth::OAuth"
-            action="mooauth/provider/index"
-            resource="MiniOrange_OAuth::oauth_settings"/>
+            parent="M2Oidc_OAuth::OAuth"
+            action="m2oidc/provider/index"
+            resource="M2Oidc_OAuth::oauth_settings"/>
 
         <!--
             Provider Settings, OAuth Settings, Attribute Mapping, and Login Options are now tabs
-            within the Add / Edit Provider form (mooauth/provider/edit).
+            within the Add / Edit Provider form (m2oidc/provider/edit).
             Only Manage Providers and Miscellaneous (debug logs) remain as top-level menu items.
         -->
         <!-- OIDC Session Activity: read-only grid of all SSO-linked users -->
-        <add id="MiniOrange_OAuth::oidc_sessions"
+        <add id="M2Oidc_OAuth::oidc_sessions"
             title="Session Activity"
-            module="MiniOrange_OAuth"
+            module="M2Oidc_OAuth"
             sortOrder="1"
-            parent="MiniOrange_OAuth::OAuth"
-            action="mooauth/sessions/index"
-            resource="MiniOrange_OAuth::oidc_sessions"/>
+            parent="M2Oidc_OAuth::OAuth"
+            action="m2oidc/sessions/index"
+            resource="M2Oidc_OAuth::oidc_sessions"/>
 
-        <add id="MiniOrange_OAuth::signin_settings"
+        <add id="M2Oidc_OAuth::signin_settings"
             title="Miscellaneous"
-            module="MiniOrange_OAuth"
+            module="M2Oidc_OAuth"
             sortOrder="2"
-            parent="MiniOrange_OAuth::OAuth"
-            action="mooauth/signinsettings"
-            resource="MiniOrange_OAuth::signin_settings"/>
+            parent="M2Oidc_OAuth::OAuth"
+            action="m2oidc/signinsettings"
+            resource="M2Oidc_OAuth::signin_settings"/>
 
     </menu>
 </config>

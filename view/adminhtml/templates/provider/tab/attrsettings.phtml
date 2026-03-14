@@ -1,10 +1,10 @@
 <!--
     Attribute Mapping tab — OIDC claim → Magento field mapping.
-    Rendered inside the Widget\Tabs form on the mooauth/provider/edit page.
+    Rendered inside the Widget\Tabs form on the m2oidc/provider/edit page.
     The enclosing <form> and hidden fields are provided by the Edit container block.
 -->
 <?php
-/** @var \MiniOrange\OAuth\Block\Adminhtml\Provider\Edit\Tab\AttributeMapping $block */
+/** @var \M2Oidc\OAuth\Block\Adminhtml\Provider\Edit\Tab\AttributeMapping $block */
 /** @var \Magento\Framework\Escaper $escaper */
 
 $data = $block->getProviderData();
@@ -178,12 +178,12 @@ $roleMappings = is_array($decoded) ? $decoded : [];
                     </label>
                 </td>
                 <td>
-                    <div id="mooauth-role-mappings">
+                    <div id="m2oidc-role-mappings">
                         <?php
                         $displayMappings = !empty($roleMappings) ? $roleMappings : [['group' => '', 'role' => '']];
                         foreach ($displayMappings as $index => $mapping):
                             ?>
-                            <div class="mooauth-mapping-row"
+                            <div class="m2oidc-mapping-row"
                                  style="margin-bottom:8px; display:flex; align-items:center;">
                                 <input type="text"
                                        name="oauth_role_mapping[<?= (int) $index ?>][group]"
@@ -204,7 +204,7 @@ $roleMappings = is_array($decoded) ? $decoded : [];
                                     <?php endforeach; ?>
                                 </select>
                                 <button type="button"
-                                        class="action-delete mooauth-remove-mapping"
+                                        class="action-delete m2oidc-remove-mapping"
                                         style="margin-left:10px;">
                                     <?= $escaper->escapeHtml(__('Remove')) ?>
                                 </button>
@@ -212,7 +212,7 @@ $roleMappings = is_array($decoded) ? $decoded : [];
                         <?php endforeach; ?>
                     </div>
                     <button type="button"
-                            id="mooauth-add-mapping"
+                            id="m2oidc-add-mapping"
                             class="action-default"
                             style="margin-top:4px;">
                         + <?= $escaper->escapeHtml(__('Add Mapping')) ?>
@@ -281,14 +281,14 @@ $customerGroupMappings = is_array($decodedCgm) ? $decodedCgm : [];
                     </label>
                 </td>
                 <td>
-                    <div id="mooauth-customer-group-mappings">
+                    <div id="m2oidc-customer-group-mappings">
                         <?php
                         $displayCgm = !empty($customerGroupMappings)
                             ? $customerGroupMappings
                             : [['group' => '', 'customer_group' => '']];
                         foreach ($displayCgm as $cgmIndex => $cgmMapping):
                             ?>
-                            <div class="mooauth-cgm-row"
+                            <div class="m2oidc-cgm-row"
                                  style="margin-bottom:8px; display:flex; align-items:center;">
                                 <input type="text"
                                        name="oauth_customer_group_mapping[<?= (int) $cgmIndex ?>][group]"
@@ -312,7 +312,7 @@ $customerGroupMappings = is_array($decodedCgm) ? $decodedCgm : [];
                                     <?php endforeach; ?>
                                 </select>
                                 <button type="button"
-                                        class="action-delete mooauth-remove-cgm"
+                                        class="action-delete m2oidc-remove-cgm"
                                         style="margin-left:10px;">
                                     <?= $escaper->escapeHtml(__('Remove')) ?>
                                 </button>
@@ -320,7 +320,7 @@ $customerGroupMappings = is_array($decodedCgm) ? $decodedCgm : [];
                         <?php endforeach; ?>
                     </div>
                     <button type="button"
-                            id="mooauth-add-cgm"
+                            id="m2oidc-add-cgm"
                             class="action-default"
                             style="margin-top:4px;">
                         + <?= $escaper->escapeHtml(__('Add Mapping')) ?>
@@ -493,12 +493,12 @@ $customerGroupMappings = is_array($decodedCgm) ? $decodedCgm : [];
 <script>
 (function () {
     // Dynamic role mapping rows
-    var roleContainer = document.getElementById('mooauth-role-mappings');
-    var addRoleBtn    = document.getElementById('mooauth-add-mapping');
+    var roleContainer = document.getElementById('m2oidc-role-mappings');
+    var addRoleBtn    = document.getElementById('m2oidc-add-mapping');
     if (addRoleBtn && roleContainer) {
-        var roleIndex = roleContainer.querySelectorAll('.mooauth-mapping-row').length;
+        var roleIndex = roleContainer.querySelectorAll('.m2oidc-mapping-row').length;
         addRoleBtn.addEventListener('click', function () {
-            var row = roleContainer.querySelector('.mooauth-mapping-row');
+            var row = roleContainer.querySelector('.m2oidc-mapping-row');
             if (!row) { return; }
             var clone = row.cloneNode(true);
             clone.querySelectorAll('input, select').forEach(function (el) {
@@ -510,20 +510,20 @@ $customerGroupMappings = is_array($decodedCgm) ? $decodedCgm : [];
             roleIndex++;
         });
         roleContainer.addEventListener('click', function (e) {
-            if (e.target.classList.contains('mooauth-remove-mapping')) {
-                var rows = roleContainer.querySelectorAll('.mooauth-mapping-row');
-                if (rows.length > 1) { e.target.closest('.mooauth-mapping-row').remove(); }
+            if (e.target.classList.contains('m2oidc-remove-mapping')) {
+                var rows = roleContainer.querySelectorAll('.m2oidc-mapping-row');
+                if (rows.length > 1) { e.target.closest('.m2oidc-mapping-row').remove(); }
             }
         });
     }
 
     // Dynamic customer group mapping rows
-    var cgmContainer = document.getElementById('mooauth-customer-group-mappings');
-    var addCgmBtn    = document.getElementById('mooauth-add-cgm');
+    var cgmContainer = document.getElementById('m2oidc-customer-group-mappings');
+    var addCgmBtn    = document.getElementById('m2oidc-add-cgm');
     if (addCgmBtn && cgmContainer) {
-        var cgmIndex = cgmContainer.querySelectorAll('.mooauth-cgm-row').length;
+        var cgmIndex = cgmContainer.querySelectorAll('.m2oidc-cgm-row').length;
         addCgmBtn.addEventListener('click', function () {
-            var row = cgmContainer.querySelector('.mooauth-cgm-row');
+            var row = cgmContainer.querySelector('.m2oidc-cgm-row');
             if (!row) { return; }
             var clone = row.cloneNode(true);
             clone.querySelectorAll('input, select').forEach(function (el) {
@@ -535,9 +535,9 @@ $customerGroupMappings = is_array($decodedCgm) ? $decodedCgm : [];
             cgmIndex++;
         });
         cgmContainer.addEventListener('click', function (e) {
-            if (e.target.classList.contains('mooauth-remove-cgm')) {
-                var rows = cgmContainer.querySelectorAll('.mooauth-cgm-row');
-                if (rows.length > 1) { e.target.closest('.mooauth-cgm-row').remove(); }
+            if (e.target.classList.contains('m2oidc-remove-cgm')) {
+                var rows = cgmContainer.querySelectorAll('.m2oidc-cgm-row');
+                if (rows.length > 1) { e.target.closest('.m2oidc-cgm-row').remove(); }
             }
         });
     }

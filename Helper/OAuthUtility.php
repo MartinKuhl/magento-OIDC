@@ -1,6 +1,6 @@
 <?php
 
-namespace MiniOrange\OAuth\Helper;
+namespace M2Oidc\OAuth\Helper;
 
 use Magento\Customer\Model\CustomerFactory;
 use Magento\Customer\Model\Session;
@@ -17,8 +17,8 @@ use Magento\User\Model\UserFactory;
 use Magento\Framework\App\Helper\Context;
 use Magento\Framework\Stdlib\DateTime\DateTime;
 
-use MiniOrange\OAuth\Helper\OAuthConstants;
-use MiniOrange\OAuth\Helper\Data;
+use M2Oidc\OAuth\Helper\OAuthConstants;
+use M2Oidc\OAuth\Helper\Data;
 
 /**
  * This class contains some common Utility functions
@@ -52,8 +52,8 @@ class OAuthUtility extends Data
     /** @var \Magento\Framework\App\Config\ReinitableConfigInterface */
     protected \Magento\Framework\App\Config\ReinitableConfigInterface $reinitableConfig;
 
-    /** @var \MiniOrange\OAuth\Logger\Logger */
-    private readonly \MiniOrange\OAuth\Logger\Logger $moduleLogger;
+    /** @var \M2Oidc\OAuth\Logger\Logger */
+    private readonly \M2Oidc\OAuth\Logger\Logger $moduleLogger;
 
     /** @var \Magento\Framework\App\ProductMetadataInterface */
     protected \Magento\Framework\App\ProductMetadataInterface $productMetadata;
@@ -82,12 +82,12 @@ class OAuthUtility extends Data
      * @param TypeListInterface $cacheTypeList
      * @param Pool $cacheFrontendPool
      * @param \Psr\Log\LoggerInterface $logger
-     * @param \MiniOrange\OAuth\Logger\Logger $logger2
+     * @param \M2Oidc\OAuth\Logger\Logger $logger2
      * @param File $fileSystem
      * @param \Magento\Framework\App\ProductMetadataInterface $productMetadata
-     * @param \MiniOrange\OAuth\Model\MiniorangeOauthClientAppsFactory $miniorangeOauthClientAppsFactory
-     * @param \MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps\CollectionFactory $clientCollectionFactory
-     * @param \MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps $appResource
+     * @param \M2Oidc\OAuth\Model\MiniorangeOauthClientAppsFactory $m2oidcOauthClientAppsFactory
+     * @param \M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps\CollectionFactory $clientCollectionFactory
+     * @param \M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps $appResource
      * @param \Magento\User\Model\ResourceModel\User $userResource
      * @param \Magento\Customer\Model\ResourceModel\Customer $customerResource
      * @param DateTime $dateTime
@@ -111,12 +111,12 @@ class OAuthUtility extends Data
         TypeListInterface $cacheTypeList,
         Pool $cacheFrontendPool,
         \Psr\Log\LoggerInterface $logger,
-        \MiniOrange\OAuth\Logger\Logger $logger2,
+        \M2Oidc\OAuth\Logger\Logger $logger2,
         File $fileSystem,
         \Magento\Framework\App\ProductMetadataInterface $productMetadata,
-        \MiniOrange\OAuth\Model\MiniorangeOauthClientAppsFactory $miniorangeOauthClientAppsFactory,
-        \MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps\CollectionFactory $clientCollectionFactory,
-        \MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps $appResource,
+        \M2Oidc\OAuth\Model\MiniorangeOauthClientAppsFactory $m2oidcOauthClientAppsFactory,
+        \M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps\CollectionFactory $clientCollectionFactory,
+        \M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps $appResource,
         \Magento\User\Model\ResourceModel\User $userResource,
         \Magento\Customer\Model\ResourceModel\Customer $customerResource,
         DateTime $dateTime,
@@ -133,7 +133,7 @@ class OAuthUtility extends Data
             $assetRepo,
             $helperBackend,
             $frontendUrl,
-            $miniorangeOauthClientAppsFactory,
+            $m2oidcOauthClientAppsFactory,
             $clientCollectionFactory,
             $appResource,
             $userResource,
@@ -162,7 +162,7 @@ class OAuthUtility extends Data
     // =========================================================================
 
     /**
-     * Maps OAuthConstants config keys to miniorange_oauth_client_apps column names.
+     * Maps OAuthConstants config keys to m2oidc_oauth_client_apps column names.
      *
      * Keys listed here are provider-specific and will be read from the app table.
      * Keys NOT listed here are global and always read from core_config_data
@@ -189,12 +189,12 @@ class OAuthUtility extends Data
         // Visibility / behaviour flags
         'showadminlink'                 => 'show_admin_link',
         'showcustomerlink'              => 'show_customer_link',
-        'autoCreateAdmin'               => 'mo_oauth_auto_create_admin',
-        'autoCreateCustomer'            => 'mo_oauth_auto_create_customer',
+        'autoCreateAdmin'               => 'm2oidc_auto_create_admin',
+        'autoCreateCustomer'            => 'm2oidc_auto_create_customer',
         'enableLoginRedirect'           => 'autoredirect',
         'buttonText'                    => 'button_label',
-        'disableNonOidcAdminLogin'      => 'mo_disable_non_oidc_admin_login',
-        'disableNonOidcCustomerLogin'   => 'mo_disable_non_oidc_customer_login',
+        'disableNonOidcAdminLogin'      => 'm2oidc_disable_non_oidc_admin_login',
+        'disableNonOidcCustomerLogin'   => 'm2oidc_disable_non_oidc_customer_login',
 
         // Attribute mappings
         'amEmail'                       => 'email_attribute',
@@ -214,14 +214,14 @@ class OAuthUtility extends Data
 
         // Role / group mapping
         'adminRoleMapping'              => 'oauth_admin_role_mapping',
-        'amAccountMatcher'              => 'mo_oauth_create_user_in_magento_by_using',
+        'amAccountMatcher'              => 'm2oidc_create_user_in_magento_by_using',
         'unlistedRole'                  => 'roles_mapped',
-        'createUserIfRoleNotMapped'     => 'mo_oauth_dont_create_user_if_role_not_mapped',
+        'createUserIfRoleNotMapped'     => 'm2oidc_dont_create_user_if_role_not_mapped',
 
         // Customer Group mapping
         'customerGroupMapping'           => 'oauth_customer_group_mapping',
         'defaultCustomerGroup'           => 'default_group',
-        'createCustomerIfGroupNotMapped' => 'mo_oauth_dont_create_customer_if_group_not_mapped',
+        'createCustomerIfGroupNotMapped' => 'm2oidc_dont_create_customer_if_group_not_mapped',
         'updateFrontendGroupsOnSso'      => 'update_frontend_groups_on_sso',
     ];
 
@@ -249,7 +249,7 @@ class OAuthUtility extends Data
      * All subsequent getStoreConfig() calls resolve from the correct
      * provider row automatically.
      *
-     * @param int $providerId Row `id` from miniorange_oauth_client_apps (> 0)
+     * @param int $providerId Row `id` from m2oidc_oauth_client_apps (> 0)
      */
     public function setActiveProviderId(int $providerId): void
     {
@@ -297,7 +297,7 @@ class OAuthUtility extends Data
      * Read a config value — provider-specific keys from the app table, global keys from core_config_data.
      *
      * Provider-specific keys are read EXCLUSIVELY from the
-     * miniorange_oauth_client_apps table. No fallback to core_config_data.
+     * m2oidc_oauth_client_apps table. No fallback to core_config_data.
      * Returns null if the column is empty or the provider is not found.
      *
      * @param string $config OAuthConstants key (e.g. OAuthConstants::MAP_EMAIL)
@@ -407,7 +407,7 @@ class OAuthUtility extends Data
     {
         try {
             $logPath = $this->directoryList->getPath(DirectoryList::VAR_DIR)
-                . '/log/mo_oauth.log';
+                . '/log/M2Oidc.log';
             if ($this->fileSystem->isExists($logPath)) {
                 return 1;
             }
@@ -423,7 +423,7 @@ class OAuthUtility extends Data
     public function deleteCustomLogFile(): void
     {
         try {
-            $logPath = $this->directoryList->getPath(DirectoryList::VAR_DIR) . '/log/mo_oauth.log';
+            $logPath = $this->directoryList->getPath(DirectoryList::VAR_DIR) . '/log/M2Oidc.log';
             if ($this->fileSystem->isExists($logPath)) {
                 $this->fileSystem->deleteFile($logPath);
             }
@@ -797,7 +797,7 @@ class OAuthUtility extends Data
      * Get client details — reads all values from the active provider row.
      *
      * All values come from the provider table via getStoreConfig() (which
-     * resolves provider-specific keys from miniorange_oauth_client_apps).
+     * resolves provider-specific keys from m2oidc_oauth_client_apps).
      */
     public function getClientDetails(): array
     {
@@ -965,7 +965,7 @@ class OAuthUtility extends Data
      * This is the redirect-safe variant: the provider_id is passed through the
      * OAuth state parameter and survives the redirect back from the IdP.
      *
-     * @param int    $providerId Row `id` from miniorange_oauth_client_apps
+     * @param int    $providerId Row `id` from m2oidc_oauth_client_apps
      * @param string $status     'success', 'failed', or 'unsuccessful'
      */
     #[\Override]
@@ -1002,7 +1002,7 @@ class OAuthUtility extends Data
      * Stored as JSON array in the `received_oidc_claims` column so the
      * admin UI can offer a dropdown for attribute mapping.
      *
-     * @param int      $providerId Row `id` from miniorange_oauth_client_apps
+     * @param int      $providerId Row `id` from m2oidc_oauth_client_apps
      * @param string[] $claimKeys  Flat list of claim key names
      */
     #[\Override]
@@ -1047,7 +1047,7 @@ class OAuthUtility extends Data
     /**
      * Update specific fields on a provider row (e.g. PKCE code_verifier).
      *
-     * @param int   $providerId Row `id` from miniorange_oauth_client_apps
+     * @param int   $providerId Row `id` from m2oidc_oauth_client_apps
      * @param array $data       Column => value pairs to update
      */
     public function saveProviderData(int $providerId, array $data): void

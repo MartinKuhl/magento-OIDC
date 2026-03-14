@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Block\Adminhtml\Provider\Edit\Tab;
+namespace M2Oidc\OAuth\Block\Adminhtml\Provider\Edit\Tab;
 
 use Magento\Authorization\Model\ResourceModel\Role\CollectionFactory as RoleCollectionFactory;
 use Magento\Backend\Block\Template;
@@ -11,8 +11,8 @@ use Magento\Backend\Block\Widget\Tab\TabInterface;
 use Magento\Customer\Model\ResourceModel\Group\CollectionFactory as GroupCollectionFactory;
 use Magento\Framework\Phrase;
 use Magento\Framework\Registry;
-use MiniOrange\OAuth\Helper\OAuthConstants;
-use MiniOrange\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Helper\OAuthConstants;
+use M2Oidc\OAuth\Helper\OAuthUtility;
 use Magento\Customer\Api\GroupRepositoryInterface;
 use Magento\Framework\Api\SearchCriteriaBuilder;
 
@@ -24,7 +24,7 @@ use Magento\Framework\Api\SearchCriteriaBuilder;
 class AttributeMapping extends Template implements TabInterface
 {
     /** @var string */
-    protected $_template = 'MiniOrange_OAuth::provider/tab/attrsettings.phtml';
+    protected $_template = 'M2Oidc_OAuth::provider/tab/attrsettings.phtml';
 
     /**
      * @psalm-suppress PropertyNotSetInConstructor

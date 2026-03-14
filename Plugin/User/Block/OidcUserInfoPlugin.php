@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Plugin\User\Block;
+namespace M2Oidc\OAuth\Plugin\User\Block;
 
 use Closure;
 use Magento\Framework\Escaper;
 use Magento\Framework\Registry;
 use Magento\User\Block\User\Edit\Tab\Main;
-use MiniOrange\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
+use M2Oidc\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
 
 /**
  * Adds a read-only "OIDC Provider" note field directly after the Expiration Date

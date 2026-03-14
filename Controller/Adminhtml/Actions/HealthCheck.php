@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Controller\Adminhtml\Actions;
+namespace M2Oidc\OAuth\Controller\Adminhtml\Actions;
 
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpGetActionInterface;
 use Magento\Framework\Controller\Result\Json as JsonResult;
 use Magento\Framework\Controller\ResultFactory;
-use MiniOrange\OAuth\Helper\Curl;
-use MiniOrange\OAuth\Helper\OAuthConstants;
-use MiniOrange\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Helper\Curl;
+use M2Oidc\OAuth\Helper\OAuthConstants;
+use M2Oidc\OAuth\Helper\OAuthUtility;
 
 /**
  * Admin AJAX endpoint: OIDC provider connectivity health-check (FEAT-06).
  *
- * Route:  GET /admin/mooauth/actions/healthcheck
+ * Route:  GET /admin/m2oidc/actions/healthcheck
  *
  * Returns JSON:
  * {
@@ -36,9 +36,9 @@ class HealthCheck extends Action implements HttpGetActionInterface
 {
     /**
      * ACL resource required to call this endpoint.
-     * Maps to MiniOrange_OAuth::oauth_settings in etc/acl.xml.
+     * Maps to M2Oidc_OAuth::oauth_settings in etc/acl.xml.
      */
-    public const string ADMIN_RESOURCE = 'MiniOrange_OAuth::oauth_settings';
+    public const string ADMIN_RESOURCE = 'M2Oidc_OAuth::oauth_settings';
 
     /** @var OAuthUtility */
     private readonly OAuthUtility $oauthUtility;

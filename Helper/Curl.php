@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Helper;
+namespace M2Oidc\OAuth\Helper;
 
 use Magento\Framework\HTTP\Adapter\CurlFactory;
 

@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Controller\Health;
+namespace M2Oidc\OAuth\Controller\Health;
 
 use Magento\Framework\App\Action\HttpGetActionInterface;
 use Magento\Framework\Controller\Result\Json as JsonResult;
 use Magento\Framework\Controller\ResultFactory;
-use MiniOrange\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Helper\OAuthUtility;
 
 /**
  * Lightweight frontend health-check for monitoring systems.
  *
- * Route:  GET /mooauth/health/check
+ * Route:  GET /m2oidc/health/check
  *
  * Returns JSON:
  * {
@@ -25,7 +25,7 @@ use MiniOrange\OAuth\Helper\OAuthUtility;
  * This is a read-only, unauthenticated endpoint intended for uptime monitors
  * (e.g., Pingdom, AWS Route 53 health checks). It does NOT make outbound HTTP
  * calls to avoid SSRF exposure; use the admin health-check for live reachability
- * tests: GET /admin/mooauth/actions/healthcheck
+ * tests: GET /admin/m2oidc/actions/healthcheck
  */
 class Check implements HttpGetActionInterface
 {

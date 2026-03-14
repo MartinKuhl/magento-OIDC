@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Model\Service;
+namespace M2Oidc\OAuth\Model\Service;
 
 use Magento\User\Model\UserFactory;
 use Magento\User\Model\ResourceModel\User as UserResource;
 use Magento\Authorization\Model\ResourceModel\Role\CollectionFactory as RoleCollectionFactory;
 use Magento\Authorization\Model\Acl\Role\User as RoleUser;
-use MiniOrange\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Helper\OAuthUtility;
 
 /**
  * Syncs existing admin user profile and role from OIDC claims

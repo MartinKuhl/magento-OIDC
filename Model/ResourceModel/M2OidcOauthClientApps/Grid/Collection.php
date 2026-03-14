@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps\Grid;
+namespace M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps\Grid;
 
 use Magento\Framework\Api\Search\AggregationInterface;
 use Magento\Framework\Api\Search\SearchResultInterface;
 use Magento\Framework\Api\SearchCriteriaInterface;
-use MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps\Collection as BaseCollection;
+use M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps\Collection as BaseCollection;
 
 /**
  * Grid collection for the provider listing UI component.
@@ -16,7 +16,7 @@ use MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps\Collection as
  * as required by Magento's UI DataProvider::searchResultToOutput().
  *
  * Adds a computed `users_created` column via a LEFT JOIN subquery
- * that counts rows in miniorange_oauth_user_provider per provider.
+ * that counts rows in m2oidc_oauth_user_provider per provider.
  */
 class Collection extends BaseCollection implements SearchResultInterface
 {
@@ -35,7 +35,7 @@ class Collection extends BaseCollection implements SearchResultInterface
         $connection = $this->getConnection();
         $subSelect = $connection->select()
             ->from(
-                $this->getTable('miniorange_oauth_user_provider'),
+                $this->getTable('m2oidc_oauth_user_provider'),
                 [
                     'provider_id',
                     'users_created' => new \Zend_Db_Expr('COUNT(*)'),

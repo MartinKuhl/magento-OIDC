@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Controller\Actions;
+namespace M2Oidc\OAuth\Controller\Actions;
 
-use MiniOrange\OAuth\Model\Service\CustomerUserCreator;
+use M2Oidc\OAuth\Model\Service\CustomerUserCreator;
 use Magento\Framework\App\ResponseFactory;
 use Magento\Store\Model\StoreManagerInterface;
-use MiniOrange\OAuth\Helper\Exception\MissingAttributesException;
-use MiniOrange\OAuth\Helper\OAuthConstants;
-use MiniOrange\OAuth\Helper\OAuthUtility;
-use MiniOrange\OAuth\Helper\OAuthMessages;
+use M2Oidc\OAuth\Helper\Exception\MissingAttributesException;
+use M2Oidc\OAuth\Helper\OAuthConstants;
+use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Helper\OAuthMessages;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Controller\Result\RedirectFactory;
 use Magento\Customer\Api\CustomerRepositoryInterface;
@@ -70,17 +70,17 @@ class ProcessUserAction
      */
     private int $providerId = 0;
 
-    /** @var \MiniOrange\OAuth\Controller\Actions\CustomerLoginAction */
-    private readonly \MiniOrange\OAuth\Controller\Actions\CustomerLoginAction $customerLoginAction;
+    /** @var \M2Oidc\OAuth\Controller\Actions\CustomerLoginAction */
+    private readonly \M2Oidc\OAuth\Controller\Actions\CustomerLoginAction $customerLoginAction;
 
     /** @var \Magento\Store\Model\StoreManagerInterface */
     private readonly \Magento\Store\Model\StoreManagerInterface $storeManager;
 
-    /** @var \MiniOrange\OAuth\Helper\OAuthUtility */
-    private readonly \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
+    /** @var \M2Oidc\OAuth\Helper\OAuthUtility */
+    private readonly \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility;
 
-    /** @var \MiniOrange\OAuth\Model\Service\CustomerUserCreator */
-    private readonly \MiniOrange\OAuth\Model\Service\CustomerUserCreator $customerUserCreator;
+    /** @var \M2Oidc\OAuth\Model\Service\CustomerUserCreator */
+    private readonly \M2Oidc\OAuth\Model\Service\CustomerUserCreator $customerUserCreator;
 
     /** @var \Magento\Framework\Controller\Result\RedirectFactory */
     private readonly \Magento\Framework\Controller\Result\RedirectFactory $resultRedirectFactory;
@@ -385,7 +385,7 @@ class ProcessUserAction
     /**
      * Set the OIDC provider ID to record when a new customer is created.
      *
-     * @param int $providerId miniorange_oauth_client_apps.id (0 = not tracked)
+     * @param int $providerId m2oidc_oauth_client_apps.id (0 = not tracked)
      */
     public function setProviderId(int $providerId): static
     {

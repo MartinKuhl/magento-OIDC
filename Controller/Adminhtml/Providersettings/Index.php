@@ -1,18 +1,18 @@
 <?php
 
-namespace MiniOrange\OAuth\Controller\Adminhtml\Providersettings;
+namespace M2Oidc\OAuth\Controller\Adminhtml\Providersettings;
 
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpGetActionInterface;
 use Magento\Framework\App\Action\HttpPostActionInterface;
 use Magento\Framework\Message\ManagerInterface;
 use Magento\Framework\View\Result\PageFactory;
-use MiniOrange\OAuth\Controller\Actions\BaseAdminAction;
-use MiniOrange\OAuth\Helper\OAuthConstants;
-use MiniOrange\OAuth\Helper\OAuthMessages;
-use MiniOrange\OAuth\Helper\OAuthUtility;
-use MiniOrange\OAuth\Model\MiniorangeOauthClientAppsFactory;
-use MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps as AppResource;
+use M2Oidc\OAuth\Controller\Actions\BaseAdminAction;
+use M2Oidc\OAuth\Helper\OAuthConstants;
+use M2Oidc\OAuth\Helper\OAuthMessages;
+use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Model\MiniorangeOauthClientAppsFactory;
+use M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps as AppResource;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -108,7 +108,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         }
 
         $resultPage = $this->resultPageFactory->create();
-        $resultPage->getConfig()->getTitle()->prepend(__('MiniOrange OAuth'));
+        $resultPage->getConfig()->getTitle()->prepend(__('M2Oidc OAuth'));
         return $resultPage;
     }
 

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Test\Integration;
+namespace M2Oidc\OAuth\Test\Integration;
 
 use PHPUnit\Framework\TestCase;
 

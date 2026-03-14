@@ -5,13 +5,13 @@
  * Bypasses CAPTCHA validation for OIDC-authenticated customers.
  * Mirrors admin OidcCaptchaBypassPlugin for frontend customer login.
  *
- * @pacfinal kage MiniOrange\OAuth\Plugin\Captcha
+ * @pacfinal kage M2Oidc\OAuth\Plugin\Captcha
  */
-namespace MiniOrange\OAuth\Plugin\Captcha;
+namespace M2Oidc\OAuth\Plugin\Captcha;
 
 use Magento\Captcha\Observer\CheckUserLoginObserver;
 use Magento\Framework\Event\Observer;
-use MiniOrange\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Helper\OAuthUtility;
 
 /**
  * CAPTCHA bypass plugin for customer OIDC authentication.

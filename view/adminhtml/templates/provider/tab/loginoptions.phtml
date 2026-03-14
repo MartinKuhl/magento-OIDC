@@ -1,11 +1,11 @@
 <!--
     Login Options tab — per-provider SSO button visibility, auto-creation,
     login restrictions, auto-redirect, and profile sync settings.
-    Rendered inside the Widget\Tabs form on the mooauth/provider/edit page.
+    Rendered inside the Widget\Tabs form on the m2oidc/provider/edit page.
     The enclosing <form> and hidden fields are provided by the Edit container block.
 -->
 <?php
-/** @var \MiniOrange\OAuth\Block\Adminhtml\Provider\Edit\Tab\LoginOptions $block */
+/** @var \M2Oidc\OAuth\Block\Adminhtml\Provider\Edit\Tab\LoginOptions $block */
 /** @var \Magento\Framework\Escaper $escaper */
 
 $data = $block->getProviderData();
@@ -97,17 +97,17 @@ $syncAdminRole       = $block->getSyncAdminRoleOnSso();
                 </td>
                 <td>
                     <label style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
-                        <input type="hidden" name="mo_oauth_auto_create_admin" value="0">
+                        <input type="hidden" name="m2oidc_auto_create_admin" value="0">
                         <input type="checkbox"
-                               name="mo_oauth_auto_create_admin"
+                               name="m2oidc_auto_create_admin"
                                value="1"
                                <?= $autoCreateAdmin ? 'checked="checked"' : '' ?>>
                         <?= $escaper->escapeHtml(__('Auto-create admin users on first SSO login')) ?>
                     </label>
                     <label style="display:flex; align-items:center; gap:8px;">
-                        <input type="hidden" name="mo_oauth_auto_create_customer" value="0">
+                        <input type="hidden" name="m2oidc_auto_create_customer" value="0">
                         <input type="checkbox"
-                               name="mo_oauth_auto_create_customer"
+                               name="m2oidc_auto_create_customer"
                                value="1"
                                <?= $autoCreateCustomer ? 'checked="checked"' : '' ?>>
                         <?= $escaper->escapeHtml(__('Auto-create customer accounts on first SSO login')) ?>
@@ -234,10 +234,10 @@ $syncAdminRole       = $block->getSyncAdminRoleOnSso();
                 <td>
                     <!-- Admin: Disable non-OIDC login -->
                     <label style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-                        <input type="hidden" name="mo_disable_non_oidc_admin_login" value="0">
+                        <input type="hidden" name="m2oidc_disable_non_oidc_admin_login" value="0">
                         <input type="checkbox"
                                id="loginopt_disable_admin"
-                               name="mo_disable_non_oidc_admin_login"
+                               name="m2oidc_disable_non_oidc_admin_login"
                                value="1"
                                <?= $disableNonOidcAdmin ? 'checked="checked"' : '' ?>
                                <?= !$showAdminLink ? 'disabled="disabled"' : '' ?>>
@@ -263,10 +263,10 @@ $syncAdminRole       = $block->getSyncAdminRoleOnSso();
 
                     <!-- Customer: Disable non-OIDC login -->
                     <label style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-                        <input type="hidden" name="mo_disable_non_oidc_customer_login" value="0">
+                        <input type="hidden" name="m2oidc_disable_non_oidc_customer_login" value="0">
                         <input type="checkbox"
                                id="loginopt_disable_customer"
-                               name="mo_disable_non_oidc_customer_login"
+                               name="m2oidc_disable_non_oidc_customer_login"
                                value="1"
                                <?= $disableNonOidcCustomer ? 'checked="checked"' : '' ?>
                                <?= !$showCustomerLink ? 'disabled="disabled"' : '' ?>>

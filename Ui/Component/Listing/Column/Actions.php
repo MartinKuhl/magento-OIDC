@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Ui\Component\Listing\Column;
+namespace M2Oidc\OAuth\Ui\Component\Listing\Column;
 
 use Magento\Framework\UrlInterface;
 use Magento\Framework\View\Element\UiComponent\ContextInterface;
@@ -52,16 +52,16 @@ class Actions extends Column
         foreach ($dataSource['data']['items'] as &$item) {
             $id = (int) ($item['id'] ?? 0);
 
-            $item['edit_url']   = $this->urlBuilder->getUrl('mooauth/provider/edit', ['id' => $id]);
-            $item['delete_url'] = $this->urlBuilder->getUrl('mooauth/provider/delete', ['id' => $id]);
+            $item['edit_url']   = $this->urlBuilder->getUrl('m2oidc/provider/edit', ['id' => $id]);
+            $item['delete_url'] = $this->urlBuilder->getUrl('m2oidc/provider/delete', ['id' => $id]);
 
             $item[$this->getData('name')] = [
                 'edit' => [
-                    'href'  => $this->urlBuilder->getUrl('mooauth/provider/edit', ['id' => $id]),
+                    'href'  => $this->urlBuilder->getUrl('m2oidc/provider/edit', ['id' => $id]),
                     'label' => __('Edit'),
                 ],
                 'delete' => [
-                    'href'    => $this->urlBuilder->getUrl('mooauth/provider/delete', ['id' => $id]),
+                    'href'    => $this->urlBuilder->getUrl('m2oidc/provider/delete', ['id' => $id]),
                     'label'   => __('Delete'),
                     'confirm' => [
                         'title'   => __('Delete Provider'),

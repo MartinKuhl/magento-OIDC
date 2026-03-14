@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Test\Unit\Security;
+namespace M2Oidc\OAuth\Test\Unit\Security;
 
 use PHPUnit\Framework\TestCase;
 
@@ -325,7 +325,7 @@ class SecurityRegressionTest extends TestCase
     // -------------------------------------------------------------------------
 
     /**
-     * acl.xml must use "MiniOrange OIDC", not the old "Authelia OIDC" title.
+     * acl.xml must use "M2Oidc OIDC", not the old "Authelia OIDC" title.
      *
      * Fixes: REF-05 (branding error)
      */
@@ -340,9 +340,9 @@ class SecurityRegressionTest extends TestCase
             'REF-05: acl.xml must not contain old "Authelia OIDC" title'
         );
         $this->assertStringContainsString(
-            'MiniOrange OIDC',
+            'M2Oidc OIDC',
             $content,
-            'REF-05: acl.xml must contain "MiniOrange OIDC" title'
+            'REF-05: acl.xml must contain "M2Oidc OIDC" title'
         );
     }
 
@@ -368,9 +368,9 @@ class SecurityRegressionTest extends TestCase
             'MP-06: Providersettings/Index.php must reference the provider_settings ACL resource'
         );
         $this->assertStringContainsString(
-            'MiniOrange_OAuth::provider_settings',
+            'M2Oidc_OAuth::provider_settings',
             $aclContent,
-            'MP-06: acl.xml must declare the MiniOrange_OAuth::provider_settings resource'
+            'MP-06: acl.xml must declare the M2Oidc_OAuth::provider_settings resource'
         );
     }
 

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Model\Service;
+namespace M2Oidc\OAuth\Model\Service;
 
 use Magento\Framework\App\CacheInterface;
 
@@ -24,7 +24,7 @@ use Magento\Framework\App\CacheInterface;
 class OidcSessionRegistry
 {
     /** Cache tag used to flush all OIDC session registry entries at once. */
-    public const CACHE_TAG = 'miniorange_oidc_session';
+    public const CACHE_TAG = 'm2oidc_oidc_session';
 
     /** Default TTL: 24 h, matching a typical access token lifetime. */
     private const DEFAULT_TTL = 86400;

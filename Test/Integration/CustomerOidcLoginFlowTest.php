@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Test\Integration;
+namespace M2Oidc\OAuth\Test\Integration;
 
-use MiniOrange\OAuth\Helper\Exception\IncorrectUserInfoDataException;
-use MiniOrange\OAuth\Helper\OAuthUtility;
-use MiniOrange\OAuth\Model\Service\OidcAuthenticationService;
+use M2Oidc\OAuth\Helper\Exception\IncorrectUserInfoDataException;
+use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Model\Service\OidcAuthenticationService;
 
 /**
  * Integration tests for OidcAuthenticationService attribute flattening

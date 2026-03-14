@@ -1,10 +1,10 @@
 <?php
 
-namespace MiniOrange\OAuth\Controller\Actions;
+namespace M2Oidc\OAuth\Controller\Actions;
 
-use MiniOrange\OAuth\Helper\OAuth\AuthorizationRequest;
-use MiniOrange\OAuth\Helper\OAuthConstants;
-use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
+use M2Oidc\OAuth\Helper\OAuth\AuthorizationRequest;
+use M2Oidc\OAuth\Helper\OAuthConstants;
+use M2Oidc\OAuth\Helper\OAuthSecurityHelper;
 
 /**
  * Handles generation and sending of AuthnRequest to the final IDP
@@ -23,13 +23,13 @@ class SendAuthorizationRequest extends BaseAction
 
     /**
      * @param \Magento\Framework\App\Action\Context              $context
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility              $oauthUtility
+     * @param \M2Oidc\OAuth\Helper\OAuthUtility              $oauthUtility
      * @param OAuthSecurityHelper                                $securityHelper
      * @param \Magento\Framework\Session\SessionManagerInterface $sessionManager
      */
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
-        \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
+        \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility,
         OAuthSecurityHelper $securityHelper,
         \Magento\Framework\Session\SessionManagerInterface $sessionManager
     ) {

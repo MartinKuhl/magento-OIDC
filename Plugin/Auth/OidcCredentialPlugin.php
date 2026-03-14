@@ -8,15 +8,15 @@ declare(strict_types=1);
  * Intercepts Auth credential storage retrieval to inject OIDC adapter when
  * OIDC authentication is detected.
  *
- * @package MiniOrange\OAuth\Plugin\Auth
+ * @package M2Oidc\OAuth\Plugin\Auth
  */
-namespace MiniOrange\OAuth\Plugin\Auth;
+namespace M2Oidc\OAuth\Plugin\Auth;
 
 use Magento\Backend\Model\Auth;
 use Magento\Backend\Model\Auth\Credential\StorageInterface;
-use MiniOrange\OAuth\Model\Auth\OidcCredentialAdapter;
-use MiniOrange\OAuth\Helper\OAuthUtility;
-use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
+use M2Oidc\OAuth\Model\Auth\OidcCredentialAdapter;
+use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Helper\OAuthSecurityHelper;
 
 class OidcCredentialPlugin
 {

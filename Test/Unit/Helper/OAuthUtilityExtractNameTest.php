@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Test\Unit\Helper;
+namespace M2Oidc\OAuth\Test\Unit\Helper;
 
-use MiniOrange\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Helper\OAuthUtility;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -13,7 +13,7 @@ use PHPUnit\Framework\TestCase;
  * This method is the single source of truth for deriving first/last name
  * from an email address when OIDC attributes are missing.
  *
- * @covers \MiniOrange\OAuth\Helper\OAuthUtility::extractNameFromEmail
+ * @covers \M2Oidc\OAuth\Helper\OAuthUtility::extractNameFromEmail
  */
 class OAuthUtilityExtractNameTest extends TestCase
 {

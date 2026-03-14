@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Observer;
+namespace M2Oidc\OAuth\Observer;
 
 use Magento\Customer\Model\Session as CustomerSession;
 use Magento\Framework\App\ResponseInterface;
@@ -14,7 +14,7 @@ use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
 use Magento\Framework\Stdlib\CookieManagerInterface;
 use Magento\Framework\UrlInterface;
 use Magento\Store\Model\StoreManagerInterface;
-use MiniOrange\OAuth\Helper\OAuthConstants;
+use M2Oidc\OAuth\Helper\OAuthConstants;
 
 /**
  * Observer for customer logout events. Handles RP-Initiated Logout
@@ -35,8 +35,8 @@ class OAuthLogoutObserver implements ObserverInterface
     /** Logout-guard cookie name — must match CustomerLoginAutoRedirectObserver */
     private const string LOGOUT_GUARD_COOKIE = 'oidc_logout_guard';
 
-    /** @var \MiniOrange\OAuth\Helper\OAuthUtility */
-    private readonly \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
+    /** @var \M2Oidc\OAuth\Helper\OAuthUtility */
+    private readonly \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility;
 
     /** @var ResponseInterface */
     protected ResponseInterface $_response;
@@ -57,7 +57,7 @@ class OAuthLogoutObserver implements ObserverInterface
     private readonly CurlFactory $curlFactory;
 
     /**
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+     * @param \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility
      * @param ResponseInterface                     $response
      * @param CookieManagerInterface                $cookieManager
      * @param CookieMetadataFactory                 $cookieMetadataFactory
@@ -66,7 +66,7 @@ class OAuthLogoutObserver implements ObserverInterface
      * @param CurlFactory                           $curlFactory
      */
     public function __construct(
-        \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
+        \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility,
         ResponseInterface $response,
         CookieManagerInterface $cookieManager,
         CookieMetadataFactory $cookieMetadataFactory,

@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Ui\Component\Listing\Column;
+namespace M2Oidc\OAuth\Ui\Component\Listing\Column;
 
 use Magento\Framework\DB\Select;
 use Magento\Framework\View\Element\UiComponent\ContextInterface;
 use Magento\Framework\View\Element\UiComponentFactory;
 use Magento\Ui\Component\Listing\Columns\Column;
-use MiniOrange\OAuth\Model\ResourceModel\UserProvider\CollectionFactory;
+use M2Oidc\OAuth\Model\ResourceModel\UserProvider\CollectionFactory;
 
 /**
  * Virtual column that renders the live count of OIDC-linked users

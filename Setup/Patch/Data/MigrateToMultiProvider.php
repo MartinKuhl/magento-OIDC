@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Setup\Patch\Data;
+namespace M2Oidc\OAuth\Setup\Patch\Data;
 
 use Magento\Framework\Setup\ModuleDataSetupInterface;
 use Magento\Framework\Setup\Patch\DataPatchInterface;
@@ -11,7 +11,7 @@ use Magento\Framework\Setup\Patch\PatchRevertableInterface;
 /**
  * Zero-downtime upgrade patch for existing single-provider installations (MP-10).
  *
- * On upgrade, every row in `miniorange_oauth_client_apps` that has no
+ * On upgrade, every row in `m2oidc_oauth_client_apps` that has no
  * `display_name` set (i.e. was created before the multi-provider sprint)
  * is updated to:
  *
@@ -28,7 +28,7 @@ use Magento\Framework\Setup\Patch\PatchRevertableInterface;
  */
 class MigrateToMultiProvider implements DataPatchInterface, PatchRevertableInterface
 {
-    private const TABLE = 'miniorange_oauth_client_apps';
+    private const TABLE = 'm2oidc_oauth_client_apps';
 
     /** @var ModuleDataSetupInterface */
     private readonly ModuleDataSetupInterface $moduleDataSetup;

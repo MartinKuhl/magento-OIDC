@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Helper;
+namespace M2Oidc\OAuth\Helper;
 
 use Magento\Framework\App\CacheInterface;
-use MiniOrange\OAuth\Helper\OAuthMessages;
+use M2Oidc\OAuth\Helper\OAuthMessages;
 
 /**
  * Pure PHP JWT verification using openssl_verify().
@@ -112,7 +112,7 @@ class JwtVerifier
                 "JwtVerifier: Signature verification FAILED with cached JWKS. Retrying with fresh JWKS."
             );
             // Invalidate cache and re-fetch in case the IdP rotated its keys
-            $cacheKey = 'mooauth_jwks_' . hash('sha256', $jwksUrl);
+            $cacheKey = 'm2oidc_jwks_' . hash('sha256', $jwksUrl);
             $this->cache->remove($cacheKey);
             $freshJwks = $this->fetchJwks($jwksUrl);
             if ($freshJwks !== null) {
@@ -229,7 +229,7 @@ class JwtVerifier
      */
     private function fetchJwks(string $jwksUrl): ?array
     {
-        $cacheKey = 'mooauth_jwks_' . hash('sha256', $jwksUrl);
+        $cacheKey = 'm2oidc_jwks_' . hash('sha256', $jwksUrl);
         $cached = $this->cache->load($cacheKey);
         if ($cached) {
             $cachedData = json_decode($cached, true);

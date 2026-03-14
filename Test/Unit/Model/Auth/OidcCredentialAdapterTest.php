@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Test\Unit\Model\Auth;
+namespace M2Oidc\OAuth\Test\Unit\Model\Auth;
 
 use Magento\Framework\Event\ManagerInterface;
 use Magento\Framework\Exception\AuthenticationException;
@@ -11,16 +11,16 @@ use Magento\User\Model\ResourceModel\User\Collection as UserCollection;
 use Magento\User\Model\ResourceModel\User\CollectionFactory as UserCollectionFactory;
 use Magento\User\Model\User;
 use Magento\User\Model\UserFactory;
-use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
-use MiniOrange\OAuth\Helper\OAuthUtility;
-use MiniOrange\OAuth\Model\Auth\OidcCredentialAdapter;
+use M2Oidc\OAuth\Helper\OAuthSecurityHelper;
+use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Model\Auth\OidcCredentialAdapter;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 /**
  * Unit tests for OidcCredentialAdapter authentication flow (Phase 1.1).
  *
- * @covers \MiniOrange\OAuth\Model\Auth\OidcCredentialAdapter
+ * @covers \M2Oidc\OAuth\Model\Auth\OidcCredentialAdapter
  */
 class OidcCredentialAdapterTest extends TestCase
 {

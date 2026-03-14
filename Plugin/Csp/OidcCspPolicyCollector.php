@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Plugin\Csp;
+namespace M2Oidc\OAuth\Plugin\Csp;
 
 use Magento\Csp\Api\PolicyCollectorInterface;
 use Magento\Csp\Model\Policy\FetchPolicy;
-use MiniOrange\OAuth\Helper\OAuthConstants;
-use MiniOrange\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Helper\OAuthConstants;
+use M2Oidc\OAuth\Helper\OAuthUtility;
 
 /**
  * Dynamically adds every active OIDC provider's hostname to Magento's
@@ -17,7 +17,7 @@ use MiniOrange\OAuth\Helper\OAuthUtility;
  * hardcoding a customer-specific domain into the module — making the
  * package unsuitable for distribution.
  *
- * Single-provider fallback: when the `miniorange_oauth_final client_apps` table
+ * Single-provider fallback: when the `m2oidc_oauth_final client_apps` table
  * is empty (fresh install, pre-migration), the legacy store-config
  * `AUTHORIZE_URL` value is used so the page does not break.
  *

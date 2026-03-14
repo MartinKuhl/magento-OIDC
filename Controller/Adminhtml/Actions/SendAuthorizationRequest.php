@@ -1,11 +1,11 @@
 <?php
 
-namespace MiniOrange\OAuth\Controller\Adminhtml\Actions;
+namespace M2Oidc\OAuth\Controller\Adminhtml\Actions;
 
-use MiniOrange\OAuth\Helper\OAuth\AuthorizationRequest;
-use MiniOrange\OAuth\Helper\OAuthConstants;
-use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
-use MiniOrange\OAuth\Controller\Actions\BaseAction;
+use M2Oidc\OAuth\Helper\OAuth\AuthorizationRequest;
+use M2Oidc\OAuth\Helper\OAuthConstants;
+use M2Oidc\OAuth\Helper\OAuthSecurityHelper;
+use M2Oidc\OAuth\Controller\Actions\BaseAction;
 
 /**
  * Admin: Send authorization request to the configured OIDC provider.
@@ -23,8 +23,8 @@ class SendAuthorizationRequest extends BaseAction
      */
     protected $urlBuilder;
 
-    /** @var \MiniOrange\OAuth\Helper\OAuthSecurityHelper */
-    private readonly \MiniOrange\OAuth\Helper\OAuthSecurityHelper $securityHelper;
+    /** @var \M2Oidc\OAuth\Helper\OAuthSecurityHelper */
+    private readonly \M2Oidc\OAuth\Helper\OAuthSecurityHelper $securityHelper;
 
     /** @var \Magento\Framework\Session\SessionManagerInterface */
     private readonly \Magento\Framework\Session\SessionManagerInterface $sessionManager;
@@ -33,13 +33,13 @@ class SendAuthorizationRequest extends BaseAction
      * Initialize admin send authorization request action.
      *
      * @param \Magento\Backend\App\Action\Context                $context
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility              $oauthUtility
+     * @param \M2Oidc\OAuth\Helper\OAuthUtility              $oauthUtility
      * @param OAuthSecurityHelper                                $securityHelper
      * @param \Magento\Framework\Session\SessionManagerInterface $sessionManager
      */
     public function __construct(
         \Magento\Backend\App\Action\Context $context,
-        \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
+        \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility,
         OAuthSecurityHelper $securityHelper,
         \Magento\Framework\Session\SessionManagerInterface $sessionManager
     ) {
@@ -181,7 +181,7 @@ class SendAuthorizationRequest extends BaseAction
         if ($isTest) {
             $testKey = bin2hex(random_bytes(16));
             $baseUrl = $this->oauthUtility->getBaseUrl();
-            $testRelayState = $baseUrl . 'mooauth/actions/showTestResults/key/' . $testKey . '/';
+            $testRelayState = $baseUrl . 'm2oidc/actions/showTestResults/key/' . $testKey . '/';
             $this->oauthUtility->customlog(
                 "SendAuthorizationRequest: Test-Flow, setting relayState to: " . $testRelayState
             );

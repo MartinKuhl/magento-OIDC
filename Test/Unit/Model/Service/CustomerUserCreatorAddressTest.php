@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Test\Unit\Model\Service;
+namespace M2Oidc\OAuth\Test\Unit\Model\Service;
 
 use Magento\Customer\Api\AddressRepositoryInterface;
 use Magento\Customer\Api\CustomerRepositoryInterface;
@@ -15,13 +15,13 @@ use Magento\Directory\Helper\Data as DirectoryData;
 use Magento\Framework\Math\Random;
 use Magento\Store\Api\Data\WebsiteInterface;
 use Magento\Store\Model\StoreManagerInterface;
-use MiniOrange\OAuth\Helper\OAuthConstants;
-use MiniOrange\OAuth\Helper\OAuthUtility;
-use MiniOrange\OAuth\Model\Attribute\AttributeMapperInterface;
-use MiniOrange\OAuth\Model\Attribute\CustomerAttributeMapper;
-use MiniOrange\OAuth\Model\Provider\MappingRepository;
-use MiniOrange\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
-use MiniOrange\OAuth\Model\Service\CustomerUserCreator;
+use M2Oidc\OAuth\Helper\OAuthConstants;
+use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Model\Attribute\AttributeMapperInterface;
+use M2Oidc\OAuth\Model\Attribute\CustomerAttributeMapper;
+use M2Oidc\OAuth\Model\Provider\MappingRepository;
+use M2Oidc\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
+use M2Oidc\OAuth\Model\Service\CustomerUserCreator;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -31,7 +31,7 @@ use PHPUnit\Framework\TestCase;
  * Tests are exercised through the public createCustomer() entry point and
  * private helpers accessed via PHP Reflection where isolation is clearer.
  *
- * @covers \MiniOrange\OAuth\Model\Service\CustomerUserCreator
+ * @covers \M2Oidc\OAuth\Model\Service\CustomerUserCreator
  */
 class CustomerUserCreatorAddressTest extends TestCase
 {

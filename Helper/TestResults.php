@@ -1,5 +1,5 @@
 <?php
-namespace MiniOrange\OAuth\Helper;
+namespace M2Oidc\OAuth\Helper;
 
 use Magento\Framework\Escaper;
 

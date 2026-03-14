@@ -1,9 +1,9 @@
 <?php
 
-namespace MiniOrange\OAuth\Helper\OAuth;
+namespace M2Oidc\OAuth\Helper\OAuth;
 
-use MiniOrange\OAuth\Helper\OAuth\SAML2Utilities;
-use MiniOrange\OAuth\Helper\OAuthConstants;
+use M2Oidc\OAuth\Helper\OAuth\SAML2Utilities;
+use M2Oidc\OAuth\Helper\OAuthConstants;
 
 /**
  * This class is used to generate our AuthnRequest object.

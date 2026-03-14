@@ -1,4 +1,4 @@
-# TEST-06: Docker Compose environment for MiniOrange OIDC end-to-end / integration tests.
+# TEST-06: Docker Compose environment for M2Oidc OIDC end-to-end / integration tests.
 #
 # Services:
 #   dex      — CoreOS Dex OIDC provider (IdP)
@@ -10,17 +10,17 @@
 #   docker compose -f docker-compose.test.yml run --rm php
 #
 #   # Run only unit tests (no Dex required):
-#   docker compose -f docker-compose.test.yml run --rm php vendor/bin/phpunit --testsuite "MiniOrange OIDC Unit Tests"
+#   docker compose -f docker-compose.test.yml run --rm php vendor/bin/phpunit --testsuite "M2Oidc OIDC Unit Tests"
 #
 #   # Run only integration tests (requires Dex):
-#   docker compose -f docker-compose.test.yml run --rm php vendor/bin/phpunit --testsuite "MiniOrange OIDC Integration Tests"
+#   docker compose -f docker-compose.test.yml run --rm php vendor/bin/phpunit --testsuite "M2Oidc OIDC Integration Tests"
 #
 #   # Tear down:
 #   docker compose -f docker-compose.test.yml down -v
 #
 # Credentials (test-only — never use in production):
-#   Client ID     : miniorange-test-client
-#   Client Secret : miniorange-test-secret
+#   Client ID     : m2oidc-test-client
+#   Client Secret : m2oidc-test-secret
 #   Test user     : testuser@example.com / password: testpass
 #   Admin user    : adminuser@example.com / password: adminpass
 
@@ -74,9 +74,9 @@ services:
         environment:
             # Dex endpoint used by integration tests
             OIDC_TEST_ISSUER: "http://dex.local:5556/dex"
-            OIDC_TEST_CLIENT_ID: "miniorange-test-client"
-            OIDC_TEST_CLIENT_SECRET: "miniorange-test-secret"
-            OIDC_TEST_REDIRECT_URI: "http://localhost/mooauth/actions/readauthresponse"
+            OIDC_TEST_CLIENT_ID: "m2oidc-test-client"
+            OIDC_TEST_CLIENT_SECRET: "m2oidc-test-secret"
+            OIDC_TEST_REDIRECT_URI: "http://localhost/m2oidc/actions/readauthresponse"
         command: >
             sh -c "
                 apt-get update -q && apt-get install -y -q curl unzip &&

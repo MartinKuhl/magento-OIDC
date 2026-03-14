@@ -2,29 +2,29 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Controller\Adminhtml\Provider;
+namespace M2Oidc\OAuth\Controller\Adminhtml\Provider;
 
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
 use Magento\Framework\App\Request\DataPersistorInterface;
 use Magento\Framework\Controller\Result\Redirect;
-use MiniOrange\OAuth\Model\MiniorangeOauthClientAppsFactory;
-use MiniOrange\OAuth\Model\Provider\MappingRepository;
-use MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps as AppResource;
-use MiniOrange\OAuth\Model\ResourceModel\OauthRoleMapping as RoleMappingResource;
+use M2Oidc\OAuth\Model\MiniorangeOauthClientAppsFactory;
+use M2Oidc\OAuth\Model\Provider\MappingRepository;
+use M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps as AppResource;
+use M2Oidc\OAuth\Model\ResourceModel\OauthRoleMapping as RoleMappingResource;
 
 /**
  * Admin controller — Save OIDC Provider (MP-06).
  *
- * Route: POST /admin/mooauth/provider/save
+ * Route: POST /admin/m2oidc/provider/save
  *
  * Handles both INSERT (id=0) and UPDATE (id>0). Validates the CSRF form
  * key automatically through Magento's CSRF validation layer.
  */
 class Save extends Action implements HttpPostActionInterface
 {
-    public const string ADMIN_RESOURCE = 'MiniOrange_OAuth::oauth_settings';
+    public const string ADMIN_RESOURCE = 'M2Oidc_OAuth::oauth_settings';
 
     /** @var MiniorangeOauthClientAppsFactory */
     private readonly MiniorangeOauthClientAppsFactory $clientAppsFactory;
@@ -132,12 +132,12 @@ class Save extends Action implements HttpPostActionInterface
                 // Login options
                 'show_admin_link',
                 'show_customer_link',
-                'mo_oauth_auto_create_admin',
-                'mo_oauth_auto_create_customer',
+                'm2oidc_auto_create_admin',
+                'm2oidc_auto_create_customer',
                 'autoredirect_admin',    // Auto-redirect for admin login page
                 'autoredirect_customer', // Auto-redirect for customer login page
-                'mo_disable_non_oidc_admin_login',
-                'mo_disable_non_oidc_customer_login',
+                'm2oidc_disable_non_oidc_admin_login',
+                'm2oidc_disable_non_oidc_customer_login',
                 // Profile Sync on SSO Login
                 'sync_customer_profile_on_sso',
                 'sync_customer_address_on_sso',
@@ -152,8 +152,8 @@ class Save extends Action implements HttpPostActionInterface
 
             // Lockout-prevention: OIDC-only requires the SSO button to be shown.
             // isset() is intentional here — we check POST presence, not the value.
-            if (!isset($data['show_admin_link']) && isset($data['mo_disable_non_oidc_admin_login'])) {
-                $model->setData('mo_disable_non_oidc_admin_login', 0);
+            if (!isset($data['show_admin_link']) && isset($data['m2oidc_disable_non_oidc_admin_login'])) {
+                $model->setData('m2oidc_disable_non_oidc_admin_login', 0);
                 $this->messageManager->addWarningMessage(
                     (string) __(
                         'Admin OIDC-only login was automatically disabled because the OIDC '
@@ -162,8 +162,8 @@ class Save extends Action implements HttpPostActionInterface
                 );
             }
 
-            if (!isset($data['show_customer_link']) && isset($data['mo_disable_non_oidc_customer_login'])) {
-                $model->setData('mo_disable_non_oidc_customer_login', 0);
+            if (!isset($data['show_customer_link']) && isset($data['m2oidc_disable_non_oidc_customer_login'])) {
+                $model->setData('m2oidc_disable_non_oidc_customer_login', 0);
                 $this->messageManager->addWarningMessage(
                     (string) __(
                         'Customer OIDC-only login was automatically disabled because the OIDC '

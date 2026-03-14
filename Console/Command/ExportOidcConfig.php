@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Console\Command;
+namespace M2Oidc\OAuth\Console\Command;
 
 use Magento\Framework\App\State;
 use Magento\Framework\Encryption\EncryptorInterface;
@@ -10,9 +10,9 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use MiniOrange\OAuth\Helper\OAuthUtility;
-use MiniOrange\OAuth\Model\Provider\MappingRepository;
-use MiniOrange\OAuth\Model\ResourceModel\OauthRoleMapping as RoleMappingResource;
+use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Model\Provider\MappingRepository;
+use M2Oidc\OAuth\Model\ResourceModel\OauthRoleMapping as RoleMappingResource;
 
 /**
  * CLI command: export one or all OIDC provider configurations to JSON (FEAT-07).

@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Test\Integration;
+namespace M2Oidc\OAuth\Test\Integration;
 
 /**
  * Integration test: Dex OIDC discovery document validation (TEST-06).
  *
  * Verifies that the Dex provider is healthy and exposes all endpoints
- * that the MiniOrange OIDC module depends on.  This is the first test
+ * that the M2Oidc OIDC module depends on.  This is the first test
  * to run in CI — if it fails, all other integration tests are irrelevant.
  */
 class DexDiscoveryTest extends AbstractOidcIntegrationTest

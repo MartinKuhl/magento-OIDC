@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Ui\Component\DataProvider;
+namespace M2Oidc\OAuth\Ui\Component\DataProvider;
 
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\ResourceConnection;
@@ -12,8 +12,8 @@ use Magento\Ui\DataProvider\AbstractDataProvider;
  * UI DataProvider for the OIDC Session Activity grid.
  *
  * Executes a LEFT JOIN query across:
- *   - miniorange_oauth_user_provider  (OIDC link records)
- *   - miniorange_oauth_client_apps    (provider name)
+ *   - m2oidc_oauth_user_provider  (OIDC link records)
+ *   - m2oidc_oauth_client_apps    (provider name)
  *   - customer_entity                 (customer email)
  *   - admin_user                      (admin email + last login)
  *   - customer_log                    (customer last login)
@@ -84,8 +84,8 @@ class SessionDataProvider extends AbstractDataProvider
         }
 
         $connection        = $this->resource->getConnection();
-        $upTable           = $this->resource->getTableName('miniorange_oauth_user_provider');
-        $appsTable         = $this->resource->getTableName('miniorange_oauth_client_apps');
+        $upTable           = $this->resource->getTableName('m2oidc_oauth_user_provider');
+        $appsTable         = $this->resource->getTableName('m2oidc_oauth_client_apps');
         $ceTable           = $this->resource->getTableName('customer_entity');
         $auTable           = $this->resource->getTableName('admin_user');
         $adminSessionTable   = $this->resource->getTableName('admin_user_session');

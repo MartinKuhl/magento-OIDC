@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Setup\Patch\Schema;
+namespace M2Oidc\OAuth\Setup\Patch\Schema;
 
 use Magento\Framework\DB\Ddl\Table;
 use Magento\Framework\Setup\Patch\SchemaPatchInterface;
@@ -14,7 +14,7 @@ use Magento\Framework\Setup\SchemaSetupInterface;
  */
 class AddProfileSyncColumns implements SchemaPatchInterface
 {
-    private const string TABLE = 'miniorange_oauth_client_apps';
+    private const string TABLE = 'm2oidc_oauth_client_apps';
 
     /** New boolean columns (tinyint, default 0) */
     private const array NEW_COLUMNS = [

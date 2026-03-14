@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Observer;
+namespace M2Oidc\OAuth\Observer;
 
 use Magento\Framework\App\Request\Http as HttpRequest;
 use Magento\Framework\App\Response\Http as HttpResponse;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Message\ManagerInterface;
-use MiniOrange\OAuth\Controller\Actions\ReadAuthorizationResponse;
-use MiniOrange\OAuth\Helper\OAuthConstants;
-use MiniOrange\OAuth\Helper\OAuthUtility;
-use MiniOrange\OAuth\Helper\TestResults;
+use M2Oidc\OAuth\Controller\Actions\ReadAuthorizationResponse;
+use M2Oidc\OAuth\Helper\OAuthConstants;
+use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Helper\TestResults;
 use Psr\Log\LoggerInterface;
 
 /**

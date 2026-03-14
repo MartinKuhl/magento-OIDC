@@ -1,8 +1,8 @@
 <?php
 
-namespace MiniOrange\OAuth\Controller\Actions;
+namespace M2Oidc\OAuth\Controller\Actions;
 
-use MiniOrange\OAuth\Helper\Exception\RequiredFieldsException;
+use M2Oidc\OAuth\Helper\Exception\RequiredFieldsException;
 
 /**
  * The base action class that is inherited by each of the action
@@ -14,8 +14,8 @@ use MiniOrange\OAuth\Helper\Exception\RequiredFieldsException;
 abstract class BaseAction extends \Magento\Framework\App\Action\Action
 {
 
-    /** @var \MiniOrange\OAuth\Helper\OAuthUtility */
-    protected \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
+    /** @var \M2Oidc\OAuth\Helper\OAuthUtility */
+    protected \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility;
 
     /**
      * @var \Magento\Framework\App\Action\Context
@@ -26,11 +26,11 @@ abstract class BaseAction extends \Magento\Framework\App\Action\Action
      * Initialize base action with OAuth utility.
      *
      * @param \Magento\Framework\App\Action\Context  $context
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility  $oauthUtility
+     * @param \M2Oidc\OAuth\Helper\OAuthUtility  $oauthUtility
      */
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
-        \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility
+        \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility
     ) {
         //You can use dependency injection to get any class this observer may need.
         $this->oauthUtility = $oauthUtility;

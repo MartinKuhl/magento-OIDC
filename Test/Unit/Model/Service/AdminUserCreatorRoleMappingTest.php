@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Test\Unit\Model\Service;
+namespace M2Oidc\OAuth\Test\Unit\Model\Service;
 
 use Magento\Framework\DB\Adapter\AdapterInterface;
 use Magento\Framework\Math\Random;
@@ -11,19 +11,19 @@ use Magento\User\Model\ResourceModel\User\Collection as UserCollection;
 use Magento\User\Model\ResourceModel\User\CollectionFactory as UserCollectionFactory;
 use Magento\User\Model\User;
 use Magento\User\Model\UserFactory;
-use MiniOrange\OAuth\Helper\OAuthConstants;
-use MiniOrange\OAuth\Helper\OAuthUtility;
-use MiniOrange\OAuth\Model\Attribute\AttributeMapperInterface;
-use MiniOrange\OAuth\Model\Provider\MappingRepository;
-use MiniOrange\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
-use MiniOrange\OAuth\Model\Service\AdminUserCreator;
+use M2Oidc\OAuth\Helper\OAuthConstants;
+use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Model\Attribute\AttributeMapperInterface;
+use M2Oidc\OAuth\Model\Provider\MappingRepository;
+use M2Oidc\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
+use M2Oidc\OAuth\Model\Service\AdminUserCreator;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 /**
  * Unit tests for AdminUserCreator role-mapping fallback chain (Phase 1.1).
  *
- * @covers \MiniOrange\OAuth\Model\Service\AdminUserCreator
+ * @covers \M2Oidc\OAuth\Model\Service\AdminUserCreator
  */
 class AdminUserCreatorRoleMappingTest extends TestCase
 {

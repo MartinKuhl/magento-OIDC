@@ -1,13 +1,13 @@
 <?php
 
-namespace MiniOrange\OAuth\Helper;
+namespace M2Oidc\OAuth\Helper;
 
 /**
  * This class lists down constant values used all over our Module.
  */
 class OAuthConstants
 {
-    public const string MODULE_DIR = 'MiniOrange_OAuth';
+    public const string MODULE_DIR = 'M2Oidc_OAuth';
     public const string MODULE_TITLE = 'Authelia OIDC';
 
     //ACL Settings
@@ -23,7 +23,7 @@ class OAuthConstants
     public const string ISSUER_URL_PATH = '/';
 
     // request option parameter values
-    public const string TEST_CONFIG_OPT = 'mooauth_test';
+    public const string TEST_CONFIG_OPT = 'm2oidc_test';
 
     //database keys
 
@@ -61,7 +61,7 @@ class OAuthConstants
     public const string DISABLE_NON_OIDC_CUSTOMER_LOGIN = 'disableNonOidcCustomerLogin';
     public const string CREATEIFNOTMAP_CUSTOMER = 'createIfNotMapped';
 
-    // Per-provider SSO sync flags (stored in miniorange_oauth_client_apps)
+    // Per-provider SSO sync flags (stored in m2oidc_oauth_client_apps)
     public const string SYNC_CUSTOMER_PROFILE_ON_SSO = 'sync_customer_profile_on_sso';
     public const string SYNC_CUSTOMER_ADDRESS_ON_SSO = 'sync_customer_address_on_sso';
     public const string SYNC_CUSTOMER_GROUP_ON_SSO   = 'sync_customer_group_on_sso';
@@ -139,13 +139,13 @@ class OAuthConstants
     ];
 
     //URLs
-    public const string OAUTH_LOGIN_URL = 'mooauth/actions/sendAuthorizationRequest';
+    public const string OAUTH_LOGIN_URL = 'm2oidc/actions/sendAuthorizationRequest';
 
     //images
     public const string IMAGE_RIGHT = 'right.png';
     public const string IMAGE_WRONG = 'wrong.png';
 
-    public const string CALLBACK_URL = 'mooauth/actions/ReadAuthorizationResponse';
+    public const string CALLBACK_URL = 'm2oidc/actions/ReadAuthorizationResponse';
     public const string CODE = 'code';
     public const string GRANT_TYPE = 'authorization_code';
 
@@ -159,8 +159,8 @@ class OAuthConstants
     public const string HTTP_REDIRECT = 'HttpRedirect';
 
     //Registration Status
-    public const string STATUS_VERIFY_LOGIN = "MO_VERIFY_CUSTOMER";
-    public const string STATUS_COMPLETE_LOGIN = "MO_VERIFIED";
+    public const string STATUS_VERIFY_LOGIN = "M2OIDC_VERIFY_CUSTOMER";
+    public const string STATUS_COMPLETE_LOGIN = "M2OIDC_VERIFIED";
 
     //plugin constants
     public const string VERSION = "v4.2.0";

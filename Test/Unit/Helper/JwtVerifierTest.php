@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Test\Unit\Helper;
+namespace M2Oidc\OAuth\Test\Unit\Helper;
 
 use Magento\Framework\App\CacheInterface;
 use Magento\Framework\HTTP\Adapter\Curl as CurlAdapter;
 use Magento\Framework\HTTP\Adapter\CurlFactory;
-use MiniOrange\OAuth\Helper\JwtVerifier;
-use MiniOrange\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Helper\JwtVerifier;
+use M2Oidc\OAuth\Helper\OAuthUtility;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -18,7 +18,7 @@ use PHPUnit\Framework\TestCase;
  * Uses real RSA-2048 key pairs generated in setUpBeforeClass() so that
  * openssl_verify() is exercised end-to-end without faking cryptographic results.
  *
- * @covers \MiniOrange\OAuth\Helper\JwtVerifier
+ * @covers \M2Oidc\OAuth\Helper\JwtVerifier
  */
 class JwtVerifierTest extends TestCase
 {

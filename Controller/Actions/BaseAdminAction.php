@@ -1,9 +1,9 @@
 <?php
 
-namespace MiniOrange\OAuth\Controller\Actions;
+namespace M2Oidc\OAuth\Controller\Actions;
 
-use MiniOrange\OAuth\Helper\Exception\RequiredFieldsException;
-use MiniOrange\OAuth\Helper\Exception\SupportQueryRequiredFieldsException;
+use M2Oidc\OAuth\Helper\Exception\RequiredFieldsException;
+use M2Oidc\OAuth\Helper\Exception\SupportQueryRequiredFieldsException;
 
 /**
  * The base action class that is inherited by each of the admin action
@@ -19,8 +19,8 @@ use MiniOrange\OAuth\Helper\Exception\SupportQueryRequiredFieldsException;
 abstract class BaseAdminAction extends \Magento\Backend\App\Action
 {
 
-    /** @var \MiniOrange\OAuth\Helper\OAuthUtility */
-    protected \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
+    /** @var \M2Oidc\OAuth\Helper\OAuthUtility */
+    protected \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility;
 
     /**
      * @var \Magento\Backend\App\Action\Context
@@ -48,14 +48,14 @@ abstract class BaseAdminAction extends \Magento\Backend\App\Action
      *
      * @param \Magento\Backend\App\Action\Context             $context
      * @param \Magento\Framework\View\Result\PageFactory      $resultPageFactory
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility           $oauthUtility
+     * @param \M2Oidc\OAuth\Helper\OAuthUtility           $oauthUtility
      * @param \Magento\Framework\Message\ManagerInterface     $messageManager
      * @param \Psr\Log\LoggerInterface                        $logger
      */
     public function __construct(
         \Magento\Backend\App\Action\Context $context,
         \Magento\Framework\View\Result\PageFactory $resultPageFactory,
-        \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
+        \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility,
         \Magento\Framework\Message\ManagerInterface $messageManager,
         \Psr\Log\LoggerInterface $logger
     ) {

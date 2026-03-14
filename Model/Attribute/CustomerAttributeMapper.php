@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Model\Attribute;
+namespace M2Oidc\OAuth\Model\Attribute;
 
-use MiniOrange\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Helper\OAuthUtility;
 use Magento\Directory\Model\ResourceModel\Country\CollectionFactory as CountryCollectionFactory;
 
 /**

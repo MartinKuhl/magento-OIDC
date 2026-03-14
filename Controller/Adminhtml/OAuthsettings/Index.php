@@ -1,17 +1,17 @@
 <?php
 
-namespace MiniOrange\OAuth\Controller\Adminhtml\OAuthsettings;
+namespace M2Oidc\OAuth\Controller\Adminhtml\OAuthsettings;
 
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpGetActionInterface;
 use Magento\Framework\App\Action\HttpPostActionInterface;
-use MiniOrange\OAuth\Helper\OAuthConstants;
-use MiniOrange\OAuth\Helper\OAuthMessages;
+use M2Oidc\OAuth\Helper\OAuthConstants;
+use M2Oidc\OAuth\Helper\OAuthMessages;
 
-use MiniOrange\OAuth\Controller\Actions\BaseAdminAction;
-use MiniOrange\OAuth\Helper\Curl;
-use MiniOrange\OAuth\Model\MiniorangeOauthClientAppsFactory;
-use MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps as AppResource;
+use M2Oidc\OAuth\Controller\Actions\BaseAdminAction;
+use M2Oidc\OAuth\Helper\Curl;
+use M2Oidc\OAuth\Model\MiniorangeOauthClientAppsFactory;
+use M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps as AppResource;
 
 /**
  * OAuth Settings admin controller.
@@ -38,7 +38,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
      *
      * @param \Magento\Backend\App\Action\Context              $context
      * @param \Magento\Framework\View\Result\PageFactory       $resultPageFactory
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility            $oauthUtility
+     * @param \M2Oidc\OAuth\Helper\OAuthUtility            $oauthUtility
      * @param \Magento\Framework\Message\ManagerInterface      $messageManager
      * @param \Psr\Log\LoggerInterface                         $logger
      * @param Curl                                             $curl
@@ -48,7 +48,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
     public function __construct(
         \Magento\Backend\App\Action\Context $context,
         \Magento\Framework\View\Result\PageFactory $resultPageFactory,
-        \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
+        \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility,
         \Magento\Framework\Message\ManagerInterface $messageManager,
         \Psr\Log\LoggerInterface $logger,
         Curl $curl,
@@ -79,10 +79,10 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
                 $isProviderContext = (int) ($params['provider_id'] ?? 0) > 0;
 
                 // Required fields common to all modes; secret omitted in provider-context
-                $requiredBase = ['mo_oauth_app_name' => $params, 'mo_oauth_client_id' => $params,
-                                 'mo_oauth_scope' => $params];
+                $requiredBase = ['m2oidc_app_name' => $params, 'm2oidc_client_id' => $params,
+                                 'm2oidc_scope' => $params];
                 if (!$isProviderContext) {
-                    $requiredBase['mo_oauth_client_secret'] = $params;
+                    $requiredBase['m2oidc_client_secret'] = $params;
                 }
 
                 //Store radio button value in $radiostate parameter.
@@ -126,27 +126,27 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
                                 $this->checkIfRequiredFieldsEmpty($requiredBase);
                                 // Validate discovery document has required OIDC endpoints
                                 if ($obj !== null && isset($obj->authorization_endpoint, $obj->token_endpoint)) {
-                                    $mo_oauth_authorize_url   = (string) $obj->authorization_endpoint;
-                                    $mo_oauth_accesstoken_url = (string) $obj->token_endpoint;
-                                    $mo_oauth_getuserinfo_url = isset($obj->userinfo_endpoint)
+                                    $m2oidc_authorize_url   = (string) $obj->authorization_endpoint;
+                                    $m2oidc_accesstoken_url = (string) $obj->token_endpoint;
+                                    $m2oidc_getuserinfo_url = isset($obj->userinfo_endpoint)
                                         ? (string) $obj->userinfo_endpoint : '';
-                                    $mo_oauth_issuer          = isset($obj->issuer)
+                                    $m2oidc_issuer          = isset($obj->issuer)
                                         ? (string) $obj->issuer : '';
 
                                     // Store endpoint parameters for saving to database
-                                    $params['mo_oauth_authorize_url']    = trim($mo_oauth_authorize_url);
-                                    $params['mo_oauth_accesstoken_url']  = trim($mo_oauth_accesstoken_url);
-                                    $params['mo_oauth_getuserinfo_url']  = trim($mo_oauth_getuserinfo_url);
-                                    $params['mo_oauth_issuer']           = trim($mo_oauth_issuer);
-                                    $params['mo_oauth_endsession_url']      = isset($obj->end_session_endpoint)
+                                    $params['m2oidc_authorize_url']    = trim($m2oidc_authorize_url);
+                                    $params['m2oidc_accesstoken_url']  = trim($m2oidc_accesstoken_url);
+                                    $params['m2oidc_getuserinfo_url']  = trim($m2oidc_getuserinfo_url);
+                                    $params['m2oidc_issuer']           = trim($m2oidc_issuer);
+                                    $params['m2oidc_endsession_url']      = isset($obj->end_session_endpoint)
                                         ? trim((string) $obj->end_session_endpoint) : '';
-                                    $params['mo_oauth_revocation_endpoint'] = isset($obj->revocation_endpoint)
+                                    $params['m2oidc_revocation_endpoint'] = isset($obj->revocation_endpoint)
                                         ? trim((string) $obj->revocation_endpoint) : '';
 
                                     $endpointRequired = array_merge(
                                         $requiredBase,
-                                        ['mo_oauth_authorize_url' => $params,
-                                         'mo_oauth_accesstoken_url' => $params]
+                                        ['m2oidc_authorize_url' => $params,
+                                         'm2oidc_accesstoken_url' => $params]
                                     );
                                     $this->checkIfRequiredFieldsEmpty($endpointRequired);
                                     $this->processValuesAndSaveData($params);
@@ -175,8 +175,8 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
                     $this->checkIfRequiredFieldsEmpty(
                         array_merge(
                             $requiredBase,
-                            ['mo_oauth_authorize_url' => $params,
-                             'mo_oauth_accesstoken_url' => $params]
+                            ['m2oidc_authorize_url' => $params,
+                             'm2oidc_accesstoken_url' => $params]
                         )
                     );
                     $this->processValuesAndSaveData($params);
@@ -202,7 +202,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
 
         // generate page
         $resultPage = $this->resultPageFactory->create();
-        $resultPage->getConfig()->getTitle()->prepend(__('MiniOrange OAuth'));
+        $resultPage->getConfig()->getTitle()->prepend(__('M2Oidc OAuth'));
         return $resultPage;
     }
 
@@ -210,7 +210,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
      * Process Values being submitted and save data in the database.
      *
      * When provider_id is present in $params, saves directly to that provider's
-     * row in miniorange_oauth_client_apps (provider-context mode).
+     * row in m2oidc_oauth_client_apps (provider-context mode).
      * Otherwise falls back to the legacy single-provider behaviour.
      *
      * @param array $params
@@ -219,17 +219,17 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
     {
         $providerId = (int) ($params['provider_id'] ?? 0);
 
-        $mo_oauth_app_name            = trim((string) ($params['mo_oauth_app_name'] ?? ''));
-        $mo_oauth_client_id           = trim((string) ($params['mo_oauth_client_id'] ?? ''));
-        $mo_oauth_client_secret       = trim((string) ($params['mo_oauth_client_secret'] ?? ''));
-        $mo_oauth_scope               = trim((string) ($params['mo_oauth_scope'] ?? ''));
-        $mo_oauth_authorize_url       = trim((string) ($params['mo_oauth_authorize_url'] ?? ''));
-        $mo_oauth_accesstoken_url     = trim((string) ($params['mo_oauth_accesstoken_url'] ?? ''));
-        $mo_oauth_getuserinfo_url     = trim((string) ($params['mo_oauth_getuserinfo_url'] ?? ''));
-        $mo_oauth_well_known_config_url = trim((string) ($params['endpoint_url'] ?? ''));
-        $mo_oauth_issuer              = trim((string) ($params['mo_oauth_issuer'] ?? ''));
-        $mo_oauth_endsession_url      = trim((string) ($params['mo_oauth_endsession_url'] ?? ''));
-        $mo_oauth_revocation_endpoint = trim((string) ($params['mo_oauth_revocation_endpoint'] ?? ''));
+        $m2oidc_app_name            = trim((string) ($params['m2oidc_app_name'] ?? ''));
+        $m2oidc_client_id           = trim((string) ($params['m2oidc_client_id'] ?? ''));
+        $m2oidc_client_secret       = trim((string) ($params['m2oidc_client_secret'] ?? ''));
+        $m2oidc_scope               = trim((string) ($params['m2oidc_scope'] ?? ''));
+        $m2oidc_authorize_url       = trim((string) ($params['m2oidc_authorize_url'] ?? ''));
+        $m2oidc_accesstoken_url     = trim((string) ($params['m2oidc_accesstoken_url'] ?? ''));
+        $m2oidc_getuserinfo_url     = trim((string) ($params['m2oidc_getuserinfo_url'] ?? ''));
+        $m2oidc_well_known_config_url = trim((string) ($params['endpoint_url'] ?? ''));
+        $m2oidc_issuer              = trim((string) ($params['m2oidc_issuer'] ?? ''));
+        $m2oidc_endsession_url      = trim((string) ($params['m2oidc_endsession_url'] ?? ''));
+        $m2oidc_revocation_endpoint = trim((string) ($params['m2oidc_revocation_endpoint'] ?? ''));
         $send_header                  = isset($params['send_header']);
         $send_body                    = isset($params['send_body']);
 
@@ -241,53 +241,53 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
                 $this->messageManager->addErrorMessage((string) __('Provider not found.'));
                 return;
             }
-            $model->setData('app_name', $mo_oauth_app_name);
-            $model->setData('clientID', $mo_oauth_client_id);
-            $model->setData('scope', $mo_oauth_scope);
-            $model->setData('authorize_endpoint', $mo_oauth_authorize_url);
-            $model->setData('access_token_endpoint', $mo_oauth_accesstoken_url);
-            $model->setData('user_info_endpoint', $mo_oauth_getuserinfo_url);
-            $model->setData('well_known_config_url', $mo_oauth_well_known_config_url);
-            $model->setData('issuer', $mo_oauth_issuer);
-            $model->setData('endsession_endpoint', $mo_oauth_endsession_url);
-            if ($mo_oauth_revocation_endpoint !== '') {
-                $model->setData('revocation_endpoint', $mo_oauth_revocation_endpoint);
+            $model->setData('app_name', $m2oidc_app_name);
+            $model->setData('clientID', $m2oidc_client_id);
+            $model->setData('scope', $m2oidc_scope);
+            $model->setData('authorize_endpoint', $m2oidc_authorize_url);
+            $model->setData('access_token_endpoint', $m2oidc_accesstoken_url);
+            $model->setData('user_info_endpoint', $m2oidc_getuserinfo_url);
+            $model->setData('well_known_config_url', $m2oidc_well_known_config_url);
+            $model->setData('issuer', $m2oidc_issuer);
+            $model->setData('endsession_endpoint', $m2oidc_endsession_url);
+            if ($m2oidc_revocation_endpoint !== '') {
+                $model->setData('revocation_endpoint', $m2oidc_revocation_endpoint);
             }
             $model->setData('values_in_header', (int) $send_header);
             $model->setData('values_in_body', (int) $send_body);
-            if ($mo_oauth_client_secret !== '') {
-                $model->setData('client_secret', $mo_oauth_client_secret);
+            if ($m2oidc_client_secret !== '') {
+                $model->setData('client_secret', $m2oidc_client_secret);
             }
             $this->appResource->save($model);
             return;
         }
 
         // --- Legacy mode: single provider, delete all + recreate ---
-        $mo_oauth_grant_type = OAuthConstants::GRANT_TYPE;
+        $m2oidc_grant_type = OAuthConstants::GRANT_TYPE;
 
-        $this->oauthUtility->getClientDetailsByAppName($mo_oauth_app_name);
+        $this->oauthUtility->getClientDetailsByAppName($m2oidc_app_name);
 
         // Remove all previous records so at a time only 1 app_name is shown (free version)
         $this->oauthUtility->deleteAllRecords();
 
         // Store in custom table
         $this->oauthUtility->setOAuthClientApps(
-            $mo_oauth_app_name,
-            $mo_oauth_client_id,
-            $mo_oauth_client_secret,
-            $mo_oauth_scope,
-            $mo_oauth_authorize_url,
-            $mo_oauth_accesstoken_url,
-            $mo_oauth_getuserinfo_url,
-            $mo_oauth_well_known_config_url,
-            $mo_oauth_grant_type,
+            $m2oidc_app_name,
+            $m2oidc_client_id,
+            $m2oidc_client_secret,
+            $m2oidc_scope,
+            $m2oidc_authorize_url,
+            $m2oidc_accesstoken_url,
+            $m2oidc_getuserinfo_url,
+            $m2oidc_well_known_config_url,
+            $m2oidc_grant_type,
             $send_header,
             $send_body,
-            $mo_oauth_issuer,
-            $mo_oauth_endsession_url
+            $m2oidc_issuer,
+            $m2oidc_endsession_url
         );
 
-        $this->oauthUtility->setStoreConfig(OAuthConstants::APP_NAME, $mo_oauth_app_name);
+        $this->oauthUtility->setStoreConfig(OAuthConstants::APP_NAME, $m2oidc_app_name);
         $this->oauthUtility->setStoreConfig(OAuthConstants::SHOW_CUSTOMER_LINK, 1);
 
         $adminUser = $this->oauthUtility->getCurrentAdminUser();

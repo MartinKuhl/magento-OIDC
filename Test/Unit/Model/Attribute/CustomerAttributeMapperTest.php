@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Test\Unit\Model\Attribute;
+namespace M2Oidc\OAuth\Test\Unit\Model\Attribute;
 
 use Magento\Directory\Model\Country;
 use Magento\Directory\Model\ResourceModel\Country\Collection as CountryCollection;
 use Magento\Directory\Model\ResourceModel\Country\CollectionFactory as CountryCollectionFactory;
-use MiniOrange\OAuth\Helper\OAuthUtility;
-use MiniOrange\OAuth\Model\Attribute\CustomerAttributeMapper;
+use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Model\Attribute\CustomerAttributeMapper;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 /**
  * Unit tests for CustomerAttributeMapper (Phase 3.2).
  *
- * @covers \MiniOrange\OAuth\Model\Attribute\CustomerAttributeMapper
+ * @covers \M2Oidc\OAuth\Model\Attribute\CustomerAttributeMapper
  */
 class CustomerAttributeMapperTest extends TestCase
 {

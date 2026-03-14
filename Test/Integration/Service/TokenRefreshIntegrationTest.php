@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Test\Integration\Service;
+namespace M2Oidc\OAuth\Test\Integration\Service;
 
-use MiniOrange\OAuth\Test\Integration\AbstractOidcIntegrationTest;
+use M2Oidc\OAuth\Test\Integration\AbstractOidcIntegrationTest;
 
 /**
  * Integration tests for FEAT-03: Token Refresh Service (TEST-06).

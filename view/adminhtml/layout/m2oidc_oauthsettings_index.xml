@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
     <head>
-        <css src="MiniOrange_OAuth::css/adminSettings.css"/>
+        <css src="M2Oidc_OAuth::css/adminSettings.css"/>
     </head>
     <body>
         <!-- 
@@ -9,8 +9,8 @@
         Calls our Admin Block for some common functionality.
         -->
         <referenceContainer name="content">
-            <block class="MiniOrange\OAuth\Block\OAuth"
-                name="miniorange.oauth.admin.oauthsettings"
+            <block class="M2Oidc\OAuth\Block\OAuth"
+                name="m2oidc.oauth.admin.oauthsettings"
                 template="oauthsettings.phtml" />
         </referenceContainer>
         <!-- 
@@ -18,7 +18,7 @@
         javascript file to all of our pages
         -->
         <referenceContainer name="before.body.end">
-            <block class="MiniOrange\OAuth\Block\OAuth" 
+            <block class="M2Oidc\OAuth\Block\OAuth" 
                 template="js.phtml" 
                 name="before_body_js"/>
         </referenceContainer>

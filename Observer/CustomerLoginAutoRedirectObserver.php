@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Observer;
+namespace M2Oidc\OAuth\Observer;
 
 use Magento\Customer\Model\Session as CustomerSession;
 use Magento\Framework\App\ActionFlag;
@@ -12,7 +12,7 @@ use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
 use Magento\Framework\Stdlib\CookieManagerInterface;
 use Magento\Framework\UrlInterface;
-use MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps\CollectionFactory;
+use M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps\CollectionFactory;
 
 /**
  * Redirects unauthenticated customers to the IdP authorize URL
@@ -95,7 +95,7 @@ class CustomerLoginAutoRedirectObserver implements ObserverInterface
         $provider = $collection->getFirstItem();
 
         // Both flags must be active: non-OIDC login disabled AND auto-redirect enabled
-        if (!(int) $provider->getData('mo_disable_non_oidc_customer_login')
+        if (!(int) $provider->getData('m2oidc_disable_non_oidc_customer_login')
             || !(int) $provider->getData('autoredirect_customer')
         ) {
             return;
@@ -105,7 +105,7 @@ class CustomerLoginAutoRedirectObserver implements ObserverInterface
         // Set loop guard BEFORE redirect so it is available on the way back.
         $this->customerSession->setData(self::SESSION_GUARD_KEY, true);
 
-        $authorizeUrl = $this->url->getUrl('mooauth/actions/sendauthorizationrequest', [
+        $authorizeUrl = $this->url->getUrl('m2oidc/actions/sendauthorizationrequest', [
             'provider_id' => $provider->getId(),
         ]);
 

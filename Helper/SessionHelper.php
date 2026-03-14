@@ -1,5 +1,5 @@
 <?php
-namespace MiniOrange\OAuth\Helper;
+namespace M2Oidc\OAuth\Helper;
 
 use Magento\Backend\Model\UrlInterface as BackendUrlInterface;
 use Magento\Framework\Stdlib\CookieManagerInterface;
@@ -7,7 +7,7 @@ use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
 use Magento\Framework\Stdlib\Cookie\PublicCookieMetadata;
 
 /**
- * Session handler plugin for miniOrange OAuth SSO
+ * Session handler plugin for m2Oidc OAuth SSO
  * This class configures the PHP session for cross-origin usage
  *
  * Compatible with Magento 2.4.7 - 2.4.8-p3
@@ -26,8 +26,8 @@ class SessionHelper
     /** @var \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory */
     private readonly \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory;
 
-    /** @var \MiniOrange\OAuth\Helper\OAuthUtility */
-    private readonly \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
+    /** @var \M2Oidc\OAuth\Helper\OAuthUtility */
+    private readonly \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility;
 
     /** @var BackendUrlInterface */
     private readonly BackendUrlInterface $backendUrl;

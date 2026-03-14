@@ -1,6 +1,6 @@
 <?php
 
-namespace MiniOrange\OAuth\Helper;
+namespace M2Oidc\OAuth\Helper;
 
 use Magento\Framework\App\CacheInterface;
 
@@ -13,12 +13,12 @@ use Magento\Framework\App\CacheInterface;
  */
 class OAuthSecurityHelper
 {
-    private const NONCE_CACHE_PREFIX = 'mooauth_nonce_';
+    private const NONCE_CACHE_PREFIX = 'm2oidc_nonce_';
     /**
      * Cache prefix for customer OIDC login nonces
      */
-    private const CUSTOMER_NONCE_CACHE_PREFIX = 'mooauth_custnonce_';
-    private const STATE_CACHE_PREFIX = 'mooauth_state_';
+    private const CUSTOMER_NONCE_CACHE_PREFIX = 'm2oidc_custnonce_';
+    private const STATE_CACHE_PREFIX = 'm2oidc_state_';
     private const NONCE_TTL = 120;     // 2 minutes
     private const STATE_TTL = 600;     // 10 minutes
 
@@ -26,7 +26,7 @@ class OAuthSecurityHelper
      * Cache prefix for ephemeral OIDC auth tokens (C-01).
      * Key: hash('sha256', token) → value: email address.
      */
-    private const OIDC_AUTH_TOKEN_PREFIX = 'mooauth_authtoken_';
+    private const OIDC_AUTH_TOKEN_PREFIX = 'm2oidc_authtoken_';
     /** TTL for ephemeral OIDC auth tokens: long enough to survive a single login round-trip. */
     private const OIDC_AUTH_TOKEN_TTL = 120; // 2 minutes
 
@@ -38,7 +38,7 @@ class OAuthSecurityHelper
     private const OIDC_AUTH_TOKEN_MARKER = 'OIDC_';
 
     /** Cache prefix for per-flow OIDC id_token nonces (H-01). */
-    private const OIDC_NONCE_CACHE_PREFIX = 'mooauth_oidcnonce_';
+    private const OIDC_NONCE_CACHE_PREFIX = 'm2oidc_oidcnonce_';
     /** TTL matches STATE_TTL so nonce stays available until state is consumed. */
     private const OIDC_NONCE_TTL = 600; // 10 minutes
 

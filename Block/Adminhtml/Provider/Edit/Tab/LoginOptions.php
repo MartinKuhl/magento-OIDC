@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Block\Adminhtml\Provider\Edit\Tab;
+namespace M2Oidc\OAuth\Block\Adminhtml\Provider\Edit\Tab;
 
 use Magento\Backend\Block\Template;
 use Magento\Backend\Block\Template\Context;
 use Magento\Backend\Block\Widget\Tab\TabInterface;
 use Magento\Framework\Phrase;
 use Magento\Framework\Registry;
-use MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps\CollectionFactory;
+use M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps\CollectionFactory;
 
 /**
  * Login Options tab — SSO button visibility, auto-creation,
@@ -20,7 +20,7 @@ use MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps\CollectionFac
 class LoginOptions extends Template implements TabInterface
 {
     /** @var string */
-    protected $_template = 'MiniOrange_OAuth::provider/tab/loginoptions.phtml';
+    protected $_template = 'M2Oidc_OAuth::provider/tab/loginoptions.phtml';
 
     /**
      * @psalm-suppress PropertyNotSetInConstructor
@@ -150,7 +150,7 @@ class LoginOptions extends Template implements TabInterface
      */
     public function getAutoCreateAdmin(): bool
     {
-        return $this->providerVal('mo_oauth_auto_create_admin');
+        return $this->providerVal('m2oidc_auto_create_admin');
     }
 
     /**
@@ -158,7 +158,7 @@ class LoginOptions extends Template implements TabInterface
      */
     public function getAutoCreateCustomer(): bool
     {
-        return $this->providerVal('mo_oauth_auto_create_customer');
+        return $this->providerVal('m2oidc_auto_create_customer');
     }
 
     // ── Login Restrictions ───────────────────────────────────
@@ -167,7 +167,7 @@ class LoginOptions extends Template implements TabInterface
      */
     public function getDisableNonOidcAdmin(): bool
     {
-        return $this->providerVal('mo_disable_non_oidc_admin_login');
+        return $this->providerVal('m2oidc_disable_non_oidc_admin_login');
     }
 
     /**
@@ -175,7 +175,7 @@ class LoginOptions extends Template implements TabInterface
      */
     public function getDisableNonOidcCustomer(): bool
     {
-        return $this->providerVal('mo_disable_non_oidc_customer_login');
+        return $this->providerVal('m2oidc_disable_non_oidc_customer_login');
     }
 
     // ── Auto Redirect ────────────────────────────────────────

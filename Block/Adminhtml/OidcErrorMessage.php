@@ -1,5 +1,5 @@
 <?php
-namespace MiniOrange\OAuth\Block\Adminhtml;
+namespace M2Oidc\OAuth\Block\Adminhtml;
 
 use Magento\Framework\View\Element\Template;
 use Magento\Backend\Block\Template\Context;

@@ -1,17 +1,17 @@
 <?php
-namespace MiniOrange\OAuth\Controller\Actions;
+namespace M2Oidc\OAuth\Controller\Actions;
 
-use MiniOrange\OAuth\Helper\Exception\IncorrectUserInfoDataException;
-use MiniOrange\OAuth\Helper\OAuthConstants;
+use M2Oidc\OAuth\Helper\Exception\IncorrectUserInfoDataException;
+use M2Oidc\OAuth\Helper\OAuthConstants;
 
 /**
  * Backwards-compatible shim for older flow.
  *
  * @deprecated This controller has been superseded by the service layer
  *             and `CheckAttributeMappingAction`.
- *             Use `\MiniOrange\OAuth\Model\Service\OidcAuthenticationService`
+ *             Use `\M2Oidc\OAuth\Model\Service\OidcAuthenticationService`
  *             together with `CheckAttributeMappingAction` instefinal ad.
- * @see        \MiniOrange\OAuth\Model\Service\OidcAuthenticationService
+ * @see        \M2Oidc\OAuth\Model\Service\OidcAuthenticationService
  * @psalm-suppress ImplicitToStringCast Magento's __() returns Phrase with __toString()
  */
 class ProcessResponseAction extends BaseAction
@@ -21,20 +21,20 @@ class ProcessResponseAction extends BaseAction
      */
     private $userInfoResponse;
 
-    /** @var \MiniOrange\OAuth\Controller\Actions\CheckAttributeMappingAction */
-    private readonly \MiniOrange\OAuth\Controller\Actions\CheckAttributeMappingAction $attrMappingAction;
+    /** @var \M2Oidc\OAuth\Controller\Actions\CheckAttributeMappingAction */
+    private readonly \M2Oidc\OAuth\Controller\Actions\CheckAttributeMappingAction $attrMappingAction;
 
     /**
      * Initialize process response action.
      *
      * @param \Magento\Framework\App\Action\Context                              $context
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility                              $oauthUtility
-     * @param \MiniOrange\OAuth\Controller\Actions\CheckAttributeMappingAction   $attrMappingAction
+     * @param \M2Oidc\OAuth\Helper\OAuthUtility                              $oauthUtility
+     * @param \M2Oidc\OAuth\Controller\Actions\CheckAttributeMappingAction   $attrMappingAction
      */
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
-        \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
-        \MiniOrange\OAuth\Controller\Actions\CheckAttributeMappingAction $attrMappingAction
+        \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility,
+        \M2Oidc\OAuth\Controller\Actions\CheckAttributeMappingAction $attrMappingAction
     ) {
         //You can use dependency injection to get any class this observer may need.
         $this->attrMappingAction = $attrMappingAction;

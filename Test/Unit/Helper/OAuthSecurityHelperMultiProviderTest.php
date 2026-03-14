@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Test\Unit\Helper;
+namespace M2Oidc\OAuth\Test\Unit\Helper;
 
 use Magento\Framework\App\CacheInterface;
-use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
-use MiniOrange\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Helper\OAuthSecurityHelper;
+use M2Oidc\OAuth\Helper\OAuthUtility;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -21,7 +21,7 @@ use PHPUnit\Framework\TestCase;
  *  - Round-trip (encode → decode) preserves all fields including providerId
  *  - Backward-compat: state encoded without provider_id still decodes cleanly
  *
- * @covers \MiniOrange\OAuth\Helper\OAuthSecurityHelper
+ * @covers \M2Oidc\OAuth\Helper\OAuthSecurityHelper
  */
 class OAuthSecurityHelperMultiProviderTest extends TestCase
 {

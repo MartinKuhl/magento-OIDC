@@ -347,7 +347,7 @@ jobs:
         run: |
           set -o pipefail
           vendor/bin/phpunit --configuration phpunit.xml \
-            --testsuite "MiniOrange OIDC Unit Tests" \
+            --testsuite "M2Oidc OIDC Unit Tests" \
             --log-junit reports/phpunit-unit-php${{ matrix.php-version }}.xml \
             2>&1 | tee reports/phpunit-unit-php${{ matrix.php-version }}.txt
 
@@ -434,7 +434,7 @@ jobs:
         run: |
           set -o pipefail
           vendor/bin/phpunit --configuration phpunit.xml \
-            --testsuite "MiniOrange OIDC Integration Tests" \
+            --testsuite "M2Oidc OIDC Integration Tests" \
             --log-junit reports/phpunit-integration.xml \
             2>&1 | tee reports/phpunit-integration.txt
 

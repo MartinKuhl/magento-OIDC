@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Controller\Actions;
+namespace M2Oidc\OAuth\Controller\Actions;
 
 use Magento\Framework\App\Action\HttpPostActionInterface;
 use Magento\Framework\App\CsrfAwareActionInterface;
@@ -11,14 +11,14 @@ use Magento\Framework\App\RequestInterface;
 use Magento\Framework\App\ResponseInterface;
 use Magento\Framework\Controller\Result\JsonFactory;
 use Magento\Framework\Session\SessionManagerInterface;
-use MiniOrange\OAuth\Helper\JwtVerifier;
-use MiniOrange\OAuth\Helper\OAuthUtility;
-use MiniOrange\OAuth\Model\Service\OidcSessionRegistry;
+use M2Oidc\OAuth\Helper\JwtVerifier;
+use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Model\Service\OidcSessionRegistry;
 
 /**
  * Back-channel (server-to-server) OIDC logout endpoint (FEAT-02).
  *
- * Route: POST /mooauth/actions/backchannel-logout
+ * Route: POST /m2oidc/actions/backchannel-logout
  *
  * The IdP calls this endpoint when a user's SSO session is terminated.
  * It validates the logout token (RFC 9068 / OIDC Back-Channel Logout 1.0),

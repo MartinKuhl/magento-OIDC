@@ -1,14 +1,14 @@
 <?xml version="1.0"?>
 <!--
-    Layout for the OIDC Provider management list (mooauth/provider/index).
-    Renders the Magento UI Grid component (mooauth_provider_listing).
+    Layout for the OIDC Provider management list (m2oidc/provider/index).
+    Renders the Magento UI Grid component (m2oidc_provider_listing).
 -->
 <page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
       xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
     <update handle="styles"/>
     <body>
         <referenceContainer name="content">
-            <uiComponent name="mooauth_provider_listing"/>
+            <uiComponent name="m2oidc_provider_listing"/>
         </referenceContainer>
     </body>
 </page>

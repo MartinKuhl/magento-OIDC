@@ -1,8 +1,8 @@
 <?php
-namespace MiniOrange\OAuth\Logger;
+namespace M2Oidc\OAuth\Logger;
 
 /**
- * Custom Logger for MiniOrange OAuth module.
+ * Custom Logger for M2Oidc OAuth module.
  *
  * Magento's logging architecture requires extending Monolog\Logger.
  * Monolog v3 marks Logger as @final, but Magento's DI system depends

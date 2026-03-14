@@ -1,24 +1,24 @@
 <?php
 
-namespace MiniOrange\OAuth\Controller\Adminhtml\Signinsettings;
+namespace M2Oidc\OAuth\Controller\Adminhtml\Signinsettings;
 
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpGetActionInterface;
-use MiniOrange\OAuth\Helper\OAuthConstants;
-use MiniOrange\OAuth\Helper\OAuthMessages;
+use M2Oidc\OAuth\Helper\OAuthConstants;
+use M2Oidc\OAuth\Helper\OAuthMessages;
 
-use MiniOrange\OAuth\Controller\Actions\BaseAdminAction;
+use M2Oidc\OAuth\Controller\Actions\BaseAdminAction;
 use Magento\Framework\App\Action\HttpPostActionInterface;
 use Magento\Framework\App\Filesystem\DirectoryList;
 use Magento\Framework\Controller\ResultFactory;
 use Magento\Framework\View\Result\PageFactory;
 use Magento\Customer\Model\ResourceModel\Group\Collection;
 use Magento\Framework\Message\ManagerInterface;
-use MiniOrange\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Helper\OAuthUtility;
 use Psr\Log\LoggerInterface;
 
 /**
- * This class handles the action for endpoint: mooauth/signinsettings/Index
+ * This class handles the action for endpoint: m2oidc/signinsettings/Index
  * (Miscellaneous page — Debug Logs + Import/Export).
  *
  * Login / Logout Options have moved to the per-provider Login Options tab
@@ -279,7 +279,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
      */
     private function handleDownloadLogs()
     {
-        $fileName = "mo_oauth.log";
+        $fileName = "M2Oidc.log";
         $filePath = '../var/log/' . $fileName;
         $content = [
             'type' => 'filename',

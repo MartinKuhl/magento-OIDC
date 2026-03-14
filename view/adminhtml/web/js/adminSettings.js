@@ -32,8 +32,8 @@ require(['jquery'], function($){
             $m('#idpsetuplink').css('display','inline');
             $m('#idpsetuplink').attr('href',selectedIdp);
         });
-        $m("#mo_saml_add_shortcode").change(function(){
-            $m("#mo_saml_add_shortcode_steps").slideToggle("slow");
+        $m("#m2oidc_saml_add_shortcode").change(function(){
+            $m("#m2oidc_saml_add_shortcode_steps").slideToggle("slow");
         });
         $m('#error-cancel').click(function() {
             $error = "";
@@ -68,17 +68,17 @@ function voiddisplay($href) {
     $m($href).css("display", "block");
 }
 
-function mosp_valid(f) {
+function m2oidc_valid(f) {
     !(/^[a-zA-Z?,.\(\)\/@ 0-9]*$/).test(f.value) ? f.value = f.value.replace(/[^a-zA-Z?,.\(\)\/@ 0-9]/, '') : null;
 }
 
 function showTestWindow() {
-    var myWindow = window.open(testURL + "?option=mooauth_test", "TEST OAUTH", "scrollbars=1 width=800, height=600");
+    var myWindow = window.open(testURL + "?option=m2oidc_test", "TEST OAUTH", "scrollbars=1 width=800, height=600");
 }
 
-function mooauth_upgradeform(planType){
+function m2oidc_upgradeform(planType){
     jQuery('#requestOrigin').val(planType);
-    jQuery('#mocf_loginform').submit();
+    jQuery('#m2oidc_loginform').submit();
 }
 
 
@@ -104,7 +104,7 @@ function ifUserRegistered() {
     confirmPasswordElement.css('display', 'block');
     registerLoginButton.value = "Register"; 
     checkAllTopicCheckBoxes.textContent = 'Already Registered ? Click here to Login';
-    register_login.textContent = 'Register with miniOrange';
+    register_login.textContent = 'Register with m2Oidc';
     confirmPasswordElement.prop('required', false); 
     forget.style.display = 'none';
     inputField.setAttribute("required", "required");
@@ -115,7 +115,7 @@ function ifUserRegistered() {
     confirmPasswordElement.css('display', 'none');
     registerLoginButton.value = "Login"; 
     checkAllTopicCheckBoxes.textContent = 'Sign Up';
-    register_login.textContent = 'Login with miniOrange';
+    register_login.textContent = 'Login with m2Oidc';
     confirmPasswordElement.prop('required', true);
     forget.style.display = 'block'; 
     if (inputField.hasAttribute("required")) {
@@ -143,8 +143,8 @@ function hide_show_GrantType(element) {
           var chk_manual = document.getElementById("chk_manual");
 
 
-          var mo_oauth_authorize_url= document.getElementById("mo_oauth_authorize_url");
-   mo_oauth_authorize_url.style.display = chk_manual.checked ? "block" : "none";
+          var m2oidc_authorize_url= document.getElementById("m2oidc_authorize_url");
+   m2oidc_authorize_url.style.display = chk_manual.checked ? "block" : "none";
 
 
 }

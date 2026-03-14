@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Block\Adminhtml\Provider\Edit;
+namespace M2Oidc\OAuth\Block\Adminhtml\Provider\Edit;
 
 /**
  * Left-sidebar tab navigation for the OIDC Provider edit form.
@@ -21,7 +21,7 @@ class Tabs extends \Magento\Backend\Block\Widget\Tabs
     protected function _construct(): void
     {
         parent::_construct();
-        $this->setId('mooauth_provider_tabs');
+        $this->setId('m2oidc_provider_tabs');
         $this->setDestElementId('edit_form');
         $this->setTitle(__('Provider Information'));
     }
@@ -39,7 +39,7 @@ class Tabs extends \Magento\Backend\Block\Widget\Tabs
             [
                 'label'   => __('Provider Settings'),
                 'title'   => __('Provider Settings'),
-                'content' => $this->getChildHtml('mooauth.provider.tab.settings'),
+                'content' => $this->getChildHtml('m2oidc.provider.tab.settings'),
                 'active'  => true,
             ]
         );
@@ -49,7 +49,7 @@ class Tabs extends \Magento\Backend\Block\Widget\Tabs
             [
                 'label'   => __('OAuth Settings'),
                 'title'   => __('OAuth Settings'),
-                'content' => $this->getChildHtml('mooauth.provider.tab.oauth'),
+                'content' => $this->getChildHtml('m2oidc.provider.tab.oauth'),
             ]
         );
 
@@ -58,7 +58,7 @@ class Tabs extends \Magento\Backend\Block\Widget\Tabs
             [
                 'label'   => __('Attribute Mapping'),
                 'title'   => __('Attribute Mapping'),
-                'content' => $this->getChildHtml('mooauth.provider.tab.attrs'),
+                'content' => $this->getChildHtml('m2oidc.provider.tab.attrs'),
             ]
         );
 
@@ -67,7 +67,7 @@ class Tabs extends \Magento\Backend\Block\Widget\Tabs
             [
                 'label'   => __('Login Options'),
                 'title'   => __('Login Options'),
-                'content' => $this->getChildHtml('mooauth.provider.tab.loginoptions'),
+                'content' => $this->getChildHtml('m2oidc.provider.tab.loginoptions'),
             ]
         );
 

@@ -2,8 +2,8 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
     <event name="controller_action_predispatch_customer_account_login">
-        <observer name="mooauth_customer_auto_redirect"
-                  instance="MiniOrange\OAuth\Observer\CustomerLoginAutoRedirectObserver" />
+        <observer name="m2oidc_customer_auto_redirect"
+                  instance="M2Oidc\OAuth\Observer\CustomerLoginAutoRedirectObserver" />
     </event>
 
     <!-- OIDC JIT provisioning hooks — third-party modules may observe these events.

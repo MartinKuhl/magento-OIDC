@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Observer;
+namespace M2Oidc\OAuth\Observer;
 
 use Magento\Framework\App\ActionFlag;
 use Magento\Framework\App\ActionInterface;
@@ -12,7 +12,7 @@ use Magento\Framework\Session\SessionManagerInterface;
 use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
 use Magento\Framework\Stdlib\CookieManagerInterface;
 use Magento\Framework\UrlInterface;
-use MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps\CollectionFactory;
+use M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps\CollectionFactory;
 
 /**
  * Redirects unauthenticated admins to the IdP authorize URL
@@ -87,7 +87,7 @@ class AdminLoginAutoRedirectObserver implements ObserverInterface
         $provider = $collection->getFirstItem();
 
         // Condition: non-OIDC admin login disabled AND auto-redirect enabled
-        if (!(int) $provider->getData('mo_disable_non_oidc_admin_login')
+        if (!(int) $provider->getData('m2oidc_disable_non_oidc_admin_login')
             || !(int) $provider->getData('autoredirect_admin')
         ) {
             return;
@@ -99,7 +99,7 @@ class AdminLoginAutoRedirectObserver implements ObserverInterface
         $this->session->setData(self::SESSION_GUARD_KEY, true);
 
         // Build authorize URL and redirect
-        $authorizeUrl = $this->url->getUrl('mooauth/actions/sendauthorizationrequest', [
+        $authorizeUrl = $this->url->getUrl('m2oidc/actions/sendauthorizationrequest', [
             'provider_id' => $provider->getId(),
         ]);
 

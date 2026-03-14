@@ -1,11 +1,11 @@
 <?php
-namespace MiniOrange\OAuth\Logger;
+namespace M2Oidc\OAuth\Logger;
 
 use Monolog\Logger;
 
 /**
- * Custom log handler for Minifinal Orange OAuth Plugin
- * Writes logs to var/log/mo_oauth.log
+ * Custom log handler for M2Oidc OAuth Plugin
+ * Writes logs to var/log/M2Oidc.log
  */
 class Handler extends \Magento\Framework\Logger\Handler\Base
 {
@@ -21,5 +21,5 @@ class Handler extends \Magento\Framework\Logger\Handler\Base
      *
      * @var string
      */
-    protected $fileName = '/var/log/mo_oauth.log';
+    protected $fileName = '/var/log/M2Oidc.log';
 }

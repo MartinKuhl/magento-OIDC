@@ -3,12 +3,12 @@
       xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
     <body>
         <referenceContainer name="content">
-            <block class="MiniOrange\OAuth\Block\OAuth" 
-                name="miniorange.oauth.customer.link" 
+            <block class="M2Oidc\OAuth\Block\OAuth" 
+                name="m2oidc.oauth.customer.link" 
                 template="customerssobutton.phtml">
                 <arguments>
                     <argument name="oidc_visibility" xsi:type="object">
-                        MiniOrange\OAuth\ViewModel\OidcLoginVisibility
+                        M2Oidc\OAuth\ViewModel\OidcLoginVisibility
                     </argument>
                 </arguments>
             </block>

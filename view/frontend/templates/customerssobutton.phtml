@@ -1,7 +1,7 @@
 <?php
-/** @var \MiniOrange\OAuth\Block\OAuth $block */
+/** @var \M2Oidc\OAuth\Block\OAuth $block */
 /** @var \Magento\Framework\Escaper $escaper */
-/** @var \MiniOrange\OAuth\ViewModel\OidcLoginVisibility $oidcVisibility */
+/** @var \M2Oidc\OAuth\ViewModel\OidcLoginVisibility $oidcVisibility */
 $oidcVisibility = $block->getData('oidc_visibility');
 ?>
 <?php if ($oidcVisibility && $oidcVisibility->isCustomerButtonVisible()): ?>

@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Model\Service;
+namespace M2Oidc\OAuth\Model\Service;
 
-use MiniOrange\OAuth\Helper\OAuthConstants;
-use MiniOrange\OAuth\Helper\OAuthUtility;
-use MiniOrange\OAuth\Model\Attribute\AttributeMapperInterface;
-use MiniOrange\OAuth\Model\Provider\MappingRepository;
-use MiniOrange\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
+use M2Oidc\OAuth\Helper\OAuthConstants;
+use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Model\Attribute\AttributeMapperInterface;
+use M2Oidc\OAuth\Model\Provider\MappingRepository;
+use M2Oidc\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
 use Magento\User\Model\UserFactory;
 use Magento\User\Model\ResourceModel\User\CollectionFactory as UserCollectionFactory;
 use Magento\Framework\Math\Random;
@@ -21,8 +21,8 @@ class AdminUserCreator
     /** @var \Magento\User\Model\UserFactory */
     private readonly \Magento\User\Model\UserFactory $userFactory;
 
-    /** @var \MiniOrange\OAuth\Helper\OAuthUtility */
-    private readonly \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
+    /** @var \M2Oidc\OAuth\Helper\OAuthUtility */
+    private readonly \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility;
 
     /** @var \Magento\Framework\Math\Random */
     private readonly \Magento\Framework\Math\Random $randomUtility;
@@ -33,7 +33,7 @@ class AdminUserCreator
     /** @var UserCollectionFactory */
     private readonly UserCollectionFactory $userCollectionFactory;
 
-    /** @var \MiniOrange\OAuth\Model\ResourceModel\UserProvider */
+    /** @var \M2Oidc\OAuth\Model\ResourceModel\UserProvider */
     private readonly UserProviderResource $userProviderResource;
 
     /** @var MappingRepository */
@@ -182,7 +182,7 @@ class AdminUserCreator
     /**
      * Get admin role ID from OIDC groups using configured mappings.
      *
-     * Reads from the normalized miniorange_oauth_role_mappings table first (Phase 4).
+     * Reads from the normalized m2oidc_oauth_role_mappings table first (Phase 4).
      * Falls back to the legacy JSON column when the new table has no data for this provider
      * (e.g. before the migration patch runs or on providers saved through older admin UI).
      *

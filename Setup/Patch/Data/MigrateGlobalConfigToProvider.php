@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Setup\Patch\Data;
+namespace M2Oidc\OAuth\Setup\Patch\Data;
 
 use Magento\Framework\Setup\ModuleDataSetupInterface;
 use Magento\Framework\Setup\Patch\DataPatchInterface;
@@ -13,8 +13,8 @@ use Magento\Framework\Setup\Patch\PatchRevertableInterface;
  *
  * Before multi-provider support, all OIDC settings (attribute mapping, login
  * options, auto-create flags, etc.) were stored globally in core_config_data
- * under the path prefix `miniorange/oauth/`.  This patch copies those values
- * into the corresponding columns of each row in `miniorange_oauth_client_apps`
+ * under the path prefix `m2oidc/oauth/`.  This patch copies those values
+ * into the corresponding columns of each row in `m2oidc_oauth_client_apps`
  * so that settings are now stored and managed per provider.
  *
  * Idempotent: a column is only updated when its current value is NULL or ''.
@@ -25,9 +25,9 @@ use Magento\Framework\Setup\Patch\PatchRevertableInterface;
  */
 class MigrateGlobalConfigToProvider implements DataPatchInterface, PatchRevertableInterface
 {
-    private const string PROVIDER_TABLE = 'miniorange_oauth_client_apps';
+    private const string PROVIDER_TABLE = 'm2oidc_oauth_client_apps';
     private const string CONFIG_TABLE   = 'core_config_data';
-    private const string CONFIG_PREFIX  = 'miniorange/oauth/';
+    private const string CONFIG_PREFIX  = 'm2oidc/oauth/';
 
     /**
      * Map from core_config_data path suffix → provider table column name.
@@ -40,8 +40,8 @@ class MigrateGlobalConfigToProvider implements DataPatchInterface, PatchRevertab
         'group'                      => 'group_attribute',
         'defaultRole'                => 'default_role',
         'adminRoleMapping'           => 'oauth_admin_role_mapping',
-        'autoCreateAdmin'            => 'mo_oauth_auto_create_admin',
-        'autoCreateCustomer'         => 'mo_oauth_auto_create_customer',
+        'autoCreateAdmin'            => 'm2oidc_auto_create_admin',
+        'autoCreateCustomer'         => 'm2oidc_auto_create_customer',
         'showcustomerlink'           => 'show_customer_link',
         'showadminlink'              => 'show_admin_link',
         'enableLoginRedirect'        => 'autoredirect',
@@ -53,8 +53,8 @@ class MigrateGlobalConfigToProvider implements DataPatchInterface, PatchRevertab
         'amCity'                     => 'billing_city_attribute',
         'amState'                    => 'billing_state_attribute',
         'amCountry'                  => 'billing_country_attribute',
-        'disableNonOidcAdminLogin'   => 'mo_disable_non_oidc_admin_login',
-        'disableNonOidcCustomerLogin' => 'mo_disable_non_oidc_customer_login',
+        'disableNonOidcAdminLogin'   => 'm2oidc_disable_non_oidc_admin_login',
+        'disableNonOidcCustomerLogin' => 'm2oidc_disable_non_oidc_customer_login',
     ];
 
     /** @var ModuleDataSetupInterface */

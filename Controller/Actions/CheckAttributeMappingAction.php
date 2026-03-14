@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Controller\Actions;
+namespace M2Oidc\OAuth\Controller\Actions;
 
-use MiniOrange\OAuth\Helper\Exception\MissingAttributesException;
-use MiniOrange\OAuth\Helper\OAuthConstants;
-use MiniOrange\OAuth\Helper\OAuthMessages;
-use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
-use MiniOrange\OAuth\Model\Service\AdminUserCreator;
-use MiniOrange\OAuth\Model\Service\UserProvisioningService;
+use M2Oidc\OAuth\Helper\Exception\MissingAttributesException;
+use M2Oidc\OAuth\Helper\OAuthConstants;
+use M2Oidc\OAuth\Helper\OAuthMessages;
+use M2Oidc\OAuth\Helper\OAuthSecurityHelper;
+use M2Oidc\OAuth\Model\Service\AdminUserCreator;
+use M2Oidc\OAuth\Model\Service\UserProvisioningService;
 use Magento\Framework\Stdlib\CookieManagerInterface;
 use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
 
@@ -21,7 +21,7 @@ use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
  * adminhtml area context. Customer users proceed with the normal login flow.
  *
  * All logging respects the plugin's logging configuration and writes to
- * var/log/mo_oauth.log when enabled.
+ * var/log/M2Oidc.log when enabled.
  *
  * @psalm-suppress ImplicitToStringCast Magento's __() returns Phrase with __toString()
  */
@@ -88,15 +88,15 @@ class CheckAttributeMappingAction extends BaseAction
     private ?int $providerAutoCreateCustomer = null;
 
     /**
-     * @var int OIDC provider ID (from miniorange_oauth_client_apps.id) used to track user creation
+     * @var int OIDC provider ID (from m2oidc_oauth_client_apps.id) used to track user creation
      */
     private int $providerId = 0;
 
-    /** @var \MiniOrange\OAuth\Controller\Actions\ShowTestResults */
-    private readonly \MiniOrange\OAuth\Controller\Actions\ShowTestResults $testAction;
+    /** @var \M2Oidc\OAuth\Controller\Actions\ShowTestResults */
+    private readonly \M2Oidc\OAuth\Controller\Actions\ShowTestResults $testAction;
 
-    /** @var \MiniOrange\OAuth\Controller\Actions\ProcessUserAction */
-    private readonly \MiniOrange\OAuth\Controller\Actions\ProcessUserAction $processUserAction;
+    /** @var \M2Oidc\OAuth\Controller\Actions\ProcessUserAction */
+    private readonly \M2Oidc\OAuth\Controller\Actions\ProcessUserAction $processUserAction;
 
     /** @var \Magento\User\Model\UserFactory */
     protected \Magento\User\Model\UserFactory $userFactory;
@@ -104,10 +104,10 @@ class CheckAttributeMappingAction extends BaseAction
     /** @var \Magento\Backend\Model\UrlInterface */
     protected \Magento\Backend\Model\UrlInterface $backendUrl;
 
-    /** @var \MiniOrange\OAuth\Model\Service\AdminUserCreator */
-    protected \MiniOrange\OAuth\Model\Service\AdminUserCreator $adminUserCreator;
+    /** @var \M2Oidc\OAuth\Model\Service\AdminUserCreator */
+    protected \M2Oidc\OAuth\Model\Service\AdminUserCreator $adminUserCreator;
 
-    /** @var \MiniOrange\OAuth\Model\Service\UserProvisioningService */
+    /** @var \M2Oidc\OAuth\Model\Service\UserProvisioningService */
     private readonly UserProvisioningService $userProvisioningService;
 
     /** @var \Magento\Customer\Model\Session */
@@ -119,20 +119,20 @@ class CheckAttributeMappingAction extends BaseAction
     /** @var \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory */
     protected \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory;
 
-    /** @var \MiniOrange\OAuth\Helper\OAuthSecurityHelper */
-    private readonly \MiniOrange\OAuth\Helper\OAuthSecurityHelper $securityHelper;
+    /** @var \M2Oidc\OAuth\Helper\OAuthSecurityHelper */
+    private readonly \M2Oidc\OAuth\Helper\OAuthSecurityHelper $securityHelper;
 
     /**
      * Constructor with dependency injection
      *
      * @param \Magento\Framework\App\Action\Context                               $context
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility                               $oauthUtility
-     * @param \MiniOrange\OAuth\Controller\Actions\ProcessUserAction              $processUserAction
+     * @param \M2Oidc\OAuth\Helper\OAuthUtility                               $oauthUtility
+     * @param \M2Oidc\OAuth\Controller\Actions\ProcessUserAction              $processUserAction
      * @param \Magento\User\Model\UserFactory                                     $userFactory
      * @param \Magento\Backend\Model\UrlInterface                                 $backendUrl
      * @param AdminUserCreator                                                    $adminUserCreator
      * @param \Magento\Customer\Model\Session                                     $customerSession
-     * @param \MiniOrange\OAuth\Controller\Actions\ShowTestResults                $testAction
+     * @param \M2Oidc\OAuth\Controller\Actions\ShowTestResults                $testAction
      * @param OAuthSecurityHelper                                                 $securityHelper
      * @param CookieManagerInterface                                              $cookieManager
      * @param CookieMetadataFactory                                               $cookieMetadataFactory
@@ -140,13 +140,13 @@ class CheckAttributeMappingAction extends BaseAction
      */
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
-        \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
-        \MiniOrange\OAuth\Controller\Actions\ProcessUserAction $processUserAction,
+        \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility,
+        \M2Oidc\OAuth\Controller\Actions\ProcessUserAction $processUserAction,
         \Magento\User\Model\UserFactory $userFactory,
         \Magento\Backend\Model\UrlInterface $backendUrl,
         AdminUserCreator $adminUserCreator,
         \Magento\Customer\Model\Session $customerSession,
-        \MiniOrange\OAuth\Controller\Actions\ShowTestResults $testAction,
+        \M2Oidc\OAuth\Controller\Actions\ShowTestResults $testAction,
         OAuthSecurityHelper $securityHelper,
         CookieManagerInterface $cookieManager,
         CookieMetadataFactory $cookieMetadataFactory,
@@ -278,7 +278,7 @@ class CheckAttributeMappingAction extends BaseAction
                         ->setSecure(true)
                         ->setSameSite('Lax')
                 );
-                $adminCallbackUrl = $this->backendUrl->getUrl('mooauth/actions/oidccallback');
+                $adminCallbackUrl = $this->backendUrl->getUrl('m2oidc/actions/oidccallback');
 
                 $this->oauthUtility->customlog("Admin callback URL: " . $adminCallbackUrl);
 
@@ -345,7 +345,7 @@ class CheckAttributeMappingAction extends BaseAction
                                 ->setSecure(true)
                                 ->setSameSite('Lax')
                         );
-                        $adminCallbackUrl = $this->backendUrl->getUrl('mooauth/actions/oidccallback');
+                        $adminCallbackUrl = $this->backendUrl->getUrl('m2oidc/actions/oidccallback');
                         $this->oauthUtility->customlog("Redirecting to admin callback: " . $adminCallbackUrl);
 
                         return $this->resultRedirectFactory->create()->setUrl($adminCallbackUrl);
@@ -621,7 +621,7 @@ class CheckAttributeMappingAction extends BaseAction
         if ($providerId > 0) {
             $this->customerSession->setData('oidc_provider_id', $providerId);
         }
-        // Store provider ID for user-creation tracking (written to miniorange_oauth_user_provider)
+        // Store provider ID for user-creation tracking (written to m2oidc_oauth_user_provider)
         $this->providerId = $providerId;
 
         // FEAT-04: load access control rules from the provider row
@@ -632,15 +632,15 @@ class CheckAttributeMappingAction extends BaseAction
         }
 
         // Per-provider auto-create flags (override global config when set in the provider row)
-        if (isset($clientDetails['mo_oauth_auto_create_admin'])
-            && $clientDetails['mo_oauth_auto_create_admin'] !== ''
+        if (isset($clientDetails['m2oidc_auto_create_admin'])
+            && $clientDetails['m2oidc_auto_create_admin'] !== ''
         ) {
-            $this->providerAutoCreateAdmin = (int) $clientDetails['mo_oauth_auto_create_admin'];
+            $this->providerAutoCreateAdmin = (int) $clientDetails['m2oidc_auto_create_admin'];
         }
-        if (isset($clientDetails['mo_oauth_auto_create_customer'])
-            && $clientDetails['mo_oauth_auto_create_customer'] !== ''
+        if (isset($clientDetails['m2oidc_auto_create_customer'])
+            && $clientDetails['m2oidc_auto_create_customer'] !== ''
         ) {
-            $this->providerAutoCreateCustomer = (int) $clientDetails['mo_oauth_auto_create_customer'];
+            $this->providerAutoCreateCustomer = (int) $clientDetails['m2oidc_auto_create_customer'];
         }
 
         return $this;
@@ -719,7 +719,7 @@ class CheckAttributeMappingAction extends BaseAction
      *
      * Stores only a non-PII summary in the customer session (just timestamps
      * and boolean presence flags) and logs the full filtered payload to the
-     * mo_oauth.log file. Full attribute payloads are never persisted in session
+     * M2Oidc.log file. Full attribute payloads are never persisted in session
      * storage to avoid PII leakage through session dumps or serialised session stores.
      *
      * @param mixed $attrs
@@ -750,7 +750,7 @@ class CheckAttributeMappingAction extends BaseAction
                 'user_present'  => isset($filteredAttrs[$this->usernameAttribute]),
                 'claim_count'   => count($filteredAttrs),
             ];
-            $this->customerSession->setData('mo_oauth_debug_response', json_encode($summary));
+            $this->customerSession->setData('m2oidc_debug_response', json_encode($summary));
 
             $this->oauthUtility->customlog("Debug summary saved to session, full payload logged to file");
         } catch (\Exception $e) {

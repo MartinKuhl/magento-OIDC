@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\ViewModel;
+namespace M2Oidc\OAuth\ViewModel;
 
 use Magento\Framework\View\Element\Block\ArgumentInterface;
 use Magento\User\Model\ResourceModel\User\CollectionFactory as AdminUserCollectionFactory;
 use Magento\Customer\Model\ResourceModel\Customer\CollectionFactory as CustomerCollectionFactory;
-use MiniOrange\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Helper\OAuthUtility;
 
 /**
  * Determines whether the OIDC login button should be visible
  * on admin and customer login pages.
  *
  * All checks are provider-based: iterates over active providers from
- * miniorange_oauth_client_apps and evaluates per-provider flags
- * (show_*_link, mo_disable_non_oidc_*, mo_oauth_auto_create_*).
+ * m2oidc_oauth_client_apps and evaluates per-provider flags
+ * (show_*_link, m2oidc_disable_non_oidc_*, m2oidc_auto_create_*).
  *
  * No core_config_data dependency for visibility/restriction decisions.
  */
@@ -64,7 +64,7 @@ class OidcLoginVisibility implements ArgumentInterface
             if (!$this->isProviderConfigured($provider)) {
                 continue;
             }
-            if (!empty($provider['mo_oauth_auto_create_admin'])) {
+            if (!empty($provider['m2oidc_auto_create_admin'])) {
                 return true;
             }
             if ($this->hasAdminUsers()) {
@@ -92,7 +92,7 @@ class OidcLoginVisibility implements ArgumentInterface
             if (!$this->isProviderConfigured($provider)) {
                 continue;
             }
-            if (!empty($provider['mo_oauth_auto_create_customer'])) {
+            if (!empty($provider['m2oidc_auto_create_customer'])) {
                 return true;
             }
             if ($this->hasCustomers()) {
@@ -107,7 +107,7 @@ class OidcLoginVisibility implements ArgumentInterface
      * Check if non-OIDC customer login is disabled.
      *
      * Returns true when ANY active customer provider with a visible button
-     * has mo_disable_non_oidc_customer_login = 1.
+     * has m2oidc_disable_non_oidc_customer_login = 1.
      */
     public function isNonOidcCustomerLoginDisabled(): bool
     {
@@ -115,7 +115,7 @@ class OidcLoginVisibility implements ArgumentInterface
             if ((int) ($provider['show_customer_link'] ?? 0) !== 1) {
                 continue;
             }
-            if ((int) ($provider['mo_disable_non_oidc_customer_login'] ?? 0) === 1) {
+            if ((int) ($provider['m2oidc_disable_non_oidc_customer_login'] ?? 0) === 1) {
                 return true;
             }
         }
@@ -127,7 +127,7 @@ class OidcLoginVisibility implements ArgumentInterface
      * Check if non-OIDC admin login is disabled.
      *
      * Returns true when ANY active admin provider with a visible button
-     * has mo_disable_non_oidc_admin_login = 1.
+     * has m2oidc_disable_non_oidc_admin_login = 1.
      */
     public function isNonOidcAdminLoginDisabled(): bool
     {
@@ -135,7 +135,7 @@ class OidcLoginVisibility implements ArgumentInterface
             if ((int) ($provider['show_admin_link'] ?? 0) !== 1) {
                 continue;
             }
-            if ((int) ($provider['mo_disable_non_oidc_admin_login'] ?? 0) === 1) {
+            if ((int) ($provider['m2oidc_disable_non_oidc_admin_login'] ?? 0) === 1) {
                 return true;
             }
         }

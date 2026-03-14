@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Test\Integration\Service;
+namespace M2Oidc\OAuth\Test\Integration\Service;
 
 use PHPUnit\Framework\TestCase;
-use MiniOrange\OAuth\Model\Service\OidcSessionRegistry;
+use M2Oidc\OAuth\Model\Service\OidcSessionRegistry;
 
 /**
  * Unit tests for FEAT-02: OidcSessionRegistry (TEST-06).

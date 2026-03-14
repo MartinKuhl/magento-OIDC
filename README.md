@@ -55,8 +55,8 @@ Modern e-commerce platforms require secure, centralized authentication. This mod
 ### Step 1: Install via Composer
 
 ```bash
-composer require miniorange_inc/miniorange-oauth-sso
-bin/magento module:enable MiniOrange_OAuth
+composer require m2oidc_inc/m2oidc-oauth-sso
+bin/magento module:enable M2Oidc_OAuth
 bin/magento setup:upgrade
 bin/magento setup:di:compile
 bin/magento cache:flush
@@ -67,14 +67,14 @@ bin/magento cache:flush
 In your IdP's OAuth/OIDC client configuration, register this callback URL:
 
 ```
-https://your-magento-site.com/mooauth/actions/ReadAuthorizationResponse
+https://your-magento-site.com/m2oidc/actions/ReadAuthorizationResponse
 ```
 
 **Important**: Replace `your-magento-site.com` with your actual domain. The protocol **must be HTTPS** in production.
 
 ### Step 3: Configure Magento
 
-1. Navigate to **Stores > Configuration > MiniOrange > OAuth/OIDC**
+1. Navigate to **Stores > Configuration > M2Oidc > OAuth/OIDC**
 
 2. Fill in **OAuth Settings**:
    - **App Name**: Identifier for your IdP (e.g., `authelia`, `keycloak`)
@@ -96,7 +96,7 @@ https://your-magento-site.com/mooauth/actions/ReadAuthorizationResponse
 
 ### Step 5: Configure Attribute Mapping
 
-1. Navigate to **Stores > Configuration > MiniOrange > OAuth/OIDC > Attribute Mapping**
+1. Navigate to **Stores > Configuration > M2Oidc > OAuth/OIDC > Attribute Mapping**
 
 2. Map OIDC claims to Magento fields:
    - **Email Attribute**: Claim containing user email (default: `email`)
@@ -113,7 +113,7 @@ https://your-magento-site.com/mooauth/actions/ReadAuthorizationResponse
 
 ### Step 6: Configure Sign-In Settings
 
-1. Navigate to **Stores > Configuration > MiniOrange > OAuth/OIDC > Sign In Settings**
+1. Navigate to **Stores > Configuration > M2Oidc > OAuth/OIDC > Sign In Settings**
 
 2. Configure auto-provisioning:
    - **Auto Create Customers**: Enable to automatically create customer accounts on first login
@@ -129,7 +129,7 @@ https://your-magento-site.com/mooauth/actions/ReadAuthorizationResponse
    - **Disable Non-OIDC Admin Logins**: Force all admins to use OIDC (⚠️ create emergency admin via CLI first)
 
 5. **Enable Debug Logging** (recommended for initial setup):
-   - Check **Enable debug logging** to write detailed flow logs to `var/log/mo_oauth.log`
+   - Check **Enable debug logging** to write detailed flow logs to `var/log/M2Oidc.log`
 
 6. **Save Config**
 
@@ -217,7 +217,7 @@ Map billing and shipping addresses (30+ fields total):
 
 #### Debug Logging
 
-- **Enable debug logging**: Writes detailed flow logs to `var/log/mo_oauth.log`
+- **Enable debug logging**: Writes detailed flow logs to `var/log/M2Oidc.log`
 - **Auto-expires**: Logs older than 7 days are automatically deleted
 - **Privacy**: Contains user emails and OIDC claims — handle securely
 
@@ -263,7 +263,7 @@ Add an SSO button to your custom theme:
 ```xml
 <referenceBlock name="customer_form_login">
     <arguments>
-        <argument name="oauth_helper" xsi:type="object">MiniOrange\OAuth\Helper\OAuthUtility</argument>
+        <argument name="oauth_helper" xsi:type="object">M2Oidc\OAuth\Helper\OAuthUtility</argument>
     </arguments>
 </referenceBlock>
 ```
@@ -272,7 +272,7 @@ Add an SSO button to your custom theme:
 
 ```php
 <?php
-/** @var \MiniOrange\OAuth\Helper\OAuthUtility $oauthHelper */
+/** @var \M2Oidc\OAuth\Helper\OAuthUtility $oauthHelper */
 $oauthHelper = $block->getData('oauth_helper');
 $customerLoginUrl = $oauthHelper->getSPInitiatedUrl();
 ?>
@@ -298,7 +298,7 @@ $customerLoginUrl = $oauthHelper->getSPInitiatedUrl();
 **Solution**:
 1. Verify callback URL in IdP configuration matches exactly:
    ```
-   https://your-magento-site.com/mooauth/actions/ReadAuthorizationResponse
+   https://your-magento-site.com/m2oidc/actions/ReadAuthorizationResponse
    ```
 2. Check protocol (HTTP vs HTTPS)—**must use HTTPS in production**
 3. Check for trailing slashes (some IdPs are strict about this)
@@ -313,9 +313,9 @@ $customerLoginUrl = $oauthHelper->getSPInitiatedUrl();
 **Cause**: OIDC claim names from IdP don't match your attribute mapping configuration.
 
 **Solution**:
-1. **Enable debug logging**: **Stores > Configuration > MiniOrange > OAuth/OIDC > Sign In Settings > Enable debug logging**
+1. **Enable debug logging**: **Stores > Configuration > M2Oidc > OAuth/OIDC > Sign In Settings > Enable debug logging**
 2. Click **Test Configuration** to see actual claim names from your IdP
-3. Check `var/log/mo_oauth.log` for lines like:
+3. Check `var/log/M2Oidc.log` for lines like:
    ```
    Received OIDC claims: {"email": "user@example.com", "preferred_username": "user", ...}
    ```
@@ -334,7 +334,7 @@ $customerLoginUrl = $oauthHelper->getSPInitiatedUrl();
 **Cause**: Role mapping failed—no suitable Magento admin role found for user's OIDC groups.
 
 **Solution**:
-1. **Check logs**: `var/log/mo_oauth.log` will show:
+1. **Check logs**: `var/log/M2Oidc.log` will show:
    ```
    AdminUserCreator: No suitable role found for user. Creation aborted.
    ```
@@ -377,11 +377,11 @@ $customerLoginUrl = $oauthHelper->getSPInitiatedUrl();
 **Cause**: "Disable non-OIDC admin logins" setting enabled.
 
 **Solution**:
-1. **Check setting**: **Stores > Configuration > MiniOrange > OAuth/OIDC > Sign In Settings > Disable Non-OIDC Admin Logins**
+1. **Check setting**: **Stores > Configuration > M2Oidc > OAuth/OIDC > Sign In Settings > Disable Non-OIDC Admin Logins**
 2. If enabled and you need password login:
    - Temporarily disable via database:
      ```sql
-     UPDATE miniorange_oauth_client_apps SET disableNonOidcAdminLogin = 0;
+     UPDATE m2oidc_oauth_client_apps SET disableNonOidcAdminLogin = 0;
      ```
    - Or create emergency admin via CLI:
      ```bash
@@ -394,12 +394,12 @@ $customerLoginUrl = $oauthHelper->getSPInitiatedUrl();
 ### Where to Get Help
 
 1. **Check logs**:
-   - `var/log/mo_oauth.log` — OIDC flow details (enable debug logging first)
+   - `var/log/M2Oidc.log` — OIDC flow details (enable debug logging first)
    - `var/log/system.log` — General Magento system logs
    - `var/log/exception.log` — PHP exceptions and errors
 
 2. **Enable debug logging**:
-   - **Stores > Configuration > MiniOrange > OAuth/OIDC > Sign In Settings > Enable debug logging**
+   - **Stores > Configuration > M2Oidc > OAuth/OIDC > Sign In Settings > Enable debug logging**
    - Logs auto-expire after 7 days
 
 3. **Test Configuration**:
@@ -411,7 +411,7 @@ $customerLoginUrl = $oauthHelper->getSPInitiatedUrl();
 
 5. **Contact support**:
    - GitHub Issues: (repository URL)
-   - Commercial Support: MiniOrange support portal
+   - Commercial Support: M2Oidc support portal
 
 ---
 
@@ -475,7 +475,7 @@ Module inherits IdP's security policies:
 ### Single Provider Per Store
 
 - Module supports **one OIDC provider** per Magento store
-- Database limitation: single row in `miniorange_oauth_client_apps` table
+- Database limitation: single row in `m2oidc_oauth_client_apps` table
 - **Workaround**: Separate store views with separate database configurations (requires customization)
 - **Future enhancement**: Native multi-provider support planned (see TECHNICAL_DOCUMENTATION.md)
 
@@ -514,7 +514,7 @@ Module inherits IdP's security policies:
 **Scenario**: Map IdP group "Engineering" to Magento admin role "Content Editors".
 
 **Steps**:
-1. Navigate to **Stores > Configuration > MiniOrange > OAuth/OIDC > Attribute Mapping**
+1. Navigate to **Stores > Configuration > M2Oidc > OAuth/OIDC > Attribute Mapping**
 2. Set **Group Attribute Name** to `groups` (or your IdP's group claim name)
 3. Click **Add Role Mapping**:
    - **OIDC Group**: `Engineering`
@@ -546,7 +546,7 @@ See [CLAUDE.md](CLAUDE.md) for detailed developer instructions.
    ```bash
    bin/magento admin:user:create
    ```
-2. **Stores > Configuration > MiniOrange > OAuth/OIDC > Sign In Settings**
+2. **Stores > Configuration > M2Oidc > OAuth/OIDC > Sign In Settings**
 3. Enable **Disable non-OIDC admin logins**
 4. **Save Config**
 
@@ -570,7 +570,7 @@ See [CLAUDE.md](CLAUDE.md) for detailed developer instructions.
 ### Version
 
 - **Module Version**: 4.3.0
-- **Package**: `miniorange_inc/miniorange-oauth-sso`
+- **Package**: `m2oidc_inc/m2oidc-oauth-sso`
 - **License**: Proprietary (check `composer.json` for details)
 - **Minimum Requirements**: PHP 8.1+, Magento 2.4.7+
 

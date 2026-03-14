@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Controller\Actions;
+namespace M2Oidc\OAuth\Controller\Actions;
 
 use Magento\Framework\App\Action\Context;
-use MiniOrange\OAuth\Helper\OAuthConstants;
-use MiniOrange\OAuth\Helper\OAuth\AccessTokenRequest;
-use MiniOrange\OAuth\Helper\OAuth\AccessTokenRequestBody;
-use MiniOrange\OAuth\Helper\Curl;
-use MiniOrange\OAuth\Helper\Exception\IncorrectUserInfoDataException;
-use MiniOrange\OAuth\Helper\JwtVerifier;
-use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
-use MiniOrange\OAuth\Helper\OAuthUtility;
-use MiniOrange\OAuth\Model\Security\OidcRateLimiter;
-use MiniOrange\OAuth\Model\Service\OidcAuthenticationService;
-use MiniOrange\OAuth\Model\Service\TokenRefreshService;
+use M2Oidc\OAuth\Helper\OAuthConstants;
+use M2Oidc\OAuth\Helper\OAuth\AccessTokenRequest;
+use M2Oidc\OAuth\Helper\OAuth\AccessTokenRequestBody;
+use M2Oidc\OAuth\Helper\Curl;
+use M2Oidc\OAuth\Helper\Exception\IncorrectUserInfoDataException;
+use M2Oidc\OAuth\Helper\JwtVerifier;
+use M2Oidc\OAuth\Helper\OAuthSecurityHelper;
+use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Model\Security\OidcRateLimiter;
+use M2Oidc\OAuth\Model\Service\OidcAuthenticationService;
+use M2Oidc\OAuth\Model\Service\TokenRefreshService;
 
 /**
  * @psalm-suppress ImplicitToStringCast Magento's __() returns Phrase with __toString()
@@ -30,17 +30,17 @@ class ReadAuthorizationResponse extends BaseAction
     /** @var \Magento\Customer\Model\Session */
     private readonly \Magento\Customer\Model\Session $customerSession;
 
-    /** @var \MiniOrange\OAuth\Helper\OAuthSecurityHelper */
-    private readonly \MiniOrange\OAuth\Helper\OAuthSecurityHelper $securityHelper;
+    /** @var \M2Oidc\OAuth\Helper\OAuthSecurityHelper */
+    private readonly \M2Oidc\OAuth\Helper\OAuthSecurityHelper $securityHelper;
 
-    /** @var \MiniOrange\OAuth\Helper\JwtVerifier */
-    private readonly \MiniOrange\OAuth\Helper\JwtVerifier $jwtVerifier;
+    /** @var \M2Oidc\OAuth\Helper\JwtVerifier */
+    private readonly \M2Oidc\OAuth\Helper\JwtVerifier $jwtVerifier;
 
-    /** @var \MiniOrange\OAuth\Helper\Curl */
-    private readonly \MiniOrange\OAuth\Helper\Curl $curl;
+    /** @var \M2Oidc\OAuth\Helper\Curl */
+    private readonly \M2Oidc\OAuth\Helper\Curl $curl;
 
-    /** @var \MiniOrange\OAuth\Model\Service\OidcAuthenticationService */
-    private readonly \MiniOrange\OAuth\Model\Service\OidcAuthenticationService $oidcAuthService;
+    /** @var \M2Oidc\OAuth\Model\Service\OidcAuthenticationService */
+    private readonly \M2Oidc\OAuth\Model\Service\OidcAuthenticationService $oidcAuthService;
 
     /** @var OidcRateLimiter */
     private readonly OidcRateLimiter $rateLimiter;
@@ -48,8 +48,8 @@ class ReadAuthorizationResponse extends BaseAction
     /** @var TokenRefreshService */
     private readonly TokenRefreshService $tokenRefreshService;
 
-    /** @var \MiniOrange\OAuth\Controller\Actions\CheckAttributeMappingAction */
-    private readonly \MiniOrange\OAuth\Controller\Actions\CheckAttributeMappingAction $attrMappingAction;
+    /** @var \M2Oidc\OAuth\Controller\Actions\CheckAttributeMappingAction */
+    private readonly \M2Oidc\OAuth\Controller\Actions\CheckAttributeMappingAction $attrMappingAction;
 
     /** @var \Magento\Framework\Stdlib\CookieManagerInterface */
     private readonly \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager;
@@ -529,7 +529,7 @@ class ReadAuthorizationResponse extends BaseAction
         if ($testKey === '' || $testKey === '0') {
             return;
         }
-        $testResults = $this->customerSession->getData('mooauth_test_results') ?: [];
+        $testResults = $this->customerSession->getData('m2oidc_test_results') ?: [];
         // Filter out large token data to prevent session bloat
         $filteredData = $userInfoResponse;
         if (is_array($filteredData)) {
@@ -543,7 +543,7 @@ class ReadAuthorizationResponse extends BaseAction
         if (count($testResults) > 3) {
             $testResults = array_slice($testResults, -3, 3, true);
         }
-        $this->customerSession->setData('mooauth_test_results', $testResults);
+        $this->customerSession->setData('m2oidc_test_results', $testResults);
     }
 
     /**

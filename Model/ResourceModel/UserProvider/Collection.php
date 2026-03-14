@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Model\ResourceModel\UserProvider;
+namespace M2Oidc\OAuth\Model\ResourceModel\UserProvider;
 
 use Magento\Framework\Model\ResourceModel\Db\Collection\AbstractCollection;
-use MiniOrange\OAuth\Model\UserProvider;
-use MiniOrange\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
+use M2Oidc\OAuth\Model\UserProvider;
+use M2Oidc\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
 
 /**
- * Collection for the miniorange_oauth_user_provider mapping table.
+ * Collection for the m2oidc_oauth_user_provider mapping table.
  */
 class Collection extends AbstractCollection
 {

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
     UI Grid component definition for the OIDC Provider management list.
-    Data source: miniorange_oauth_client_apps table via Collection.
-    Route: mooauth/provider/index
+    Data source: m2oidc_oauth_client_apps table via Collection.
+    Route: m2oidc/provider/index
 -->
 <listing xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">
@@ -10,7 +10,7 @@
     <argument name="data" xsi:type="array">
         <item name="js_config" xsi:type="array">
             <item name="provider" xsi:type="string">
-                mooauth_provider_listing.mooauth_provider_listing_data_source
+                m2oidc_provider_listing.m2oidc_provider_listing_data_source
             </item>
         </item>
     </argument>
@@ -18,18 +18,18 @@
     <settings>
         <buttons>
             <button name="add">
-                <url path="mooauth/provider/edit"/>
+                <url path="m2oidc/provider/edit"/>
                 <class>primary</class>
                 <label translate="true">Add New Provider</label>
             </button>
         </buttons>
-        <spinner>mooauth_provider_columns</spinner>
+        <spinner>m2oidc_provider_columns</spinner>
         <deps>
-            <dep>mooauth_provider_listing.mooauth_provider_listing_data_source</dep>
+            <dep>m2oidc_provider_listing.m2oidc_provider_listing_data_source</dep>
         </deps>
     </settings>
 
-    <dataSource name="mooauth_provider_listing_data_source"
+    <dataSource name="m2oidc_provider_listing_data_source"
                 component="Magento_Ui/js/grid/provider">
         <settings>
             <storageConfig>
@@ -37,9 +37,9 @@
             </storageConfig>
             <updateUrl path="mui/index/render"/>
         </settings>
-        <aclResource>MiniOrange_OAuth::oauth_settings</aclResource>
+        <aclResource>M2Oidc_OAuth::oauth_settings</aclResource>
         <dataProvider class="MooauthProviderListingDataProvider"
-                      name="mooauth_provider_listing_data_source">
+                      name="m2oidc_provider_listing_data_source">
             <settings>
                 <requestFieldName>id</requestFieldName>
                 <primaryFieldName>id</primaryFieldName>
@@ -57,7 +57,7 @@
         <paging name="listing_paging"/>
     </listingToolbar>
 
-    <columns name="mooauth_provider_columns">
+    <columns name="m2oidc_provider_columns">
 
         <column name="id">
             <settings>
@@ -105,7 +105,7 @@
         <!-- Test-Status: success / failed as filterable select dropdown -->
         <column name="last_test_status" component="Magento_Ui/js/grid/columns/select">
             <settings>
-                <options class="MiniOrange\OAuth\Ui\Component\Listing\Column\TestStatusOptions"/>
+                <options class="M2Oidc\OAuth\Ui\Component\Listing\Column\TestStatusOptions"/>
                 <filter>select</filter>
                 <dataType>select</dataType>
                 <label translate="true">Test Status</label>
@@ -127,7 +127,7 @@
 
         <!-- Active Admin Users: live count via JOIN on admin_user -->
         <column name="active_admin_users"
-                class="MiniOrange\OAuth\Ui\Component\Listing\Column\ActiveUserCount">
+                class="M2Oidc\OAuth\Ui\Component\Listing\Column\ActiveUserCount">
             <argument name="data" xsi:type="array">
                 <item name="config" xsi:type="array">
                     <item name="user_type" xsi:type="string">admin</item>
@@ -141,7 +141,7 @@
 
         <!-- Active Customers: live count via JOIN on customer_entity -->
         <column name="active_customers"
-                class="MiniOrange\OAuth\Ui\Component\Listing\Column\ActiveUserCount">
+                class="M2Oidc\OAuth\Ui\Component\Listing\Column\ActiveUserCount">
             <argument name="data" xsi:type="array">
                 <item name="config" xsi:type="array">
                     <item name="user_type" xsi:type="string">customer</item>
@@ -155,7 +155,7 @@
 
         <!-- PKCE method badge: S256 / plain / disabled -->
         <column name="pkce_status"
-                class="MiniOrange\OAuth\Ui\Component\Listing\Column\PkceStatus">
+                class="M2Oidc\OAuth\Ui\Component\Listing\Column\PkceStatus">
             <settings>
                 <label translate="true">PKCE</label>
                 <sortable>false</sortable>
@@ -165,7 +165,7 @@
 
         <!-- JWKS endpoint: configured / not set -->
         <column name="jwks_status"
-                class="MiniOrange\OAuth\Ui\Component\Listing\Column\JwksStatus">
+                class="M2Oidc\OAuth\Ui\Component\Listing\Column\JwksStatus">
             <settings>
                 <label translate="true">JWKS</label>
                 <sortable>false</sortable>
@@ -174,8 +174,8 @@
         </column>
 
         <actionsColumn name="actions"
-                       class="MiniOrange\OAuth\Ui\Component\Listing\Column\Actions"
-                       component="MiniOrange_OAuth/js/grid/columns/provider-actions">
+                       class="M2Oidc\OAuth\Ui\Component\Listing\Column\Actions"
+                       component="M2Oidc_OAuth/js/grid/columns/provider-actions">
             <settings>
                 <indexField>id</indexField>
                 <label translate="true">Actions</label>

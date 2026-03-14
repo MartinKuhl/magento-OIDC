@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Controller\Adminhtml\Provider;
+namespace M2Oidc\OAuth\Controller\Adminhtml\Provider;
 
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
@@ -13,7 +13,7 @@ use Magento\Framework\View\Result\PageFactory;
 /**
  * Admin controller final — OIDC Provider listing (MP-06).
  *
- * Route: GET /admin/mooauth/provider/index
+ * Route: GET /admin/m2oidc/provider/index
  *
  * Renders a grid of all configured OIDC providers with Add / Edit / Delete
  * action links. Protected by the module's admin ACL resource so only
@@ -22,7 +22,7 @@ use Magento\Framework\View\Result\PageFactory;
 class Index extends Action implements HttpGetActionInterface
 {
     /** ACL resource required to access provider management. */
-    public const string ADMIN_RESOURCE = 'MiniOrange_OAuth::oauth_settings';
+    public const string ADMIN_RESOURCE = 'M2Oidc_OAuth::oauth_settings';
 
     /** @var PageFactory */
     private readonly PageFactory $pageFactory;
@@ -49,9 +49,9 @@ class Index extends Action implements HttpGetActionInterface
     {
         $page = $this->pageFactory->create();
         /** @var \Magento\Backend\Model\View\Result\Page $page */
-        $page->setActiveMenu('MiniOrange_OAuth::provider_management');
+        $page->setActiveMenu('M2Oidc_OAuth::provider_management');
         $page->getConfig()->getTitle()->prepend((string) __('OIDC Provider Management'));
-        $page->addBreadcrumb((string) __('MiniOrange OIDC'), (string) __('MiniOrange OIDC'));
+        $page->addBreadcrumb((string) __('M2Oidc OIDC'), (string) __('M2Oidc OIDC'));
         $page->addBreadcrumb((string) __('Manage Providers'), (string) __('Manage Providers'));
         return $page;
     }

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Block\Adminhtml\Provider\Edit\Tab;
+namespace M2Oidc\OAuth\Block\Adminhtml\Provider\Edit\Tab;
 
 use Magento\Backend\Block\Template;
 use Magento\Backend\Block\Template\Context;
@@ -16,7 +16,7 @@ use Magento\Framework\Registry;
 class ProviderSettings extends Template implements TabInterface
 {
     /** @var string */
-    protected $_template = 'MiniOrange_OAuth::provider/tab/providersettings.phtml';
+    protected $_template = 'M2Oidc_OAuth::provider/tab/providersettings.phtml';
 
     /** @var Registry */
     private readonly Registry $registry;

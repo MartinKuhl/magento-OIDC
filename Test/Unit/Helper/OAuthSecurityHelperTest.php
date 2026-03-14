@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Test\Unit\Helper;
+namespace M2Oidc\OAuth\Test\Unit\Helper;
 
 use Magento\Framework\App\CacheInterface;
-use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
-use MiniOrange\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Helper\OAuthSecurityHelper;
+use M2Oidc\OAuth\Helper\OAuthUtility;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -16,7 +16,7 @@ use PHPUnit\Framework\TestCase;
  * All Magento infrastructure (CacheInterface, OAuthUtility) is replaced
  * with PHPUnit mocks so these tests run without a Magento installation.
  *
- * @covers \MiniOrange\OAuth\Helper\OAuthSecurityHelper
+ * @covers \M2Oidc\OAuth\Helper\OAuthSecurityHelper
  */
 class OAuthSecurityHelperTest extends TestCase
 {

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Plugin\User;
+namespace M2Oidc\OAuth\Plugin\User;
 
 use Magento\Backend\Model\Auth\Session as AuthSession;
 use Magento\User\Observer\Backend\AuthObserver;
 use Magento\Framework\Event\Observer as EventObserver;
-use MiniOrange\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Helper\OAuthUtility;
 
 /**
  * Prevents "time to change your password" warning for OIDC-authenticated users.

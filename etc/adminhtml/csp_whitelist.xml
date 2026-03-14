@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!--
 /**
- * CSP Whitelist for MiniOrange OIDC Plugin (adminhtml)
+ * CSP Whitelist for M2Oidc OIDC Plugin (adminhtml)
  *
  * Provider hostnames are added at runtime by OidcCspPolicyCollector
  * based on the configured OIDC provider authorize URL.

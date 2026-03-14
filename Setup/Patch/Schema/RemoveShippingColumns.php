@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Setup\Patch\Schema;
+namespace M2Oidc\OAuth\Setup\Patch\Schema;
 
 use Magento\Framework\Setup\Patch\SchemaPatchInterface;
 use Magento\Framework\Setup\SchemaSetupInterface;
 
 /**
- * Removes obsolete shipping address attribute columns from miniorange_oauth_client_apps.
+ * Removes obsolete shipping address attribute columns from m2oidc_oauth_client_apps.
  */
 class RemoveShippingColumns implements SchemaPatchInterface
 {
-    private const string TABLE = 'miniorange_oauth_client_apps';
+    private const string TABLE = 'm2oidc_oauth_client_apps';
 
     private const array DROP_COLUMNS = [
         'shipping_address_attribute',

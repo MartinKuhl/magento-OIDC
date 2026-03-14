@@ -13,7 +13,7 @@ define([
 
     return Column.extend({
         defaults: {
-            bodyTmpl: 'MiniOrange_OAuth/grid/cells/provider-actions'
+            bodyTmpl: 'M2Oidc_OAuth/grid/cells/provider-actions'
         },
 
         /**

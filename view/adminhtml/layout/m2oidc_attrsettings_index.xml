@@ -1,25 +1,25 @@
 <?xml version="1.0"?>
 <page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
     <head>
-        <css src="MiniOrange_OAuth::css/adminSettings.css"/>
+        <css src="M2Oidc_OAuth::css/adminSettings.css"/>
     </head>
     <body>
-        <!--
-        Defining our block and phtml file for Miscellaneous settings (debug logs only).
+        <!-- 
+        Defining our block and phtml file for Attribute/Mapping settings.
         Calls our Admin Block for some common functionality.
         -->
         <referenceContainer name="content">
-            <block class="MiniOrange\OAuth\Block\OAuth"
-                name="miniorange.oauth.admin.signinsettings"
-                template="misc.phtml" />
+            <block class="M2Oidc\OAuth\Block\OAuth"
+                name="m2oidc.oauth.admin.attrsettings"
+                template="attrsettings.phtml" />
         </referenceContainer>
-        <!--
+        <!-- 
         Defining our block and phtml file for adding common
         javascript file to all of our pages
         -->
         <referenceContainer name="before.body.end">
-            <block class="MiniOrange\OAuth\Block\OAuth"
-                template="js.phtml"
+            <block class="M2Oidc\OAuth\Block\OAuth" 
+                template="js.phtml" 
                 name="before_body_js"/>
         </referenceContainer>
     </body>

@@ -8,6 +8,6 @@
   */
 \Magento\Framework\Component\ComponentRegistrar::register(
     \Magento\Framework\Component\ComponentRegistrar::MODULE,
-    'MiniOrange_OAuth',
+    'M2Oidc_OAuth',
     __DIR__
 );

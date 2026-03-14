@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Ui\Component\Listing\Column;
+namespace M2Oidc\OAuth\Ui\Component\Listing\Column;
 
 use Magento\Framework\Data\OptionSourceInterface;
 

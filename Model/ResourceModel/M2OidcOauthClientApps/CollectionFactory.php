@@ -1,5 +1,5 @@
 <?php
-namespace MiniOrange\OAuth\Model\ResourceModel\MiniOrangeOauthClientApps;
+namespace M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps;
 
 use Magento\Framework\ObjectManagerInterface;
 

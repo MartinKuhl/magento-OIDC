@@ -272,8 +272,8 @@ $isAutocompleteEnabled = $storeConfig->getStoreConfig('customer/password/autocom
 
                         <?php
                         $layout = $block->getLayout();
-                        $customBlock = $layout->createBlock("MiniOrange\OAuth\Block\OAuth")
-                        ->setTemplate("MiniOrange_OAuth::customerssobutton.phtml");
+                        $customBlock = $layout->createBlock("M2Oidc\OAuth\Block\OAuth")
+                        ->setTemplate("M2Oidc_OAuth::customerssobutton.phtml");
                         echo $customBlock->toHtml();
                         ?>
                     </div>

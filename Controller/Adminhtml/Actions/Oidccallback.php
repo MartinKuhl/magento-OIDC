@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Controller\Adminhtml\Actions;
+namespace M2Oidc\OAuth\Controller\Adminhtml\Actions;
 
 use Magento\Framework\App\Action\HttpGetActionInterface;
 use Magento\Framework\App\ActionInterface;
@@ -13,7 +13,7 @@ use Magento\Framework\UrlInterface;
 use Magento\Framework\Stdlib\CookieManagerInterface;
 use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
 use Magento\Backend\Model\UrlInterface as BackendUrlInterface;
-use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
+use M2Oidc\OAuth\Helper\OAuthSecurityHelper;
 
 /**
  * OIDC Callback Controller for Admin Login
@@ -23,7 +23,7 @@ use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
  * login endpoint can be accessed without prior authentication.
  *
  * Logging goes through `OAuthUtility` and is written to
- * `var/log/mo_oauth.log` when enabled.
+ * `var/log/M2Oidc.log` when enabled.
  *
  * Security: only authenticate users that exist in `admin_user` and are active.
  *
@@ -40,8 +40,8 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
     /** @var \Magento\Framework\App\RequestInterface */
     protected \Magento\Framework\App\RequestInterface $request;
 
-    /** @var \MiniOrange\OAuth\Helper\OAuthUtility */
-    protected \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility;
+    /** @var \M2Oidc\OAuth\Helper\OAuthUtility */
+    protected \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility;
 
     /** @var \Magento\Framework\Message\ManagerInterface */
     protected \Magento\Framework\Message\ManagerInterface $messageManager;
@@ -58,8 +58,8 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
     /** @var BackendUrlInterface */
     protected BackendUrlInterface $backendUrl;
 
-    /** @var \MiniOrange\OAuth\Helper\OAuthSecurityHelper */
-    private readonly \MiniOrange\OAuth\Helper\OAuthSecurityHelper $securityHelper;
+    /** @var \M2Oidc\OAuth\Helper\OAuthSecurityHelper */
+    private readonly \M2Oidc\OAuth\Helper\OAuthSecurityHelper $securityHelper;
 
     /** @var \Magento\Framework\App\Config\ScopeConfigInterface */
     private readonly \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig;
@@ -70,7 +70,7 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
      * @param \Magento\Backend\Model\Auth                                     $auth
      * @param ResultFactory                                                   $resultFactory
      * @param RequestInterface                                                $request
-     * @param \MiniOrange\OAuth\Helper\OAuthUtility                           $oauthUtility
+     * @param \M2Oidc\OAuth\Helper\OAuthUtility                           $oauthUtility
      * @param ManagerInterface                                                $messageManager
      * @param UrlInterface                                                    $url
      * @param CookieManagerInterface                                          $cookieManager
@@ -83,7 +83,7 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
         \Magento\Backend\Model\Auth $auth,
         ResultFactory $resultFactory,
         RequestInterface $request,
-        \MiniOrange\OAuth\Helper\OAuthUtility $oauthUtility,
+        \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility,
         ManagerInterface $messageManager,
         UrlInterface $url,
         CookieManagerInterface $cookieManager,

@@ -1,4 +1,4 @@
-# MiniOrange OIDC — GraphQL API (FEAT-08)
+# M2Oidc OIDC — GraphQL API (FEAT-08)
 #
 # Provides headless / Hyva frontends with OIDC provider data and login URLs
 # without requiring server-side rendering of the phtml button template.
@@ -29,13 +29,13 @@ type Query {
     oidcLoginUrl(
         provider_id: Int @doc(description: "Numeric provider ID. When omitted the first active customer provider is used.")
     ): OidcLoginUrlOutput
-        @resolver(class: "MiniOrange\\OAuth\\Model\\Resolver\\OidcLoginUrl")
+        @resolver(class: "M2Oidc\\OAuth\\Model\\Resolver\\OidcLoginUrl")
         @doc(description: "Returns the SP-initiated login URL for the requested OIDC provider.")
 
     oidcProviders(
         login_type: String @doc(description: "Filter by login_type: customer (default), admin, or both.")
     ): [OidcProviderOutput]
-        @resolver(class: "MiniOrange\\OAuth\\Model\\Resolver\\OidcProviders")
+        @resolver(class: "M2Oidc\\OAuth\\Model\\Resolver\\OidcProviders")
         @doc(description: "Returns all active OIDC providers available on the storefront.")
 }
 

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Test\Integration;
+namespace M2Oidc\OAuth\Test\Integration;
 
 use PHPUnit\Framework\TestCase;
 
 /**
- * Base class for MiniOrange OIDC integration tests (TEST-06).
+ * Base class for M2Oidc OIDC integration tests (TEST-06).
  *
  * Integration tests require a running Dex OIDC provider accessible at the
  * URL defined by the OIDC_TEST_ISSUER environment variable.
@@ -48,10 +48,10 @@ abstract class AbstractOidcIntegrationTest extends TestCase
             $_ENV['OIDC_TEST_ISSUER'] ?? getenv('OIDC_TEST_ISSUER') ?: 'http://dex.local:5556/dex'
         );
         $this->clientId = (string) (
-            $_ENV['OIDC_TEST_CLIENT_ID'] ?? getenv('OIDC_TEST_CLIENT_ID') ?: 'miniorange-test-client'
+            $_ENV['OIDC_TEST_CLIENT_ID'] ?? getenv('OIDC_TEST_CLIENT_ID') ?: 'm2oidc-test-client'
         );
         $this->clientSecret = (string) (
-            $_ENV['OIDC_TEST_CLIENT_SECRET'] ?? getenv('OIDC_TEST_CLIENT_SECRET') ?: 'miniorange-test-secret'
+            $_ENV['OIDC_TEST_CLIENT_SECRET'] ?? getenv('OIDC_TEST_CLIENT_SECRET') ?: 'm2oidc-test-secret'
         );
         $this->redirectUri  = (string) ($_ENV['OIDC_TEST_REDIRECT_URI']  ?? getenv('OIDC_TEST_REDIRECT_URI')  ?: '');
 

@@ -6,10 +6,10 @@
          stopOnFailure="false">
 
     <testsuites>
-        <testsuite name="MiniOrange OIDC Unit Tests">
+        <testsuite name="M2Oidc OIDC Unit Tests">
             <directory>Test/Unit</directory>
         </testsuite>
-        <testsuite name="MiniOrange OIDC Integration Tests">
+        <testsuite name="M2Oidc OIDC Integration Tests">
             <directory>Test/Integration</directory>
             <exclude>Test/Integration/AbstractOidcIntegrationTest.php</exclude>
         </testsuite>
@@ -18,9 +18,9 @@
     <php>
         <!-- Integration-test environment variables — override via docker-compose.test.yml -->
         <env name="OIDC_TEST_ISSUER"         value="http://dex.local:5556/dex"/>
-        <env name="OIDC_TEST_CLIENT_ID"      value="miniorange-test-client"/>
-        <env name="OIDC_TEST_CLIENT_SECRET"  value="miniorange-test-secret"/>
-        <env name="OIDC_TEST_REDIRECT_URI"   value="http://localhost/mooauth/actions/readauthresponse"/>
+        <env name="OIDC_TEST_CLIENT_ID"      value="m2oidc-test-client"/>
+        <env name="OIDC_TEST_CLIENT_SECRET"  value="m2oidc-test-secret"/>
+        <env name="OIDC_TEST_REDIRECT_URI"   value="http://localhost/m2oidc/actions/readauthresponse"/>
     </php>
 
     <coverage>

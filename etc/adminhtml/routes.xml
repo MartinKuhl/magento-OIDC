@@ -2,8 +2,8 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
         xsi:noNamespaceSchemaLocation="urn:magento:framework:App/etc/routes.xsd">
     <router id="admin">
-        <route id="mooauth" frontName="mooauth">
-            <module name="MiniOrange_OAuth" />
+        <route id="m2oidc" frontName="m2oidc">
+            <module name="M2Oidc_OAuth" />
         </route>
     </router>
 </config>

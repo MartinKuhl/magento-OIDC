@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Model\ResourceModel;
+namespace M2Oidc\OAuth\Model\ResourceModel;
 
 use Magento\Framework\Model\ResourceModel\Db\AbstractDb;
 
 /**
- * Resource model forfinal  the miniorange_oauth_user_provider mapping table.
+ * Resource model forfinal  the m2oidc_oauth_user_provider mapping table.
  * Provides helpers for saving and retrieving the OIDC provider that created a user.
  */
 class UserProvider extends AbstractDb
@@ -18,7 +18,7 @@ class UserProvider extends AbstractDb
     #[\Override]
     protected function _construct(): void
     {
-        $this->_init('miniorange_oauth_user_provider', 'id');
+        $this->_init('m2oidc_oauth_user_provider', 'id');
     }
 
     /**
@@ -29,7 +29,7 @@ class UserProvider extends AbstractDb
      *
      * @param string $userType   'customer' or 'admin'
      * @param int    $userId     Magento entity_id / user_id
-     * @param int    $providerId miniorange_oauth_client_apps.id
+     * @param int    $providerId m2oidc_oauth_client_apps.id
      */
     public function saveMapping(string $userType, int $userId, int $providerId): void
     {
@@ -61,7 +61,7 @@ class UserProvider extends AbstractDb
         $select = $connection->select()
             ->from(['up' => $this->getMainTable()], ['created_at'])
             ->join(
-                ['p' => $this->getTable('miniorange_oauth_client_apps')],
+                ['p' => $this->getTable('m2oidc_oauth_client_apps')],
                 'up.provider_id = p.id',
                 ['display_name']
             )

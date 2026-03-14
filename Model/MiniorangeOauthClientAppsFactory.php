@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Model;
+namespace M2Oidc\OAuth\Model;
 
 use Magento\Framework\ObjectManagerInterface;
 

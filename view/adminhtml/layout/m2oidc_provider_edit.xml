@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<!--
+    Layout for the Add / Edit OIDC Provider form (m2oidc/provider/edit).
+    Uses Widget\Form\Container (Edit.php) with Widget\Tabs sidebar navigation.
+    Three tabs: Provider Settings | OAuth Settings | Attribute Mapping.
+-->
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <update handle="editor"/>
+    <body>
+        <referenceContainer name="content">
+            <block class="M2Oidc\OAuth\Block\Adminhtml\Provider\Edit"
+                   name="m2oidc_provider_edit">
+                <block class="M2Oidc\OAuth\Block\Adminhtml\Provider\Edit\Tabs"
+                       name="m2oidc_provider_edit_tabs">
+                    <block class="M2Oidc\OAuth\Block\Adminhtml\Provider\Edit\Tab\ProviderSettings"
+                           name="m2oidc.provider.tab.settings"/>
+                    <block class="M2Oidc\OAuth\Block\Adminhtml\Provider\Edit\Tab\OAuthSettings"
+                           name="m2oidc.provider.tab.oauth"/>
+                    <block class="M2Oidc\OAuth\Block\Adminhtml\Provider\Edit\Tab\AttributeMapping"
+                           name="m2oidc.provider.tab.attrs"/>
+                    <block class="M2Oidc\OAuth\Block\Adminhtml\Provider\Edit\Tab\LoginOptions"
+                           name="m2oidc.provider.tab.loginoptions"/>
+                </block>
+            </block>
+        </referenceContainer>
+    </body>
+</page>

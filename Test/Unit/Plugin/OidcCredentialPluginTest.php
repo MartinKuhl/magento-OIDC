@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Test\Unit\Plugin;
+namespace M2Oidc\OAuth\Test\Unit\Plugin;
 
 use Magento\Backend\Model\Auth;
-use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
-use MiniOrange\OAuth\Model\Auth\OidcCredentialAdapter;
-use MiniOrange\OAuth\Helper\OAuthUtility;
-use MiniOrange\OAuth\Plugin\Auth\OidcCredentialPlugin;
+use M2Oidc\OAuth\Helper\OAuthSecurityHelper;
+use M2Oidc\OAuth\Model\Auth\OidcCredentialAdapter;
+use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Plugin\Auth\OidcCredentialPlugin;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -22,7 +22,7 @@ use PHPUnit\Framework\TestCase;
  *  - aroundGetCredentialStorage() delegates to $proceed() for normal logins
  *  - afterLogin() clears the flag
  *
- * @covers \MiniOrange\OAuth\Plugin\Auth\OidcCredentialPlugin
+ * @covers \M2Oidc\OAuth\Plugin\Auth\OidcCredentialPlugin
  */
 class OidcCredentialPluginTest extends TestCase
 {

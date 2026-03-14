@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace MiniOrange\OAuth\Plugin;
+namespace M2Oidc\OAuth\Plugin;
 
 use Magento\Customer\Api\AccountManagementInterface;
 use Magento\Framework\Exception\LocalizedException;
-use MiniOrange\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Helper\OAuthUtility;
 use Psr\Log\LoggerInterface;
 
 /**
  * Restricts password-based customer logins when OIDC-only mode is enabled.
  *
- * Reads per-provider `mo_disable_non_oidc_customer_login` from the
- * miniorange_oauth_client_apps table. No core_config_data fallbacks.
+ * Reads per-provider `m2oidc_disable_non_oidc_customer_login` from the
+ * m2oidc_oauth_client_apps table. No core_config_data fallbacks.
  */
 class CustomerLoginRestrictionPlugin
 {
@@ -57,7 +57,7 @@ class CustomerLoginRestrictionPlugin
         $anyRestricted = false;
         $anyButtonShown = false;
         foreach ($customerProviders as $provider) {
-            if (!empty($provider['mo_disable_non_oidc_customer_login'])) {
+            if (!empty($provider['m2oidc_disable_non_oidc_customer_login'])) {
                 $anyRestricted = true;
             }
             if (!empty($provider['show_customer_link'])) {
@@ -72,7 +72,7 @@ class CustomerLoginRestrictionPlugin
         // Safety net: if no provider shows the OIDC button, do NOT block normal login
         if (!$anyButtonShown) {
             $this->logger->warning(
-                'MiniOrange OIDC: OIDC-only customer login is enabled but no '
+                'M2Oidc OIDC: OIDC-only customer login is enabled but no '
                 . 'OIDC button is shown. Allowing normal login to prevent '
                 . 'lockout. Email: ' . $email
             );

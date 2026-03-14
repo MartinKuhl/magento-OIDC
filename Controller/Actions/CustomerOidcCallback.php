@@ -6,9 +6,9 @@
  * validation. Mirrors the admin Oidccallback pattern for proper
  * session persistence.
  *
- * @package MiniOrange\OAuth\Controller\Actiofinal ns
+ * @package M2Oidc\OAuth\Controller\Actiofinal ns
  */
-namespace MiniOrange\OAuth\Controller\Actions;
+namespace M2Oidc\OAuth\Controller\Actions;
 
 use Magento\Framework\App\Action\Context;
 use Magento\Customer\Model\CustomerFactory;
@@ -17,8 +17,8 @@ use Magento\Store\Model\StoreManagerInterface;
 use Magento\Framework\Stdlib\CookieManagerInterface;
 use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
 use Magento\Customer\Api\CustomerRepositoryInterface;
-use MiniOrange\OAuth\Helper\OAuthSecurityHelper;
-use MiniOrange\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Helper\OAuthSecurityHelper;
+use M2Oidc\OAuth\Helper\OAuthUtility;
 use Magento\Framework\Controller\Result\Redirect;
 
 /**
