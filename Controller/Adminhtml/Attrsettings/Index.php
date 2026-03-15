@@ -96,9 +96,8 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
     /**
      * Process Values being submitted and save data in the database.
      *
-     * When provider_id is present in $params, saves directly to that provider's
-     * row in m2oidc_oauth_client_apps (provider-context mode).
-     * Otherwise falls back to the legacy global setStoreConfig behaviour.
+     * Saves directly to the specific provider's row in m2oidc_oauth_client_apps
+     * identified by provider_id in $params.
      *
      * @param array $params
      */
@@ -142,101 +141,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
             $this->oauthUtility->customlog(
                 'Saved attribute mapping for provider ID ' . $providerId
             );
-            return;
         }
-
-        // --- Legacy global mode: save to core_config_data ---
-        //ToDo_MK extend for other attributes like first name, last name if needed
-        $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_USERNAME, $params['oauth_am_username']);
-        $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_EMAIL, $params['oauth_am_email']);
-
-        $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_FIRSTNAME, $params['oauth_am_first_name']);
-        $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_LASTNAME, $params['oauth_am_last_name']);
-
-        // Customer Group Mapping (global mode)
-        if (isset($params['oauth_customer_group_mapping'])) {
-            $customerGroupMappings = array_filter(
-                $params['oauth_customer_group_mapping'],
-                static fn (array $m): bool => !empty($m['group']) && !empty($m['customerGroup'])
-            );
-            $this->oauthUtility->setStoreConfig(
-                OAuthConstants::CUSTOMER_GROUP_MAPPING,
-                json_encode(array_values($customerGroupMappings)),
-                true
-            );
-        }
-
-        if (isset($params['oauth_am_default_customer_group'])) {
-            $this->oauthUtility->setStoreConfig(
-                OAuthConstants::MAP_DEFAULT_CUSTOMER_GROUP,
-                $params['oauth_am_default_customer_group']
-            );
-        }
-
-        if (isset($params['dont_allow_unlisted_user_role'])) {
-            $this->oauthUtility->setStoreConfig(
-                OAuthConstants::UNLISTED_ROLE,
-                $params['dont_allow_unlisted_user_role']
-            );
-        }
-
-        // Save group attribute name for OIDC groups claim
-        if (isset($params['oauth_am_group'])) {
-            $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_GROUP, $params['oauth_am_group']);
-        }
-
-        // Save default admin role
-        if (isset($params['oauth_am_default_role'])) {
-            $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_DEFAULT_ROLE, $params['oauth_am_default_role']);
-        }
-
-        // Save admin role mappings as JSON (filter out empty mappings)
-        if (isset($params['oauth_role_mapping'])) {
-            $roleMappings = array_filter(
-                $params['oauth_role_mapping'],
-                function (array $mapping): bool {
-                    return !empty($mapping['group']) && !empty($mapping['role']);
-                }
-            );
-            $roleMappingsJson = json_encode(array_values($roleMappings));
-            $this->oauthUtility->setStoreConfig('adminRoleMapping', $roleMappingsJson, true);
-            $logMsg = 'Saved admin role mappings: ' . $roleMappingsJson;
-            $this->oauthUtility->customlog($logMsg);
-        }
-
-        $this->oauthUtility->setStoreConfig(
-            OAuthConstants::UPDATE_FRONTEND_GROUPS_ON_SSO,
-            isset($params['update_frontend_groups_on_sso']) ? '1' : '0'
-        );
-
-        // Save customer data mapping fields (directly from dropdown selection)
-        $dobValue = $params['oauth_am_dob'] ?? '';
-        $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_DOB, $dobValue);
-        $this->oauthUtility->customlog("Saved DOB mapping: " . $dobValue);
-
-        $genderValue = $params['oauth_am_gender'] ?? '';
-        $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_GENDER, $genderValue);
-        $this->oauthUtility->customlog("Saved gender mapping: " . $genderValue);
-
-        $phoneValue = $params['oauth_am_phone'] ?? '';
-        $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_PHONE, $phoneValue);
-        $this->oauthUtility->customlog("Saved phone mapping: " . $phoneValue);
-
-        $streetValue = $params['oauth_am_street'] ?? '';
-        $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_STREET, $streetValue);
-        $this->oauthUtility->customlog("Saved street mapping: " . $streetValue);
-
-        $zipValue = $params['oauth_am_zip'] ?? '';
-        $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_ZIP, $zipValue);
-        $this->oauthUtility->customlog("Saved zip mapping: " . $zipValue);
-
-        $cityValue = $params['oauth_am_city'] ?? '';
-        $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_CITY, $cityValue);
-        $this->oauthUtility->customlog("Saved city mapping: " . $cityValue);
-
-        $countryValue = $params['oauth_am_country'] ?? '';
-        $this->oauthUtility->setStoreConfig(OAuthConstants::MAP_COUNTRY, $countryValue);
-        $this->oauthUtility->customlog("Saved country mapping: " . $countryValue);
     }
 
     /**

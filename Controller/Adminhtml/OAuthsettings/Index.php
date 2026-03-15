@@ -209,9 +209,8 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
     /**
      * Process Values being submitted and save data in the database.
      *
-     * When provider_id is present in $params, saves directly to that provider's
-     * row in m2oidc_oauth_client_apps (provider-context mode).
-     * Otherwise falls back to the legacy single-provider behaviour.
+     * Saves directly to the specific provider's row in m2oidc_oauth_client_apps
+     * identified by provider_id in $params.
      *
      * @param array $params
      */
@@ -259,41 +258,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
                 $model->setData('client_secret', $m2oidc_client_secret);
             }
             $this->appResource->save($model);
-            return;
         }
-
-        // --- Legacy mode: single provider, delete all + recreate ---
-        $m2oidc_grant_type = OAuthConstants::GRANT_TYPE;
-
-        $this->oauthUtility->getClientDetailsByAppName($m2oidc_app_name);
-
-        // Remove all previous records so at a time only 1 app_name is shown (free version)
-        $this->oauthUtility->deleteAllRecords();
-
-        // Store in custom table
-        $this->oauthUtility->setOAuthClientApps(
-            $m2oidc_app_name,
-            $m2oidc_client_id,
-            $m2oidc_client_secret,
-            $m2oidc_scope,
-            $m2oidc_authorize_url,
-            $m2oidc_accesstoken_url,
-            $m2oidc_getuserinfo_url,
-            $m2oidc_well_known_config_url,
-            $m2oidc_grant_type,
-            $send_header,
-            $send_body,
-            $m2oidc_issuer,
-            $m2oidc_endsession_url
-        );
-
-        $this->oauthUtility->setStoreConfig(OAuthConstants::APP_NAME, $m2oidc_app_name);
-        $this->oauthUtility->setStoreConfig(OAuthConstants::SHOW_CUSTOMER_LINK, 1);
-
-        $adminUser = $this->oauthUtility->getCurrentAdminUser();
-        $userEmail = $adminUser instanceof \Magento\User\Model\User ? (string) $adminUser->getData('email') : '';
-
-        $this->oauthUtility->setStoreConfig(OAuthConstants::ADMINEMAIL, $userEmail);
     }
 
     /**

@@ -139,38 +139,39 @@ cd /var/www/html/github/OIDC && /var/www/html/vendor/bin/phpunit --configuration
 ####### check all ######
 Please run PHPStan, Psalm, PHPCS, PHPUnit and Rector via:
 ## Run PHPStan: 
-cd /var/www/html/github/OIDC && /var/www/html/vendor/bin/phpstan analyse --memory-limit=1G --configuration=phpstan.local.neon 
+cd /var/www/html/github/magento2-oidc-sso && /var/www/html/vendor/bin/phpstan analyse --memory-limit=1G --configuration=phpstan.local.neon 
 
 ## Run Psalm:
-cd /var/www/html/ && /var/www/html/vendor/bin/psalm --no-cache --config=/var/www/html/github/OIDC/psalm.xml --root=/var/www/html 
+cd /var/www/html/ && /var/www/html/vendor/bin/psalm --no-cache --config=/var/www/html/github/magento2-oidc-sso/psalm.xml --root=/var/www/html 
 
 ## Run PHPCS:
-cd /var/www/html/github/OIDC && /var/www/html/vendor/bin/phpcs --extensions=php,phtml --standard=phpcs.xml . 
+cd /var/www/html/github/magento2-oidc-sso && /var/www/html/vendor/bin/phpcs --extensions=php,phtml --standard=phpcs.xml . 
 
 ## Run Rector:
-cd /var/www/html/github/OIDC && /var/www/html/vendor/bin/rector process --dry-run
+cd /var/www/html/github/magento2-oidc-sso && /var/www/html/vendor/bin/rector process --dry-run
 
 ## Run PHPUnit:
-cd /var/www/html/github/OIDC && /var/www/html/vendor/bin/phpunit --configuration phpunit.xml --testsuite "M2Oidc OIDC Unit Tests"
+cd /var/www/html/github/magento2-oidc-sso && /var/www/html/vendor/bin/phpunit --configuration phpunit.xml --testsuite "M2Oidc OIDC Unit Tests"
 
 
 Fix all the mentioned issue and warnings. Use sub-agents where applicable. DO not create new issue for PHPStan, PHPUnit, Psalm, PHPCS and Rector.
 
 ##############################################
 
-### FIX ###
-
+### ToDo ###
 - you mark the section in case changes were made, extend this so that the concrete data field is highlighted
-
 - scope handling
 
-# TESTING
+### FIX ###
+
+-
+
+### TESTING ###
 - update customer and admin
 - PKSE & jwsk s
 
-### LATER - complex ###:
-- Refactor remove old legacy single-provider forms
-- remove migrations
+### LATER - more complex ###:
+-
 
 
 Nächster Schritt (nach Stabilisierung):
@@ -181,6 +182,8 @@ Langfristig (Ziel für sauberen Code):
 PHPStan: Level 6
 Psalm:   Level 3
 
+
+### renaming ###
 
 M2Oidc --> M2Oidc
 
