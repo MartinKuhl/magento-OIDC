@@ -133,7 +133,7 @@ $roleMappings = is_array($decoded) ? $decoded : [];
 </div>
 
 <!-- Admin Role Mapping -->
-<div class="admin__fieldset-wrapper" style="margin-top:24px;">
+<div id="m2oidc-admin-role-mapping-section" class="admin__fieldset-wrapper" style="margin-top:24px;">
     <div class="admin__fieldset-wrapper-title" style="margin-bottom:12px;">
         <span class="admin__fieldset-wrapper-title-text"
               style="font-size:15px; font-weight:700; color:#1a1a1a; letter-spacing:0.2px;">
@@ -233,7 +233,7 @@ $rawCgm = (string) $val('oauth_customer_group_mapping', '[]');
 $decodedCgm = json_decode($rawCgm, true);
 $customerGroupMappings = is_array($decodedCgm) ? $decodedCgm : [];
 ?>
-<div class="admin__fieldset-wrapper" style="margin-top:24px;">
+<div id="m2oidc-customer-group-mapping-section" class="admin__fieldset-wrapper" style="margin-top:24px;">
     <div class="admin__fieldset-wrapper-title" style="margin-bottom:12px;">
         <span class="admin__fieldset-wrapper-title-text"
               style="font-size:15px; font-weight:700; color:#1a1a1a; letter-spacing:0.2px;">
@@ -540,6 +540,28 @@ $customerGroupMappings = is_array($decodedCgm) ? $decodedCgm : [];
                 if (rows.length > 1) { e.target.closest('.m2oidc-cgm-row').remove(); }
             }
         });
+    }
+
+    // Disable Admin Role Mapping and Customer Group Mapping sections when Group / Role Claim is empty
+    var groupAttrInput  = document.getElementById('group_attribute');
+    var adminSection    = document.getElementById('m2oidc-admin-role-mapping-section');
+    var cgmSection      = document.getElementById('m2oidc-customer-group-mapping-section');
+
+    function syncGroupMappingSections() {
+        var isEmpty = !groupAttrInput || groupAttrInput.value.trim() === '';
+        [adminSection, cgmSection].forEach(function (section) {
+            if (!section) { return; }
+            section.style.opacity         = isEmpty ? '0.4' : '';
+            section.style.pointerEvents   = isEmpty ? 'none' : '';
+            section.querySelectorAll('input, select, button').forEach(function (el) {
+                el.disabled = isEmpty;
+            });
+        });
+    }
+
+    if (groupAttrInput) {
+        groupAttrInput.addEventListener('input', syncGroupMappingSections);
+        syncGroupMappingSections();
     }
 }());
 </script>
