@@ -169,7 +169,8 @@ Fix all the mentioned issue and warnings. Use sub-agents where applicable. DO no
 - PKSE & jwsk s
 
 ### LATER - complex ###:
-- Rename: --> Authelia OIDC (in Code)
+- Refactor remove old legacy single-provider forms
+- remove migrations
 
 
 Nächster Schritt (nach Stabilisierung):

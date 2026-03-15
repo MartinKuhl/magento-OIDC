@@ -9,6 +9,7 @@ use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
 use Magento\Framework\App\Request\DataPersistorInterface;
 use Magento\Framework\Controller\Result\Redirect;
+use M2Oidc\OAuth\Helper\Curl;
 use M2Oidc\OAuth\Model\M2oidcOauthClientAppsFactory;
 use M2Oidc\OAuth\Model\Provider\MappingRepository;
 use M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps as AppResource;
@@ -38,6 +39,9 @@ class Save extends Action implements HttpPostActionInterface
     /** @var MappingRepository */
     private readonly MappingRepository $mappingRepository;
 
+    /** @var Curl */
+    private readonly Curl $curl;
+
     /**
      * Initialize provider save controller.
      *
@@ -46,18 +50,21 @@ class Save extends Action implements HttpPostActionInterface
      * @param AppResource                      $appResource
      * @param DataPersistorInterface           $dataPersistor
      * @param MappingRepository                $mappingRepository
+     * @param Curl                             $curl
      */
     public function __construct(
         Context $context,
         M2oidcOauthClientAppsFactory $clientAppsFactory,
         AppResource $appResource,
         DataPersistorInterface $dataPersistor,
-        MappingRepository $mappingRepository
+        MappingRepository $mappingRepository,
+        Curl $curl
     ) {
         $this->clientAppsFactory  = $clientAppsFactory;
         $this->appResource        = $appResource;
         $this->dataPersistor      = $dataPersistor;
         $this->mappingRepository  = $mappingRepository;
+        $this->curl               = $curl;
         parent::__construct($context);
     }
 
@@ -224,6 +231,40 @@ class Save extends Action implements HttpPostActionInterface
             }
             $model->setData('pkce_flow', $pkceFlow);
 
+            // Auto-discover endpoints when a Discovery URL is provided.
+            // Overrides any manually-entered endpoint fields, consistent with the form hint.
+            $discoveryUrl = trim((string) ($data['well_known_config_url'] ?? ''));
+            $discoverySucceeded = false;
+            if ($discoveryUrl !== '') {
+                $discovered = $this->performDiscovery($discoveryUrl);
+                if ($discovered !== null) {
+                    if (isset($discovered->authorization_endpoint)) {
+                        $model->setData('authorize_endpoint', trim((string) $discovered->authorization_endpoint));
+                    }
+                    if (isset($discovered->token_endpoint)) {
+                        $model->setData('access_token_endpoint', trim((string) $discovered->token_endpoint));
+                    }
+                    if (isset($discovered->userinfo_endpoint)) {
+                        $model->setData('user_info_endpoint', trim((string) $discovered->userinfo_endpoint));
+                    }
+                    if (isset($discovered->issuer)) {
+                        $model->setData('issuer', trim((string) $discovered->issuer));
+                    }
+                    if (isset($discovered->end_session_endpoint)) {
+                        $model->setData('endsession_endpoint', trim((string) $discovered->end_session_endpoint));
+                    }
+                    if (isset($discovered->revocation_endpoint)) {
+                        $model->setData('revocation_endpoint', trim((string) $discovered->revocation_endpoint));
+                    }
+                    if (isset($discovered->jwks_uri)) {
+                        $model->setData('jwks_endpoint', trim((string) $discovered->jwks_uri));
+                    }
+                    $discoverySucceeded = true;
+                }
+                // On failure, performDiscovery() already added an error message.
+                // Save still proceeds so the user does not lose other field values.
+            }
+
             $this->appResource->save($model);
 
             // Phase 4 dual-write: mirror role/group mappings into normalized tables so
@@ -243,7 +284,13 @@ class Save extends Action implements HttpPostActionInterface
                 );
             }
 
-            $this->messageManager->addSuccessMessage((string) __('Provider saved successfully.'));
+            if ($discoverySucceeded) {
+                $this->messageManager->addSuccessMessage(
+                    (string) __('Provider saved successfully. Endpoints auto-discovered from Discovery URL.')
+                );
+            } else {
+                $this->messageManager->addSuccessMessage((string) __('Provider saved successfully.'));
+            }
             $this->dataPersistor->clear('oidc_provider');
 
             if (isset($data['back']) && $data['back'] === 'test') {
@@ -268,6 +315,61 @@ class Save extends Action implements HttpPostActionInterface
             }
             return $redirect->setPath('*/*/edit');
         }
+    }
+
+    /**
+     * Fetch and parse an OIDC discovery document.
+     *
+     * Validates that the URL is HTTPS and does not point to a private/loopback address
+     * (SEC-04 SSRF protection, same rules as OAuthsettings/Index.php).
+     *
+     * @param string $url Raw Discovery URL from the form.
+     * @return \stdClass|null Parsed document on success; null on any validation or fetch error.
+     */
+    private function performDiscovery(string $url): ?\stdClass
+    {
+        // Must be a well-formed HTTPS URL.
+        // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
+        $validated = filter_var($url, FILTER_VALIDATE_URL);
+        // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
+        if ($validated === false || parse_url($validated, PHP_URL_SCHEME) !== 'https') {
+            $this->messageManager->addErrorMessage(
+                (string) __(
+                    'Discovery URL must be a valid HTTPS URL '
+                    . '(e.g. https://provider.example.com/.well-known/openid-configuration).'
+                )
+            );
+            return null;
+        }
+
+        // Block loopback and RFC-1918 private ranges (SSRF protection).
+        // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
+        $host = (string) parse_url($validated, PHP_URL_HOST);
+        $isPrivate = in_array($host, ['localhost', '127.0.0.1', '::1', '0.0.0.0'], true)
+            || (bool) preg_match('/^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/', $host);
+
+        if ($isPrivate) {
+            $this->messageManager->addErrorMessage(
+                (string) __('Discovery URL must not point to a private or internal network address.')
+            );
+            return null;
+        }
+
+        $body = $this->curl->sendUserInfoRequest($validated, []);
+        $obj  = json_decode($body);
+
+        if ($obj === null || !isset($obj->authorization_endpoint, $obj->token_endpoint)) {
+            $this->messageManager->addErrorMessage(
+                (string) __(
+                    'Could not auto-discover endpoints. '
+                    . 'The Discovery URL did not return a valid OIDC configuration document '
+                    . '(missing authorization_endpoint or token_endpoint).'
+                )
+            );
+            return null;
+        }
+
+        return $obj;
     }
 
     /**
