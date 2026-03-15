@@ -163,8 +163,8 @@ Fix all the mentioned issue and warnings. Use sub-agents where applicable. DO no
 - scope handling
 
 ### FIX ###
-
--
+- groups --> default Admin Role & Customer Group can still be active also the labels
+- input of space and arrows are still problematic
 
 ### TESTING ###
 - update customer and admin
@@ -198,3 +198,5 @@ m2oidc_oauth_user_provider --> m2oidc_oauth_user_provider
 
 MOOAUTH --> M2OIDC
 m2oidc --> m2oidc
+
+composer global require magento/magento-coding-standard require phpstan/phpstan vimeo/psalm phpunit/phpunit rector/rector
