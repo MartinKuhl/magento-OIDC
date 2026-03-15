@@ -19,7 +19,7 @@ use Magento\Framework\View\Asset\Repository as AssetRepository;
 use Magento\Store\Model\ScopeInterface;
 use Magento\User\Model\ResourceModel\User as UserResource;
 use Magento\User\Model\UserFactory;
-use M2Oidc\OAuth\Model\MiniorangeOauthClientAppsFactory;
+use M2Oidc\OAuth\Model\M2oidcOauthClientAppsFactory;
 use M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps as AppResource;
 use M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps\CollectionFactory as ClientCollectionFactory;
 use Psr\Log\LoggerInterface;
@@ -51,8 +51,8 @@ class Data extends AbstractHelper
     /** @var Url */
     private readonly Url $frontendUrl;
 
-    /** @var MiniorangeOauthClientAppsFactory */
-    protected readonly MiniorangeOauthClientAppsFactory $clientAppsFactory;
+    /** @var M2oidcOauthClientAppsFactory */
+    protected readonly M2oidcOauthClientAppsFactory $clientAppsFactory;
 
     /** @var ClientCollectionFactory */
     protected readonly ClientCollectionFactory $clientCollectionFactory;
@@ -86,7 +86,7 @@ class Data extends AbstractHelper
      * @param AssetRepository $assetRepo
      * @param BackendHelper $helperBackend
      * @param Url $frontendUrl
-     * @param MiniorangeOauthClientAppsFactory $clientAppsFactory
+     * @param M2oidcOauthClientAppsFactory $clientAppsFactory
      * @param ClientCollectionFactory $clientCollectionFactory
      * @param AppResource $appResource
      * @param UserResource $userResource
@@ -104,7 +104,7 @@ class Data extends AbstractHelper
         AssetRepository $assetRepo,
         BackendHelper $helperBackend,
         Url $frontendUrl,
-        MiniorangeOauthClientAppsFactory $clientAppsFactory,
+        M2oidcOauthClientAppsFactory $clientAppsFactory,
         ClientCollectionFactory $clientCollectionFactory,
         AppResource $appResource,
         UserResource $userResource,
@@ -671,7 +671,7 @@ class Data extends AbstractHelper
     /**
      * Expose client apps factory for use in controllers (e.g. config import).
      */
-    public function getClientAppsFactory(): MiniorangeOauthClientAppsFactory
+    public function getClientAppsFactory(): M2oidcOauthClientAppsFactory
     {
         return $this->clientAppsFactory;
     }

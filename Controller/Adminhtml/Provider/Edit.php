@@ -11,7 +11,7 @@ use Magento\Framework\Controller\Result\Redirect;
 use Magento\Framework\Registry;
 use Magento\Framework\View\Result\Page;
 use Magento\Framework\View\Result\PageFactory;
-use M2Oidc\OAuth\Model\MiniorangeOauthClientAppsFactory;
+use M2Oidc\OAuth\Model\M2oidcOauthClientAppsFactory;
 use M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps as AppResource;
 
 /**
@@ -36,8 +36,8 @@ class Edit extends Action implements HttpGetActionInterface
     /** @var Registry */
     private readonly Registry $registry;
 
-    /** @var MiniorangeOauthClientAppsFactory */
-    private readonly MiniorangeOauthClientAppsFactory $clientAppsFactory;
+    /** @var M2oidcOauthClientAppsFactory */
+    private readonly M2oidcOauthClientAppsFactory $clientAppsFactory;
 
     /** @var AppResource */
     private readonly AppResource $appResource;
@@ -46,14 +46,14 @@ class Edit extends Action implements HttpGetActionInterface
      * @param Context                          $context
      * @param PageFactory                      $pageFactory
      * @param Registry                         $registry
-     * @param MiniorangeOauthClientAppsFactory $clientAppsFactory
+     * @param M2oidcOauthClientAppsFactory $clientAppsFactory
      * @param AppResource                      $appResource
      */
     public function __construct(
         Context $context,
         PageFactory $pageFactory,
         Registry $registry,
-        MiniorangeOauthClientAppsFactory $clientAppsFactory,
+        M2oidcOauthClientAppsFactory $clientAppsFactory,
         AppResource $appResource
     ) {
         $this->pageFactory       = $pageFactory;

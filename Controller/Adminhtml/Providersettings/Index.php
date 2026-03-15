@@ -11,7 +11,7 @@ use M2Oidc\OAuth\Controller\Actions\BaseAdminAction;
 use M2Oidc\OAuth\Helper\OAuthConstants;
 use M2Oidc\OAuth\Helper\OAuthMessages;
 use M2Oidc\OAuth\Helper\OAuthUtility;
-use M2Oidc\OAuth\Model\MiniorangeOauthClientAppsFactory;
+use M2Oidc\OAuth\Model\M2oidcOauthClientAppsFactory;
 use M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps as AppResource;
 use Psr\Log\LoggerInterface;
 
@@ -27,8 +27,8 @@ use Psr\Log\LoggerInterface;
  */
 class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetActionInterface
 {
-    /** @var MiniorangeOauthClientAppsFactory */
-    private readonly MiniorangeOauthClientAppsFactory $clientAppsFactory;
+    /** @var M2oidcOauthClientAppsFactory */
+    private readonly M2oidcOauthClientAppsFactory $clientAppsFactory;
 
     /** @var AppResource */
     private readonly AppResource $appResource;
@@ -41,7 +41,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
      * @param OAuthUtility                     $oauthUtility
      * @param ManagerInterface                 $messageManager
      * @param LoggerInterface                  $logger
-     * @param MiniorangeOauthClientAppsFactory $clientAppsFactory
+     * @param M2oidcOauthClientAppsFactory $clientAppsFactory
      * @param AppResource                      $appResource
      */
     public function __construct(
@@ -50,7 +50,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         OAuthUtility $oauthUtility,
         ManagerInterface $messageManager,
         LoggerInterface $logger,
-        MiniorangeOauthClientAppsFactory $clientAppsFactory,
+        M2oidcOauthClientAppsFactory $clientAppsFactory,
         AppResource $appResource
     ) {
         $this->clientAppsFactory = $clientAppsFactory;

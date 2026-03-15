@@ -10,7 +10,7 @@ use M2Oidc\OAuth\Helper\OAuthMessages;
 
 use M2Oidc\OAuth\Controller\Actions\BaseAdminAction;
 use M2Oidc\OAuth\Helper\Curl;
-use M2Oidc\OAuth\Model\MiniorangeOauthClientAppsFactory;
+use M2Oidc\OAuth\Model\M2oidcOauthClientAppsFactory;
 use M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps as AppResource;
 
 /**
@@ -27,8 +27,8 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
     /** @var Curl */
     private readonly Curl $curl;
 
-    /** @var MiniorangeOauthClientAppsFactory */
-    private readonly MiniorangeOauthClientAppsFactory $clientAppsFactory;
+    /** @var M2oidcOauthhClientAppsFactory */
+    private readonly M2oidcOauthClientAppsFactory $clientAppsFactory;
 
     /** @var AppResource */
     private readonly AppResource $appResource;
@@ -42,7 +42,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
      * @param \Magento\Framework\Message\ManagerInterface      $messageManager
      * @param \Psr\Log\LoggerInterface                         $logger
      * @param Curl                                             $curl
-     * @param MiniorangeOauthClientAppsFactory                 $clientAppsFactory
+     * @param M2oidcOauthClientAppsFactory                 $clientAppsFactory
      * @param AppResource                                      $appResource
      */
     public function __construct(
@@ -52,7 +52,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         \Magento\Framework\Message\ManagerInterface $messageManager,
         \Psr\Log\LoggerInterface $logger,
         Curl $curl,
-        MiniorangeOauthClientAppsFactory $clientAppsFactory,
+        M2oidcOauthClientAppsFactory $clientAppsFactory,
         AppResource $appResource
     ) {
         $this->curl              = $curl;

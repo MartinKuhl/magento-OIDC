@@ -635,7 +635,7 @@ M2Oidc_OAuth/
 │   │   ├── OidcAuthenticationService.php     # Validates extracted user info post-token exchange
 │   │   └── UserProvisioningService.php       # Orchestrates admin/customer provisioning
 │   ├── Resolver/                             # GraphQL resolvers (if GraphQL module present)
-│   ├── MiniorangeOauthClientApps.php         # Model for oauth_client_apps table
+│   ├── M2oidcOauthClientApps.php             # Model for oauth_client_apps table
 │   └── ResourceModel/
 │       └── M2OidcOauthClientApps/
 │           ├── Collection.php                # Collection model

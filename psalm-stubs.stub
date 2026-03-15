@@ -87,11 +87,11 @@ namespace Magento\Authorization\Model\ResourceModel\Role {
 }
 
 namespace MiniOrange\OAuth\Model {
-    class MiniorangeOauthClientAppsFactory
+    class M2oidcOauthClientAppsFactory
     {
         public function create(array $data = [])
         {
-            return new \MiniOrange\OAuth\Model\MiniorangeOauthClientApps();
+            return new \MiniOrange\OAuth\Model\M2oidcOauthClientApps();
         }
     }
 }

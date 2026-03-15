@@ -181,7 +181,7 @@ The module implements a dual authentication flow for admin and customer users:
 - `MappingRepository.php`: Repository for accessing normalized attribute/role mappings (Phase 4); reads from `m2oidc_oauth_attribute_mappings` and `m2oidc_oauth_role_mappings` tables
 
 **ORM Models:**
-- `MiniorangeOauthClientApps.php` + ResourceModel: Primary provider configuration model
+- `M2oidcOauthClientApps.php` + ResourceModel: Primary provider configuration model
 - `OauthAttributeMapping.php` + ResourceModel: Normalized attribute mappings (Phase 4)
 - `OauthRoleMapping.php` + ResourceModel: Normalized role/group mappings (Phase 4)
 - `UserProvider.php` + ResourceModel: Tracks which provider created each Magento user (`m2oidc_oauth_user_provider` table)

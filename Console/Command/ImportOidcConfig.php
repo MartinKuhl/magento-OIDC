@@ -11,7 +11,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use M2Oidc\OAuth\Helper\OAuthUtility;
-use M2Oidc\OAuth\Model\MiniorangeOauthClientAppsFactory;
+use M2Oidc\OAuth\Model\M2oidcOauthClientAppsFactory;
 use M2Oidc\OAuth\Model\Provider\MappingRepository;
 use M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps as AppResource;
 use M2Oidc\OAuth\Model\ResourceModel\OauthRoleMapping as RoleMappingResource;
@@ -40,8 +40,8 @@ class ImportOidcConfig extends Command
     /** @var OAuthUtility */
     private readonly OAuthUtility $oauthUtility;
 
-    /** @var MiniorangeOauthClientAppsFactory */
-    private readonly MiniorangeOauthClientAppsFactory $clientAppsFactory;
+    /** @var M2oidcOauthClientAppsFactory */
+    private readonly M2oidcOauthClientAppsFactory $clientAppsFactory;
 
     /** @var AppResource */
     private readonly AppResource $appResource;
@@ -59,7 +59,7 @@ class ImportOidcConfig extends Command
      * Initialize import command.
      *
      * @param OAuthUtility                     $oauthUtility
-     * @param MiniorangeOauthClientAppsFactory $clientAppsFactory
+     * @param M2oidcOauthClientAppsFactory $clientAppsFactory
      * @param AppResource                      $appResource
      * @param EncryptorInterface               $encryptor
      * @param State                            $appState
@@ -67,7 +67,7 @@ class ImportOidcConfig extends Command
      */
     public function __construct(
         OAuthUtility $oauthUtility,
-        MiniorangeOauthClientAppsFactory $clientAppsFactory,
+        M2oidcOauthClientAppsFactory $clientAppsFactory,
         AppResource $appResource,
         EncryptorInterface $encryptor,
         State $appState,
@@ -268,13 +268,13 @@ class ImportOidcConfig extends Command
      *
      * Extracted from execute() to keep nesting level within coding-standard limits.
      *
-     * @param \M2Oidc\OAuth\Model\MiniorangeOauthClientApps $model
+     * @param \M2Oidc\OAuth\Model\M2oidcOauthClientApps $model
      * @param array $importData
      * @param array $attributeMappings
      * @param array $roleMappings
      */
     private function persistProvider(
-        \M2Oidc\OAuth\Model\MiniorangeOauthClientApps $model,
+        \M2Oidc\OAuth\Model\M2oidcOauthClientApps $model,
         array $importData,
         array $attributeMappings,
         array $roleMappings

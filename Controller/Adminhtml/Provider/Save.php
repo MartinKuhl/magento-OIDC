@@ -9,7 +9,7 @@ use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
 use Magento\Framework\App\Request\DataPersistorInterface;
 use Magento\Framework\Controller\Result\Redirect;
-use M2Oidc\OAuth\Model\MiniorangeOauthClientAppsFactory;
+use M2Oidc\OAuth\Model\M2oidcOauthClientAppsFactory;
 use M2Oidc\OAuth\Model\Provider\MappingRepository;
 use M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps as AppResource;
 use M2Oidc\OAuth\Model\ResourceModel\OauthRoleMapping as RoleMappingResource;
@@ -26,8 +26,8 @@ class Save extends Action implements HttpPostActionInterface
 {
     public const string ADMIN_RESOURCE = 'M2Oidc_OAuth::oauth_settings';
 
-    /** @var MiniorangeOauthClientAppsFactory */
-    private readonly MiniorangeOauthClientAppsFactory $clientAppsFactory;
+    /** @var M2oidcOauthClientAppsFactory */
+    private readonly M2oidcOauthClientAppsFactory $clientAppsFactory;
 
     /** @var AppResource */
     private readonly AppResource $appResource;
@@ -42,14 +42,14 @@ class Save extends Action implements HttpPostActionInterface
      * Initialize provider save controller.
      *
      * @param Context                          $context
-     * @param MiniorangeOauthClientAppsFactory $clientAppsFactory
+     * @param M2oidcOauthhClientAppsFactory $clientAppsFactory
      * @param AppResource                      $appResource
      * @param DataPersistorInterface           $dataPersistor
      * @param MappingRepository                $mappingRepository
      */
     public function __construct(
         Context $context,
-        MiniorangeOauthClientAppsFactory $clientAppsFactory,
+        M2oidcOauthClientAppsFactory $clientAppsFactory,
         AppResource $appResource,
         DataPersistorInterface $dataPersistor,
         MappingRepository $mappingRepository

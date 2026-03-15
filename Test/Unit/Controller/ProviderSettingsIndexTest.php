@@ -11,8 +11,8 @@ use Magento\Framework\View\Result\Page;
 use Magento\Framework\View\Result\PageFactory;
 use M2Oidc\OAuth\Controller\Adminhtml\Providersettings\Index;
 use M2Oidc\OAuth\Helper\OAuthUtility;
-use M2Oidc\OAuth\Model\MiniorangeOauthClientApps;
-use M2Oidc\OAuth\Model\MiniorangeOauthClientAppsFactory;
+use M2Oidc\OAuth\Model\M2oidcOauthClientApps;
+use M2Oidc\OAuth\Model\M2oidcOauthClientAppsFactory;
 use M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps as AppResource;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -51,14 +51,14 @@ class ProviderSettingsIndexTest extends TestCase
     /** @var LoggerInterface&MockObject */
     private LoggerInterface $logger;
 
-    /** @var MiniorangeOauthClientAppsFactory&MockObject */
-    private MiniorangeOauthClientAppsFactory $clientAppsFactory;
+    /** @var M2oidcOauthClientAppsFactory&MockObject */
+    private M2oidcOauthClientAppsFactory $clientAppsFactory;
 
     /** @var AppResource&MockObject */
     private AppResource $appResource;
 
-    /** @var MiniorangeOauthClientApps&MockObject */
-    private MiniorangeOauthClientApps $model;
+    /** @var M2oidcOauthClientApps&MockObject */
+    private M2oidcOauthClientApps $model;
 
     /** @var Index */
     private Index $controller;
@@ -71,9 +71,9 @@ class ProviderSettingsIndexTest extends TestCase
         $this->messageManager = $this->createMock(ManagerInterface::class);
         $this->logger         = $this->createMock(LoggerInterface::class);
 
-        $this->clientAppsFactory = $this->createMock(MiniorangeOauthClientAppsFactory::class);
+        $this->clientAppsFactory = $this->createMock(M2oidcOauthClientAppsFactory::class);
         $this->appResource       = $this->createMock(AppResource::class);
-        $this->model             = $this->createMock(MiniorangeOauthClientApps::class);
+        $this->model             = $this->createMock(M2oidcOauthClientApps::class);
 
         // Wire Context to return our request mock
         $this->context = $this->createMock(Context::class);

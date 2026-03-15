@@ -9,7 +9,7 @@ use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
 use Magento\Framework\Controller\Result\Redirect;
 use M2Oidc\OAuth\Helper\OAuthUtility;
-use M2Oidc\OAuth\Model\MiniorangeOauthClientAppsFactory;
+use M2Oidc\OAuth\Model\M2oidcOauthClientAppsFactory;
 use M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps as AppResource;
 
 /**
@@ -25,8 +25,8 @@ class Delete extends Action implements HttpPostActionInterface
 {
     public const string ADMIN_RESOURCE = 'M2Oidc_OAuth::oauth_settings';
 
-    /** @var MiniorangeOauthClientAppsFactory */
-    private readonly MiniorangeOauthClientAppsFactory $clientAppsFactory;
+    /** @var M2oidcOauthClientAppsFactory */
+    private readonly M2oidcOauthClientAppsFactory $clientAppsFactory;
 
     /** @var AppResource */
     private readonly AppResource $appResource;
@@ -38,13 +38,13 @@ class Delete extends Action implements HttpPostActionInterface
      * Initialize provider delete controller.
      *
      * @param Context                          $context
-     * @param MiniorangeOauthClientAppsFactory $clientAppsFactory
+     * @param M2oidcOauthClientAppsFactory $clientAppsFactory
      * @param AppResource                      $appResource
      * @param OAuthUtility                     $oauthUtility
      */
     public function __construct(
         Context $context,
-        MiniorangeOauthClientAppsFactory $clientAppsFactory,
+        M2oidcOauthClientAppsFactory $clientAppsFactory,
         AppResource $appResource,
         OAuthUtility $oauthUtility
     ) {

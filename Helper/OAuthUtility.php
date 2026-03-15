@@ -85,7 +85,7 @@ class OAuthUtility extends Data
      * @param \M2Oidc\OAuth\Logger\Logger $logger2
      * @param File $fileSystem
      * @param \Magento\Framework\App\ProductMetadataInterface $productMetadata
-     * @param \M2Oidc\OAuth\Model\MiniorangeOauthClientAppsFactory $m2oidcOauthClientAppsFactory
+     * @param \M2Oidc\OAuth\Model\M2oidcOauthClientAppsFactory $m2oidcOauthClientAppsFactory
      * @param \M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps\CollectionFactory $clientCollectionFactory
      * @param \M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps $appResource
      * @param \Magento\User\Model\ResourceModel\User $userResource
@@ -114,7 +114,7 @@ class OAuthUtility extends Data
         \M2Oidc\OAuth\Logger\Logger $logger2,
         File $fileSystem,
         \Magento\Framework\App\ProductMetadataInterface $productMetadata,
-        \M2Oidc\OAuth\Model\MiniorangeOauthClientAppsFactory $m2oidcOauthClientAppsFactory,
+        \M2Oidc\OAuth\Model\M2oidcOauthClientAppsFactory $m2oidcOauthClientAppsFactory,
         \M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps\CollectionFactory $clientCollectionFactory,
         \M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps $appResource,
         \Magento\User\Model\ResourceModel\User $userResource,
