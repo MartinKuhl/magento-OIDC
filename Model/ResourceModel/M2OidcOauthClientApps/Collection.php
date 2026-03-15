@@ -10,8 +10,8 @@ class Collection extends \Magento\Framework\Model\ResourceModel\Db\Collection\Ab
     public function _construct(): void
     {
         $this->_init(
-            "M2Oidc\\OAuth\\Model\\MiniorangeOauthClientApps",
-            "M2Oidc\\OAuth\\Model\\ResourceModel\\MiniorangeOauthClientApps"
+            "M2Oidc\\OAuth\\Model\\M2oidcOauthClientApps",
+            "M2Oidc\\OAuth\\Model\\ResourceModel\\M2OidcOauthClientApps"
         );
     }
 }
