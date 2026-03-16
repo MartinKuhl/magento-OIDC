@@ -199,4 +199,9 @@ m2oidc_oauth_user_provider --> m2oidc_oauth_user_provider
 MOOAUTH --> M2OIDC
 m2oidc --> m2oidc
 
-composer global require magento/magento-coding-standard require phpstan/phpstan vimeo/psalm phpunit/phpunit rector/rector
+# install testing dependencies
+#composer config minimum-stability dev
+#composer config minimum-stability stable
+
+composer require magento/magento-coding-standard bitexpert/phpstan-magento phpstan/phpstan vimeo/psalm phpunit/phpunit:^10.5 rector/rector --no-update
+composer update --no-dev
