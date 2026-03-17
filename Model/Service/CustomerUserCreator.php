@@ -442,8 +442,8 @@ class CustomerUserCreator
         $countryId = (string) ($mapped['billing_country_id'] ?? '');
         $phone     = (string) ($mapped['billing_telephone'] ?? '');
 
-        // Only create address if at least one of street, city, or country is present
-        if ($street === '' && $city === '' && $countryId === '') {
+        // Only create address if all required fields (street, zip, city, country) are present
+        if ($street === '' || $zip === '' || $city === '' || $countryId === '') {
             return;
         }
 

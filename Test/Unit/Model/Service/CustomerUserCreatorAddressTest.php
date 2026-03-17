@@ -239,6 +239,7 @@ class CustomerUserCreatorAddressTest extends TestCase
         $this->attributeMapper->method('map')->willReturn([
             'billing_street'     => '10 Elm St',
             'billing_city'       => 'Berlin',
+            'billing_postcode'   => '10115',
             'billing_country_id' => 'DE',
         ]);
 
@@ -277,6 +278,8 @@ class CustomerUserCreatorAddressTest extends TestCase
         // Configure mapper to return uppercased two-letter country code
         $this->attributeMapper->method('map')->willReturn([
             'billing_street'     => '1 St',
+            'billing_city'       => 'New York',
+            'billing_postcode'   => '10001',
             'billing_country_id' => 'US',
         ]);
 
@@ -311,6 +314,8 @@ class CustomerUserCreatorAddressTest extends TestCase
         // Configure mapper to return resolved country code 'DE'
         $this->attributeMapper->method('map')->willReturn([
             'billing_street'     => '1 St',
+            'billing_city'       => 'Berlin',
+            'billing_postcode'   => '10115',
             'billing_country_id' => 'DE',
         ]);
 

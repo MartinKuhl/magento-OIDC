@@ -160,10 +160,16 @@ Fix all the mentioned issue and warnings. Use sub-agents where applicable. DO no
 
 ### ToDo ###
 - you mark the section in case changes were made, extend this so that the concrete data field is highlighted
-- scope handling
+
+- extend OIDC Provider Management show all admins and in brackets () the active ones same for customers
+- if no OIDC Admins / Customers created deactivate the option to disable non-OIDC logins for admins / customer
+- remove user entries from activity overview when the user is deleted
+
+- if not all address fields mapped (street, zip code, city & country) do not create the address objet
+
 
 ### FIX ###
-- input of space and arrows are still problematic
+-
 
 ### TESTING ###
 - update customer and admin

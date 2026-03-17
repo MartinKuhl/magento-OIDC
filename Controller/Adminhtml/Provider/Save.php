@@ -14,6 +14,7 @@ use M2Oidc\OAuth\Model\M2oidcOauthClientAppsFactory;
 use M2Oidc\OAuth\Model\Provider\MappingRepository;
 use M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps as AppResource;
 use M2Oidc\OAuth\Model\ResourceModel\OauthRoleMapping as RoleMappingResource;
+use M2Oidc\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
 
 /**
  * Admin controller — Save OIDC Provider (MP-06).
@@ -42,15 +43,19 @@ class Save extends Action implements HttpPostActionInterface
     /** @var Curl */
     private readonly Curl $curl;
 
+    /** @var UserProviderResource */
+    private readonly UserProviderResource $userProviderResource;
+
     /**
      * Initialize provider save controller.
      *
-     * @param Context                          $context
-     * @param M2oidcOauthhClientAppsFactory $clientAppsFactory
-     * @param AppResource                      $appResource
-     * @param DataPersistorInterface           $dataPersistor
-     * @param MappingRepository                $mappingRepository
-     * @param Curl                             $curl
+     * @param Context                       $context
+     * @param M2oidcOauthClientAppsFactory  $clientAppsFactory
+     * @param AppResource                   $appResource
+     * @param DataPersistorInterface        $dataPersistor
+     * @param MappingRepository             $mappingRepository
+     * @param Curl                          $curl
+     * @param UserProviderResource          $userProviderResource
      */
     public function __construct(
         Context $context,
@@ -58,13 +63,15 @@ class Save extends Action implements HttpPostActionInterface
         AppResource $appResource,
         DataPersistorInterface $dataPersistor,
         MappingRepository $mappingRepository,
-        Curl $curl
+        Curl $curl,
+        UserProviderResource $userProviderResource
     ) {
-        $this->clientAppsFactory  = $clientAppsFactory;
-        $this->appResource        = $appResource;
-        $this->dataPersistor      = $dataPersistor;
-        $this->mappingRepository  = $mappingRepository;
-        $this->curl               = $curl;
+        $this->clientAppsFactory    = $clientAppsFactory;
+        $this->appResource          = $appResource;
+        $this->dataPersistor        = $dataPersistor;
+        $this->mappingRepository    = $mappingRepository;
+        $this->curl                 = $curl;
+        $this->userProviderResource = $userProviderResource;
         parent::__construct($context);
     }
 
@@ -93,6 +100,29 @@ class Save extends Action implements HttpPostActionInterface
                     $this->messageManager->addErrorMessage((string) __('Provider not found.'));
                     return $redirect->setPath('*/*/index');
                 }
+            }
+
+            // Validate required attribute mapping fields
+            $requiredAttributeFields = [
+                'email_attribute'     => (string) __('Email Claim'),
+                'username_attribute'  => (string) __('Username Claim'),
+                'firstname_attribute' => (string) __('First Name Claim'),
+                'lastname_attribute'  => (string) __('Last Name Claim'),
+            ];
+            $missingFields = [];
+            foreach ($requiredAttributeFields as $field => $label) {
+                if ($this->sanitizeString((string) ($data[$field] ?? '')) === '') {
+                    $missingFields[] = $label;
+                }
+            }
+            if (!empty($missingFields)) {
+                $this->messageManager->addErrorMessage(
+                    (string) __('The following attribute mapping fields are required: %1', implode(', ', $missingFields))
+                );
+                $this->dataPersistor->set('oidc_provider', $data);
+                return $providerId > 0
+                    ? $redirect->setPath('*/*/edit', ['id' => $providerId])
+                    : $redirect->setPath('*/*/edit');
             }
 
             // Sanitize and apply multi-provider fields
@@ -177,6 +207,31 @@ class Save extends Action implements HttpPostActionInterface
                         . 'login button is not shown on the customer login page.'
                     )
                 );
+            }
+
+            // Lockout-prevention: OIDC-only requires at least one OIDC user to exist for this provider.
+            if ($model->getData('m2oidc_disable_non_oidc_admin_login') == 1 && $providerId > 0) {
+                if ($this->userProviderResource->countByTypeAndProvider('admin', $providerId) === 0) {
+                    $model->setData('m2oidc_disable_non_oidc_admin_login', 0);
+                    $this->messageManager->addWarningMessage(
+                        (string) __(
+                            'Admin OIDC-only login was automatically disabled because no admin users '
+                            . 'have logged in via this provider yet.'
+                        )
+                    );
+                }
+            }
+
+            if ($model->getData('m2oidc_disable_non_oidc_customer_login') == 1 && $providerId > 0) {
+                if ($this->userProviderResource->countByTypeAndProvider('customer', $providerId) === 0) {
+                    $model->setData('m2oidc_disable_non_oidc_customer_login', 0);
+                    $this->messageManager->addWarningMessage(
+                        (string) __(
+                            'Customer OIDC-only login was automatically disabled because no customers '
+                            . 'have logged in via this provider yet.'
+                        )
+                    );
+                }
             }
 
             // Default admin role

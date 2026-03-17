@@ -19,6 +19,8 @@ $disableNonOidcCustomer = $block->getDisableNonOidcCustomer();
 $autoRedirectAdmin      = $block->getAutoRedirectAdmin();
 $autoRedirectCustomer   = $block->getAutoRedirectCustomer();
 $autoRedirectAllowed    = $block->isAutoRedirectAllowed();
+$hasOidcAdmins          = $block->hasOidcAdminUsers();
+$hasOidcCustomers       = $block->hasOidcCustomerUsers();
 
 $syncCustomerProfile = $block->getSyncCustomerProfileOnSso();
 $syncCustomerAddress = $block->getSyncCustomerAddressOnSso();
@@ -240,9 +242,14 @@ $syncAdminRole       = $block->getSyncAdminRoleOnSso();
                                name="m2oidc_disable_non_oidc_admin_login"
                                value="1"
                                <?= $disableNonOidcAdmin ? 'checked="checked"' : '' ?>
-                               <?= !$showAdminLink ? 'disabled="disabled"' : '' ?>>
+                               <?= (!$showAdminLink || !$hasOidcAdmins) ? 'disabled="disabled"' : '' ?>>
                         <?= $escaper->escapeHtml(__('Disable non-OIDC login for admins (OIDC login only)')) ?>
                     </label>
+                    <?php if (!$hasOidcAdmins): ?>
+                    <p class="admin__field-note" style="margin:0 0 8px 26px; color:#e07b00; font-size:12px;">
+                        <?= $escaper->escapeHtml(__('Disabled: no admin users have logged in via this provider yet.')) ?>
+                    </p>
+                    <?php endif; ?>
 
                     <!-- Admin: Auto Redirect -->
                     <label style="display:flex; align-items:center; gap:8px; margin:0 0 4px 26px;">
@@ -269,9 +276,14 @@ $syncAdminRole       = $block->getSyncAdminRoleOnSso();
                                name="m2oidc_disable_non_oidc_customer_login"
                                value="1"
                                <?= $disableNonOidcCustomer ? 'checked="checked"' : '' ?>
-                               <?= !$showCustomerLink ? 'disabled="disabled"' : '' ?>>
+                               <?= (!$showCustomerLink || !$hasOidcCustomers) ? 'disabled="disabled"' : '' ?>>
                         <?= $escaper->escapeHtml(__('Disable non-OIDC login for customers (OIDC login only)')) ?>
                     </label>
+                    <?php if (!$hasOidcCustomers): ?>
+                    <p class="admin__field-note" style="margin:0 0 8px 26px; color:#e07b00; font-size:12px;">
+                        <?= $escaper->escapeHtml(__('Disabled: no customers have logged in via this provider yet.')) ?>
+                    </p>
+                    <?php endif; ?>
 
                     <!-- Customer: Auto Redirect -->
                     <label style="display:flex; align-items:center; gap:8px; margin:0 0 4px 26px;">
@@ -300,6 +312,8 @@ $syncAdminRole       = $block->getSyncAdminRoleOnSso();
     'use strict';
 
     var autoRedirectAllowed = <?= $autoRedirectAllowed ? 'true' : 'false' ?>;
+    var hasOidcAdmins       = <?= $hasOidcAdmins    ? 'true' : 'false' ?>;
+    var hasOidcCustomers    = <?= $hasOidcCustomers ? 'true' : 'false' ?>;
 
     /**
      * Parent → child dependency: child is enabled only when parent is checked
@@ -321,9 +335,9 @@ $syncAdminRole       = $block->getSyncAdminRoleOnSso();
     }
 
     document.addEventListener('DOMContentLoaded', function () {
-        // SSO button → Disable non-OIDC
-        bindDependency('loginopt_show_admin_link',    'loginopt_disable_admin');
-        bindDependency('loginopt_show_customer_link', 'loginopt_disable_customer');
+        // SSO button → Disable non-OIDC (also gated by whether any OIDC users exist)
+        bindDependency('loginopt_show_admin_link',    'loginopt_disable_admin',    hasOidcAdmins);
+        bindDependency('loginopt_show_customer_link', 'loginopt_disable_customer', hasOidcCustomers);
 
         // Disable non-OIDC → Auto Redirect (+ provider-count gate)
         bindDependency('loginopt_disable_admin',    'loginopt_autoredirect_admin',    autoRedirectAllowed);

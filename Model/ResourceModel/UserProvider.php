@@ -49,6 +49,24 @@ class UserProvider extends AbstractDb
     }
 
     /**
+     * Remove the OIDC provider mapping for a deleted user.
+     *
+     * @param string $userType 'customer' or 'admin'
+     * @param int    $userId
+     */
+    public function deleteMapping(string $userType, int $userId): void
+    {
+        $connection = $this->getConnection();
+        if ($connection === false) {
+            return;
+        }
+        $connection->delete(
+            $this->getMainTable(),
+            ['user_type = ?' => $userType, 'user_id = ?' => $userId]
+        );
+    }
+
+    /**
      * Return OIDC provider info for a given user, or null if not created via OIDC.
      *
      * @param  string     $userType 'customer' or 'admin'
@@ -72,5 +90,21 @@ class UserProvider extends AbstractDb
         /** @var array{display_name: string, created_at: string}|false $row */
         $row = $connection->fetchRow($select);
         return $row ?: null;
+    }
+
+    /**
+     * Count users of a given type that were created via a specific provider.
+     *
+     * @param  string $userType   'customer' or 'admin'
+     * @param  int    $providerId m2oidc_oauth_client_apps.id
+     */
+    public function countByTypeAndProvider(string $userType, int $providerId): int
+    {
+        $connection = $this->getConnection();
+        $select = $connection->select()
+            ->from($this->getMainTable(), [new \Zend_Db_Expr('COUNT(*)')])
+            ->where('user_type = ?', $userType)
+            ->where('provider_id = ?', $providerId);
+        return (int) $connection->fetchOne($select);
     }
 }

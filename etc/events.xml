@@ -9,6 +9,11 @@
     <!-- OIDC JIT provisioning hooks — third-party modules may observe these events.
          All events carry a DataObject transport; set 'skip_creation' => true on
          before-events to abort user creation and return null. -->
+    <event name="customer_delete_after">
+        <observer name="m2oidc_customer_delete"
+                  instance="M2Oidc\OAuth\Observer\CustomerDeleteObserver"/>
+    </event>
+
     <event name="oidc_customer_before_create">
         <!-- No built-in observers; dispatched so third-party modules can intercept. -->
     </event>

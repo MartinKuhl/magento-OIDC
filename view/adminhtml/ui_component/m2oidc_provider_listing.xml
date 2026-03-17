@@ -125,7 +125,7 @@
             </settings>
         </column>
 
-        <!-- Active Admin Users: live count via JOIN on admin_user -->
+        <!-- Admin Users: total (active) count — active = account still exists in admin_user -->
         <column name="active_admin_users"
                 class="M2Oidc\OAuth\Ui\Component\Listing\Column\ActiveUserCount">
             <argument name="data" xsi:type="array">
@@ -134,12 +134,12 @@
                 </item>
             </argument>
             <settings>
-                <label translate="true">Active Admin Users</label>
+                <label translate="true">Admin Users</label>
                 <sortable>false</sortable>
             </settings>
         </column>
 
-        <!-- Active Customers: live count via JOIN on customer_entity -->
+        <!-- Customers: total (active) count — active = account still exists in customer_entity -->
         <column name="active_customers"
                 class="M2Oidc\OAuth\Ui\Component\Listing\Column\ActiveUserCount">
             <argument name="data" xsi:type="array">
@@ -148,7 +148,7 @@
                 </item>
             </argument>
             <settings>
-                <label translate="true">Active Customers</label>
+                <label translate="true">Customers</label>
                 <sortable>false</sortable>
             </settings>
         </column>

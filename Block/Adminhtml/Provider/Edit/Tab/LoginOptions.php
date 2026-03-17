@@ -10,6 +10,7 @@ use Magento\Backend\Block\Widget\Tab\TabInterface;
 use Magento\Framework\Phrase;
 use Magento\Framework\Registry;
 use M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps\CollectionFactory;
+use M2Oidc\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
 
 /**
  * Login Options tab — SSO button visibility, auto-creation,
@@ -35,21 +36,30 @@ class LoginOptions extends Template implements TabInterface
     private readonly CollectionFactory $providerCollectionFactory;
 
     /**
+     * @psalm-suppress PropertyNotSetInConstructor
+     * @var UserProviderResource
+     */
+    private readonly UserProviderResource $userProviderResource;
+
+    /**
      * Constructor.
      *
-     * @param Context           $context
-     * @param Registry          $registry
-     * @param CollectionFactory $providerCollectionFactory
-     * @param array             $data
+     * @param Context              $context
+     * @param Registry             $registry
+     * @param CollectionFactory    $providerCollectionFactory
+     * @param UserProviderResource $userProviderResource
+     * @param array                $data
      */
     public function __construct(
         Context $context,
         Registry $registry,
         CollectionFactory $providerCollectionFactory,
+        UserProviderResource $userProviderResource,
         array $data = []
     ) {
         $this->registry = $registry;
         $this->providerCollectionFactory = $providerCollectionFactory;
+        $this->userProviderResource = $userProviderResource;
         parent::__construct($context, $data);
     }
 
@@ -159,6 +169,31 @@ class LoginOptions extends Template implements TabInterface
     public function getAutoCreateCustomer(): bool
     {
         return $this->providerVal('m2oidc_auto_create_customer');
+    }
+
+    // ── OIDC User Existence ──────────────────────────────────
+    /**
+     * Return whether at least one admin user has logged in via this provider.
+     */
+    public function hasOidcAdminUsers(): bool
+    {
+        $providerId = (int) ($this->getProviderData()['id'] ?? 0);
+        if ($providerId === 0) {
+            return false;
+        }
+        return $this->userProviderResource->countByTypeAndProvider('admin', $providerId) > 0;
+    }
+
+    /**
+     * Return whether at least one customer has logged in via this provider.
+     */
+    public function hasOidcCustomerUsers(): bool
+    {
+        $providerId = (int) ($this->getProviderData()['id'] ?? 0);
+        if ($providerId === 0) {
+            return false;
+        }
+        return $this->userProviderResource->countByTypeAndProvider('customer', $providerId) > 0;
     }
 
     // ── Login Restrictions ───────────────────────────────────

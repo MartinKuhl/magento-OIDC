@@ -1980,3 +1980,28 @@ a {
     justify-content: center;
 }
 
+/* ── Dirty-field highlighting (provider edit form) ──────────────────────────
+ * Applied by dirtyTracking.js when a field's value differs from its
+ * page-load snapshot.  The amber left-border inset makes the changed field
+ * stand out without obscuring the existing Magento admin styling.
+ */
+
+/* Text inputs, number inputs, color inputs, URL/email inputs, selects */
+.m2oidc-field-modified {
+    border-color: #e07b00 !important;
+    background-color: #fffbf0 !important;
+    box-shadow: inset 3px 0 0 #e07b00 !important;
+    transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* Row-level accent used for checkboxes (which can't easily take a border/bg).
+ * Adds an amber bar on the left edge of the label cell. */
+tr.m2oidc-row-modified > td:first-child {
+    border-left: 3px solid #e07b00;
+    padding-left: 9px; /* compensate so text doesn't shift much */
+}
+
+/* Keep the transition smooth when the row accent appears/disappears */
+tr > td:first-child {
+    transition: border-left 0.15s ease, padding-left 0.15s ease;
+}

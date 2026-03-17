@@ -11,11 +11,13 @@ use Magento\Ui\Component\Listing\Columns\Column;
 use M2Oidc\OAuth\Model\ResourceModel\UserProvider\CollectionFactory;
 
 /**
- * Virtual column that renders the live count of OIDC-linked users
- * per provider, filtered by user_type (admin or customer).
+ * Virtual column that renders user counts per provider in "total (active)" format.
  *
- * Uses an INNER JOIN to the actual user table so that deleted users
- * are automatically excluded from the count.
+ * Total  = all rows in m2oidc_oauth_user_provider for this provider + user_type.
+ * Active = subset whose Magento account still exists (INNER JOIN to admin_user /
+ *          customer_entity). Deleted accounts lower the active count but not the total.
+ *
+ * Example: "5 (3)" — 5 OIDC-linked users, 3 accounts still exist in Magento.
  */
 class ActiveUserCount extends Column
 {
@@ -54,14 +56,54 @@ class ActiveUserCount extends Column
         $userType = $this->getData('config/user_type') ?? 'customer';
         $fieldName = $this->getData('name');
 
-        $providerIds = array_column($dataSource['data']['items'], 'id');
-        $counts = $this->getActiveCounts($providerIds, $userType);
+        $providerIds  = array_column($dataSource['data']['items'], 'id');
+        $totalCounts  = $this->getTotalCounts($providerIds, $userType);
+        $activeCounts = $this->getActiveCounts($providerIds, $userType);
 
         foreach ($dataSource['data']['items'] as &$item) {
-            $item[$fieldName] = $counts[(int)$item['id']] ?? 0;
+            $providerId = (int)$item['id'];
+            $total      = $totalCounts[$providerId]  ?? 0;
+            $active     = $activeCounts[$providerId] ?? 0;
+            $item[$fieldName] = sprintf('%d (%d)', $total, $active);
         }
 
         return $dataSource;
+    }
+
+    /**
+     * Count ALL OIDC user mappings grouped by provider (including orphaned records
+     * whose Magento account has since been deleted).
+     *
+     * @param  int[]  $providerIds
+     * @param  string $userType 'admin' or 'customer'
+     * @return array<int, int> providerId => count
+     */
+    private function getTotalCounts(array $providerIds, string $userType): array
+    {
+        if (empty($providerIds)) {
+            return [];
+        }
+
+        $collection = $this->collectionFactory->create();
+        $select     = $collection->getSelect();
+        $connection = $collection->getConnection();
+
+        $select->where('main_table.provider_id IN (?)', $providerIds);
+        $select->where('main_table.user_type = ?', $userType);
+
+        $select->reset(Select::COLUMNS)
+            ->columns([
+                'provider_id' => 'main_table.provider_id',
+                'cnt'         => new \Zend_Db_Expr('COUNT(*)'),
+            ])
+            ->group('main_table.provider_id');
+
+        $result = [];
+        foreach ($connection->fetchAll($select) as $row) {
+            $result[(int)$row['provider_id']] = (int)$row['cnt'];
+        }
+
+        return $result;
     }
 
     /**
