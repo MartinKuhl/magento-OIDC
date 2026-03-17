@@ -6,6 +6,9 @@
   * core Module. It specifies the root directory
   * of the plugin.
   */
+if (!class_exists(\Magento\Framework\Component\ComponentRegistrar::class)) {
+    return;
+}
 \Magento\Framework\Component\ComponentRegistrar::register(
     \Magento\Framework\Component\ComponentRegistrar::MODULE,
     'M2Oidc_OAuth',

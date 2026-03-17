@@ -163,7 +163,6 @@ Fix all the mentioned issue and warnings. Use sub-agents where applicable. DO no
 - scope handling
 
 ### FIX ###
-- groups --> default Admin Role & Customer Group can still be active also the labels
 - input of space and arrows are still problematic
 
 ### TESTING ###

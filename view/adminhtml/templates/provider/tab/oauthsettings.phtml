@@ -340,3 +340,23 @@ $inBody    = (bool)(int) $val('values_in_body', 0);
         </tbody>
     </table>
 </div>
+
+<script>
+(function () {
+    document.addEventListener('DOMContentLoaded', function () {
+        // Fix: Magento's Widget.Tabs renders tab content inside <li> elements.
+        // jQuery UI's _tabKeydown handler is bound to those <li> elements and
+        // calls event.preventDefault() for Space and arrow keys, which breaks
+        // normal text-input behaviour (typing spaces, moving the cursor).
+        // Stopping propagation at the content-div level prevents the event
+        // from ever reaching the <li> handler.
+        document.querySelectorAll(
+            '#m2oidc_provider_tabs li > div[id$="_content"]'
+        ).forEach(function (div) {
+            div.addEventListener('keydown', function (e) {
+                e.stopPropagation();
+            });
+        });
+    });
+}());
+</script>

@@ -171,7 +171,7 @@ $roleMappings = is_array($decoded) ? $decoded : [];
                     </small>
                 </td>
             </tr>
-            <tr>
+            <tr id="m2oidc-role-mappings-row">
                 <td style="vertical-align:top; padding-top:8px;">
                     <label>
                         <strong><?= $escaper->escapeHtml(__('Role Mappings')) ?></strong>
@@ -274,7 +274,7 @@ $customerGroupMappings = is_array($decodedCgm) ? $decodedCgm : [];
                 </td>
             </tr>
             <!-- Customer Group Mappings -->
-            <tr>
+            <tr id="m2oidc-cgm-mappings-row">
                 <td style="vertical-align:top; padding-top:8px;">
                     <label>
                         <strong><?= $escaper->escapeHtml(__('Group Mappings')) ?></strong>
@@ -542,18 +542,19 @@ $customerGroupMappings = is_array($decodedCgm) ? $decodedCgm : [];
         });
     }
 
-    // Disable Admin Role Mapping and Customer Group Mapping sections when Group / Role Claim is empty
+    // Disable only the Role Mappings and Group Mappings rows when Group / Role Claim is empty.
+    // Default Admin Role, Default Customer Group, and section headers remain always active.
     var groupAttrInput  = document.getElementById('group_attribute');
-    var adminSection    = document.getElementById('m2oidc-admin-role-mapping-section');
-    var cgmSection      = document.getElementById('m2oidc-customer-group-mapping-section');
+    var roleMappingRow  = document.getElementById('m2oidc-role-mappings-row');
+    var cgmMappingRow   = document.getElementById('m2oidc-cgm-mappings-row');
 
     function syncGroupMappingSections() {
         var isEmpty = !groupAttrInput || groupAttrInput.value.trim() === '';
-        [adminSection, cgmSection].forEach(function (section) {
-            if (!section) { return; }
-            section.style.opacity         = isEmpty ? '0.4' : '';
-            section.style.pointerEvents   = isEmpty ? 'none' : '';
-            section.querySelectorAll('input, select, button').forEach(function (el) {
+        [roleMappingRow, cgmMappingRow].forEach(function (row) {
+            if (!row) { return; }
+            row.style.opacity       = isEmpty ? '0.4' : '';
+            row.style.pointerEvents = isEmpty ? 'none' : '';
+            row.querySelectorAll('input, select, button').forEach(function (el) {
                 el.disabled = isEmpty;
             });
         });
