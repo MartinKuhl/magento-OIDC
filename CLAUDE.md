@@ -196,18 +196,25 @@ The module implements a dual authentication flow for admin and customer users:
 - `AdminSetLogoutFlagObserver.php`: Sets logout flag on admin session destruction
 - `CustomerLoginAutoRedirectObserver.php`: Auto-redirects unauthenticated customers to IdP; checks `oidc_logout_guard` cookie to suppress redirect after OIDC logout
 - `AdminLoginAutoRedirectObserver.php`: Auto-redirects unauthenticated admin users to IdP; respects `oidc_logout_guard` cookie
-- `SessionCookieObserver.php`: Enforces SameSite=None on session cookies for cross-origin OAuth (`controller_front_send_response_before` event)
+- `SessionCookieObserver.php`: Enforces SameSite=None on session cookies for cross-origin OAuth (`controller_front_send_response_before` event); scoped to `/m2oidc/` routes only
 - `OAuthObserver.php`: Handles OAuth-specific events
+- `AdminUserDeleteObserver.php`: Fires on `admin_user_delete_before`; removes the matching row from `m2oidc_oauth_user_provider` so the Sessions activity view stays accurate
+- `CustomerDeleteObserver.php`: Fires on `customer_delete`; same cleanup for customer OIDC mappings
 
 #### UI Components (Ui/)
 - `Ui/Component/DataProvider.php`: Data provider for provider management grid
-- `Ui/Component/DataProvider/SessionDataProvider.php`: Data provider for active sessions admin UI
+- `Ui/Component/DataProvider/SessionDataProvider.php`: Data provider for active sessions admin UI (`/admin/m2oidc/sessions/index`)
 - `Ui/Component/Listing/Column/Actions.php`: Provider grid row actions
 - `Ui/Component/Listing/Column/OnlineStatus.php`: Shows active OIDC session status in provider listing
-- `Ui/Component/Listing/Column/ActiveUserCount.php`: Shows count of active OIDC users per provider
+- `Ui/Component/Listing/Column/ActiveUserCount.php`: Shows user counts as **"total (active)"** — total includes historical OIDC-linked users; active excludes deleted Magento accounts
 - `Ui/Component/Listing/Column/PkceStatus.php`: Shows PKCE configuration status
 - `Ui/Component/Listing/Column/JwksStatus.php`: Shows JWKS endpoint status
 - `Ui/Component/Listing/Column/TestStatusOptions.php`: Test status badge column
+
+#### Frontend Assets (view/adminhtml/web/)
+- `js/dirtyTracking.js`: Vanilla JS (ES5-compatible) that snapshots provider form values on page load and highlights modified fields with amber border (`m2oidc-field-modified` CSS class) and modified rows (`m2oidc-row-modified`); uses `MutationObserver` to track dynamically added mapping rows
+- `css/adminSettings.css`: Styles for dirty-field highlighting (amber borders, row accents)
+- `images/m2oidc_logo.png`: Module logo used in admin menu and README
 
 #### Blocks (Block/)
 - `OAuth.php`: Template block class for admin configuration pages
@@ -306,6 +313,9 @@ The module implements a dual authentication flow for admin and customer users:
 | **CAPTCHA Bypass** | Controlled | Intentional bypass for OIDC (auth already done at IdP) |
 | **Password Bypass** | Protected | `OidcPasswordExpirationPlugin`, `OidcForcePasswordChangePlugin` suppress password flows for OIDC users |
 | **Stale Flag Guard** | Active (SEC-06) | `OidcCredentialPlugin` unconditionally clears OIDC flag in `afterLogin()` |
+| **Lockout Prevention** | Active | Provider save auto-reverts `disable_non_oidc_*_login` if no OIDC users exist yet for that provider |
+| **Required Field Validation** | Active | Email, username, firstname, lastname claims validated as non-empty on provider save |
+| **Address Integrity Guard** | Active | Billing address only created when all four fields (street, ZIP, city, country) are mapped |
 
 ### Admin Auto-Login Implementation
 
@@ -369,12 +379,31 @@ When "Auto Create Customer users while SSO" is enabled:
 5. Optional address creation (billing/shipping) from mapped claims
 6. Customer nonce set, redirect to `CustomerOidcCallback`
 
+### Lockout-Prevention Guards
+
+When saving a provider, `Controller/Adminhtml/Provider/Save.php` enforces a safety rule: **"Disable non-OIDC login" cannot be enabled unless at least one user of that type has already authenticated via OIDC for that provider.**
+
+- If `m2oidc_disable_non_oidc_admin_login = 1` but `m2oidc_oauth_user_provider` has zero admin rows for the provider, the setting is automatically reset to `0` and a warning is shown
+- Same logic applies for `m2oidc_disable_non_oidc_customer_login`
+- The Login Options tab in the provider edit form shows a conditional warning when the setting would be unsafe to enable
+- `Block/Adminhtml/Provider/Edit/Tab/LoginOptions.php` provides `hasOidcAdminUsers()` and `hasOidcCustomerUsers()` checks that power the UI warnings
+
+**Rationale**: Prevents an administrator from locking themselves out before any OIDC login has been verified to work correctly.
+
 ### Session Management
 
 - `SessionHelper.php`: `updateSessionCookies()` re-sets existing cookies with SameSite=None for cross-origin OIDC
 - `OidcSessionRegistry`: Maps OIDC `sub`/`sid` claims to PHP session IDs for back-channel logout
 - Admin session stores: `oidc_id_token`, `oidc_access_token`, `oidc_provider_id` for logout flow
 - Customer session stores: analogous keys for customer RP-Initiated Logout
+
+### Auto-Discovery
+
+When a `well_known_config_url` is configured, `Controller/Adminhtml/Provider/Save.php` fetches the OIDC discovery document on save and auto-populates:
+- `authorize_endpoint`, `access_token_endpoint`, `user_info_endpoint`
+- `jwks_endpoint`, `endsession_endpoint`, `revocation_endpoint`, `issuer`
+
+This eliminates manual endpoint configuration for any standards-compliant IdP.
 
 ### Attribute Mapping
 
@@ -572,6 +601,22 @@ Before deploying OIDC changes, verify:
   - No role assigned → "Admin user has no assigned role"
   - Claims access control rule fails → configured error message shown
 
+- [ ] **Test lockout-prevention guard**:
+  - Attempt to enable "Disable non-OIDC admin logins" with no OIDC admin users → setting auto-reverted to disabled with warning
+  - After at least one OIDC admin login, enabling restriction should succeed
+
+- [ ] **Test address validation**:
+  - Map only some billing address fields (e.g., city + country but no street/ZIP) → no address created
+  - Map all four required fields (street, ZIP, city, country) → address created correctly
+
+- [ ] **Test auto-discovery**:
+  - Enter well-known config URL, save → all endpoints auto-populated
+  - Verify endpoints match provider's discovery document
+
+- [ ] **Test dirty-field tracking**:
+  - Open provider edit form, modify a field → amber border appears on changed field
+  - Save and reload → no amber borders on unmodified fields
+
 ---
 
 ## Testing Structure
@@ -579,17 +624,17 @@ Before deploying OIDC changes, verify:
 **Unit Tests** (`Test/Unit/`):
 - `Plugin/OidcCredentialPluginTest.php`: Plugin behavior and flag cleanup
 - `Helper/OAuthUtilityExtractNameTest.php`: Email parsing
-- `Helper/JwtVerifierTest.php`: JWT validation (JWKS, issuer, audience, nonce)
-- `Model/Attribute/AdminAttributeMapperTest.php`: Admin attribute mapping
-- `Model/Attribute/CustomerAttributeMapperTest.php`: Customer attribute mapping including address
-- `Model/Auth/OidcCredentialAdapterTest.php`: Adapter authentication logic and ephemeral tokens
-- `Model/Service/AdminUserCreatorRoleMappingTest.php`: Role mapping logic including fallback chain
-- `Model/Service/CustomerUserCreatorAddressTest.php`: Address creation from OIDC claims
+- `Helper/JwtVerifierTest.php`: JWT validation (JWKS, issuer, audience, nonce) — 521 test cases
+- `Model/Attribute/AdminAttributeMapperTest.php`: Admin attribute mapping — 157 test cases
+- `Model/Attribute/CustomerAttributeMapperTest.php`: Customer attribute mapping including address — 252 test cases
+- `Model/Auth/OidcCredentialAdapterTest.php`: Adapter authentication logic and ephemeral tokens — 353 test cases
+- `Model/Service/AdminUserCreatorRoleMappingTest.php`: Role mapping logic including fallback chain — 389 test cases
+- `Model/Service/CustomerUserCreatorAddressTest.php`: Address creation from OIDC claims — 517 test cases
 
 **Integration Tests** (`Test/Integration/`):
-- `AdminOidcLoginFlowTest.php`: Full admin login flow
-- `CustomerOidcLoginFlowTest.php`: Full customer login flow
-- `SecurityPluginsTest.php`: Plugin security behaviors
+- `AdminOidcLoginFlowTest.php`: Full admin login flow — 175 test cases
+- `CustomerOidcLoginFlowTest.php`: Full customer login flow — 148 test cases
+- `SecurityPluginsTest.php`: Plugin security behaviors — 168 test cases
 - `AccessControlRulesTest.php`: Claims-based access control rules engine
 
 ---

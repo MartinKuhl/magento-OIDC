@@ -1,5 +1,9 @@
 # Magento 2 OAuth/OIDC Single Sign-On Module
 
+<p align="center">
+  <img src="view/adminhtml/web/images/m2oidc_logo.png" alt="M2Oidc Logo" width="160" />
+</p>
+
 Enterprise-grade OpenID Connect authentication for Magento 2, supporting both customer (frontend) and admin (backend) users with automatic user provisioning and role management.
 
 ## Overview
@@ -20,12 +24,20 @@ Modern e-commerce platforms require secure, centralized authentication. This mod
 ### Key Features
 
 - ✅ **Dual Authentication Flows**: Separate customer (frontend) and admin (backend) SSO
+- ✅ **Multi-Provider Support**: Multiple OIDC providers per Magento installation with per-provider settings
+- ✅ **Auto-Discovery**: Auto-populate endpoints from OIDC `.well-known/openid-configuration`
 - ✅ **Just-in-Time (JIT) Provisioning**: Auto-create users with group/role mapping
 - ✅ **OIDC Group Mapping**: Map IdP groups to Magento admin roles and customer groups
 - ✅ **Security Enhancements**: CAPTCHA bypass, password verification bypass for OIDC users
-- ✅ **Cross-Origin Session Handling**: SameSite=None cookies for IdP redirects
+- ✅ **Lockout-Prevention Guards**: Prevents enabling OIDC-only mode when no OIDC users exist yet
+- ✅ **Cross-Origin Session Handling**: SameSite=None cookies scoped to OIDC routes only
 - ✅ **JWT Token Verification**: RS256/384/512 signatures with JWKS caching
-- ✅ **Optional OIDC-Only Mode**: Disable password logins entirely
+- ✅ **RP-Initiated Logout**: Admin and customer logout with IdP redirect and RFC 7009 token revocation
+- ✅ **Back-Channel Logout**: Server-to-server logout via signed JWT logout token
+- ✅ **Claims-Based Access Control**: Rules engine with 6 operators to gate login on any claim value
+- ✅ **Optional OIDC-Only Mode**: Disable password logins entirely (with lockout safety net)
+- ✅ **Session Activity View**: Admin UI listing all users who authenticated via OIDC
+- ✅ **Dirty-Field Tracking**: Visual amber highlights on modified provider form fields before save
 - ✅ **Comprehensive Debug Logging**: Detailed flow logs for troubleshooting
 - ✅ **Test Configuration UI**: Verify OIDC claims before production deployment
 
@@ -74,18 +86,21 @@ https://your-magento-site.com/m2oidc/actions/ReadAuthorizationResponse
 
 ### Step 3: Configure Magento
 
-1. Navigate to **Stores > Configuration > M2Oidc > OAuth/OIDC**
+1. Navigate to **M2 OIDC > Manage Providers**
 
 2. Fill in **OAuth Settings**:
    - **App Name**: Identifier for your IdP (e.g., `authelia`, `keycloak`)
    - **Client ID**: OAuth client ID from your IdP
    - **Client Secret**: OAuth client secret from your IdP
+   - **Well-Known Config URL** *(optional)*: Paste your IdP's discovery endpoint (e.g., `https://auth.example.com/.well-known/openid-configuration`) and save — all endpoints will be auto-populated
    - **Authorize Endpoint**: Authorization endpoint URL (e.g., `https://auth.example.com/api/oidc/authorization`)
    - **Token Endpoint**: Token exchange endpoint URL (e.g., `https://auth.example.com/api/oidc/token`)
    - **User Info Endpoint**: User information endpoint URL (e.g., `https://auth.example.com/api/oidc/userinfo`)
    - **Scope**: OAuth scopes (typically: `openid profile email groups`)
 
 3. **Save Config**
+
+> **Tip — Auto-Discovery**: If your IdP supports OIDC discovery (most do), enter only the **Well-Known Config URL** and save. The module will automatically fetch and populate all endpoint URLs, JWKS endpoint, and issuer from the discovery document.
 
 ### Step 4: Test Configuration
 
@@ -127,6 +142,7 @@ https://your-magento-site.com/m2oidc/actions/ReadAuthorizationResponse
 
 4. **(Optional)** Enable OIDC-only mode:
    - **Disable Non-OIDC Admin Logins**: Force all admins to use OIDC (⚠️ create emergency admin via CLI first)
+   - **Lockout Guard**: The module automatically reverts this setting if no OIDC admin users exist yet for the provider, preventing accidental lockout
 
 5. **Enable Debug Logging** (recommended for initial setup):
    - Check **Enable debug logging** to write detailed flow logs to `var/log/M2Oidc.log`
@@ -472,38 +488,17 @@ Module inherits IdP's security policies:
 
 ## Known Limitations
 
-### Single Provider Per Store
-
-- Module supports **one OIDC provider** per Magento store
-- Database limitation: single row in `m2oidc_oauth_client_apps` table
-- **Workaround**: Separate store views with separate database configurations (requires customization)
-- **Future enhancement**: Native multi-provider support planned (see TECHNICAL_DOCUMENTATION.md)
-
 ### SP-Initiated Flow Only
 
 - Module supports **SP-initiated** SSO only (user starts at Magento, redirects to IdP)
 - **IdP-initiated** flow (user starts at IdP, receives SAML-style POST assertion) not implemented
 - **Workaround**: IdP can deep-link to Magento SSO URL, but still technically SP-initiated
 
-### Partial Federated Logout
+### No Token Auto-Refresh
 
-- Logout redirects to IdP logout URL (`post_logout_url`) but **no back-channel logout**
-- Magento session cleared locally, but IdP may not clear other integrated systems' sessions
-- **Workaround**: Users must log out at IdP separately for complete session termination
-- **Future enhancement**: OpenID Connect RP-Initiated Logout spec implementation planned
-
-### No Built-in Claim Transformation
-
-- Attribute mappings are 1:1 only (OIDC claim → Magento field)
-- No conditional logic (e.g., "if group = X, then map attribute Y differently")
-- **Workaround**: Configure claim transformations at IdP level before sending to Magento
-- Custom logic requires plugin on `CheckAttributeMappingAction::execute()` method
-
-### Global SameSite=None Cookie Enforcement
-
-- Module rewrites **all** cookies globally with `SameSite=None` (required for cross-origin OIDC flows)
-- May affect other modules' cookie behavior
-- **Future enhancement**: Scope to OIDC routes only (see TECHNICAL_DOCUMENTATION.md)
+- Access tokens are not automatically refreshed when they expire mid-session
+- `TokenRefreshService` exists and stores refresh tokens in session, but silent refresh on expiry is not yet wired in
+- **Impact**: Long sessions may encounter expired access tokens on upstream API calls
 
 ---
 
@@ -525,17 +520,6 @@ Module inherits IdP's security policies:
 7. Test login with a user who has "Engineering" group in IdP
 
 **Result**: User automatically created as admin with "Content Editors" role on first login.
-
-### Custom Attribute Mapping for Developers
-
-To map custom OIDC claims to Magento customer attributes:
-
-1. **Add database column** to customer entity (or create EAV attribute)
-2. **Modify** `Model/Service/CustomerUserCreator.php` to map the claim
-3. **Add UI field** in `view/adminhtml/templates/attrsettings.phtml`
-4. Run `bin/magento setup:upgrade && bin/magento setup:di:compile`
-
-See [CLAUDE.md](CLAUDE.md) for detailed developer instructions.
 
 ### Login Restriction Mode
 
@@ -569,10 +553,10 @@ See [CLAUDE.md](CLAUDE.md) for detailed developer instructions.
 
 ### Version
 
-- **Module Version**: 4.3.0
-- **Package**: `m2oidc_inc/m2oidc-oauth-sso`
-- **License**: Proprietary (check `composer.json` for details)
-- **Minimum Requirements**: PHP 8.1+, Magento 2.4.7+
+- **Module Version**: 1.0.0
+- **Package**: `martinkuhl/magento2-oidc-sso`
+- **License**: MIT
+- **Minimum Requirements**: PHP 8.2+, Magento 2.4.7+
 
 ---
 
