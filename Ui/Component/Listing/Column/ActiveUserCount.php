@@ -71,8 +71,7 @@ class ActiveUserCount extends Column
     }
 
     /**
-     * Count ALL OIDC user mappings grouped by provider (including orphaned records
-     * whose Magento account has since been deleted).
+     * Count ALL OIDC user mappings grouped by provider (including orphaned/deleted accounts).
      *
      * @param  int[]  $providerIds
      * @param  string $userType 'admin' or 'customer'

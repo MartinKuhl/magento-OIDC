@@ -11,7 +11,6 @@ use Magento\Customer\Api\Data\AddressInterfaceFactory;
 use Magento\Customer\Api\Data\CustomerInterface;
 use Magento\Customer\Model\Customer;
 use Magento\Customer\Model\CustomerFactory;
-use Magento\Directory\Helper\Data as DirectoryData;
 use Magento\Framework\Math\Random;
 use Magento\Store\Api\Data\WebsiteInterface;
 use Magento\Store\Model\StoreManagerInterface;
@@ -92,9 +91,6 @@ class CustomerUserCreatorAddressTest extends TestCase
         $website->method('getId')->willReturn(1);
         $storeManager->method('getWebsite')->willReturn($website);
 
-        $directoryData = $this->createMock(DirectoryData::class);
-        $directoryData->method('getDefaultCountry')->willReturn('US');
-
         $this->creator = new CustomerUserCreator(
             $this->customerFactory,
             $this->addressFactory,
@@ -102,7 +98,6 @@ class CustomerUserCreatorAddressTest extends TestCase
             $storeManager,
             $random,
             $this->oauthUtility,
-            $directoryData,
             $this->customerRepository,
             $this->createMock(UserProviderResource::class),
             $this->createMock(MappingRepository::class),

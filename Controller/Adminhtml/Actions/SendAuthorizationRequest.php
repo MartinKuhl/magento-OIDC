@@ -33,7 +33,7 @@ class SendAuthorizationRequest extends BaseAction
      * Initialize admin send authorization request action.
      *
      * @param \Magento\Backend\App\Action\Context                $context
-     * @param \M2Oidc\OAuth\Helper\OAuthUtility              $oauthUtility
+     * @param \M2Oidc\OAuth\Helper\OAuthUtility                  $oauthUtility
      * @param OAuthSecurityHelper                                $securityHelper
      * @param \Magento\Framework\Session\SessionManagerInterface $sessionManager
      */

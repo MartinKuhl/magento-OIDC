@@ -50,7 +50,7 @@ class CustomerAttributeMapper implements AttributeMapperInterface
 
         // --- Date of Birth ---
         $dob = $this->extractClaimValue((string) ($mappingConfig['dob'] ?? ''), $flattenedAttrs, $rawAttrs);
-        if ($dob !== null && $dob !== '' && $dob !== '0') {
+        if (!in_array($dob, [null, '', '0'], true)) {
             $formatted = $this->formatDateOfBirth($dob);
             if ($formatted !== null) {
                 $result['dob'] = $formatted;
@@ -63,7 +63,7 @@ class CustomerAttributeMapper implements AttributeMapperInterface
             $flattenedAttrs,
             $rawAttrs
         );
-        if ($genderRaw !== null && $genderRaw !== '' && $genderRaw !== '0') {
+        if (!in_array($genderRaw, [null, '', '0'], true)) {
             $genderId = $this->mapGender($genderRaw);
             if ($genderId !== null) {
                 $result['gender'] = $genderId;
@@ -76,7 +76,7 @@ class CustomerAttributeMapper implements AttributeMapperInterface
             $flattenedAttrs,
             $rawAttrs
         );
-        if ($street !== null && $street !== '' && $street !== '0') {
+        if (!in_array($street, [null, '', '0'], true)) {
             $result['billing_street'] = $street;
         }
 
@@ -86,7 +86,7 @@ class CustomerAttributeMapper implements AttributeMapperInterface
             $flattenedAttrs,
             $rawAttrs
         );
-        if ($city !== null && $city !== '' && $city !== '0') {
+        if (!in_array($city, [null, '', '0'], true)) {
             $result['billing_city'] = $city;
         }
 
@@ -96,7 +96,7 @@ class CustomerAttributeMapper implements AttributeMapperInterface
             $flattenedAttrs,
             $rawAttrs
         );
-        if ($zip !== null && $zip !== '' && $zip !== '0') {
+        if (!in_array($zip, [null, '', '0'], true)) {
             $result['billing_postcode'] = $zip;
         }
 
@@ -106,7 +106,7 @@ class CustomerAttributeMapper implements AttributeMapperInterface
             $flattenedAttrs,
             $rawAttrs
         );
-        if ($country !== null && $country !== '' && $country !== '0') {
+        if (!in_array($country, [null, '', '0'], true)) {
             $countryId = $this->resolveCountryId($country);
             if ($countryId !== null) {
                 $result['billing_country_id'] = $countryId;
@@ -119,7 +119,7 @@ class CustomerAttributeMapper implements AttributeMapperInterface
             $flattenedAttrs,
             $rawAttrs
         );
-        if ($phone !== null && $phone !== '' && $phone !== '0') {
+        if (!in_array($phone, [null, '', '0'], true)) {
             $result['billing_telephone'] = $phone;
         }
 

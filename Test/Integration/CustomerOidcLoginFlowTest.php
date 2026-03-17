@@ -119,9 +119,9 @@ class CustomerOidcLoginFlowTest extends AbstractOidcIntegrationTest
 
     public function testValidateUserInfoPassesOnValidResponse(): void
     {
-        // No exception expected
+        // No exception expected — test passes if no exception is thrown
+        $this->expectNotToPerformAssertions();
         $this->service->validateUserInfo(['sub' => '123', 'email' => 'x@y.com']);
-        $this->addToAssertionCount(1);
     }
 
     // ---------------------------------------------------------------- Dex live test

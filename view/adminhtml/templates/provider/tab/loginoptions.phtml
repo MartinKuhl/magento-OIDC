@@ -247,7 +247,9 @@ $syncAdminRole       = $block->getSyncAdminRoleOnSso();
                     </label>
                     <?php if (!$hasOidcAdmins): ?>
                     <p class="admin__field-note" style="margin:0 0 8px 26px; color:#e07b00; font-size:12px;">
-                        <?= $escaper->escapeHtml(__('Disabled: no admin users have logged in via this provider yet.')) ?>
+                        <?= $escaper->escapeHtml(
+                            __('Disabled: no admin users have logged in via this provider yet.')
+                        ) ?>
                     </p>
                     <?php endif; ?>
 

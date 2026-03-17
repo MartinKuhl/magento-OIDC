@@ -133,10 +133,8 @@ class Data extends AbstractHelper
 
     /**
      * Get all entries from the OAuthClientApp table.
-     *
-     * @return \M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps\Collection
      */
-    public function getOAuthClientApps()
+    public function getOAuthClientApps(): \M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps\Collection
     {
         return $this->clientCollectionFactory->create();
     }
@@ -488,11 +486,8 @@ class Data extends AbstractHelper
      */
     public function getAdminCssUrl(string $css): string
     {
-        /** @psalm-suppress TooManyArguments */
-        // @phpstan-ignore-next-line
         return $this->assetRepo->getUrl(
-            OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_CSS . $css,
-            ['area' => 'adminhtml']
+            OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_CSS . $css
         );
     }
 
@@ -503,11 +498,8 @@ class Data extends AbstractHelper
      */
     public function getAdminJSUrl(string $js): string
     {
-        /** @psalm-suppress TooManyArguments */
-        // @phpstan-ignore-next-line
         return $this->assetRepo->getUrl(
-            OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_JS . $js,
-            ['area' => 'adminhtml']
+            OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_JS . $js
         );
     }
 
@@ -516,11 +508,8 @@ class Data extends AbstractHelper
      */
     public function getMetadataUrl(): string
     {
-        /** @psalm-suppress TooManyArguments */
-        // @phpstan-ignore-next-line
         return $this->assetRepo->getUrl(
-            OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_METADATA,
-            ['area' => 'adminhtml']
+            OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_METADATA
         );
     }
 
@@ -560,7 +549,7 @@ class Data extends AbstractHelper
     {
         $relayState = $relayState ?? $this->getCurrentUrl();
 
-        if ($appName === null || $appName === '' || $appName === '0') {
+        if (in_array($appName, [null, '', '0'], true)) {
             $appName = $this->getStoreConfig(OAuthConstants::APP_NAME);
         }
 

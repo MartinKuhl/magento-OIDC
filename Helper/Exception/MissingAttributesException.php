@@ -17,7 +17,7 @@ class MissingAttributesException extends \Exception
     {
         $message     = OAuthMessages::parse('MISSING_ATTRIBUTES_EXCEPTION');
         $code         = 125;
-        parent::__construct($message, $code, null);
+        parent::__construct($message, $code);
     }
 
     /**

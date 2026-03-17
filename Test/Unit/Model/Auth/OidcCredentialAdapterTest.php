@@ -143,14 +143,19 @@ class OidcCredentialAdapterTest extends TestCase
         $user = $this->makeActiveUserMock();
         $this->singleUserCollection($user);
 
+        $calls = [];
         $this->eventManager->expects($this->exactly(2))
             ->method('dispatch')
-            ->withConsecutive(
-                ['admin_user_authenticate_before', $this->arrayHasKey('oidc_auth')],
-                ['admin_user_authenticate_after', $this->arrayHasKey('oidc_auth')]
-            );
+            ->willReturnCallback(function (string $event, array $data) use (&$calls): void {
+                $calls[] = ['event' => $event, 'data' => $data];
+            });
 
         $this->adapter->authenticate('admin@example.com', OidcCredentialAdapter::OIDC_TOKEN_MARKER);
+
+        $this->assertSame('admin_user_authenticate_before', $calls[0]['event']);
+        $this->assertArrayHasKey('oidc_auth', $calls[0]['data']);
+        $this->assertSame('admin_user_authenticate_after', $calls[1]['event']);
+        $this->assertArrayHasKey('oidc_auth', $calls[1]['data']);
     }
 
     // -------------------------------------------------------------------------

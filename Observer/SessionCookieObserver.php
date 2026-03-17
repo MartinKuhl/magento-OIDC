@@ -30,8 +30,8 @@ class SessionCookieObserver implements ObserverInterface
      * Initialize session cookie observer.
      *
      * @param \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility
-     * @param SessionHelper                         $sessionHelper
-     * @param RequestInterface                      $request
+     * @param SessionHelper                     $sessionHelper
+     * @param RequestInterface                  $request
      */
     public function __construct(
         \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility,

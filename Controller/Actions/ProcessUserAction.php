@@ -287,12 +287,12 @@ class ProcessUserAction
         ?string $lastName,
         ?string $userName
     ): \Magento\Customer\Api\Data\CustomerInterface {
-        if ($firstName === null || $firstName === '' || $firstName === '0') {
+        if (in_array($firstName, [null, '', '0'], true)) {
             $parts = explode("@", $userEmail);
             $firstName = $parts[0];
         }
 
-        if ($lastName === null || $lastName === '' || $lastName === '0') {
+        if (in_array($lastName, [null, '', '0'], true)) {
             $parts = explode("@", $userEmail);
             $lastName = $parts[1] ?? $parts[0];
         }

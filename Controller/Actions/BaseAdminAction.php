@@ -46,11 +46,11 @@ abstract class BaseAdminAction extends \Magento\Backend\App\Action
     /**
      * Initialize base admin action.
      *
-     * @param \Magento\Backend\App\Action\Context             $context
-     * @param \Magento\Framework\View\Result\PageFactory      $resultPageFactory
+     * @param \Magento\Backend\App\Action\Context         $context
+     * @param \Magento\Framework\View\Result\PageFactory  $resultPageFactory
      * @param \M2Oidc\OAuth\Helper\OAuthUtility           $oauthUtility
-     * @param \Magento\Framework\Message\ManagerInterface     $messageManager
-     * @param \Psr\Log\LoggerInterface                        $logger
+     * @param \Magento\Framework\Message\ManagerInterface $messageManager
+     * @param \Psr\Log\LoggerInterface                    $logger
      */
     public function __construct(
         \Magento\Backend\App\Action\Context $context,

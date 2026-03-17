@@ -58,12 +58,12 @@ class ImportOidcConfig extends Command
     /**
      * Initialize import command.
      *
-     * @param OAuthUtility                     $oauthUtility
+     * @param OAuthUtility                 $oauthUtility
      * @param M2oidcOauthClientAppsFactory $clientAppsFactory
-     * @param AppResource                      $appResource
-     * @param EncryptorInterface               $encryptor
-     * @param State                            $appState
-     * @param MappingRepository                $mappingRepository
+     * @param AppResource                  $appResource
+     * @param EncryptorInterface           $encryptor
+     * @param State                        $appState
+     * @param MappingRepository            $mappingRepository
      */
     public function __construct(
         OAuthUtility $oauthUtility,

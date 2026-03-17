@@ -115,9 +115,12 @@ class Save extends Action implements HttpPostActionInterface
                     $missingFields[] = $label;
                 }
             }
-            if (!empty($missingFields)) {
+            if ($missingFields !== []) {
                 $this->messageManager->addErrorMessage(
-                    (string) __('The following attribute mapping fields are required: %1', implode(', ', $missingFields))
+                    (string) __(
+                        'The following attribute mapping fields are required: %1',
+                        implode(', ', $missingFields)
+                    )
                 );
                 $this->dataPersistor->set('oidc_provider', $data);
                 return $providerId > 0
@@ -210,28 +213,30 @@ class Save extends Action implements HttpPostActionInterface
             }
 
             // Lockout-prevention: OIDC-only requires at least one OIDC user to exist for this provider.
-            if ($model->getData('m2oidc_disable_non_oidc_admin_login') == 1 && $providerId > 0) {
-                if ($this->userProviderResource->countByTypeAndProvider('admin', $providerId) === 0) {
-                    $model->setData('m2oidc_disable_non_oidc_admin_login', 0);
-                    $this->messageManager->addWarningMessage(
-                        (string) __(
-                            'Admin OIDC-only login was automatically disabled because no admin users '
-                            . 'have logged in via this provider yet.'
-                        )
-                    );
-                }
+            if ($model->getData('m2oidc_disable_non_oidc_admin_login') == 1
+                && $providerId > 0
+                && $this->userProviderResource->countByTypeAndProvider('admin', $providerId) === 0
+            ) {
+                $model->setData('m2oidc_disable_non_oidc_admin_login', 0);
+                $this->messageManager->addWarningMessage(
+                    (string) __(
+                        'Admin OIDC-only login was automatically disabled because no admin users '
+                        . 'have logged in via this provider yet.'
+                    )
+                );
             }
 
-            if ($model->getData('m2oidc_disable_non_oidc_customer_login') == 1 && $providerId > 0) {
-                if ($this->userProviderResource->countByTypeAndProvider('customer', $providerId) === 0) {
-                    $model->setData('m2oidc_disable_non_oidc_customer_login', 0);
-                    $this->messageManager->addWarningMessage(
-                        (string) __(
-                            'Customer OIDC-only login was automatically disabled because no customers '
-                            . 'have logged in via this provider yet.'
-                        )
-                    );
-                }
+            if ($model->getData('m2oidc_disable_non_oidc_customer_login') == 1
+                && $providerId > 0
+                && $this->userProviderResource->countByTypeAndProvider('customer', $providerId) === 0
+            ) {
+                $model->setData('m2oidc_disable_non_oidc_customer_login', 0);
+                $this->messageManager->addWarningMessage(
+                    (string) __(
+                        'Customer OIDC-only login was automatically disabled because no customers '
+                        . 'have logged in via this provider yet.'
+                    )
+                );
             }
 
             // Default admin role
@@ -292,7 +297,7 @@ class Save extends Action implements HttpPostActionInterface
             $discoverySucceeded = false;
             if ($discoveryUrl !== '') {
                 $discovered = $this->performDiscovery($discoveryUrl);
-                if ($discovered !== null) {
+                if ($discovered instanceof \stdClass) {
                     if (isset($discovered->authorization_endpoint)) {
                         $model->setData('authorize_endpoint', trim((string) $discovered->authorization_endpoint));
                     }

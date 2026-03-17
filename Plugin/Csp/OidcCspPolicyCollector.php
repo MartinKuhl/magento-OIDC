@@ -146,7 +146,7 @@ class OidcCspPolicyCollector implements PolicyCollectorInterface
         $scheme = parse_url($url, PHP_URL_SCHEME);
         $host   = parse_url($url, PHP_URL_HOST);
         // phpcs:enable Magento2.Functions.DiscouragedFunction.Discouraged
-        if ($host === null || $host === false || $host === '' || $scheme !== 'https') {
+        if (in_array($host, [null, false, ''], true) || $scheme !== 'https') {
             return '';
         }
         return 'https://' . $host;

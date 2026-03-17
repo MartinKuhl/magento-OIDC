@@ -37,10 +37,10 @@ class Delete extends Action implements HttpPostActionInterface
     /**
      * Initialize provider delete controller.
      *
-     * @param Context                          $context
+     * @param Context                      $context
      * @param M2oidcOauthClientAppsFactory $clientAppsFactory
-     * @param AppResource                      $appResource
-     * @param OAuthUtility                     $oauthUtility
+     * @param AppResource                  $appResource
+     * @param OAuthUtility                 $oauthUtility
      */
     public function __construct(
         Context $context,

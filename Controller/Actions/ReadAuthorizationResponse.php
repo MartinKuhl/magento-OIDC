@@ -294,7 +294,7 @@ class ReadAuthorizationResponse extends BaseAction
                 );
             }
 
-            if ($header == 1 && $body == 0) {
+            if ($header === 1 && $body === 0) {
                 $accessTokenRequest = (new AccessTokenRequestBody($redirectURL, $authorizationCode, $codeVerifier))
                     ->build();
             } else {

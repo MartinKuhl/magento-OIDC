@@ -36,13 +36,13 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
     /**
      * Initialize provider settings controller.
      *
-     * @param Context                          $context
-     * @param PageFactory                      $resultPageFactory
-     * @param OAuthUtility                     $oauthUtility
-     * @param ManagerInterface                 $messageManager
-     * @param LoggerInterface                  $logger
+     * @param Context                      $context
+     * @param PageFactory                  $resultPageFactory
+     * @param OAuthUtility                 $oauthUtility
+     * @param ManagerInterface             $messageManager
+     * @param LoggerInterface              $logger
      * @param M2oidcOauthClientAppsFactory $clientAppsFactory
-     * @param AppResource                      $appResource
+     * @param AppResource                  $appResource
      */
     public function __construct(
         Context $context,

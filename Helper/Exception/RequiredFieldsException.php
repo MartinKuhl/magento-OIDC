@@ -16,7 +16,7 @@ class RequiredFieldsException extends \Exception
     {
         $message     = OAuthMessages::parse('REQUIRED_FIELDS');
         $code         = 104;
-        parent::__construct($message, $code, null);
+        parent::__construct($message, $code);
     }
 
     /**

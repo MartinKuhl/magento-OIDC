@@ -27,9 +27,9 @@ class ProcessResponseAction extends BaseAction
     /**
      * Initialize process response action.
      *
-     * @param \Magento\Framework\App\Action\Context                              $context
-     * @param \M2Oidc\OAuth\Helper\OAuthUtility                              $oauthUtility
-     * @param \M2Oidc\OAuth\Controller\Actions\CheckAttributeMappingAction   $attrMappingAction
+     * @param \Magento\Framework\App\Action\Context                        $context
+     * @param \M2Oidc\OAuth\Helper\OAuthUtility                            $oauthUtility
+     * @param \M2Oidc\OAuth\Controller\Actions\CheckAttributeMappingAction $attrMappingAction
      */
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
@@ -164,24 +164,27 @@ class ProcessResponseAction extends BaseAction
      * Flatten a multidimensional array with dot notation keys
      *
      * @param  string       $keyprefix
-     * @param  array|object $arr
+     * @param  mixed        $arr
      * @param  array        $flattenedattributesarray
      * @param  int          $depth
-     * @return array
      */
-    private function getflattenedArray(?string $keyprefix, $arr, array &$flattenedattributesarray, int|float $depth = 0)
-    {
+    private function getflattenedArray(
+        ?string $keyprefix,
+        mixed $arr,
+        array &$flattenedattributesarray,
+        int|float $depth = 0
+    ): array {
         if ($depth > self::MAX_RECURSION_DEPTH) {
             return $flattenedattributesarray;
         }
 
         foreach ($arr as $key => $resource) {
             if (is_array($resource) || is_object($resource)) {
-                $newPrefix = ($keyprefix === null || $keyprefix === '' || $keyprefix === '0')
+                $newPrefix = (in_array($keyprefix, [null, '', '0'], true))
                     ? $key : $keyprefix . "." . $key;
                 $this->getflattenedArray($newPrefix, $resource, $flattenedattributesarray, $depth + 1);
             } else {
-                $newKey = ($keyprefix === null || $keyprefix === '' || $keyprefix === '0')
+                $newKey = (in_array($keyprefix, [null, '', '0'], true))
                     ? $key : $keyprefix . "." . $key;
                 $flattenedattributesarray[$newKey] = $resource;
             }

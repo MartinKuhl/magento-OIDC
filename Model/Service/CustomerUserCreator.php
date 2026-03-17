@@ -13,7 +13,6 @@ use Magento\Customer\Api\Data\AddressInterfaceFactory;
 use Magento\Customer\Api\AddressRepositoryInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use Magento\Framework\Math\Random;
-use Magento\Directory\Helper\Data as DirectoryData;
 use Magento\Customer\Api\Data\CustomerInterface;
 use M2Oidc\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
 
@@ -39,9 +38,6 @@ class CustomerUserCreator
 
     /** @var \M2Oidc\OAuth\Helper\OAuthUtility */
     private readonly \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility;
-
-    /** @var DirectoryData */
-    private readonly DirectoryData $directoryData;
 
     // Attribute mapping keys
     /**
@@ -94,7 +90,6 @@ class CustomerUserCreator
      * @param StoreManagerInterface                             $storeManager
      * @param Random                                            $randomUtility
      * @param OAuthUtility                                      $oauthUtility
-     * @param DirectoryData                                     $directoryData
      * @param \Magento\Customer\Api\CustomerRepositoryInterface $customerRepository
      * @param UserProviderResource                              $userProviderResource
      * @param MappingRepository                                 $mappingRepository
@@ -107,7 +102,6 @@ class CustomerUserCreator
         StoreManagerInterface $storeManager,
         Random $randomUtility,
         OAuthUtility $oauthUtility,
-        DirectoryData $directoryData,
         \Magento\Customer\Api\CustomerRepositoryInterface $customerRepository,
         UserProviderResource $userProviderResource,
         MappingRepository $mappingRepository,
@@ -119,7 +113,6 @@ class CustomerUserCreator
         $this->storeManager = $storeManager;
         $this->randomUtility = $randomUtility;
         $this->oauthUtility = $oauthUtility;
-        $this->directoryData = $directoryData;
         $this->customerRepository = $customerRepository;
         $this->userProviderResource = $userProviderResource;
         $this->mappingRepository = $mappingRepository;
@@ -455,7 +448,7 @@ class CustomerUserCreator
                 ->setStreet([$street])
                 ->setCity($city)
                 ->setPostcode($zip)
-                ->setCountryId($countryId !== '' ? $countryId : $this->directoryData->getDefaultCountry())
+                ->setCountryId($countryId)
                 ->setTelephone($phone)
                 ->setIsDefaultBilling(true)
                 ->setIsDefaultShipping(true);

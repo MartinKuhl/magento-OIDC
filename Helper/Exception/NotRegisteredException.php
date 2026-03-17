@@ -16,7 +16,7 @@ class NotRegisteredException extends \Exception
     {
         $message     = OAuthMessages::parse('NOT_REG_ERROR');
         $code         = 102;
-        parent::__construct($message, $code, null);
+        parent::__construct($message, $code);
     }
 
     /**

@@ -16,7 +16,7 @@ class IncorrectUserInfoDataException extends \Exception
     {
         $message     = OAuthMessages::parse('INVALID_USER_INFO');
         $code         = 119;
-        parent::__construct($message, $code, null);
+        parent::__construct($message, $code);
     }
 
     /**

@@ -58,12 +58,12 @@ class OAuthLogoutObserver implements ObserverInterface
 
     /**
      * @param \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility
-     * @param ResponseInterface                     $response
-     * @param CookieManagerInterface                $cookieManager
-     * @param CookieMetadataFactory                 $cookieMetadataFactory
-     * @param CustomerSession                       $customerSession
-     * @param UrlInterface                          $url
-     * @param CurlFactory                           $curlFactory
+     * @param ResponseInterface                 $response
+     * @param CookieManagerInterface            $cookieManager
+     * @param CookieMetadataFactory             $cookieMetadataFactory
+     * @param CustomerSession                   $customerSession
+     * @param UrlInterface                      $url
+     * @param CurlFactory                       $curlFactory
      */
     public function __construct(
         \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility,

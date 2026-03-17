@@ -43,11 +43,11 @@ class Edit extends Action implements HttpGetActionInterface
     private readonly AppResource $appResource;
 
     /**
-     * @param Context                          $context
-     * @param PageFactory                      $pageFactory
-     * @param Registry                         $registry
+     * @param Context                      $context
+     * @param PageFactory                  $pageFactory
+     * @param Registry                     $registry
      * @param M2oidcOauthClientAppsFactory $clientAppsFactory
-     * @param AppResource                      $appResource
+     * @param AppResource                  $appResource
      */
     public function __construct(
         Context $context,

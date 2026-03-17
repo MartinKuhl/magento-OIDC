@@ -27,7 +27,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
     /** @var Curl */
     private readonly Curl $curl;
 
-    /** @var M2oidcOauthhClientAppsFactory */
+    /** @var M2oidcOauthClientAppsFactory */
     private readonly M2oidcOauthClientAppsFactory $clientAppsFactory;
 
     /** @var AppResource */
@@ -36,14 +36,14 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
     /**
      * Initialize OAuth settings controller.
      *
-     * @param \Magento\Backend\App\Action\Context              $context
-     * @param \Magento\Framework\View\Result\PageFactory       $resultPageFactory
-     * @param \M2Oidc\OAuth\Helper\OAuthUtility            $oauthUtility
-     * @param \Magento\Framework\Message\ManagerInterface      $messageManager
-     * @param \Psr\Log\LoggerInterface                         $logger
-     * @param Curl                                             $curl
-     * @param M2oidcOauthClientAppsFactory                 $clientAppsFactory
-     * @param AppResource                                      $appResource
+     * @param \Magento\Backend\App\Action\Context            $context
+     * @param \Magento\Framework\View\Result\PageFactory     $resultPageFactory
+     * @param \M2Oidc\OAuth\Helper\OAuthUtility              $oauthUtility
+     * @param \Magento\Framework\Message\ManagerInterface    $messageManager
+     * @param \Psr\Log\LoggerInterface                       $logger
+     * @param Curl                                           $curl
+     * @param M2oidcOauthClientAppsFactory                   $clientAppsFactory
+     * @param AppResource                                    $appResource
      */
     public function __construct(
         \Magento\Backend\App\Action\Context $context,

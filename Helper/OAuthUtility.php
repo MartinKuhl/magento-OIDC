@@ -581,15 +581,13 @@ class OAuthUtility extends Data
             $data = $item->getData();
             $providerLoginType = $data['login_type'] ?? 'both';
 
-            if ($providerLoginType === $loginType
-                || $providerLoginType === 'both'
-                || $providerLoginType === ''
+            if (in_array($providerLoginType, [$loginType, 'both', ''], true)
             ) {
                 $providers[] = $data;
             }
         }
 
-        usort($providers, function ($a, $b): int {
+        usort($providers, function (array $a, array $b): int {
             return ((int) ($a['sort_order'] ?? 0)) <=> ((int) ($b['sort_order'] ?? 0));
         });
 
@@ -663,7 +661,7 @@ class OAuthUtility extends Data
         }
 
         /** @psalm-suppress InvalidArrayOffset */
-        $provider = ($appName === null || $appName === '' || $appName === '0')
+        $provider = (in_array($appName, [null, '', '0'], true))
             ? reset($providers)
             : ($providers[$appName] ?? reset($providers));
 
@@ -866,7 +864,7 @@ class OAuthUtility extends Data
      */
     public function decodeBase64(?string $input): string
     {
-        if ($input === null || $input === '' || $input === '0') {
+        if (in_array($input, [null, '', '0'], true)) {
             return '';
         }
         // phpcs:ignore Magento2.Functions.DiscouragedFunction

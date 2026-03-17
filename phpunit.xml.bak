@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd"
+         bootstrap="Test/bootstrap.php"
+         colors="true"
+         stopOnFailure="false">
+
+    <testsuites>
+        <testsuite name="M2Oidc OIDC Unit Tests">
+            <directory>Test/Unit</directory>
+        </testsuite>
+        <testsuite name="M2Oidc OIDC Integration Tests">
+            <directory>Test/Integration</directory>
+            <exclude>Test/Integration/AbstractOidcIntegrationTest.php</exclude>
+        </testsuite>
+    </testsuites>
+
+    <php>
+        <!-- Integration-test environment variables — override via docker-compose.test.yml -->
+        <env name="OIDC_TEST_ISSUER"         value="http://dex.local:5556/dex"/>
+        <env name="OIDC_TEST_CLIENT_ID"      value="m2oidc-test-client"/>
+        <env name="OIDC_TEST_CLIENT_SECRET"  value="m2oidc-test-secret"/>
+        <env name="OIDC_TEST_REDIRECT_URI"   value="http://localhost/m2oidc/actions/readauthresponse"/>
+    </php>
+
+    <coverage>
+        <include>
+            <directory>Helper</directory>
+            <directory>Model</directory>
+            <directory>Plugin</directory>
+            <directory>Observer</directory>
+        </include>
+        <exclude>
+            <directory>Helper/Exception</directory>
+        </exclude>
+    </coverage>
+
+</phpunit>

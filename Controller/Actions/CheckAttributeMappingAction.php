@@ -125,18 +125,18 @@ class CheckAttributeMappingAction extends BaseAction
     /**
      * Constructor with dependency injection
      *
-     * @param \Magento\Framework\App\Action\Context                               $context
-     * @param \M2Oidc\OAuth\Helper\OAuthUtility                               $oauthUtility
-     * @param \M2Oidc\OAuth\Controller\Actions\ProcessUserAction              $processUserAction
-     * @param \Magento\User\Model\UserFactory                                     $userFactory
-     * @param \Magento\Backend\Model\UrlInterface                                 $backendUrl
-     * @param AdminUserCreator                                                    $adminUserCreator
-     * @param \Magento\Customer\Model\Session                                     $customerSession
-     * @param \M2Oidc\OAuth\Controller\Actions\ShowTestResults                $testAction
-     * @param OAuthSecurityHelper                                                 $securityHelper
-     * @param CookieManagerInterface                                              $cookieManager
-     * @param CookieMetadataFactory                                               $cookieMetadataFactory
-     * @param UserProvisioningService                                             $userProvisioningService
+     * @param \Magento\Framework\App\Action\Context              $context
+     * @param \M2Oidc\OAuth\Helper\OAuthUtility                  $oauthUtility
+     * @param \M2Oidc\OAuth\Controller\Actions\ProcessUserAction $processUserAction
+     * @param \Magento\User\Model\UserFactory                    $userFactory
+     * @param \Magento\Backend\Model\UrlInterface                $backendUrl
+     * @param AdminUserCreator                                   $adminUserCreator
+     * @param \Magento\Customer\Model\Session                    $customerSession
+     * @param \M2Oidc\OAuth\Controller\Actions\ShowTestResults   $testAction
+     * @param OAuthSecurityHelper                                $securityHelper
+     * @param CookieManagerInterface                             $cookieManager
+     * @param CookieMetadataFactory                              $cookieMetadataFactory
+     * @param UserProvisioningService                            $userProvisioningService
      */
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
@@ -351,7 +351,7 @@ class CheckAttributeMappingAction extends BaseAction
                         return $this->resultRedirectFactory->create()->setUrl($adminCallbackUrl);
                     } else {
                         $this->oauthUtility->customlog("ERROR: Failed to create admin user for: " . $userEmail);
-                        $groupList = implode(', ', array_map('strval', $userGroups));
+                        $groupList = implode(', ', array_map(fn($v): string => (string) $v, $userGroups));
                         $errorMessage = OAuthMessages::parse(
                             'ADMIN_ROLE_MAPPING_NO_MATCH',
                             ['groups' => $groupList !== '' ? $groupList : '(none)']
@@ -401,7 +401,7 @@ class CheckAttributeMappingAction extends BaseAction
      */
     private function moOAuthCheckMapping(
         $attrs,
-        $flattenedAttrs,
+        array $flattenedAttrs,
         string $userEmail
     ): \Magento\Framework\Controller\ResultInterface {
         $this->oauthUtility->customlog("Starting attribute mapping for customer user");
@@ -457,7 +457,7 @@ class CheckAttributeMappingAction extends BaseAction
      *
      * @param array $attrs Attribute array
      */
-    private function processFirstName(&$attrs): void
+    private function processFirstName(array &$attrs): void
     {
         if (!isset($attrs[$this->firstName])) {
             $parts = explode("@", (string) $this->userEmail);
@@ -473,7 +473,7 @@ class CheckAttributeMappingAction extends BaseAction
      *
      * @param array $attrs Attribute array
      */
-    private function processLastName(&$attrs): void
+    private function processLastName(array &$attrs): void
     {
         if (!isset($attrs[$this->lastName])) {
             $parts = explode("@", (string) $this->userEmail);
@@ -493,7 +493,7 @@ class CheckAttributeMappingAction extends BaseAction
      *
      * @param array $attrs Attribute array
      */
-    private function processUserName(&$attrs): void
+    private function processUserName(array &$attrs): void
     {
         if (!isset($attrs[$this->usernameAttribute])) {
             $attrs[$this->usernameAttribute] = $this->userEmail;
@@ -508,7 +508,7 @@ class CheckAttributeMappingAction extends BaseAction
      *
      * @param array $attrs Attribute array
      */
-    private function processEmail(&$attrs): void
+    private function processEmail(array &$attrs): void
     {
         if (!isset($attrs[$this->emailAttribute])) {
             $attrs[$this->emailAttribute] = $this->userEmail;
@@ -525,7 +525,7 @@ class CheckAttributeMappingAction extends BaseAction
      *
      * @param array $attrs Attribute array
      */
-    private function processGroupName(&$attrs): void
+    private function processGroupName(array &$attrs): void
     {
         if (!isset($attrs[$this->groupName])) {
             $attrs[$this->groupName] = [];

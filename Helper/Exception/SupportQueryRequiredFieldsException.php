@@ -17,7 +17,7 @@ class SupportQueryRequiredFieldsException extends \Exception
     {
         $message     = OAuthMessages::parse('REQUIRED_QUERY_FIELDS');
         $code         = 109;
-        parent::__construct($message, $code, null);
+        parent::__construct($message, $code);
     }
 
     /**

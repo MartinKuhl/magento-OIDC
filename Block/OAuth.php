@@ -85,7 +85,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
         if (is_string($allowedTags)) {
             // Try to extract tag names from strings like "<b><i>"
             preg_match_all('/<([a-z0-9]+)>/i', $allowedTags, $matches);
-            $allowedTags = empty($matches[1]) ? null : array_map('strtolower', $matches[1]);
+            $allowedTags = empty($matches[1]) ? null : array_map(strtolower(...), $matches[1]);
         } elseif (!is_array($allowedTags)) {
             $allowedTags = null;
         }

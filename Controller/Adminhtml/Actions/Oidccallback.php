@@ -67,17 +67,17 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
     /**
      * Initialize OIDC callback action.
      *
-     * @param \Magento\Backend\Model\Auth                                     $auth
-     * @param ResultFactory                                                   $resultFactory
-     * @param RequestInterface                                                $request
-     * @param \M2Oidc\OAuth\Helper\OAuthUtility                           $oauthUtility
-     * @param ManagerInterface                                                $messageManager
-     * @param UrlInterface                                                    $url
-     * @param CookieManagerInterface                                          $cookieManager
-     * @param CookieMetadataFactory                                           $cookieMetadataFactory
-     * @param BackendUrlInterface                                             $backendUrl
-     * @param OAuthSecurityHelper                                             $securityHelper
-     * @param \Magento\Framework\App\Config\ScopeConfigInterface              $scopeConfig
+     * @param \Magento\Backend\Model\Auth                        $auth
+     * @param ResultFactory                                      $resultFactory
+     * @param RequestInterface                                   $request
+     * @param \M2Oidc\OAuth\Helper\OAuthUtility                  $oauthUtility
+     * @param ManagerInterface                                   $messageManager
+     * @param UrlInterface                                       $url
+     * @param CookieManagerInterface                             $cookieManager
+     * @param CookieMetadataFactory                              $cookieMetadataFactory
+     * @param BackendUrlInterface                                $backendUrl
+     * @param OAuthSecurityHelper                                $securityHelper
+     * @param \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
      */
     public function __construct(
         \Magento\Backend\Model\Auth $auth,
