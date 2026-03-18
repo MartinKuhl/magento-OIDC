@@ -121,6 +121,17 @@ class OAuthLogoutObserver implements ObserverInterface
         $idToken    = (string) $this->customerSession->getData('oidc_id_token');
         $providerId = (int)    $this->customerSession->getData('oidc_provider_id');
 
+        // ── Guard: skip IdP redirect for non-OIDC sessions ───────────────────
+        // Only call the end_session_endpoint when the customer actually authenticated
+        // via OIDC. Without this guard, the global store-config fallback URL would
+        // redirect even regular (non-OIDC) customer logouts to the IdP.
+        if ($idToken === '' && $providerId === 0) {
+            $this->oauthUtility->customlog(
+                'OAuthLogoutObserver: Non-OIDC session — skipping IdP end_session_endpoint.'
+            );
+            return;
+        }
+
         // ── 3. Determine endsession_endpoint ─────────────────────────────────
         $endSessionEndpoint = '';
         $provider           = null;

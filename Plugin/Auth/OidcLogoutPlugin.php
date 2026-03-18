@@ -112,6 +112,19 @@ class OidcLogoutPlugin
             $providerId
         ));
 
+        // ── Guard: skip IdP redirect for non-OIDC sessions ──────────────────
+        // Only call the end_session_endpoint when the admin actually authenticated
+        // via OIDC. Without this guard, the global store-config fallback URL would
+        // redirect even regular (non-OIDC) admin logouts to the IdP, and the
+        // oidc_logout_guard cookie would be set unnecessarily.
+        if ($idToken === '' && $providerId === 0) {
+            $this->oauthUtility->customlog(
+                'OidcLogoutPlugin: Non-OIDC session — skipping IdP end_session_endpoint.'
+            );
+            $proceed();
+            return;
+        }
+
         // ── 2. Execute the original logout (destroys session) ──
         $proceed();
 
