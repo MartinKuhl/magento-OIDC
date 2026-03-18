@@ -28,10 +28,10 @@ use Magento\Ui\DataProvider\AbstractDataProvider;
  */
 class SessionDataProvider extends AbstractDataProvider
 {
-    private const int DEFAULT_PAGE_SIZE = 20;
+    private const DEFAULT_PAGE_SIZE = 20;
 
     /** Config path for the frontend session / cookie lifetime in seconds (default 3600). */
-    private const string XML_PATH_COOKIE_LIFETIME = 'web/cookie/cookie_lifetime';
+    private const XML_PATH_COOKIE_LIFETIME = 'web/cookie/cookie_lifetime';
 
     /** @var ResourceConnection */
     private readonly ResourceConnection $resource;

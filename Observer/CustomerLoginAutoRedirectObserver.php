@@ -29,13 +29,13 @@ use M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps\CollectionFactory;
 class CustomerLoginAutoRedirectObserver implements ObserverInterface
 {
     /** Session key set before redirecting to IdP (loop guard) */
-    private const string SESSION_GUARD_KEY = 'oidc_customer_redirect_attempted';
+    private const SESSION_GUARD_KEY = 'oidc_customer_redirect_attempted';
 
     /**
      * Cookie name – must match OAuthLogoutObserver::LOGOUT_GUARD_COOKIE.
      * Set by OAuthLogoutObserver before the RP-Initiated Logout redirect.
      */
-    private const string LOGOUT_GUARD_COOKIE = 'oidc_logout_guard';
+    private const LOGOUT_GUARD_COOKIE = 'oidc_logout_guard';
 
     /**
      * @param CollectionFactory      $providerCollectionFactory

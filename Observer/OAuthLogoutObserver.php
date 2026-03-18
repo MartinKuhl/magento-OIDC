@@ -33,7 +33,7 @@ use M2Oidc\OAuth\Helper\OAuthConstants;
 class OAuthLogoutObserver implements ObserverInterface
 {
     /** Logout-guard cookie name — must match CustomerLoginAutoRedirectObserver */
-    private const string LOGOUT_GUARD_COOKIE = 'oidc_logout_guard';
+    private const LOGOUT_GUARD_COOKIE = 'oidc_logout_guard';
 
     /** @var \M2Oidc\OAuth\Helper\OAuthUtility */
     private readonly \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility;

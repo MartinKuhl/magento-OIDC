@@ -193,7 +193,7 @@ class CustomerOidcCallback extends BaseAction
 
         // SEC-08: Enforce website context — reject cross-site login attempts
         $websiteId = $this->storeManager->getStore()->getWebsiteId();
-        if ($customerModel->getWebsiteId() != $websiteId) {
+        if ((int) $customerModel->getWebsiteId() !== (int) $websiteId) {
             $this->oauthUtility->customlog(
                 "SEC-08: Blocked cross-website login. "
                 . "Customer website: " . $customerModel->getWebsiteId()

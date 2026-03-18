@@ -122,7 +122,7 @@ class ProcessResponseAction extends BaseAction
         return $result;
     }
 
-    private const int MAX_RECURSION_DEPTH = 5;
+    private const MAX_RECURSION_DEPTH = 5;
 
     /**
      * Recursively search for an email address in the user info array

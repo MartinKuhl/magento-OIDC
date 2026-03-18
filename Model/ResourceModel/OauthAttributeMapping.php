@@ -14,7 +14,7 @@ use Magento\Framework\Model\ResourceModel\Db\AbstractDb;
  */
 class OauthAttributeMapping extends AbstractDb
 {
-    private const string TABLE_NAME = 'm2oidc_oauth_attribute_mappings';
+    private const TABLE_NAME = 'm2oidc_oauth_attribute_mappings';
 
     /**
      * @inheritDoc

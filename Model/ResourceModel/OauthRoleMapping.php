@@ -14,13 +14,13 @@ use Magento\Framework\Model\ResourceModel\Db\AbstractDb;
  */
 class OauthRoleMapping extends AbstractDb
 {
-    private const string TABLE_NAME = 'm2oidc_oauth_role_mappings';
+    private const TABLE_NAME = 'm2oidc_oauth_role_mappings';
 
     /** Mapping type constant for admin role mappings. */
-    public const string TYPE_ADMIN_ROLE = 'admin_role';
+    public const TYPE_ADMIN_ROLE = 'admin_role';
 
     /** Mapping type constant for customer group mappings. */
-    public const string TYPE_CUSTOMER_GROUP = 'customer_group';
+    public const TYPE_CUSTOMER_GROUP = 'customer_group';
 
     /**
      * @inheritDoc

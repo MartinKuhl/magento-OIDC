@@ -58,30 +58,12 @@ class SendAuthorizationRequest extends BaseAction
     public function execute()
     {
 
-        $Log_file_time = $this->oauthUtility->getStoreConfig(OAuthConstants::LOG_FILE_TIME);
-        $current_time = time();
-        $chk_enable_log = 1;
-        $islogEnable = $this->oauthUtility->getStoreConfig(OAuthConstants::ENABLE_DEBUG_LOG);
-        $log_file_exist = $this->oauthUtility->isCustomLogExist();
-
-        if ((($Log_file_time != null && ($current_time - $Log_file_time) >= 60 * 60 * 24 * 7) && $islogEnable)
-            || ($islogEnable == 0 && $log_file_exist)
-        ) {
-            $this->oauthUtility->setStoreConfig(OAuthConstants::ENABLE_DEBUG_LOG, 0);
-            $chk_enable_log = 0;
-            $this->oauthUtility->setStoreConfig(OAuthConstants::LOG_FILE_TIME, null);
-            $this->oauthUtility->deleteCustomLogFile();
-        }
-        if ($chk_enable_log !== 0) {
-            $this->oauthUtility->customlog("SendAuthorizationRequest: execute");
-        }
+        $this->oauthUtility->customlog("SendAuthorizationRequest: execute");
 
         $params = $this->getRequest()->getParams();
-        if ($chk_enable_log !== 0) {
-            $this->oauthUtility->customlog(
-                "SendAuthorizationRequest: params: " . json_encode($params, JSON_UNESCAPED_SLASHES)
-            );
-        }
+        $this->oauthUtility->customlog(
+            "SendAuthorizationRequest: params: " . json_encode($params, JSON_UNESCAPED_SLASHES)
+        );
 
         $isFromPopup = isset($params['from_popup']) && $params['from_popup'] == '1';
 
@@ -209,11 +191,9 @@ class SendAuthorizationRequest extends BaseAction
             $codeChallengeMethod
         ))->build();
 
-        if ($chk_enable_log !== 0) {
-            $this->oauthUtility->customlog(
-                "SendAuthorizationRequest:  Authorization Request: " . $authorizationRequest
-            );
-        }
+        $this->oauthUtility->customlog(
+            "SendAuthorizationRequest:  Authorization Request: " . $authorizationRequest
+        );
 
         return $this->sendHTTPRedirectRequest($authorizationRequest, $authorizeURL, $relayState, $params);
     }
