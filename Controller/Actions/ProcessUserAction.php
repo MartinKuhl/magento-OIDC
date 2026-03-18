@@ -500,7 +500,8 @@ class ProcessUserAction
             $this->customerUserCreator->updateCustomerGroupFromOidc(
                 $customer,
                 $this->flattenedattrs ?? [],
-                $this->attrs ?? []
+                $this->attrs ?? [],
+                $this->oauthUtility->getActiveProviderId() ?? 0
             );
         } catch (\Exception $e) {
             $this->oauthUtility->customlog(

@@ -82,7 +82,7 @@ class OAuthUtility extends Data
      * @param TypeListInterface $cacheTypeList
      * @param Pool $cacheFrontendPool
      * @param \Psr\Log\LoggerInterface $logger
-     * @param \M2Oidc\OAuth\Logger\Logger $logger2
+     * @param \M2Oidc\OAuth\Logger\Logger $moduleLogger
      * @param File $fileSystem
      * @param \Magento\Framework\App\ProductMetadataInterface $productMetadata
      * @param \M2Oidc\OAuth\Model\M2oidcOauthClientAppsFactory $m2oidcOauthClientAppsFactory
@@ -111,7 +111,7 @@ class OAuthUtility extends Data
         TypeListInterface $cacheTypeList,
         Pool $cacheFrontendPool,
         \Psr\Log\LoggerInterface $logger,
-        \M2Oidc\OAuth\Logger\Logger $logger2,
+        \M2Oidc\OAuth\Logger\Logger $moduleLogger,
         File $fileSystem,
         \Magento\Framework\App\ProductMetadataInterface $productMetadata,
         \M2Oidc\OAuth\Model\M2oidcOauthClientAppsFactory $m2oidcOauthClientAppsFactory,
@@ -151,7 +151,7 @@ class OAuthUtility extends Data
         $this->fileSystem = $fileSystem;
         $this->logger = $logger;
         $this->reinitableConfig = $reinitableConfig;
-        $this->moduleLogger = $logger2;
+        $this->moduleLogger = $moduleLogger;
         $this->productMetadata = $productMetadata;
         $this->dateTime = $dateTime;
         $this->directoryList = $directoryList;

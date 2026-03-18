@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace M2Oidc\OAuth\Helper;
 
 use Magento\Framework\App\CacheInterface;
@@ -268,8 +270,8 @@ class OAuthSecurityHelper
         if ($providerId !== null && $providerId > 0) {
             $data['p'] = $providerId;
         }
-        $encoded = json_encode($data);
-        return rtrim(strtr(base64_encode($encoded !== false ? $encoded : '{}'), '+/', '-_'), '=');
+        $encoded = json_encode($data, JSON_THROW_ON_ERROR);
+        return rtrim(strtr(base64_encode($encoded), '+/', '-_'), '=');
     }
 
     /**

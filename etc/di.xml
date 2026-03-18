@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
 
-    <!-- CheckAttributeMappingAction Dependencies -->
-    <type name="M2Oidc\OAuth\Controller\Actions\CheckAttributeMappingAction">
+    <!-- CheckAttributeMappingAction Dependencies — shared="false" prevents per-request state leaking between concurrent requests -->
+    <type name="M2Oidc\OAuth\Controller\Actions\CheckAttributeMappingAction" shared="false">
         <arguments>
             <argument name="testAction" xsi:type="object">M2Oidc\OAuth\Controller\Actions\ShowTestResults</argument>
             <argument name="processUserAction" xsi:type="object">M2Oidc\OAuth\Controller\Actions\ProcessUserAction</argument>

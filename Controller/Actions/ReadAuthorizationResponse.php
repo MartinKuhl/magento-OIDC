@@ -22,10 +22,8 @@ use M2Oidc\OAuth\Model\Service\TokenRefreshService;
  */
 class ReadAuthorizationResponse extends BaseAction
 {
-    /**
-     * @var \Magento\Framework\UrlInterface
-     */
-    protected $_url;
+    /** @var \Magento\Framework\UrlInterface */
+    protected \Magento\Framework\UrlInterface $url;
 
     /** @var \Magento\Customer\Model\Session */
     private readonly \Magento\Customer\Model\Session $customerSession;
@@ -89,7 +87,7 @@ class ReadAuthorizationResponse extends BaseAction
         OidcRateLimiter $rateLimiter,
         TokenRefreshService $tokenRefreshService,
     ) {
-        $this->_url = $url;
+        $this->url = $url;
         $this->customerSession = $customerSession;
         $this->securityHelper = $securityHelper;
         $this->jwtVerifier = $jwtVerifier;
@@ -176,10 +174,10 @@ class ReadAuthorizationResponse extends BaseAction
                 $query = ['_query' => ['oidc_error' => urlencode($encodedError)]];
                 if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
                     // Admin: redirect to admin login page
-                    $loginUrl = $this->_url->getUrl('admin', $query);
+                    $loginUrl = $this->url->getUrl('admin', $query);
                 } else {
                     // Customer: redirect to customer login page
-                    $loginUrl = $this->_url->getUrl('customer/account/login', $query);
+                    $loginUrl = $this->url->getUrl('customer/account/login', $query);
                 }
                 return $this->_redirect($loginUrl);
             }
@@ -222,9 +220,9 @@ class ReadAuthorizationResponse extends BaseAction
                 $encodedError = urlencode(base64_encode('Security validation failed. Please try logging in again.'));
                 $query = ['_query' => ['oidc_error' => $encodedError]];
                 if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
-                    $loginUrl = $this->_url->getUrl('admin', $query);
+                    $loginUrl = $this->url->getUrl('admin', $query);
                 } else {
-                    $loginUrl = $this->_url->getUrl('customer/account/login', $query);
+                    $loginUrl = $this->url->getUrl('customer/account/login', $query);
                 }
                 return $this->_redirect($loginUrl);
             }
@@ -243,25 +241,19 @@ class ReadAuthorizationResponse extends BaseAction
                 ? $this->oauthUtility->getClientDetailsById($providerId)
                 : $this->oauthUtility->getClientDetailsByAppName($app_name);
             if (!$clientDetails) {
-                // Fallback: use the first configured app
-                $collection = $this->oauthUtility->getOAuthClientApps();
-                if (count($collection) > 0) {
-                    $clientDetails = $collection->getFirstItem()->getData();
-                    $app_name = $clientDetails["app_name"];
-                    $this->oauthUtility->setSessionData(OAuthConstants::APP_NAME, $app_name);
+                $this->oauthUtility->customlog(
+                    "ERROR: Provider not found for relay state (provider_id={$providerId}, app={$app_name})"
+                );
+                $encodedError = base64_encode(
+                    'OAuth provider not found. Please try signing in again.'
+                );
+                $query = ['_query' => ['oidc_error' => $encodedError]];
+                if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
+                    $loginUrl = $this->url->getUrl('admin', $query);
                 } else {
-                    $this->oauthUtility->customlog("ERROR: Invalid OAuth app configuration");
-                    $encodedError = base64_encode(
-                        'Invalid OAuth app configuration. Please contact the administrator.'
-                    );
-                    $query = ['_query' => ['oidc_error' => $encodedError]];
-                    if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
-                        $loginUrl = $this->_url->getUrl('admin', $query);
-                    } else {
-                        $loginUrl = $this->_url->getUrl('customer/account/login', $query);
-                    }
-                    return $this->_redirect($loginUrl);
+                    $loginUrl = $this->url->getUrl('customer/account/login', $query);
                 }
+                return $this->_redirect($loginUrl);
             }
 
             // Build token request
@@ -411,6 +403,7 @@ class ReadAuthorizationResponse extends BaseAction
 
             // ── END id_token transport ──
 
+            $userInfoResponseData = null;
             if (isset($accessTokenResponseData['access_token']) || isset($accessTokenResponseData['id_token'])) {
                 // Fetch user info
                 $userInfoURL = $clientDetails['user_info_endpoint'];
@@ -428,6 +421,23 @@ class ReadAuthorizationResponse extends BaseAction
                     $authHeader = ["Authorization: $headerAuth"];
                     $userInfoResponse = $this->curl->sendUserInfoRequest($userInfoURL, $authHeader);
                     $userInfoResponseData = json_decode($userInfoResponse, true);
+
+                    // M-06: When user data comes from the userinfo endpoint but the token
+                    // response also contains an id_token, validate that token's nonce.
+                    // This prevents replay attacks in the hybrid flow.
+                    if (!empty($accessTokenResponseData['id_token'])) {
+                        $idTokenValidation = $this->resolveUserInfoFromIdToken(
+                            (string) $accessTokenResponseData['id_token'],
+                            $clientDetails,
+                            $clientID,
+                            $relayState,
+                            $loginType,
+                            $expectedNonce
+                        );
+                        if ($idTokenValidation instanceof \Magento\Framework\Controller\ResultInterface) {
+                            return $idTokenValidation;
+                        }
+                    }
                 } elseif (isset($accessTokenResponseData['id_token'])) {
                     $idToken = $accessTokenResponseData['id_token'];
                     if (!empty($idToken)) {
@@ -456,9 +466,9 @@ class ReadAuthorizationResponse extends BaseAction
                     }
                     $query = ['_query' => ['oidc_error' => $encodedError]];
                     if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
-                        $loginUrl = $this->_url->getUrl('admin', $query);
+                        $loginUrl = $this->url->getUrl('admin', $query);
                     } else {
-                        $loginUrl = $this->_url->getUrl('customer/account/login', $query);
+                        $loginUrl = $this->url->getUrl('customer/account/login', $query);
                     }
                     return $this->_redirect($loginUrl);
                 }
@@ -516,7 +526,7 @@ class ReadAuthorizationResponse extends BaseAction
                         return $this->resultRedirectFactory->create()->setPath('admin');
                     }
                     $encodedError = base64_encode($errorMsg);
-                    $loginUrl = $this->_url->getUrl(
+                    $loginUrl = $this->url->getUrl(
                         'customer/account/login',
                         ['_query' => ['oidc_error' => $encodedError]]
                     );
@@ -531,7 +541,7 @@ class ReadAuthorizationResponse extends BaseAction
                     $encodedError = base64_encode(
                         'Email address not received. Please check attribute mapping.'
                     );
-                    $loginUrl = $this->_url->getUrl(
+                    $loginUrl = $this->url->getUrl(
                         'customer/account/login',
                         ['_query' => ['oidc_error' => $encodedError]]
                     );
@@ -542,9 +552,7 @@ class ReadAuthorizationResponse extends BaseAction
                 $this->oauthUtility->customlog("ReadAuthorizationResponse: loginType = " . $detectedLoginType);
 
                 // MP-07: pass per-provider attribute mappings
-                if (!empty($clientDetails)) {
-                    $this->attrMappingAction->setClientDetails($clientDetails);
-                }
+                $this->attrMappingAction->setClientDetails($clientDetails);
 
                 return $this->attrMappingAction
                     ->setUserInfoResponse($userInfoResponseData)
@@ -562,9 +570,9 @@ class ReadAuthorizationResponse extends BaseAction
                 }
                 $query = ['_query' => ['oidc_error' => $encodedError]];
                 if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
-                    $loginUrl = $this->_url->getUrl('admin', $query);
+                    $loginUrl = $this->url->getUrl('admin', $query);
                 } else {
-                    $loginUrl = $this->_url->getUrl('customer/account/login', $query);
+                    $loginUrl = $this->url->getUrl('customer/account/login', $query);
                 }
                 return $this->_redirect($loginUrl);
             }
@@ -663,9 +671,9 @@ class ReadAuthorizationResponse extends BaseAction
                 }
                 $query = ['_query' => ['oidc_error' => $encodedError]];
                 if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
-                    $loginUrl = $this->_url->getUrl('admin', $query);
+                    $loginUrl = $this->url->getUrl('admin', $query);
                 } else {
-                    $loginUrl = $this->_url->getUrl('customer/account/login', $query);
+                    $loginUrl = $this->url->getUrl('customer/account/login', $query);
                 }
                 return $this->_redirect($loginUrl);
             }
@@ -687,9 +695,9 @@ class ReadAuthorizationResponse extends BaseAction
         }
         $query = ['_query' => ['oidc_error' => $encodedError]];
         if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
-            $loginUrl = $this->_url->getUrl('admin', $query);
+            $loginUrl = $this->url->getUrl('admin', $query);
         } else {
-            $loginUrl = $this->_url->getUrl('customer/account/login', $query);
+            $loginUrl = $this->url->getUrl('customer/account/login', $query);
         }
         return $this->_redirect($loginUrl);
     }

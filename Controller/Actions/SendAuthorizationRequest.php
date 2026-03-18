@@ -50,31 +50,13 @@ class SendAuthorizationRequest extends BaseAction
         // that conflicts with PHP's session cookie (domain=...). The duplicate cookie prevents
         // session_regenerate_id() from updating the browser's session ID after login.
         // SameSite=None is unnecessary — OAuth uses top-level navigation (SameSite=Lax suffices).
-        
-        $Log_file_time = $this->oauthUtility->getStoreConfig(OAuthConstants::LOG_FILE_TIME);
-        $current_time = time();
-        $chk_enable_log = 1;
-        $islogEnable = $this->oauthUtility->getStoreConfig(OAuthConstants::ENABLE_DEBUG_LOG);
-        $log_file_exist = $this->oauthUtility->isCustomLogExist();
 
-        if ((($Log_file_time != null && ($current_time - $Log_file_time) >= 60 * 60 * 24 * 7)
-            && $islogEnable) || ($islogEnable == 0 && $log_file_exist)
-        ) { //7days
-            $this->oauthUtility->setStoreConfig(OAuthConstants::ENABLE_DEBUG_LOG, 0);
-            $chk_enable_log = 0;
-            $this->oauthUtility->setStoreConfig(OAuthConstants::LOG_FILE_TIME, null);
-            $this->oauthUtility->deleteCustomLogFile();
-        }
-        if ($chk_enable_log !== 0) {
-            $this->oauthUtility->customlog("SendAuthorizationRequest: execute");
-        }
+        $this->oauthUtility->customlog("SendAuthorizationRequest: execute");
 
         $params = $this->getRequest()->getParams();
-        if ($chk_enable_log !== 0) {
-            $this->oauthUtility->customlog(
-                "SendAuthorizationRequest: Request prarms: " . implode(" ", $params)
-            );
-        }
+        $this->oauthUtility->customlog(
+            "SendAuthorizationRequest: Request prarms: " . implode(" ", $params)
+        );
         $isFromPopup = isset($params['from_popup']) && $params['from_popup'] == '1';
 
         // Set relayState based on popup context, with redirect validation
@@ -146,10 +128,6 @@ class SendAuthorizationRequest extends BaseAction
         $this->securityHelper->storeOidcNonce($stateToken, $oidcNonce);
         $params['nonce'] = $oidcNonce;
 
-        if (strpos($relayState, OAuthConstants::TEST_RELAYSTATE) !== false) {
-            $this->oauthUtility->setStoreConfig(OAuthConstants::IS_TEST, true);
-        }
-
         $clientDetails = null;
         $this->oauthUtility->setSessionData(OAuthConstants::APP_NAME, $app_name);
 
@@ -216,11 +194,9 @@ class SendAuthorizationRequest extends BaseAction
             $codeChallenge,
             $codeChallengeMethod
         ))->build();
-        if ($chk_enable_log !== 0) {
-            $this->oauthUtility->customlog(
-                "SendAuthorizationRequest:  Authorization Request: " . $authorizationRequest
-            );
-        }
+        $this->oauthUtility->customlog(
+            "SendAuthorizationRequest:  Authorization Request: " . $authorizationRequest
+        );
         // send oauth request over
         return $this->sendHTTPRedirectRequest($authorizationRequest, $authorizeURL, $relayState, $params);
     }

@@ -216,16 +216,17 @@ class CheckAttributeMappingAction extends BaseAction
 
         // MP-05: Initialize attribute mappings from active provider context
         $this->initAttributeMappings();
-        $attrs = $this->userInfoResponse;
-        $flattenedAttrs = $this->flattenedUserInfoResponse;
+        $attrs = $this->userInfoResponse ?? [];
+        $flattenedAttrs = $this->flattenedUserInfoResponse ?? [];
         $userEmail = $this->userEmail;
 
-        $isTest = $this->oauthUtility->getStoreConfig(OAuthConstants::IS_TEST);
+        // Detect test mode from relay state embedded in userInfoResponse — avoids persisting
+        // IS_TEST in core_config_data (which leaks if the IdP never calls back).
+        $relayStateUrl = (string) ($attrs['relayState'] ?? '');
+        $isTest = str_contains($relayStateUrl, OAuthConstants::TEST_RELAYSTATE);
 
         // Test configuration: Do not redirect to backend!
-        if ($isTest === true) {
-            $this->oauthUtility->setStoreConfig(OAuthConstants::IS_TEST, false);
-            $this->oauthUtility->flushCache();
+        if ($isTest) {
             $this->testAction->setAttrs($flattenedAttrs);
             $this->testAction->setUserEmail($userEmail);
             return $this->testAction->execute();
@@ -275,8 +276,8 @@ class CheckAttributeMappingAction extends BaseAction
                 $this->oauthUtility->customlog("Routing admin user to admin callback endpoint");
 
                 // Sync admin profile and role from OIDC claims before login (if enabled)
-                $this->syncAdminProfileIfEnabled($userEmail, $flattenedAttrs ?? [], $attrs ?? []);
-                $this->syncAdminRoleIfEnabled($userEmail, $flattenedAttrs ?? [], $attrs ?? []);
+                $this->syncAdminProfileIfEnabled($userEmail, $flattenedAttrs, $attrs);
+                $this->syncAdminRoleIfEnabled($userEmail, $flattenedAttrs, $attrs);
 
                 $nonce = $this->securityHelper->createAdminLoginNonce($userEmail);
                 $this->cookieManager->setPublicCookie(
@@ -345,8 +346,8 @@ class CheckAttributeMappingAction extends BaseAction
                         $this->oauthUtility->customlog("Admin user created successfully. ID: " . $adminUser->getId());
 
                         // Sync profile and role for the newly created admin (if enabled)
-                        $this->syncAdminProfileIfEnabled($userEmail, $flattenedAttrs ?? [], $attrs ?? []);
-                        $this->syncAdminRoleIfEnabled($userEmail, $flattenedAttrs ?? [], $attrs ?? []);
+                        $this->syncAdminProfileIfEnabled($userEmail, $flattenedAttrs, $attrs);
+                        $this->syncAdminRoleIfEnabled($userEmail, $flattenedAttrs, $attrs);
 
                         // Redirect to admin callback for login
                         $nonce = $this->securityHelper->createAdminLoginNonce($userEmail);

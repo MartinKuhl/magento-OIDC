@@ -117,8 +117,6 @@ class CustomerUserCreator
         $this->userProviderResource = $userProviderResource;
         $this->mappingRepository = $mappingRepository;
         $this->attributeMapper = $attributeMapper;
-
-        $this->initializeAttributeMapping();
     }
 
     /**
@@ -175,6 +173,7 @@ class CustomerUserCreator
         array $rawAttrs,
         int $providerId = 0
     ): ?CustomerInterface {
+        $this->initializeAttributeMapping();
         $this->oauthUtility->customlog("CustomerUserCreator: Starting creation for " . $email);
 
         try {
@@ -374,12 +373,14 @@ class CustomerUserCreator
      * @param  CustomerInterface $customer       Existing Magento customer
      * @param  array             $flattenedAttrs Flattened OIDC attributes
      * @param  array             $rawAttrs       Raw OIDC attributes
+     * @param  int               $providerId     OIDC provider ID (0 = unknown)
      * @return bool true if group was changed and saved
      */
     public function updateCustomerGroupFromOidc(
         CustomerInterface $customer,
         array $flattenedAttrs,
-        array $rawAttrs
+        array $rawAttrs,
+        int $providerId = 0
     ): bool {
         $oidcGroups = $this->extractOidcGroups($flattenedAttrs, $rawAttrs);
         if ($oidcGroups === []) {
@@ -389,7 +390,7 @@ class CustomerUserCreator
             return false;
         }
 
-        $resolvedGroupId = $this->getCustomerGroupFromOidcGroups($oidcGroups);
+        $resolvedGroupId = $this->getCustomerGroupFromOidcGroups($oidcGroups, $providerId);
         if ($resolvedGroupId === null) {
             // Deny-policy active but no match — don't change existing customer
             $this->oauthUtility->customlog(

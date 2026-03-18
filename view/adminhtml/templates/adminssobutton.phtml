@@ -36,12 +36,7 @@ $oidcVisibility = $block->getData('oidc_visibility');
 
     <?php foreach ($adminProviders as $provider):
         $pid   = (int) ($provider['id'] ?? 0);
-        $name  = $escaper->escapeHtml($provider['display_name'] ?? $provider['app_name'] ?? '');
-        $label = $escaper->escapeHtml(
-            !empty($provider['button_label'])
-            ? $provider['button_label']
-            : __('Login with %1', $name)
-        );
+        $displayName = $provider['display_name'] ?? $provider['app_name'] ?? '';
         $color = preg_match('/^#[0-9a-fA-F]{6}$/', (string) ($provider['button_color'] ?? ''))
             ? $escaper->escapeHtmlAttr($provider['button_color'])
             : '#eb5202';
@@ -51,12 +46,16 @@ $oidcVisibility = $block->getData('oidc_visibility');
         ?>
     <button
         type="button"
-        class="action-login action-primary"
+        class="action-login action-primary m2oidc-sso-btn"
         style="padding:10px 14px; width:100%; text-align:center;
                box-sizing:border-box; margin-bottom:5px;
                background-color:<?= $color /* @noEscape */ ?>;"
-        onclick="window.location.href='<?= $url /* @noEscape */ ?>';">
-        <?= $label /* @noEscape */ ?>
+        data-url="<?= $escaper->escapeHtmlAttr($url) ?>">
+        <?= $escaper->escapeHtml(
+            !empty($provider['button_label'])
+            ? $provider['button_label']
+            : __('Login with %1', $displayName)
+        ) ?>
     </button>
     <?php endforeach; ?>
 </div>
@@ -69,6 +68,12 @@ $oidcVisibility = $block->getData('oidc_visibility');
             fieldset.appendChild(ssoWrapper);
             ssoWrapper.style.display = 'block';
         }
+
+        document.querySelectorAll('.m2oidc-sso-btn[data-url]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                window.location.href = btn.getAttribute('data-url');
+            });
+        });
     });
 </script>
 
@@ -76,13 +81,21 @@ $oidcVisibility = $block->getData('oidc_visibility');
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             var usernameField = document.querySelector('.field-username');
-            if (usernameField) { usernameField.style.display = 'none'; }
+            if (usernameField) {
+                usernameField.style.display = 'none';
+                var usernameInput = usernameField.querySelector('input');
+                if (usernameInput) { usernameInput.disabled = true; }
+            }
 
             var passwordField = document.querySelector('.field-password');
-            if (passwordField) { passwordField.style.display = 'none'; }
+            if (passwordField) {
+                passwordField.style.display = 'none';
+                var passwordInput = passwordField.querySelector('input');
+                if (passwordInput) { passwordInput.disabled = true; }
+            }
 
-            var loginButton = document.querySelector('.form-actions .action-login:not([onclick])');
-            if (loginButton) { loginButton.style.display = 'none'; }
+            var loginButton = document.querySelector('.form-actions .action-login:not([data-url])');
+            if (loginButton) { loginButton.style.display = 'none'; loginButton.disabled = true; }
 
             var forgotLink = document.querySelector('.form-actions .action-forgotpassword');
             if (forgotLink) { forgotLink.style.display = 'none'; }

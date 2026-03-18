@@ -13,6 +13,7 @@ use Magento\Framework\Controller\Result\JsonFactory;
 use Magento\Framework\Session\SessionManagerInterface;
 use M2Oidc\OAuth\Helper\JwtVerifier;
 use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Model\Security\OidcRateLimiter;
 use M2Oidc\OAuth\Model\Service\OidcSessionRegistry;
 
 /**
@@ -51,6 +52,9 @@ class BackChannelLogout extends BaseAction implements HttpPostActionInterface, C
     /** @var OidcSessionRegistry */
     private readonly OidcSessionRegistry $sessionRegistry;
 
+    /** @var OidcRateLimiter */
+    private readonly OidcRateLimiter $rateLimiter;
+
     /**
      * Initialize back-channel logout controller.
      *
@@ -59,17 +63,20 @@ class BackChannelLogout extends BaseAction implements HttpPostActionInterface, C
      * @param JsonFactory                           $jsonFactory
      * @param JwtVerifier                           $jwtVerifier
      * @param OidcSessionRegistry                   $sessionRegistry
+     * @param OidcRateLimiter                       $rateLimiter
      */
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
         OAuthUtility $oauthUtility,
         JsonFactory $jsonFactory,
         JwtVerifier $jwtVerifier,
-        OidcSessionRegistry $sessionRegistry
+        OidcSessionRegistry $sessionRegistry,
+        OidcRateLimiter $rateLimiter
     ) {
         $this->jsonFactory     = $jsonFactory;
         $this->jwtVerifier     = $jwtVerifier;
         $this->sessionRegistry = $sessionRegistry;
+        $this->rateLimiter     = $rateLimiter;
         parent::__construct($context, $oauthUtility);
     }
 
@@ -79,6 +86,17 @@ class BackChannelLogout extends BaseAction implements HttpPostActionInterface, C
     #[\Override]
     public function execute(): ResponseInterface
     {
+        $request = $this->getRequest();
+        $clientIp = ($request instanceof \Magento\Framework\App\Request\Http)
+            ? (string) $request->getClientIp()
+            : '';
+        if (!$this->rateLimiter->isAllowed($clientIp)) {
+            $this->oauthUtility->customlog(
+                "BackChannelLogout: Rate limit exceeded for IP: " . $clientIp
+            );
+            return $this->jsonError('Too many requests.', 429);
+        }
+
         $logoutToken = trim((string) $this->getRequest()->getParam('logout_token', ''));
 
         if ($logoutToken === '') {
@@ -93,7 +111,8 @@ class BackChannelLogout extends BaseAction implements HttpPostActionInterface, C
         }
 
         $issuer   = (string) ($claims['iss'] ?? '');
-        $audience = (string) ($claims['aud'] ?? '');
+        $audRaw   = $claims['aud'] ?? '';
+        $audience = is_array($audRaw) ? ($audRaw[0] ?? '') : (string) $audRaw;
 
         // Find the provider matching this issuer
         $provider = $this->resolveProvider($issuer);
