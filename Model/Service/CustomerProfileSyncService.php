@@ -9,6 +9,7 @@ use Magento\Customer\Api\Data\CustomerInterface;
 use Magento\Customer\Api\Data\AddressInterfaceFactory;
 use Magento\Customer\Api\AddressRepositoryInterface;
 use Magento\Directory\Model\ResourceModel\Country\CollectionFactory as CountryCollectionFactory;
+use Magento\Framework\App\ResourceConnection;
 use M2Oidc\OAuth\Helper\OAuthConstants;
 use M2Oidc\OAuth\Helper\OAuthUtility;
 
@@ -29,6 +30,7 @@ class CustomerProfileSyncService
      * @param CountryCollectionFactory                                 $countryCollectionFactory
      * @param \Magento\Customer\Api\Data\RegionInterfaceFactory        $regionFactory
      * @param OAuthUtility                                             $oauthUtility
+     * @param ResourceConnection                                       $resourceConnection
      */
     public function __construct(
         private readonly CustomerRepositoryInterface $customerRepository,
@@ -36,7 +38,8 @@ class CustomerProfileSyncService
         private readonly AddressRepositoryInterface $addressRepository,
         private readonly CountryCollectionFactory $countryCollectionFactory,
         private readonly \Magento\Customer\Api\Data\RegionInterfaceFactory $regionFactory,
-        private readonly OAuthUtility $oauthUtility
+        private readonly OAuthUtility $oauthUtility,
+        private readonly ResourceConnection $resourceConnection
     ) {
     }
 
@@ -95,6 +98,13 @@ class CustomerProfileSyncService
                 $customer->setGender($genderId);
                 $changed = true;
             }
+        }
+
+        // Email
+        $email = $this->extract($attrKeys['email'] ?? null, $flat, $raw);
+        if ($email !== null && $customer->getEmail() !== $email) {
+            $customer->setEmail($email);
+            $changed = true;
         }
 
         if ($changed) {
@@ -299,16 +309,51 @@ class CustomerProfileSyncService
             return strtoupper($country);
         }
 
-        $collection = $this->countryCollectionFactory->create();
-        $collection->addFieldToFilter(
-            ['country_id', 'iso3_code'],
-            [
-                ['eq' => strtoupper($country)],
-                ['eq' => strtoupper($country)],
-            ]
+        try {
+            $collection = $this->countryCollectionFactory->create();
+            $collection->addFieldToFilter(
+                ['country_id', 'iso3_code'],
+                [
+                    ['eq' => strtoupper($country)],
+                    ['eq' => strtoupper($country)],
+                ]
+            );
+
+            $item = $collection->getFirstItem();
+            if ($item && $item->getCountryId()) {
+                return $item->getCountryId();
+            }
+        } catch (\Exception $e) {
+            $this->oauthUtility->customlog(
+                'CustomerProfileSync: country collection error: ' . $e->getMessage()
+            );
+        }
+
+        // Fallback: use PHP intl extension for en_US country name → ISO code lookup.
+        // OIDC providers (e.g. Authelia) always send English names ("Germany") regardless of
+        // the Magento store locale. Using Magento's active country codes (not a full AA-ZZ
+        // brute-force) avoids deprecated ISO codes like "DD" that ICU/CLDR still maps to "Germany".
+        if (extension_loaded('intl')) {
+            $normalizedInput = strtolower(trim($country));
+            try {
+                $codes = $this->countryCollectionFactory->create()->getColumnValues('country_id');
+            } catch (\Exception $e) {
+                $codes = [];
+            }
+            foreach ($codes as $code) {
+                $displayName = \Locale::getDisplayRegion('-' . $code, 'en_US');
+                if ($displayName && $displayName !== $code
+                    && strtolower($displayName) === $normalizedInput
+                ) {
+                    return (string) $code;
+                }
+            }
+        }
+
+        $this->oauthUtility->customlog(
+            'CustomerProfileSync: could not resolve country "' . $country . '"'
         );
 
-        $item = $collection->getFirstItem();
-        return $item && $item->getCountryId() ? $item->getCountryId() : null;
+        return null;
     }
 }

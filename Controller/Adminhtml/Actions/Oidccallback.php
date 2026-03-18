@@ -14,6 +14,7 @@ use Magento\Framework\Stdlib\CookieManagerInterface;
 use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
 use Magento\Backend\Model\UrlInterface as BackendUrlInterface;
 use M2Oidc\OAuth\Helper\OAuthSecurityHelper;
+use M2Oidc\OAuth\Model\Service\AdminTokenRefreshService;
 
 /**
  * OIDC Callback Controller for Admin Login
@@ -64,6 +65,9 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
     /** @var \Magento\Framework\App\Config\ScopeConfigInterface */
     private readonly \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig;
 
+    /** @var AdminTokenRefreshService */
+    private readonly AdminTokenRefreshService $adminTokenRefreshService;
+
     /**
      * Initialize OIDC callback action.
      *
@@ -78,6 +82,7 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
      * @param BackendUrlInterface                                $backendUrl
      * @param OAuthSecurityHelper                                $securityHelper
      * @param \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
+     * @param AdminTokenRefreshService                           $adminTokenRefreshService
      */
     public function __construct(
         \Magento\Backend\Model\Auth $auth,
@@ -90,7 +95,8 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
         CookieMetadataFactory $cookieMetadataFactory,
         BackendUrlInterface $backendUrl,
         OAuthSecurityHelper $securityHelper,
-        \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
+        \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
+        AdminTokenRefreshService $adminTokenRefreshService
     ) {
         $this->auth = $auth;
         $this->resultFactory = $resultFactory;
@@ -103,6 +109,7 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
         $this->backendUrl = $backendUrl;
         $this->securityHelper = $securityHelper;
         $this->scopeConfig = $scopeConfig;
+        $this->adminTokenRefreshService = $adminTokenRefreshService;
     }
 
     /**
@@ -196,6 +203,42 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
                         $this->cookieManager->deleteCookie('oidc_id_token_transport', $deleteMeta);
                         $this->cookieManager->deleteCookie('oidc_provider_id_transport', $deleteMeta);
                     }
+
+                    // ── FEAT-03 admin: persist access/refresh tokens for mid-session auto-refresh ──
+                    // Tokens were encrypted and placed in transport cookies by ReadAuthorizationResponse
+                    // (frontend process). Read, decrypt, store in AuthSession, then delete cookies.
+                    $encryptedAccess  = $this->cookieManager->getCookie('oidc_access_token_transport');
+                    $encryptedRefresh = $this->cookieManager->getCookie('oidc_refresh_token_transport');
+                    $expiresIn        = (int) $this->cookieManager->getCookie('oidc_expires_in_transport');
+
+                    if ($encryptedAccess !== null && $encryptedAccess !== '') {
+                        try {
+                            $accessToken  = $this->oauthUtility->getEncryptor()->decrypt($encryptedAccess);
+                            $refreshToken = ($encryptedRefresh !== null && $encryptedRefresh !== '')
+                                ? $this->oauthUtility->getEncryptor()->decrypt($encryptedRefresh)
+                                : '';
+                            $this->adminTokenRefreshService->storeTokens(
+                                $refreshToken,
+                                $expiresIn > 0 ? $expiresIn : 3600,
+                                $accessToken
+                            );
+                            $this->oauthUtility->customlog(
+                                'Oidccallback: access/refresh tokens stored in admin session'
+                            );
+                        } catch (\Exception $e) {
+                            $this->oauthUtility->customlog(
+                                'Oidccallback: Failed to decrypt token transport cookies (non-fatal): '
+                                . $e->getMessage()
+                            );
+                        }
+                        $deleteTokenMeta = $this->cookieMetadataFactory
+                            ->createPublicCookieMetadata()
+                            ->setPath('/');
+                        $this->cookieManager->deleteCookie('oidc_access_token_transport', $deleteTokenMeta);
+                        $this->cookieManager->deleteCookie('oidc_refresh_token_transport', $deleteTokenMeta);
+                        $this->cookieManager->deleteCookie('oidc_expires_in_transport', $deleteTokenMeta);
+                    }
+                    // ── END FEAT-03 admin ──
 
                     // Set OIDC authentication cookie (persists across session boundary).
                     // Path MUST be '/' so the cookie is readable on all admin sub-paths.

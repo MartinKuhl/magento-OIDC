@@ -64,7 +64,13 @@ class ActiveUserCount extends Column
             $providerId = (int)$item['id'];
             $total      = $totalCounts[$providerId]  ?? 0;
             $active     = $activeCounts[$providerId] ?? 0;
-            $item[$fieldName] = sprintf('%d (%d)', $total, $active);
+            $item[$fieldName] = sprintf(
+                '<span title="%d total OIDC-linked, %d accounts still exist in Magento">%d (%d)</span>',
+                $total,
+                $active,
+                $total,
+                $active
+            );
         }
 
         return $dataSource;

@@ -39,7 +39,7 @@ class AdminProfileSyncService
     // ──────────────────────────────────────────────
 
     /**
-     * Update admin firstname, lastname and username from OIDC claims.
+     * Update admin firstname, lastname, username and email from OIDC claims.
      *
      * @param string $email          Admin email (lookup key)
      * @param array  $flattenedAttrs Flattened OIDC attributes
@@ -47,6 +47,7 @@ class AdminProfileSyncService
      * @param string $firstNameKey   OIDC claim key for firstname
      * @param string $lastNameKey    OIDC claim key for lastname
      * @param string $usernameKey    OIDC claim key for username
+     * @param string $emailKey       OIDC claim key for email (empty = skip email sync)
      */
     public function syncProfile(
         string $email,
@@ -54,7 +55,8 @@ class AdminProfileSyncService
         array $rawAttrs,
         string $firstNameKey,
         string $lastNameKey,
-        string $usernameKey
+        string $usernameKey,
+        string $emailKey = ''
     ): void {
         $user = $this->loadAdminByEmail($email);
         if ($user === null) {
@@ -90,6 +92,12 @@ class AdminProfileSyncService
                     . ' — skipping username update'
                 );
             }
+        }
+
+        $newEmail = $this->extract($emailKey, $flattenedAttrs, $rawAttrs);
+        if ($newEmail !== null && $user->getEmail() !== $newEmail) {
+            $user->setEmail($newEmail);
+            $changed = true;
         }
 
         if ($changed) {

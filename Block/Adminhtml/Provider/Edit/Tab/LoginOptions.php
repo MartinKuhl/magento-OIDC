@@ -270,4 +270,13 @@ class LoginOptions extends Template implements TabInterface
     {
         return $this->providerVal('sync_admin_role_on_sso');
     }
+
+    // ── IdP-Initiated SSO ────────────────────────────────────
+    /**
+     * Return whether IdP-initiated login (OIDC Third-Party Initiated Login §4) is enabled.
+     */
+    public function getIdpInitiatedEnabled(): bool
+    {
+        return $this->providerVal('idp_initiated_enabled');
+    }
 }

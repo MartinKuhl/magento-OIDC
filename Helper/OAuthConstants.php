@@ -73,6 +73,9 @@ class OAuthConstants
     public const string LOGIN_TYPE_CUSTOMER = 'customer';
     public const string LOGIN_TYPE_ADMIN = 'admin';
 
+    // IdP-Initiated SSO (OIDC Third-Party Initiated Login §4)
+    public const string IDP_INITIATED_ENABLED = 'idpInitiatedEnabled';
+
     // attribute mapping constants
     public const string MAP_EMAIL = 'amEmail';
     public const string DEFAULT_MAP_EMAIL = 'email';

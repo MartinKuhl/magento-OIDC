@@ -27,6 +27,7 @@ $syncCustomerAddress = $block->getSyncCustomerAddressOnSso();
 $syncCustomerGroup   = $block->getSyncCustomerGroupOnSso();
 $syncAdminProfile    = $block->getSyncAdminProfileOnSso();
 $syncAdminRole       = $block->getSyncAdminRoleOnSso();
+$idpInitiatedEnabled = $block->getIdpInitiatedEnabled();
 ?>
 <fieldset class="admin__fieldset" style="padding:0; border:0;">
 
@@ -301,6 +302,66 @@ $syncAdminRole       = $block->getSyncAdminRoleOnSso();
                         <?= $escaper->escapeHtml(__(
                             'Requires exactly one configured provider and OIDC-only mode enabled above. '
                             . 'Customers visiting the login page are redirected to the IdP automatically.'
+                        )) ?>
+                    </p>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- ── IdP-Initiated SSO ──────────────────────────────────────────────────── -->
+<div class="admin__fieldset-wrapper" style="margin-top:24px;">
+    <div class="admin__fieldset-wrapper-title" style="margin-bottom:12px;">
+        <span class="admin__fieldset-wrapper-title-text"
+              style="font-size:15px; font-weight:700; color:#1a1a1a; letter-spacing:0.2px;">
+            <?= $escaper->escapeHtml(__('IdP-Initiated Login')) ?>
+        </span>
+        <p class="admin__field-note" style="font-style:italic; margin-top:8px;">
+            <?= $escaper->escapeHtml(__(
+                'Allows users to start a login from the IdP dashboard (OIDC Third-Party Initiated Login §4). '
+                . 'When enabled, register the Initiate Login URI below in your IdP application settings.'
+            )) ?>
+        </p>
+    </div>
+    <table class="admin__table-primary" style="width:100%; margin-top:16px;">
+        <tbody>
+            <tr>
+                <td style="width:220px; vertical-align:top; padding-top:6px;">
+                    <label>
+                        <strong><?= $escaper->escapeHtml(__('IdP-Initiated Login')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <label style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                        <input type="hidden" name="idp_initiated_enabled" value="0">
+                        <input type="checkbox"
+                               id="loginopt_idp_initiated_enabled"
+                               name="idp_initiated_enabled"
+                               value="1"
+                               <?= $idpInitiatedEnabled ? 'checked="checked"' : '' ?>>
+                        <?= $escaper->escapeHtml(__('Enable IdP-Initiated Login (Third-Party Initiated)')) ?>
+                    </label>
+                    <?php
+                    $providerId = (int) ($data['id'] ?? 0);
+                    $baseUrl = $block->getUrl('', ['_nosid' => true, '_noroute' => true]);
+                    // Build the initiate login URI by replacing the admin path
+                    $path = '/m2oidc/actions/idpInitiatedLogin?provider_id=' . $providerId;
+                    $initiateUrl = rtrim($block->getBaseUrl(), '/') . $path;
+                    ?>
+                    <?php if ($providerId > 0): ?>
+                    <p class="admin__field-note" style="margin:0 0 8px 0; color:#666; font-size:12px;">
+                        <?= $escaper->escapeHtml(__('Initiate Login URI to register with your IdP:')) ?>
+                        <br>
+                        <code style="font-size:11px; word-break:break-all;">
+                            <?= $escaper->escapeHtml($initiateUrl) ?>
+                        </code>
+                    </p>
+                    <?php endif; ?>
+                    <p class="admin__field-note" style="color:#999; font-size:12px;">
+                        <?= $escaper->escapeHtml(__(
+                            'When disabled (default), only SP-initiated login is allowed. '
+                            . 'Enable only after verifying IdP-initiated flow works correctly in a test environment.'
                         )) ?>
                     </p>
                 </td>

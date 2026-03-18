@@ -70,7 +70,8 @@
             "sync_admin_role_on_sso": true,
             "autoredirect_admin": true,
             "autoredirect_customer": true,
-            "revocation_endpoint": true
+            "revocation_endpoint": true,
+            "idp_initiated_enabled": true
         },
         "index": {
             "M2OIDC_OAUTH_CLIENT_APPS_IS_ACTIVE_LOGIN_TYPE_SORT_ORDER": true
@@ -106,7 +107,9 @@
         "constraint": {
             "PRIMARY": true,
             "MOOAUTH_ATTR_MAPPING_PROVIDER_ID_ATTR_TYPE": true,
-            "MOOAUTH_ATTR_MAPPING_PROVIDER_ID_FK": true
+            "MOOAUTH_ATTR_MAPPING_PROVIDER_ID_FK": true,
+            "M2OIDC_OAUTH_ATTRIBUTE_MAPPINGS_PROVIDER_ID_ATTRIBUTE_TYPE": true,
+            "FK_7663A3C46C922378770F363B4B8675AC": true
         }
     },
     "m2oidc_oauth_role_mappings": {
@@ -119,12 +122,15 @@
             "sort_order": true
         },
         "index": {
-            "MOOAUTH_ROLE_MAPPING_PROVIDER_ID_TYPE": true
+            "MOOAUTH_ROLE_MAPPING_PROVIDER_ID_TYPE": true,
+            "M2OIDC_OAUTH_ROLE_MAPPINGS_PROVIDER_ID_MAPPING_TYPE": true
         },
         "constraint": {
             "PRIMARY": true,
             "MOOAUTH_ROLE_MAPPING_PROVIDER_ID_TYPE_GROUP": true,
-            "MOOAUTH_ROLE_MAPPING_PROVIDER_ID_FK": true
+            "MOOAUTH_ROLE_MAPPING_PROVIDER_ID_FK": true,
+            "M2OIDC_OAUTH_ROLE_MAPPINGS_PROVIDER_ID_MAPPING_TYPE_OIDC_GROUP": true,
+            "FK_19667ED91AD83A7465EBF72738BC0690": true
         }
     }
 }

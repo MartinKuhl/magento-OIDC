@@ -6,6 +6,8 @@
     <event name="controller_action_predispatch">
         <observer name="oauth_observer"
                   instance="M2Oidc\OAuth\Observer\OAuthObserver" />
+        <observer name="m2oidc_admin_token_auto_refresh"
+                  instance="M2Oidc\OAuth\Observer\AdminTokenAutoRefreshObserver" />
     </event>
 
     <!-- auto-redirect on admin login page -->

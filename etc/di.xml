@@ -11,6 +11,7 @@
             <argument name="cookieMetadataFactory" xsi:type="object">Magento\Framework\Stdlib\Cookie\CookieMetadataFactory</argument>
             <argument name="backendUrl" xsi:type="object">Magento\Backend\Model\UrlInterface</argument>
             <argument name="userProvisioningService" xsi:type="object">M2Oidc\OAuth\Model\Service\UserProvisioningService</argument>
+            <argument name="adminProfileSyncService" xsi:type="object">M2Oidc\OAuth\Model\Service\AdminProfileSyncService</argument>
         </arguments>
     </type>
 
@@ -387,6 +388,36 @@
     <type name="M2Oidc\OAuth\Model\Service\CustomerProfileSyncService">
         <arguments>
             <argument name="regionFactory" xsi:type="object">Magento\Customer\Api\Data\RegionInterfaceFactory</argument>
+        </arguments>
+    </type>
+
+    <!-- FEAT-03: Token Auto-Refresh — AdminTokenRefreshService Dependencies -->
+    <type name="M2Oidc\OAuth\Model\Service\AdminTokenRefreshService">
+        <arguments>
+            <argument name="authSession" xsi:type="object">Magento\Backend\Model\Auth\Session\Proxy</argument>
+            <argument name="oauthUtility" xsi:type="object">M2Oidc\OAuth\Helper\OAuthUtility</argument>
+            <argument name="curl" xsi:type="object">M2Oidc\OAuth\Helper\Curl</argument>
+            <argument name="encryptor" xsi:type="object">Magento\Framework\Encryption\EncryptorInterface</argument>
+        </arguments>
+    </type>
+
+    <!-- FEAT-03: Oidccallback — inject AdminTokenRefreshService -->
+    <type name="M2Oidc\OAuth\Controller\Adminhtml\Actions\Oidccallback">
+        <arguments>
+            <argument name="adminTokenRefreshService" xsi:type="object">M2Oidc\OAuth\Model\Service\AdminTokenRefreshService</argument>
+        </arguments>
+    </type>
+
+    <!-- FEAT-03: Token Auto-Refresh observers -->
+    <type name="M2Oidc\OAuth\Observer\TokenAutoRefreshObserver">
+        <arguments>
+            <argument name="tokenRefreshService" xsi:type="object">M2Oidc\OAuth\Model\Service\TokenRefreshService</argument>
+        </arguments>
+    </type>
+
+    <type name="M2Oidc\OAuth\Observer\AdminTokenAutoRefreshObserver">
+        <arguments>
+            <argument name="adminTokenRefreshService" xsi:type="object">M2Oidc\OAuth\Model\Service\AdminTokenRefreshService</argument>
         </arguments>
     </type>
 

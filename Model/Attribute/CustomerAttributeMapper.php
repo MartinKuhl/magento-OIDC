@@ -6,6 +6,7 @@ namespace M2Oidc\OAuth\Model\Attribute;
 
 use M2Oidc\OAuth\Helper\OAuthUtility;
 use Magento\Directory\Model\ResourceModel\Country\CollectionFactory as CountryCollectionFactory;
+use Magento\Framework\App\ResourceConnection;
 
 /**
  * Maps flattened OIDC claims to Magento customer attribute values.
@@ -32,10 +33,12 @@ class CustomerAttributeMapper implements AttributeMapperInterface
     /**
      * @param OAuthUtility             $oauthUtility
      * @param CountryCollectionFactory $countryCollectionFactory
+     * @param ResourceConnection       $resourceConnection
      */
     public function __construct(
         private readonly OAuthUtility $oauthUtility,
-        private readonly CountryCollectionFactory $countryCollectionFactory
+        private readonly CountryCollectionFactory $countryCollectionFactory,
+        private readonly ResourceConnection $resourceConnection
     ) {
     }
 
@@ -248,6 +251,28 @@ class CustomerAttributeMapper implements AttributeMapperInterface
             $this->oauthUtility->customlog(
                 'CustomerAttributeMapper: country resolve error: ' . $e->getMessage()
             );
+        }
+
+        // Fallback: use PHP intl extension for en_US country name → ISO code lookup.
+        // OIDC providers (e.g. Authelia) always send English names ("Germany") regardless of
+        // the Magento store locale, so the locale-aware collection above misses them.
+        // Using Magento's active country codes (not a full AA-ZZ brute-force) avoids
+        // deprecated ISO codes like "DD" (East Germany) that ICU/CLDR still maps to "Germany".
+        if (extension_loaded('intl')) {
+            $normalizedInput = strtolower(trim($country));
+            try {
+                $codes = $this->countryCollectionFactory->create()->getColumnValues('country_id');
+            } catch (\Exception $e) {
+                $codes = [];
+            }
+            foreach ($codes as $code) {
+                $displayName = \Locale::getDisplayRegion('-' . $code, 'en_US');
+                if ($displayName && $displayName !== $code
+                    && strtolower($displayName) === $normalizedInput
+                ) {
+                    return (string) $code;
+                }
+            }
         }
 
         // Short value that looks like a code (e.g. "USA")

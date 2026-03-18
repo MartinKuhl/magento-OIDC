@@ -252,6 +252,39 @@ class AdminUserCreator
     }
 
     /**
+     * Return the role-mapping array for a given provider.
+     *
+     * Checks the normalized m2oidc_oauth_role_mappings table first (Phase 4),
+     * falls back to the legacy JSON column. Intended for use by
+     * AdminProfileSyncService::syncRole() so that role re-evaluation on every
+     * login uses the same mapping data as initial user creation.
+     *
+     * @param  int $providerId OIDC provider ID (0 = legacy JSON only)
+     * @return array<int,array{group:string,role:string}>
+     */
+    public function getAdminRoleMappingsForProvider(int $providerId): array
+    {
+        $roleMappings = [];
+        if ($providerId > 0) {
+            $newRows = $this->mappingRepository->getAdminRoleMappings($providerId);
+            foreach ($newRows as $row) {
+                $roleMappings[] = [
+                    'group' => $row['oidc_group'],
+                    'role'  => $row['magento_role_id'],
+                ];
+            }
+        }
+        if ($roleMappings === []) {
+            $json = $this->oauthUtility->getStoreConfig(OAuthConstants::ADMIN_ROLE_MAPPING);
+            if (!$this->oauthUtility->isBlank($json)) {
+                $decoded = json_decode((string) $json, true);
+                $roleMappings = is_array($decoded) ? $decoded : [];
+            }
+        }
+        return $roleMappings;
+    }
+
+    /**
      * Check if the email/username belongs to an existing admin user
      *
      * @param  string $email

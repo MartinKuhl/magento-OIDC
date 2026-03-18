@@ -437,6 +437,13 @@ class CustomerUserCreator
 
         // Only create address if all required fields (street, zip, city, country) are present
         if ($street === '' || $zip === '' || $city === '' || $countryId === '') {
+            $missing = array_keys(array_filter(
+                ['street' => $street, 'zip' => $zip, 'city' => $city, 'country' => $countryId],
+                fn($v) => $v === ''
+            ));
+            $this->oauthUtility->customlog(
+                'CustomerUserCreator: Address skipped — missing required field(s): ' . implode(', ', $missing)
+            );
             return;
         }
 

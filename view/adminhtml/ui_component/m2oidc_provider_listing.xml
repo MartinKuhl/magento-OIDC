@@ -134,8 +134,9 @@
                 </item>
             </argument>
             <settings>
-                <label translate="true">Admin Users</label>
+                <label translate="true">Admin Users (total / active)</label>
                 <sortable>false</sortable>
+                <bodyTmpl>ui/grid/cells/html</bodyTmpl>
             </settings>
         </column>
 
@@ -148,8 +149,9 @@
                 </item>
             </argument>
             <settings>
-                <label translate="true">Customers</label>
+                <label translate="true">Customers (total / active)</label>
                 <sortable>false</sortable>
+                <bodyTmpl>ui/grid/cells/html</bodyTmpl>
             </settings>
         </column>
 

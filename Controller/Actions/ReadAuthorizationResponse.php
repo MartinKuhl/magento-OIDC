@@ -275,7 +275,17 @@ class ReadAuthorizationResponse extends BaseAction
             // PKCE (RFC 7636 §4.5): retrieve verifier from session (one-time, auto-removed).
             // Keyed by provider ID so multiple providers can coexist per session.
             $sessionKey = 'pkce_code_verifier_' . (int) $clientDetails['id'];
-            $codeVerifier = $this->oauthUtility->getSessionData($sessionKey, true) ?: null;
+
+            // Admin flow: the verifier was stored in DB (admin and frontend PHP sessions are
+            // isolated — the admin session cookie is never sent to the frontend callback URL).
+            // Skipping the session lookup prevents a stale verifier from a concurrent or
+            // interrupted customer/IdP-initiated flow from being picked up here and causing
+            // a PKCE challenge mismatch (invalid_grant) at the token endpoint.
+            if ($loginType !== OAuthConstants::LOGIN_TYPE_ADMIN) {
+                $codeVerifier = $this->oauthUtility->getSessionData($sessionKey, true) ?: null;
+            } else {
+                $codeVerifier = null; // admin verifier is in DB — fall through to DB path below
+            }
 
             if ($codeVerifier !== null) {
                 $this->oauthUtility->customlog(
@@ -349,6 +359,56 @@ class ReadAuthorizationResponse extends BaseAction
                     'ReadAuthResponse: id_token stored in transport cookie for provider_id=' . $providerId
                 );
             }
+
+            // ── Admin token transport (FEAT-03 admin): carry access/refresh tokens ──
+            // ReadAuthorizationResponse runs in the frontend PHP process; Oidccallback
+            // runs in the admin process with a separate PHP session. Transport cookies
+            // (encrypted, 2-min TTL) bridge this gap, mirroring the id_token_transport
+            // pattern above. Only set for admin flows to avoid unnecessary cookie data.
+            if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN
+                && !empty($accessTokenResponseData['access_token'])
+            ) {
+                $tokenMeta = $this->cookieMetadataFactory
+                    ->createPublicCookieMetadata()
+                    ->setPath('/')
+                    ->setHttpOnly(true)
+                    ->setSecure(true)
+                    ->setSameSite('Lax')
+                    ->setDuration(120);
+
+                $encryptedAccess = $this->oauthUtility->getEncryptor()->encrypt(
+                    (string) $accessTokenResponseData['access_token']
+                );
+                $this->cookieManager->setPublicCookie(
+                    'oidc_access_token_transport',
+                    $encryptedAccess,
+                    $tokenMeta
+                );
+
+                if (!empty($accessTokenResponseData['refresh_token'])) {
+                    $encryptedRefresh = $this->oauthUtility->getEncryptor()->encrypt(
+                        (string) $accessTokenResponseData['refresh_token']
+                    );
+                    $this->cookieManager->setPublicCookie(
+                        'oidc_refresh_token_transport',
+                        $encryptedRefresh,
+                        $tokenMeta
+                    );
+                }
+
+                $expiresIn = (int) ($accessTokenResponseData['expires_in'] ?? 3600);
+                $this->cookieManager->setPublicCookie(
+                    'oidc_expires_in_transport',
+                    (string) $expiresIn,
+                    $tokenMeta
+                );
+
+                $this->oauthUtility->customlog(
+                    'ReadAuthResponse: access/refresh tokens stored in transport cookies for admin login'
+                );
+            }
+            // ── END admin token transport ──
+
             // ── END id_token transport ──
 
             if (isset($accessTokenResponseData['access_token']) || isset($accessTokenResponseData['id_token'])) {

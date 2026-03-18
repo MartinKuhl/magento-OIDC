@@ -298,7 +298,7 @@ class OAuthLogoutObserver implements ObserverInterface
      * @param string $revocationEndpoint
      * @param string $accessToken
      * @param string $clientId
-     * @param string $clientSecret  May be encrypted; decrypted by OAuthUtility if needed
+     * @param string $clientSecret  Plaintext secret (already decrypted by getClientDetailsById)
      */
     private function revokeToken(
         string $revocationEndpoint,
@@ -318,7 +318,7 @@ class OAuthLogoutObserver implements ObserverInterface
                     'token'           => $accessToken,
                     'token_type_hint' => 'access_token',
                     'client_id'       => $clientId,
-                    'client_secret'   => $this->oauthUtility->decryptSecret($clientSecret),
+                    'client_secret'   => $clientSecret,
                 ])
             );
             $curl->read();

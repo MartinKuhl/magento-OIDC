@@ -302,7 +302,7 @@ class OidcLogoutPlugin
      * @param string $revocationEndpoint
      * @param string $accessToken
      * @param string $clientId
-     * @param string $clientSecret  May be encrypted; decrypted via OAuthUtility
+     * @param string $clientSecret  Plaintext secret (already decrypted by getClientDetailsById)
      */
     private function revokeToken(
         string $revocationEndpoint,
@@ -322,7 +322,7 @@ class OidcLogoutPlugin
                     'token'           => $accessToken,
                     'token_type_hint' => 'access_token',
                     'client_id'       => $clientId,
-                    'client_secret'   => $this->oauthUtility->decryptSecret($clientSecret),
+                    'client_secret'   => $clientSecret,
                 ])
             );
             $curl->read();

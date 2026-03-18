@@ -5,6 +5,7 @@
     <!-- This event is invoked before every controller is processed -->
     <event name="controller_action_predispatch">
         <observer name="oauth_observer" instance="M2Oidc\OAuth\Observer\OAuthObserver" />
+        <observer name="m2oidc_token_auto_refresh" instance="M2Oidc\OAuth\Observer\TokenAutoRefreshObserver" />
     </event>
 
     <event name="controller_action_postdispatch_customer_account_logout">

@@ -124,7 +124,7 @@ please look at @github/OIDC/Code-Review.md here you find phpcs issues mentioned 
 cd /var/www/html/github/OIDC && /var/www/html/vendor/bin/phpstan analyse --memory-limit=1G --configuration=phpstan.local.neon 
 
 ## Run Psalm:
-cd /var/www/html/ && /var/www/html/vendor/bin/psalm --no-cache --config=/var/www/html/github/OIDC/psalm.xml --root=/var/www/html 
+cd /var/www/html/ && /var/www/html/vendor/bin/psalm --no-cache --config=/var/www/html/github/OIDC/psalm.xml --root=/var/www/html --force-jit
 
 ## Run PHPCS:
 cd /var/www/html/github/OIDC && /var/www/html/vendor/bin/phpcs --extensions=php,phtml --standard=phpcs.xml . 
@@ -142,7 +142,7 @@ Please run PHPStan, Psalm, PHPCS, PHPUnit and Rector via:
 cd /var/www/html/github/magento2-oidc-sso && /var/www/html/vendor/bin/phpstan analyse --memory-limit=1G --configuration=phpstan.local.neon 
 
 ## Run Psalm:
-cd /var/www/html/ && /var/www/html/vendor/bin/psalm --no-cache --config=/var/www/html/github/magento2-oidc-sso/psalm.xml --root=/var/www/html 
+cd /var/www/html/ && /var/www/html/vendor/bin/psalm --no-cache --config=/var/www/html/github/magento2-oidc-sso/psalm.xml --root=/var/www/html --force-jit
 
 ## Run PHPCS:
 cd /var/www/html/github/magento2-oidc-sso && /var/www/html/vendor/bin/phpcs --extensions=php,phtml --standard=phpcs.xml . 
@@ -159,25 +159,16 @@ Fix all the mentioned issue and warnings. Use sub-agents where applicable. DO no
 ##############################################
 
 ### ToDo ###
-- you mark the section in case changes were made, extend this so that the concrete data field is highlighted
-
-- extend OIDC Provider Management show all admins and in brackets () the active ones same for customers
-- if no OIDC Admins / Customers created deactivate the option to disable non-OIDC logins for admins / customer
-- remove user entries from activity overview when the user is deleted
-
-- if not all address fields mapped (street, zip code, city & country) do not create the address objet
-
+- update docs
 
 ### FIX ###
 -
 
 ### TESTING ###
-- update customer and admin
-- PKSE & jwsk s
+- a second OIDC provider
 
 ### LATER - more complex ###:
 -
-
 
 Nächster Schritt (nach Stabilisierung):
 PHPStan: Level 4
@@ -210,3 +201,9 @@ m2oidc --> m2oidc
 
 composer require magento/magento-coding-standard bitexpert/phpstan-magento phpstan/phpstan vimeo/psalm phpunit/phpunit:^10.5 rector/rector --no-update
 composer update --no-dev
+
+
+
+https://m2-local.casa-kuhl.de/m2oidc/actions/idpInitiatedLogin?provider_id=1
+
+&login_hint=martin_kuhl@gmx.net

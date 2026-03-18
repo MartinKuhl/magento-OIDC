@@ -8,6 +8,7 @@ use M2Oidc\OAuth\Helper\Exception\MissingAttributesException;
 use M2Oidc\OAuth\Helper\OAuthConstants;
 use M2Oidc\OAuth\Helper\OAuthMessages;
 use M2Oidc\OAuth\Helper\OAuthSecurityHelper;
+use M2Oidc\OAuth\Model\Service\AdminProfileSyncService;
 use M2Oidc\OAuth\Model\Service\AdminUserCreator;
 use M2Oidc\OAuth\Model\Service\UserProvisioningService;
 use Magento\Framework\Stdlib\CookieManagerInterface;
@@ -122,6 +123,9 @@ class CheckAttributeMappingAction extends BaseAction
     /** @var \M2Oidc\OAuth\Helper\OAuthSecurityHelper */
     private readonly \M2Oidc\OAuth\Helper\OAuthSecurityHelper $securityHelper;
 
+    /** @var \M2Oidc\OAuth\Model\Service\AdminProfileSyncService */
+    private readonly AdminProfileSyncService $adminProfileSyncService;
+
     /**
      * Constructor with dependency injection
      *
@@ -137,6 +141,7 @@ class CheckAttributeMappingAction extends BaseAction
      * @param CookieManagerInterface                             $cookieManager
      * @param CookieMetadataFactory                              $cookieMetadataFactory
      * @param UserProvisioningService                            $userProvisioningService
+     * @param AdminProfileSyncService                            $adminProfileSyncService
      */
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
@@ -150,7 +155,8 @@ class CheckAttributeMappingAction extends BaseAction
         OAuthSecurityHelper $securityHelper,
         CookieManagerInterface $cookieManager,
         CookieMetadataFactory $cookieMetadataFactory,
-        UserProvisioningService $userProvisioningService
+        UserProvisioningService $userProvisioningService,
+        AdminProfileSyncService $adminProfileSyncService
     ) {
         $this->testAction = $testAction;
         $this->processUserAction = $processUserAction;
@@ -162,6 +168,7 @@ class CheckAttributeMappingAction extends BaseAction
         $this->cookieManager = $cookieManager;
         $this->cookieMetadataFactory = $cookieMetadataFactory;
         $this->userProvisioningService = $userProvisioningService;
+        $this->adminProfileSyncService = $adminProfileSyncService;
         parent::__construct($context, $oauthUtility);
     }
 
@@ -267,6 +274,10 @@ class CheckAttributeMappingAction extends BaseAction
                 // Redirect admin users to dedicated admin login endpoint
                 $this->oauthUtility->customlog("Routing admin user to admin callback endpoint");
 
+                // Sync admin profile and role from OIDC claims before login (if enabled)
+                $this->syncAdminProfileIfEnabled($userEmail, $flattenedAttrs ?? [], $attrs ?? []);
+                $this->syncAdminRoleIfEnabled($userEmail, $flattenedAttrs ?? [], $attrs ?? []);
+
                 $nonce = $this->securityHelper->createAdminLoginNonce($userEmail);
                 $this->cookieManager->setPublicCookie(
                     'oidc_admin_nonce',
@@ -332,6 +343,10 @@ class CheckAttributeMappingAction extends BaseAction
 
                     if ($adminUser && $adminUser->getId()) {
                         $this->oauthUtility->customlog("Admin user created successfully. ID: " . $adminUser->getId());
+
+                        // Sync profile and role for the newly created admin (if enabled)
+                        $this->syncAdminProfileIfEnabled($userEmail, $flattenedAttrs ?? [], $attrs ?? []);
+                        $this->syncAdminRoleIfEnabled($userEmail, $flattenedAttrs ?? [], $attrs ?? []);
 
                         // Redirect to admin callback for login
                         $nonce = $this->securityHelper->createAdminLoginNonce($userEmail);
@@ -527,7 +542,25 @@ class CheckAttributeMappingAction extends BaseAction
      */
     private function processGroupName(array &$attrs): void
     {
-        if (!isset($attrs[$this->groupName])) {
+        if (isset($attrs[$this->groupName])) {
+            return;
+        }
+
+        // flattenAttributes() recurses into arrays, turning ["admins","admin"] into
+        // groups.0 / groups.1 keys. Reconstruct the array from those indexed keys.
+        $reconstructed = [];
+        $prefix = $this->groupName . '.';
+        foreach ($attrs as $key => $value) {
+            if (str_starts_with($key, $prefix)
+                && is_numeric(substr($key, strlen($prefix)))
+            ) {
+                $reconstructed[] = $value;
+            }
+        }
+
+        if ($reconstructed !== []) {
+            $attrs[$this->groupName] = $reconstructed;
+        } else {
             $attrs[$this->groupName] = [];
             $this->oauthUtility->customlog("Group name not provided, using empty array");
         }
@@ -755,6 +788,77 @@ class CheckAttributeMappingAction extends BaseAction
             $this->oauthUtility->customlog("Debug summary saved to session, full payload logged to file");
         } catch (\Exception $e) {
             $this->oauthUtility->customlog("Could not save debug data: " . $e->getMessage());
+        }
+    }
+
+    // ──────────────────────────────────────────────
+    //  Admin sync helpers
+    // ──────────────────────────────────────────────
+
+    /**
+     * Sync admin profile (firstname, lastname, username, email) from OIDC claims
+     * when sync_admin_profile_on_sso is enabled.
+     *
+     * Called in the admin routing path before the nonce cookie is set so that
+     * profile data is up-to-date by the time the admin logs in.
+     *
+     * @param string $email Admin email (lookup key)
+     * @param array  $flat  Flattened OIDC attributes
+     * @param array  $raw   Raw (nested) OIDC attributes
+     */
+    private function syncAdminProfileIfEnabled(string $email, array $flat, array $raw): void
+    {
+        $flag = $this->oauthUtility->getStoreConfig(OAuthConstants::SYNC_ADMIN_PROFILE_ON_SSO);
+        if ((string) $flag !== '1') {
+            return;
+        }
+        try {
+            $this->adminProfileSyncService->syncProfile(
+                $email,
+                $flat,
+                $raw,
+                $this->firstName,
+                $this->lastName,
+                $this->usernameAttribute,
+                $this->emailAttribute
+            );
+        } catch (\Exception $e) {
+            $this->oauthUtility->customlog(
+                'CheckAttributeMappingAction: admin profile sync failed: ' . $e->getMessage()
+            );
+        }
+    }
+
+    /**
+     * Re-evaluate and update admin role from OIDC group claims
+     * when sync_admin_role_on_sso is enabled.
+     *
+     * @param string $email Admin email
+     * @param array  $flat  Flattened OIDC attributes
+     * @param array  $raw   Raw (nested) OIDC attributes
+     */
+    private function syncAdminRoleIfEnabled(string $email, array $flat, array $raw): void
+    {
+        $flag = $this->oauthUtility->getStoreConfig(OAuthConstants::SYNC_ADMIN_ROLE_ON_SSO);
+        if ((string) $flag !== '1') {
+            return;
+        }
+        $roleMappings = $this->adminUserCreator->getAdminRoleMappingsForProvider($this->providerId);
+        $defaultRole  = (string) ($this->oauthUtility->getStoreConfig(OAuthConstants::MAP_DEFAULT_ROLE) ?? '');
+        $groupAttr    = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_GROUP) ?: 'groups';
+        try {
+            $this->adminProfileSyncService->syncRole(
+                $email,
+                $flat,
+                $raw,
+                $groupAttr,
+                $roleMappings,
+                $defaultRole
+            );
+        } catch (\Exception $e) {
+            $this->oauthUtility->customlog(
+                'CheckAttributeMappingAction: admin role sync failed: ' . $e->getMessage()
+            );
         }
     }
 }

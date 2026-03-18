@@ -375,6 +375,86 @@ class SecurityRegressionTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
+    // IDP-INIT — IdP-Initiated Login security gates
+    // -------------------------------------------------------------------------
+
+    /**
+     * IdpInitiatedLogin must call validateRedirectUrl to prevent open redirects.
+     */
+    public function testIdpInitiatedLoginValidatesRelayStateUrl(): void
+    {
+        $file    = self::$root . '/Controller/Actions/IdpInitiatedLogin.php';
+        $content = $this->readFile($file);
+
+        $this->assertStringContainsString(
+            'validateRedirectUrl',
+            $content,
+            'IDP-INIT: IdpInitiatedLogin.php must call validateRedirectUrl() to prevent open redirect'
+        );
+    }
+
+    /**
+     * IdpInitiatedLogin must apply rate limiting.
+     */
+    public function testIdpInitiatedLoginAppliesRateLimiting(): void
+    {
+        $file    = self::$root . '/Controller/Actions/IdpInitiatedLogin.php';
+        $content = $this->readFile($file);
+
+        $this->assertStringContainsString(
+            'isAllowed',
+            $content,
+            'IDP-INIT: IdpInitiatedLogin.php must call OidcRateLimiter::isAllowed()'
+        );
+    }
+
+    /**
+     * IdpInitiatedLogin must generate a CSRF state token.
+     */
+    public function testIdpInitiatedLoginGeneratesCsrfStateToken(): void
+    {
+        $file    = self::$root . '/Controller/Actions/IdpInitiatedLogin.php';
+        $content = $this->readFile($file);
+
+        $this->assertStringContainsString(
+            'createStateToken',
+            $content,
+            'IDP-INIT: IdpInitiatedLogin.php must call createStateToken() for CSRF protection'
+        );
+    }
+
+    /**
+     * IdpInitiatedLogin must check the idp_initiated_enabled gate.
+     */
+    public function testIdpInitiatedLoginChecksEnabledGate(): void
+    {
+        $file    = self::$root . '/Controller/Actions/IdpInitiatedLogin.php';
+        $content = $this->readFile($file);
+
+        $this->assertStringContainsString(
+            'idp_initiated_enabled',
+            $content,
+            'IDP-INIT: IdpInitiatedLogin.php must check idp_initiated_enabled before proceeding'
+        );
+    }
+
+    /**
+     * IdpInitiatedLogin must explicitly check is_active (getClientDetailsById does not filter on it).
+     */
+    public function testIdpInitiatedLoginChecksIsActive(): void
+    {
+        $file    = self::$root . '/Controller/Actions/IdpInitiatedLogin.php';
+        $content = $this->readFile($file);
+
+        $this->assertStringContainsString(
+            "is_active",
+            $content,
+            'IDP-INIT: IdpInitiatedLogin.php must explicitly check is_active ' .
+            '(getClientDetailsById does not filter on this)'
+        );
+    }
+
+    // -------------------------------------------------------------------------
     // Helper
     // -------------------------------------------------------------------------
 

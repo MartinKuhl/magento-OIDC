@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace M2Oidc\OAuth\Controller\Actions;
 
 use M2Oidc\OAuth\Model\Service\CustomerUserCreator;
+use M2Oidc\OAuth\Model\Service\CustomerProfileSyncService;
 use Magento\Framework\App\ResponseFactory;
 use Magento\Store\Model\StoreManagerInterface;
 use M2Oidc\OAuth\Helper\Exception\MissingAttributesException;
@@ -82,6 +83,9 @@ class ProcessUserAction
     /** @var \M2Oidc\OAuth\Model\Service\CustomerUserCreator */
     private readonly \M2Oidc\OAuth\Model\Service\CustomerUserCreator $customerUserCreator;
 
+    /** @var \M2Oidc\OAuth\Model\Service\CustomerProfileSyncService */
+    private readonly CustomerProfileSyncService $profileSyncService;
+
     /** @var \Magento\Framework\Controller\Result\RedirectFactory */
     private readonly \Magento\Framework\Controller\Result\RedirectFactory $resultRedirectFactory;
 
@@ -97,6 +101,7 @@ class ProcessUserAction
      * @param CustomerLoginAction $customerLoginAction
      * @param CustomerUserCreator $customerUserCreator
      * @param RedirectFactory $resultRedirectFactory
+     * @param CustomerProfileSyncService $profileSyncService
      */
     public function __construct(
         OAuthUtility $oauthUtility,
@@ -104,7 +109,8 @@ class ProcessUserAction
         StoreManagerInterface $storeManager,
         CustomerLoginAction $customerLoginAction,
         CustomerUserCreator $customerUserCreator,
-        RedirectFactory $resultRedirectFactory
+        RedirectFactory $resultRedirectFactory,
+        CustomerProfileSyncService $profileSyncService
     ) {
         $this->customerRepository = $customerRepository;
         $this->storeManager = $storeManager;
@@ -112,6 +118,7 @@ class ProcessUserAction
         $this->oauthUtility = $oauthUtility;
         $this->customerUserCreator = $customerUserCreator;
         $this->resultRedirectFactory = $resultRedirectFactory;
+        $this->profileSyncService = $profileSyncService;
     }
 
     /**
@@ -204,6 +211,7 @@ class ProcessUserAction
         ?string $userName
     ): \Magento\Framework\Controller\Result\Redirect {
         $user = $this->getCustomerFromAttributes($userEmail);
+        $isNewCustomer = false;
 
         if (!$user) {
             $this->oauthUtility->customlog("User not found. Checking auto-create configuration");
@@ -224,10 +232,21 @@ class ProcessUserAction
             }
 
             $user = $this->createNewUser($userEmail, $firstName, $lastName, $userName);
+            $isNewCustomer = true;
         }
 
         // Update customer group on every SSO login if flag is set
         $this->updateExistingCustomerGroup($user);
+
+        // Sync address on every SSO login (new customers included — CustomerUserCreator may have created the
+        // address already, but the sync service detects no-change and skips a redundant save).
+        $this->syncAddressIfEnabled($user);
+
+        // Sync profile for existing customers only (new customers were just written; re-syncing email
+        // immediately after creation is a no-op and avoids any session ordering issues).
+        if (!$isNewCustomer) {
+            $this->syncProfileIfEnabled($user);
+        }
 
         /**
          * @var \Magento\Store\Model\Store $store
@@ -391,6 +410,67 @@ class ProcessUserAction
     {
         $this->providerId = $providerId;
         return $this;
+    }
+
+    /**
+     * Sync customer profile fields from OIDC claims if sync_customer_profile_on_sso is enabled.
+     *
+     * @param CustomerInterface $customer
+     */
+    private function syncProfileIfEnabled(CustomerInterface $customer): void
+    {
+        $flag = $this->oauthUtility->getStoreConfig(OAuthConstants::SYNC_CUSTOMER_PROFILE_ON_SSO);
+        if (!$flag || (string) $flag !== '1') {
+            return;
+        }
+        $attrKeys = [
+            'firstname' => $this->firstNameKey,
+            'lastname'  => $this->lastNameKey,
+            'email'     => $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_EMAIL)   ?: OAuthConstants::DEFAULT_MAP_EMAIL,
+            'dob'       => $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_DOB)     ?: OAuthConstants::DEFAULT_MAP_DOB,
+            'gender'    => $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_GENDER)  ?: OAuthConstants::DEFAULT_MAP_GENDER,
+        ];
+        try {
+            $this->profileSyncService->syncProfile(
+                $customer,
+                $this->flattenedattrs ?? [],
+                $this->attrs ?? [],
+                $attrKeys
+            );
+        } catch (\Exception $e) {
+            $this->oauthUtility->customlog('ProcessUserAction: profile sync failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Sync customer billing address from OIDC claims if sync_customer_address_on_sso is enabled.
+     *
+     * @param CustomerInterface $customer
+     */
+    private function syncAddressIfEnabled(CustomerInterface $customer): void
+    {
+        $flag = $this->oauthUtility->getStoreConfig(OAuthConstants::SYNC_CUSTOMER_ADDRESS_ON_SSO);
+        if (!$flag || (string) $flag !== '1') {
+            return;
+        }
+        $addrKeys = [
+            'street'  => $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_STREET)  ?: OAuthConstants::DEFAULT_MAP_STREET,
+            'city'    => $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_CITY)    ?: OAuthConstants::DEFAULT_MAP_CITY,
+            'zip'     => $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_ZIP)     ?: OAuthConstants::DEFAULT_MAP_ZIP,
+            'country' => $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_COUNTRY) ?: OAuthConstants::DEFAULT_MAP_COUNTRY,
+            'phone'   => $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_PHONE)   ?: OAuthConstants::DEFAULT_MAP_PHONE,
+            'state'   => $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_STATE)   ?: OAuthConstants::DEFAULT_MAP_STATE,
+        ];
+        try {
+            $this->profileSyncService->syncAddress(
+                $customer,
+                $this->flattenedattrs ?? [],
+                $this->attrs ?? [],
+                $addrKeys
+            );
+        } catch (\Exception $e) {
+            $this->oauthUtility->customlog('ProcessUserAction: address sync failed: ' . $e->getMessage());
+        }
     }
 
     /**

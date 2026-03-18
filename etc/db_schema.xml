@@ -42,8 +42,9 @@
       <column xsi:type="text" name="show_customer_link" nullable="false" comment="Show Customer SSO Link" />
       <column xsi:type="text" name="show_admin_link" nullable="false" comment="Show Admin SSO Link" />
       <column xsi:type="text" name="autoredirect_admin" nullable="false" comment="Auto redirect admins from login page to IdP" />
-      <column xsi:type="text" name="autoredirect_customer" nullable="false" comment="Auto redirect customers from login page to IdP" />      
-       
+      <column xsi:type="text" name="autoredirect_customer" nullable="false" comment="Auto redirect customers from login page to IdP" />
+      <column xsi:type="smallint" name="idp_initiated_enabled" padding="1" unsigned="true" nullable="false" default="0" comment="Allow IdP-initiated SSO (OIDC Third-Party Initiated Login §4). 0=disabled, 1=enabled." />
+
       <!-- Per-provider: sync existing user data from OIDC on every SSO login -->
       <column xsi:type="smallint" name="sync_customer_profile_on_sso" nullable="false" default="0" comment="Sync customer name, DOB, gender from OIDC on every login" />
       <column xsi:type="smallint" name="sync_customer_address_on_sso" nullable="false" default="0" comment="Sync customer billing/shipping address from OIDC on every login" />

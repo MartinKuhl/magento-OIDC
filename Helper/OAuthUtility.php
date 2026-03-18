@@ -223,6 +223,16 @@ class OAuthUtility extends Data
         'defaultCustomerGroup'           => 'default_group',
         'createCustomerIfGroupNotMapped' => 'm2oidc_dont_create_customer_if_group_not_mapped',
         'updateFrontendGroupsOnSso'      => 'update_frontend_groups_on_sso',
+
+        // IdP-Initiated SSO (OIDC Third-Party Initiated Login §4)
+        'idpInitiatedEnabled'            => 'idp_initiated_enabled',
+
+        // Profile / address / role sync flags
+        'sync_customer_profile_on_sso'   => 'sync_customer_profile_on_sso',
+        'sync_customer_address_on_sso'   => 'sync_customer_address_on_sso',
+        'sync_customer_group_on_sso'     => 'sync_customer_group_on_sso',
+        'sync_admin_profile_on_sso'      => 'sync_admin_profile_on_sso',
+        'sync_admin_role_on_sso'         => 'sync_admin_role_on_sso',
     ];
 
     /**

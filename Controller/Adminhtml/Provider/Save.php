@@ -9,6 +9,7 @@ use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
 use Magento\Framework\App\Request\DataPersistorInterface;
 use Magento\Framework\Controller\Result\Redirect;
+use Magento\Framework\Encryption\EncryptorInterface;
 use M2Oidc\OAuth\Helper\Curl;
 use M2Oidc\OAuth\Model\M2oidcOauthClientAppsFactory;
 use M2Oidc\OAuth\Model\Provider\MappingRepository;
@@ -46,6 +47,9 @@ class Save extends Action implements HttpPostActionInterface
     /** @var UserProviderResource */
     private readonly UserProviderResource $userProviderResource;
 
+    /** @var EncryptorInterface */
+    private readonly EncryptorInterface $encryptor;
+
     /**
      * Initialize provider save controller.
      *
@@ -56,6 +60,7 @@ class Save extends Action implements HttpPostActionInterface
      * @param MappingRepository             $mappingRepository
      * @param Curl                          $curl
      * @param UserProviderResource          $userProviderResource
+     * @param EncryptorInterface            $encryptor
      */
     public function __construct(
         Context $context,
@@ -64,7 +69,8 @@ class Save extends Action implements HttpPostActionInterface
         DataPersistorInterface $dataPersistor,
         MappingRepository $mappingRepository,
         Curl $curl,
-        UserProviderResource $userProviderResource
+        UserProviderResource $userProviderResource,
+        EncryptorInterface $encryptor
     ) {
         $this->clientAppsFactory    = $clientAppsFactory;
         $this->appResource          = $appResource;
@@ -72,6 +78,7 @@ class Save extends Action implements HttpPostActionInterface
         $this->mappingRepository    = $mappingRepository;
         $this->curl                 = $curl;
         $this->userProviderResource = $userProviderResource;
+        $this->encryptor            = $encryptor;
         parent::__construct($context);
     }
 
@@ -184,6 +191,8 @@ class Save extends Action implements HttpPostActionInterface
                 'sync_customer_group_on_sso',
                 'sync_admin_profile_on_sso',
                 'sync_admin_role_on_sso',
+                // IdP-Initiated SSO
+                'idp_initiated_enabled',
             ] as $field) {
                 // FIX: use $field (not $checkbox) — variable name matches the foreach above.
                 // (int) cast reads the actual "0"/"1" value sent by the hidden+checkbox pair.
@@ -281,7 +290,7 @@ class Save extends Action implements HttpPostActionInterface
 
             // Encrypt client secret only when a new value is provided
             if (!empty($data['client_secret'])) {
-                $model->setData('client_secret', $data['client_secret']);
+                $model->setData('client_secret', $this->encryptor->encrypt($data['client_secret']));
             }
 
             // PKCE method — only allow 'S256', 'plain', or '' (disabled)
