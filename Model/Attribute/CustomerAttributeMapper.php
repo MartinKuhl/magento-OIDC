@@ -6,7 +6,6 @@ namespace M2Oidc\OAuth\Model\Attribute;
 
 use M2Oidc\OAuth\Helper\OAuthUtility;
 use Magento\Directory\Model\ResourceModel\Country\CollectionFactory as CountryCollectionFactory;
-use Magento\Framework\App\ResourceConnection;
 
 /**
  * Maps flattened OIDC claims to Magento customer attribute values.
@@ -33,12 +32,10 @@ class CustomerAttributeMapper implements AttributeMapperInterface
     /**
      * @param OAuthUtility             $oauthUtility
      * @param CountryCollectionFactory $countryCollectionFactory
-     * @param ResourceConnection       $resourceConnection
      */
     public function __construct(
         private readonly OAuthUtility $oauthUtility,
-        private readonly CountryCollectionFactory $countryCollectionFactory,
-        private readonly ResourceConnection $resourceConnection
+        private readonly CountryCollectionFactory $countryCollectionFactory
     ) {
     }
 

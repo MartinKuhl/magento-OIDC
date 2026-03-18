@@ -551,8 +551,8 @@ class CheckAttributeMappingAction extends BaseAction
         $reconstructed = [];
         $prefix = $this->groupName . '.';
         foreach ($attrs as $key => $value) {
-            if (str_starts_with($key, $prefix)
-                && is_numeric(substr($key, strlen($prefix)))
+            if (str_starts_with((string) $key, $prefix)
+                && is_numeric(substr((string) $key, strlen($prefix)))
             ) {
                 $reconstructed[] = $value;
             }
@@ -796,8 +796,7 @@ class CheckAttributeMappingAction extends BaseAction
     // ──────────────────────────────────────────────
 
     /**
-     * Sync admin profile (firstname, lastname, username, email) from OIDC claims
-     * when sync_admin_profile_on_sso is enabled.
+     * Sync admin profile from OIDC claims when sync_admin_profile_on_sso is enabled.
      *
      * Called in the admin routing path before the nonce cookie is set so that
      * profile data is up-to-date by the time the admin logs in.
@@ -830,8 +829,7 @@ class CheckAttributeMappingAction extends BaseAction
     }
 
     /**
-     * Re-evaluate and update admin role from OIDC group claims
-     * when sync_admin_role_on_sso is enabled.
+     * Re-evaluate and update admin role from OIDC group claims when sync_admin_role_on_sso is enabled.
      *
      * @param string $email Admin email
      * @param array  $flat  Flattened OIDC attributes

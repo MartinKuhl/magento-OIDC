@@ -24,6 +24,8 @@ Modern e-commerce platforms require secure, centralized authentication. This mod
 ### Key Features
 
 - ✅ **Dual Authentication Flows**: Separate customer (frontend) and admin (backend) SSO
+- ✅ **IdP-Initiated SSO**: OIDC Third-Party Initiated Login (§4) — users can start the flow from the IdP portal, per-provider toggle
+- ✅ **Token Auto-Refresh**: Access tokens silently refreshed on every request before expiry (frontend and adminhtml)
 - ✅ **Multi-Provider Support**: Multiple OIDC providers per Magento installation with per-provider settings
 - ✅ **Auto-Discovery**: Auto-populate endpoints from OIDC `.well-known/openid-configuration`
 - ✅ **Just-in-Time (JIT) Provisioning**: Auto-create users with group/role mapping
@@ -444,9 +446,9 @@ OAuth/OIDC **requires HTTPS** in production:
 
 ### Token Storage
 
-- **Access tokens** and **ID tokens** stored in PHP session only, never in database
+- **Access tokens**, **ID tokens**, and **refresh tokens** stored in PHP session only, never in database
 - **Session lifetime**: Standard Magento session timeout (default: 86400 seconds = 24 hours)
-- **Refresh tokens**: Not currently stored (logout requires re-authentication at IdP)
+- **Refresh tokens**: Stored in session (`oidc_refresh_token`) and used by `TokenRefreshService` / `AdminTokenRefreshService` for silent token renewal
 
 ### JWT Verification
 
@@ -488,17 +490,15 @@ Module inherits IdP's security policies:
 
 ## Known Limitations
 
-### SP-Initiated Flow Only
+### SP-Initiated and IdP-Initiated Flows Supported
 
-- Module supports **SP-initiated** SSO only (user starts at Magento, redirects to IdP)
-- **IdP-initiated** flow (user starts at IdP, receives SAML-style POST assertion) not implemented
-- **Workaround**: IdP can deep-link to Magento SSO URL, but still technically SP-initiated
+- **SP-initiated** SSO (user starts at Magento) is the default flow
+- **IdP-initiated** SSO (user starts at IdP portal) is now supported via `Controller/Actions/IdpInitiatedLogin.php`; register `https://<store>/m2oidc/actions/idpInitiatedLogin?provider_id=<id>` as the redirect URL in your IdP. Enable per provider in the Login Options tab (`idp_initiated_enabled` setting).
 
-### No Token Auto-Refresh
+### Token Auto-Refresh
 
-- Access tokens are not automatically refreshed when they expire mid-session
-- `TokenRefreshService` exists and stores refresh tokens in session, but silent refresh on expiry is not yet wired in
-- **Impact**: Long sessions may encounter expired access tokens on upstream API calls
+- Access tokens are automatically refreshed before expiry on every controller dispatch (frontend: `TokenAutoRefreshObserver`; adminhtml: `AdminTokenAutoRefreshObserver`)
+- Refresh happens 60 seconds before expiry using the stored refresh token
 
 ---
 

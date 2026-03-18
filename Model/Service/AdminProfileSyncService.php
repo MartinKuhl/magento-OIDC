@@ -59,7 +59,7 @@ class AdminProfileSyncService
         string $emailKey = ''
     ): void {
         $user = $this->loadAdminByEmail($email);
-        if ($user === null) {
+        if (!$user instanceof \Magento\User\Model\User) {
             return;
         }
 
@@ -137,7 +137,7 @@ class AdminProfileSyncService
         string $defaultRole = ''
     ): void {
         $user = $this->loadAdminByEmail($email);
-        if ($user === null) {
+        if (!$user instanceof \Magento\User\Model\User) {
             return;
         }
 
@@ -191,12 +191,10 @@ class AdminProfileSyncService
     // ──────────────────────────────────────────────
     //  Private helpers
     // ──────────────────────────────────────────────
-
     /**
      * Load admin user by email. Returns null if not found.
      *
      * @param string $email Admin email address
-     * @return \Magento\User\Model\User|null
      */
     private function loadAdminByEmail(string $email): ?\Magento\User\Model\User
     {
@@ -211,7 +209,6 @@ class AdminProfileSyncService
      * @param string $key  Attribute key to look up
      * @param array  $flat Flattened OIDC attributes
      * @param array  $raw  Raw (nested) OIDC attributes
-     * @return string|null
      */
     private function extract(string $key, array $flat, array $raw): ?string
     {
@@ -242,7 +239,7 @@ class AdminProfileSyncService
         if (is_string($groups)) {
             $groups = [$groups];
         }
-        return is_array($groups) ? array_map('strval', $groups) : [];
+        return is_array($groups) ? array_map(fn(mixed $v): string => (string) $v, $groups) : [];
     }
 
     /**
@@ -250,7 +247,6 @@ class AdminProfileSyncService
      *
      * @param \Magento\User\Model\User $user     Admin user to assign role to
      * @param string                   $roleName Role name to look up and assign
-     * @return void
      */
     private function assignRoleByName(\Magento\User\Model\User $user, string $roleName): void
     {

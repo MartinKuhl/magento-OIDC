@@ -426,9 +426,12 @@ class ProcessUserAction
         $attrKeys = [
             'firstname' => $this->firstNameKey,
             'lastname'  => $this->lastNameKey,
-            'email'     => $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_EMAIL)   ?: OAuthConstants::DEFAULT_MAP_EMAIL,
-            'dob'       => $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_DOB)     ?: OAuthConstants::DEFAULT_MAP_DOB,
-            'gender'    => $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_GENDER)  ?: OAuthConstants::DEFAULT_MAP_GENDER,
+            'email'     => $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_EMAIL)
+                ?: OAuthConstants::DEFAULT_MAP_EMAIL,
+            'dob'       => $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_DOB)
+                ?: OAuthConstants::DEFAULT_MAP_DOB,
+            'gender'    => $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_GENDER)
+                ?: OAuthConstants::DEFAULT_MAP_GENDER,
         ];
         try {
             $this->profileSyncService->syncProfile(
@@ -454,12 +457,18 @@ class ProcessUserAction
             return;
         }
         $addrKeys = [
-            'street'  => $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_STREET)  ?: OAuthConstants::DEFAULT_MAP_STREET,
-            'city'    => $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_CITY)    ?: OAuthConstants::DEFAULT_MAP_CITY,
-            'zip'     => $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_ZIP)     ?: OAuthConstants::DEFAULT_MAP_ZIP,
-            'country' => $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_COUNTRY) ?: OAuthConstants::DEFAULT_MAP_COUNTRY,
-            'phone'   => $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_PHONE)   ?: OAuthConstants::DEFAULT_MAP_PHONE,
-            'state'   => $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_STATE)   ?: OAuthConstants::DEFAULT_MAP_STATE,
+            'street'  => $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_STREET)
+                ?: OAuthConstants::DEFAULT_MAP_STREET,
+            'city'    => $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_CITY)
+                ?: OAuthConstants::DEFAULT_MAP_CITY,
+            'zip'     => $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_ZIP)
+                ?: OAuthConstants::DEFAULT_MAP_ZIP,
+            'country' => $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_COUNTRY)
+                ?: OAuthConstants::DEFAULT_MAP_COUNTRY,
+            'phone'   => $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_PHONE)
+                ?: OAuthConstants::DEFAULT_MAP_PHONE,
+            'state'   => $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_STATE)
+                ?: OAuthConstants::DEFAULT_MAP_STATE,
         ];
         try {
             $this->profileSyncService->syncAddress(

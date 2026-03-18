@@ -439,7 +439,7 @@ class CustomerUserCreator
         if ($street === '' || $zip === '' || $city === '' || $countryId === '') {
             $missing = array_keys(array_filter(
                 ['street' => $street, 'zip' => $zip, 'city' => $city, 'country' => $countryId],
-                fn($v) => $v === ''
+                fn(string $v): bool => $v === ''
             ));
             $this->oauthUtility->customlog(
                 'CustomerUserCreator: Address skipped — missing required field(s): ' . implode(', ', $missing)

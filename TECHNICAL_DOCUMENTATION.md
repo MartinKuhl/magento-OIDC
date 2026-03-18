@@ -12,8 +12,11 @@ This Magento 2 module adds **OAuth 2.0 / OpenID Connect** single sign-on for bot
 ### What it does
 
 - Redirects users to an OIDC provider, receives an authorization code, exchanges it for tokens, and extracts user attributes.
+- **SP-initiated flow**: user starts at Magento and is redirected to the IdP.
+- **IdP-initiated flow** (OIDC Third-Party Initiated Login §4): user starts at the IdP portal; the IdP redirects to `https://<store>/m2oidc/actions/idpInitiatedLogin?provider_id=<id>`. Enabled per provider via `idp_initiated_enabled`. Supports optional `relay_state`, `login_hint`, and `login_type` parameters. Rate-limited and PKCE-protected.
 - **Customer flow**: creates or matches a Magento customer, creates a one-time nonce cookie, and redirects to `CustomerOidcCallback` which sets the session and redirects to the relay state.
 - **Admin flow**: uses Magento's native `Auth::login()` with a plugin-injected credential adapter — no bootstrap hacking, all security events fire normally. A nonce cookie bridges from the OIDC callback into the admin-authenticated context.
+- **Token auto-refresh**: `TokenAutoRefreshObserver` (frontend) and `AdminTokenAutoRefreshObserver` (adminhtml) fire on every `controller_action_predispatch` and silently refresh the access token 60 seconds before expiry using the stored refresh token.
 - **JIT provisioning**: auto-creates customers and admins on first login (configurable per provider).
 - **Attribute mapping**: maps OIDC claims to Magento user fields (email, name, groups, address, DOB, gender, phone). Per-provider overrides take priority over global config.
 - **Auto-discovery**: if a `well_known_config_url` is configured, all OIDC endpoints (authorize, token, userinfo, JWKS, logout, revocation, issuer) are auto-populated from the provider's discovery document on save.
@@ -265,10 +268,11 @@ This module solves real-world authentication challenges in enterprise and e-comm
 
 ### Anti-Patterns / Not Suitable For
 
-**IdP-Initiated SSO**
-- Module only supports SP-initiated flow (user starts at Magento, redirects to IdP)
-- IdP-initiated flow (user starts at IdP, receives SAML-style POST assertion) not implemented
-- Workaround: IdP can deep-link to Magento SSO URL, which is technically still SP-initiated
+**IdP-Initiated SSO** *(now implemented)*
+- **Supported** via `Controller/Actions/IdpInitiatedLogin.php` (OIDC Third-Party Initiated Login §4)
+- Register `https://<store>/m2oidc/actions/idpInitiatedLogin?provider_id=<id>` in your IdP as the initiation URL
+- Enable per provider via `idp_initiated_enabled` (Login Options tab); disabled by default
+- Optional query parameters: `relay_state`, `login_hint`, `login_type`
 
 **Federated Logout** *(substantially implemented)*
 - **Admin RP-Initiated Logout**: `OidcLogoutPlugin` redirects to `endsession_endpoint` with `id_token_hint`; revokes access token via RFC 7009; supports Authelia Forward-Auth (`?rd=`) mode
@@ -358,6 +362,24 @@ Service class for customer JIT provisioning.
 |---|---|---|---|
 | `createCustomer` | `($email, $userName, $firstName, $lastName, $flattenedAttrs, $rawAttrs, $providerId = 0)` | `Customer\|null` | Creates a customer with a random password. Maps DOB, gender, phone, and address fields from OIDC claims. Creates a default billing/shipping address if address data is present. |
 | `updateCustomerGroupFromOidc` | `(CustomerInterface $customer, array $flattenedAttrs, array $rawAttrs)` | `bool` | Re-evaluates customer group from current OIDC claims and updates if changed. Called on subsequent logins when `sync_customer_group_on_sso` is enabled. |
+
+### `\M2Oidc\OAuth\Model\Service\TokenRefreshService` / `\M2Oidc\OAuth\Model\Service\AdminTokenRefreshService`
+
+Manage access token lifecycle for customer and admin sessions respectively. `AdminTokenRefreshService` mirrors `TokenRefreshService` but operates on the admin `AuthSession`.
+
+| Method | Signature | Returns | Description |
+|---|---|---|---|
+| `storeTokens` | `(string $accessToken, int $expiresIn, string $refreshToken)` | `void` | Persists `oidc_access_token`, `oidc_access_token_expires` (Unix timestamp), and `oidc_refresh_token` into the current session. |
+| `refreshIfNeeded` | `()` | `void` | Reads the stored expiry; if the token expires within 60 seconds, silently calls the IdP token endpoint with the stored refresh token and calls `storeTokens()` with the new values. Called on every `controller_action_predispatch`. |
+
+### `\M2Oidc\OAuth\Model\Service\CustomerProfileSyncService`
+
+Syncs customer profile and address fields from OIDC claims on every login when the corresponding sync flags are enabled.
+
+| Method | Signature | Returns | Description |
+|---|---|---|---|
+| `syncProfile` | `(CustomerInterface $customer, array $flattenedAttrs)` | `void` | Re-maps core profile fields (name, DOB, gender, phone) from the current OIDC claim set and saves the customer. Called by `ProcessUserAction` when `sync_customer_profile_on_sso` is set. |
+| `syncAddress` | `(CustomerInterface $customer, array $flattenedAttrs)` | `void` | Re-maps billing and shipping address fields from OIDC claims and upserts the customer's default addresses. Called by `ProcessUserAction` when `sync_customer_address_on_sso` is set. |
 
 ### `\M2Oidc\OAuth\Model\Auth\OidcCredentialAdapter`
 
@@ -620,6 +642,8 @@ An earlier version called `SessionHelper::configureSSOSession()` at the start of
 | Event | Observer | Area |
 |---|---|---|
 | `controller_front_send_response_before` | `SessionCookieObserver` | frontend (scoped to `/m2oidc/` routes only) |
+| `controller_action_predispatch` | `TokenAutoRefreshObserver` | frontend (silent access-token refresh) |
+| `controller_action_predispatch` | `AdminTokenAutoRefreshObserver` | adminhtml (silent access-token refresh) |
 | `customer_login` or auto-redirect event | `CustomerLoginAutoRedirectObserver` | frontend |
 | `customer_logout` | `OAuthLogoutObserver` | frontend (customer RP-Initiated Logout) |
 | `customer_delete` | `CustomerDeleteObserver` | frontend (removes `m2oidc_oauth_user_provider` row) |
@@ -666,6 +690,7 @@ M2Oidc_OAuth/
 │   │   ├── ProcessUserAction.php             # Step 4: Create/match customer, validate relay state, delegate login
 │   │   ├── CustomerLoginAction.php           # Step 5: Create customer nonce cookie, redirect to CustomerOidcCallback
 │   │   ├── CustomerOidcCallback.php          # Step 6: Redeem nonce, validate website, set customer session, redirect
+│   │   ├── IdpInitiatedLogin.php             # IdP-Initiated SSO entry point (OIDC §4); rate-limited, PKCE, CSRF state
 │   │   └── ShowTestResults.php               # Test Configuration results display
 │   └── Adminhtml/
 │       ├── Actions/
@@ -683,8 +708,12 @@ M2Oidc_OAuth/
 │   ├── Security/                             # Rate limiter and related security models
 │   ├── Service/
 │   │   ├── AdminUserCreator.php              # JIT admin provisioning + group-to-role mapping
+│   │   ├── AdminProfileSyncService.php       # Syncs admin profile and role from OIDC claims on login
+│   │   ├── AdminTokenRefreshService.php      # Silent access-token refresh for admin AuthSession
 │   │   ├── CustomerUserCreator.php           # JIT customer provisioning + address/group creation
+│   │   ├── CustomerProfileSyncService.php    # Syncs customer profile and address from OIDC claims on login
 │   │   ├── OidcAuthenticationService.php     # Validates extracted user info post-token exchange
+│   │   ├── TokenRefreshService.php           # Silent access-token refresh for customer session
 │   │   └── UserProvisioningService.php       # Orchestrates admin/customer provisioning
 │   ├── Resolver/                             # GraphQL resolvers (if GraphQL module present)
 │   ├── M2oidcOauthClientApps.php             # Model for oauth_client_apps table
@@ -746,6 +775,8 @@ M2Oidc_OAuth/
 │   ├── OAuthObserver.php                     # OAuth event handler
 │   ├── OAuthLogoutObserver.php               # Redirects to IDP logout URL (customer_logout event)
 │   ├── CustomerLoginAutoRedirectObserver.php # Auto-redirects customers to OIDC login if configured
+│   ├── TokenAutoRefreshObserver.php          # Refreshes customer access token on controller_action_predispatch (frontend)
+│   ├── AdminTokenAutoRefreshObserver.php     # Refreshes admin access token on controller_action_predispatch (adminhtml)
 │   ├── AdminUserDeleteObserver.php           # Removes OIDC user mapping when admin user is deleted
 │   └── CustomerDeleteObserver.php            # Removes OIDC user mapping when customer is deleted
 │
@@ -846,6 +877,7 @@ Key columns:
 | `show_customer_link`, `show_admin_link` | SSO button visibility |
 | `autoredirect_admin`, `autoredirect_customer` | Auto-redirect from login page |
 | `is_active`, `login_type`, `sort_order` | Multi-provider: activation, scope ('customer'/'admin'/'both'), display order |
+| `idp_initiated_enabled` | Smallint (default 0); enables IdP-Initiated SSO for this provider (Login Options tab) |
 | `display_name`, `button_label`, `button_color` | Multi-provider UI customization |
 | `sync_customer_profile_on_sso`, `sync_customer_address_on_sso`, `sync_customer_group_on_sso` | Re-sync customer data on every login |
 | `sync_admin_profile_on_sso`, `sync_admin_role_on_sso` | Re-sync admin data on every login |
@@ -905,9 +937,10 @@ This section documents remaining technical debt and potential enhancements. Item
   - `OidcCredentialAdapterTest` (353), `OidcCredentialPluginTest`, `JwtVerifierTest` (521)
   - `AdminAttributeMapperTest` (157), `CustomerAttributeMapperTest` (252)
   - `AdminUserCreatorRoleMappingTest` (389), `CustomerUserCreatorAddressTest` (517)
+  - `IdpInitiatedLoginTest` (5 security regression tests: relay state URL validation, rate limiting, CSRF state token, `idp_initiated_enabled` gate, `is_active` gate)
   - Integration: `AdminOidcLoginFlowTest` (175), `CustomerOidcLoginFlowTest` (148), `SecurityPluginsTest` (168), `AccessControlRulesTest`
-- **Remaining gap**: `BackChannelLogout`, `OidcLogoutPlugin`, `OAuthLogoutObserver`, `OidcRateLimiter`, `AdminUserDeleteObserver`, `CustomerDeleteObserver` have no dedicated tests
-- **Recommendation**: Add tests for the logout flow, rate limiter, back-channel logout controller, and new delete observers
+- **Remaining gap**: `BackChannelLogout`, `OidcLogoutPlugin`, `OAuthLogoutObserver`, `OidcRateLimiter`, `AdminUserDeleteObserver`, `CustomerDeleteObserver`, `TokenAutoRefreshObserver`, `AdminTokenAutoRefreshObserver` have no dedicated tests
+- **Recommendation**: Add tests for the logout flow, rate limiter, back-channel logout controller, new delete observers, and token refresh observers
 
 **Fix Unsafe ObjectManager Usage**
 - **Location**: `Model/Auth/OidcCredentialAdapter.php` `__wakeup()` method
@@ -934,11 +967,10 @@ This section documents remaining technical debt and potential enhancements. Item
 
 ### Operational Improvements
 
-**Token Refresh Handling**
-- **Current state**: `TokenRefreshService` exists; refresh tokens stored in session, but automatic refresh on expiry is not yet wired in
-- **Issue**: Long sessions may outlive access token expiration
-- **Recommendation**: Check token expiration before upstream API calls and refresh silently
-- **Requires**: Hook into a Magento event that fires before authenticated API calls
+**Token Refresh Handling** *(implemented)*
+- `TokenAutoRefreshObserver` (frontend) and `AdminTokenAutoRefreshObserver` (adminhtml) fire on every `controller_action_predispatch`
+- Both call `TokenRefreshService::refreshIfNeeded()` / `AdminTokenRefreshService::refreshIfNeeded()`, which silently refreshes the access token 60 seconds before expiry
+- Refresh tokens are stored in session under `oidc_refresh_token`; this item is no longer a gap
 
 ### Developer Experience
 

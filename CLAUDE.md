@@ -109,9 +109,10 @@ The module implements a dual authentication flow for admin and customer users:
 - `ReadAuthorizationResponse.php`: Handles OAuth callback; validates state token, consumes PKCE verifier, verifies JWT, applies rate limiting via `OidcRateLimiter`, stores id_token in transport cookie (2-min TTL)
 - `ProcessResponseAction.php`: Extracts OIDC attributes; delegates to `CheckAttributeMappingAction`
 - `CheckAttributeMappingAction.php`: Routes users based on admin/customer detection; evaluates claims-based access control rules (FEAT-04); handles admin/customer auto-creation; sets ephemeral nonce cookies for secure callback handoff
-- `ProcessUserAction.php`: Creates or updates Magento customers via `CustomerUserCreator`
+- `ProcessUserAction.php`: Creates or updates Magento customers via `CustomerUserCreator`; calls `CustomerProfileSyncService::syncProfile()` and `syncAddress()` on login
 - `CustomerLoginAction.php`: Legacy customer login (superseded by `CustomerOidcCallback`)
 - `CustomerOidcCallback.php`: Customer login in clean HTTP context; validates `oidc_customer_nonce` cookie via `OAuthSecurityHelper::redeemCustomerLoginNonce()`; enforces website context (SEC-08); sets `oidc_customer_authenticated` cookie
+- `IdpInitiatedLogin.php`: IdP-Initiated SSO entry point (OIDC Third-Party Initiated Login §4); URL: `https://<store>/m2oidc/actions/idpInitiatedLogin?provider_id=<id>`; optional params: `relay_state`, `login_hint`, `login_type`; enforces `is_active` and `idp_initiated_enabled` checks, rate limiting, CSRF state token, PKCE
 - `ShowTestResults.php`: Displays test results for attribute mapping; stores received OIDC claims in `received_oidc_claims` column
 - `BackChannelLogout.php`: OIDC Back-Channel Logout (FEAT-02); POST endpoint for IdP server-side logout
 - `Controller/Health/Check.php`: Health check endpoint; verifies OIDC configuration, database connectivity
@@ -163,11 +164,14 @@ The module implements a dual authentication flow for admin and customer users:
 
 **Services (Model/Service/):**
 - `AdminUserCreator.php`: Creates admin users during OIDC auth; `getAdminRoleFromGroups()` resolves role via normalized `m2oidc_oauth_role_mappings` table (Phase 4) with fallback to legacy JSON column; case-insensitive group matching; fallback chain: configured mapping → default role → "Administrators" → role ID 1
+- `AdminProfileSyncService.php`: Syncs admin profile attributes and role from OIDC claims on every login; called by `CheckAttributeMappingAction` when `sync_admin_profile_on_sso` / `sync_admin_role_on_sso` flags are set
+- `AdminTokenRefreshService.php`: Manages access-token lifecycle for the admin `AuthSession`; session keys: `oidc_access_token`, `oidc_access_token_expires`, `oidc_refresh_token`; `refreshIfNeeded()` refreshes 60s before expiry; `storeTokens()` called by `Oidccallback` via `ReadAuthorizationResponse` admin cookie transport
 - `CustomerUserCreator.php`: Creates/updates customers; uses `CustomerAttributeMapper` (Phase 3.2); supports DOB, gender, billing address; customer group resolution from claims; can deny creation if group not mapped (`m2oidc_dont_create_customer_if_group_not_mapped`); profile sync on SSO login
+- `CustomerProfileSyncService.php`: Syncs customer profile fields (`syncProfile()`) and billing/shipping address fields (`syncAddress()`) from OIDC claims on every login; called by `ProcessUserAction`
 - `UserProvisioningService.php`: Orchestrates admin/customer creation; fires `oidc_before_user_create` and `oidc_after_user_create` events; tracks provider ID
 - `OidcAuthenticationService.php`: Validates user info structure; extracts email; flattens nested OIDC attributes
 - `OidcSessionRegistry.php`: Tracks active OIDC sessions (sub/sid → PHP session ID mapping); used by `BackChannelLogout` for session destruction
-- `TokenRefreshService.php`: Stores/manages refresh tokens in session
+- `TokenRefreshService.php`: Manages access-token lifecycle for the customer session; mirrors `AdminTokenRefreshService` for the frontend area
 
 **Attribute Mapping (Model/Attribute/):**
 - `AttributeMapperInterface.php`: Shared interface for attribute mappers
@@ -197,6 +201,8 @@ The module implements a dual authentication flow for admin and customer users:
 - `CustomerLoginAutoRedirectObserver.php`: Auto-redirects unauthenticated customers to IdP; checks `oidc_logout_guard` cookie to suppress redirect after OIDC logout
 - `AdminLoginAutoRedirectObserver.php`: Auto-redirects unauthenticated admin users to IdP; respects `oidc_logout_guard` cookie
 - `SessionCookieObserver.php`: Enforces SameSite=None on session cookies for cross-origin OAuth (`controller_front_send_response_before` event); scoped to `/m2oidc/` routes only
+- `TokenAutoRefreshObserver.php`: Listens to `controller_action_predispatch` (frontend); calls `TokenRefreshService::refreshIfNeeded()` to silently renew the customer access token before expiry
+- `AdminTokenAutoRefreshObserver.php`: Listens to `controller_action_predispatch` (adminhtml); calls `AdminTokenRefreshService::refreshIfNeeded()` to silently renew the admin access token before expiry
 - `OAuthObserver.php`: Handles OAuth-specific events
 - `AdminUserDeleteObserver.php`: Fires on `admin_user_delete_before`; removes the matching row from `m2oidc_oauth_user_provider` so the Sessions activity view stays accurate
 - `CustomerDeleteObserver.php`: Fires on `customer_delete`; same cleanup for customer OIDC mappings
@@ -235,7 +241,7 @@ The module implements a dual authentication flow for admin and customer users:
 - Role/group mappings (legacy): `oauth_admin_role_mapping` (JSON), `oauth_customer_group_mapping` (JSON), `default_role`, `default_group`
 - Login behavior: `show_admin_link`, `show_customer_link`, `autoredirect_admin`, `autoredirect_customer`, `m2oidc_auto_create_admin`, `m2oidc_auto_create_customer`, `m2oidc_disable_non_oidc_admin_login`, `m2oidc_disable_non_oidc_customer_login`
 - Profile sync: `sync_customer_profile_on_sso`, `sync_customer_address_on_sso`, `sync_customer_group_on_sso`, `sync_admin_profile_on_sso`, `sync_admin_role_on_sso`
-- Multi-provider: `display_name`, `is_active`, `login_type` ('customer'|'admin'|'both'), `sort_order`, `button_label`, `button_color`
+- Multi-provider: `display_name`, `is_active`, `login_type` ('customer'|'admin'|'both'), `sort_order`, `button_label`, `button_color`, `idp_initiated_enabled` (smallint, default 0)
 - Testing: `last_test_status`, `last_test_at`, `received_oidc_claims` (JSON array of claim keys from last test)
 
 **Normalized Tables (Phase 4):**
@@ -276,6 +282,8 @@ The module implements a dual authentication flow for admin and customer users:
 **Events (etc/events.xml and etc/adminhtml/events.xml):**
 - `customer_logout` → `OAuthLogoutObserver`
 - `controller_front_send_response_before` → `SessionCookieObserver`
+- `controller_action_predispatch` → `TokenAutoRefreshObserver` (frontend area)
+- `controller_action_predispatch` → `AdminTokenAutoRefreshObserver` (adminhtml area)
 - `oidc_before_user_create`, `oidc_after_user_create` (custom events fired by `UserProvisioningService`)
 
 **Routes:**
@@ -296,6 +304,7 @@ The module implements a dual authentication flow for admin and customer users:
 
 | Feature | Status | Details |
 |---------|--------|---------|
+| **IdP-Initiated SSO** | Active (OIDC §4) | `IdpInitiatedLogin` controller; enforces `idp_initiated_enabled` + `is_active` gates, rate limiting, CSRF state token, PKCE |
 | **CSRF Protection** | Active | State token per request; validated and consumed before token exchange |
 | **Replay Protection** | Active | OIDC nonce in id_token; one-time nonce cookies for callback handoff |
 | **JWT Verification** | Active | JWKS endpoint required; validates issuer, audience, nonce, signature |
@@ -630,6 +639,7 @@ Before deploying OIDC changes, verify:
 - `Model/Auth/OidcCredentialAdapterTest.php`: Adapter authentication logic and ephemeral tokens — 353 test cases
 - `Model/Service/AdminUserCreatorRoleMappingTest.php`: Role mapping logic including fallback chain — 389 test cases
 - `Model/Service/CustomerUserCreatorAddressTest.php`: Address creation from OIDC claims — 517 test cases
+- `Controller/IdpInitiatedLoginTest.php`: Security regression tests — 5 cases covering relay state URL validation, rate limiting, CSRF state token, `idp_initiated_enabled` gate, `is_active` gate
 
 **Integration Tests** (`Test/Integration/`):
 - `AdminOidcLoginFlowTest.php`: Full admin login flow — 175 test cases
