@@ -129,6 +129,7 @@ This module solves real-world authentication challenges in enterprise and e-comm
 - Billing and shipping address fields are configured separately, each with city/state/country/street/phone/zip overrides
 - Creates default billing/shipping addresses if OIDC data is present
 - Reduces checkout friction — addresses pre-filled from IdP profile
+- **Country name resolution**: `CustomerAttributeMapper` resolves country values to ISO codes via Magento's `CountryCollection`. When the PHP `intl` extension is available, English country names (e.g., `Germany` from Authelia) are additionally matched via `Locale::getDisplayRegion()` against Magento's active country list — this handles IdPs that always send English names regardless of the store locale.
 
 **Profile Enrichment**
 - Date of birth: `amDob` config key (default OIDC claim: `birthdate`) — formatted as YYYY-MM-DD
@@ -150,7 +151,7 @@ This module solves real-world authentication challenges in enterprise and e-comm
 - Relay state host is validated against store URL (SEC-09) to prevent open redirect attacks
 
 **CAPTCHA Bypass (Customer)**
-- `OidcCustomerCaptchaBypassPlugin` intercepts `CheckUserLoginObserver` on the frontend area
+- `CustomerCaptchaBypassPlugin` intercepts `CheckUserLoginObserver` on the frontend area
 - Skips CAPTCHA for customers authenticating via OIDC (IdP already authenticated them)
 - Mirrors the admin-side `OidcCaptchaBypassPlugin`
 
@@ -640,13 +641,16 @@ Previously, a test-mode run would write an `IS_TEST` flag to `core_config_data` 
 | `Magento\Backend\Model\Auth` | `OidcCredentialPlugin` | 10 | adminhtml | Injects `OidcCredentialAdapter` during OIDC login; resets guard flags on every `beforeLogin()` |
 | `Magento\Backend\Model\Auth` | `OidcLogoutPlugin` | 20 | adminhtml | Reads OIDC session data before session destroy, revokes access token (RFC 7009), redirects to IdP logout |
 | `Magento\Captcha\Observer\CheckUserLoginBackendObserver` | `OidcCaptchaBypassPlugin` | 10 | adminhtml | Skips CAPTCHA for OIDC-authenticated admin logins |
-| `Magento\Captcha\Observer\CheckUserLoginObserver` | `OidcCustomerCaptchaBypassPlugin` | 10 | frontend | Skips CAPTCHA for OIDC-authenticated customer logins |
+| `Magento\Captcha\Observer\CheckUserLoginObserver` | `CustomerCaptchaBypassPlugin` | 10 | frontend | Skips CAPTCHA for OIDC-authenticated customer logins |
+| `Magento\Customer\Api\AccountManagementInterface` | `CustomerLoginRestrictionPlugin` | 5 | frontend | Blocks non-OIDC customer logins when restriction is enabled |
 | `Magento\User\Model\User` | `OidcIdentityVerificationPlugin` | 10 | adminhtml | Bypasses password re-verification for OIDC admins |
 | `Magento\User\Model\User` | `OidcPasswordExpirationPlugin` | 10 | adminhtml | Suppresses password expiration warnings for OIDC admins |
 | `Magento\User\Model\User` | `OidcForcePasswordChangePlugin` | 10 | adminhtml | Suppresses forced password change redirects for OIDC admins |
 | `Magento\User\Block\User\Edit\Tab\Main` | `OidcIdentityFieldPlugin` | 20 | adminhtml | Removes "required" from password field in user edit form |
 | `Magento\User\Block\Role\Tab\Info` | `OidcIdentityFieldPlugin` | 20 | adminhtml | Same for role edit form |
 | `Magento\Backend\Block\System\Account\Edit\Form` | `OidcIdentityFieldPlugin` | 20 | adminhtml | Same for account settings form |
+| `Magento\User\Block\User\Edit\Tab\Main` | `OidcUserInfoPlugin` | 20 | adminhtml | Injects OIDC provider info into admin user profile page |
+| `Magento\Customer\Block\Account\Dashboard` | `OidcInfoPlugin` | 20 | frontend | Injects OIDC provider info into customer account page |
 
 ### Events Observed
 
@@ -655,9 +659,12 @@ Previously, a test-mode run would write an `IS_TEST` flag to `core_config_data` 
 | `controller_front_send_response_before` | `SessionCookieObserver` | frontend (scoped to `/m2oidc/` routes only) |
 | `controller_action_predispatch` | `TokenAutoRefreshObserver` | frontend (silent access-token refresh) |
 | `controller_action_predispatch` | `AdminTokenAutoRefreshObserver` | adminhtml (silent access-token refresh) |
-| `customer_login` or auto-redirect event | `CustomerLoginAutoRedirectObserver` | frontend |
+| `controller_action_predispatch` | `CustomerLoginAutoRedirectObserver` | frontend (auto-redirects unauthenticated customers to IdP when enabled; suppressed by `oidc_logout_guard` cookie) |
 | `customer_logout` | `OAuthLogoutObserver` | frontend (customer RP-Initiated Logout) |
+| `customer_logout` | `CustomerSetLogoutFlagObserver` | frontend (sets logout flag on session destruction) |
 | `customer_delete` | `CustomerDeleteObserver` | frontend (removes `m2oidc_oauth_user_provider` row) |
+| `controller_action_predispatch` | `AdminLoginAutoRedirectObserver` | adminhtml (auto-redirects unauthenticated admins to IdP when enabled; suppressed by `oidc_logout_guard` cookie) |
+| `admin_user_authenticate_after` or equivalent | `AdminSetLogoutFlagObserver` | adminhtml (sets logout flag on admin session destruction) |
 | `admin_user_delete_before` | `AdminUserDeleteObserver` | adminhtml (removes `m2oidc_oauth_user_provider` row) |
 | Admin logout event | `OAuthLogoutObserver` | adminhtml |
 
@@ -739,18 +746,25 @@ M2Oidc_OAuth/
 │
 ├── Plugin/
 │   ├── AdminLoginRestrictionPlugin.php       # Blocks non-OIDC admin login (with safety net)
+│   ├── CustomerLoginRestrictionPlugin.php    # Blocks non-OIDC customer login when restriction is enabled
 │   ├── Auth/
 │   │   ├── OidcCredentialPlugin.php          # Injects OIDC adapter; resets guard flags on every login
 │   │   └── OidcLogoutPlugin.php              # Token revocation + RP-Initiated Logout (aroundLogout)
 │   ├── Captcha/
 │   │   ├── OidcCaptchaBypassPlugin.php       # Skips admin CAPTCHA for OIDC logins
-│   │   └── OidcCustomerCaptchaBypassPlugin.php # Skips customer CAPTCHA for OIDC logins
+│   │   └── CustomerCaptchaBypassPlugin.php   # Skips customer CAPTCHA for OIDC logins
+│   ├── Csp/
+│   │   └── OidcCspPolicyCollector.php        # Adds IdP domains to Content Security Policy whitelist dynamically
+│   ├── Customer/
+│   │   └── Block/
+│   │       └── OidcInfoPlugin.php            # Injects OIDC provider info into customer account page
 │   └── User/
 │       ├── OidcIdentityVerificationPlugin.php  # Bypasses password re-verification
 │       ├── OidcPasswordExpirationPlugin.php    # Suppresses password expiry warnings
 │       ├── OidcForcePasswordChangePlugin.php   # Suppresses forced password change
 │       └── Block/
-│           └── OidcIdentityFieldPlugin.php     # Removes required from password field in forms
+│           ├── OidcIdentityFieldPlugin.php     # Removes required from password field in forms
+│           └── OidcUserInfoPlugin.php          # Injects OIDC info into admin user profile page
 │
 ├── Helper/
 │   ├── Data.php                              # Base config data access + provider management
@@ -767,7 +781,6 @@ M2Oidc_OAuth/
 │       ├── AccessTokenRequest.php            # Builds the token exchange POST body
 │       └── AccessTokenRequestBody.php        # Alternate token body (header auth variant)
 │
-├── Service/                                  # Additional service layer classes
 ├── UI/
 │   ├── Component/DataProvider.php            # Provider grid data provider
 │   ├── Component/DataProvider/SessionDataProvider.php  # Active sessions grid data provider
@@ -789,7 +802,10 @@ M2Oidc_OAuth/
 │   ├── SessionCookieObserver.php             # Forces SameSite=None on session cookies (/m2oidc/ routes only)
 │   ├── OAuthObserver.php                     # OAuth event handler
 │   ├── OAuthLogoutObserver.php               # Redirects to IDP logout URL (customer_logout event)
-│   ├── CustomerLoginAutoRedirectObserver.php # Auto-redirects customers to OIDC login if configured
+│   ├── CustomerLoginAutoRedirectObserver.php # Auto-redirects unauthenticated customers to IdP; respects oidc_logout_guard
+│   ├── CustomerSetLogoutFlagObserver.php     # Sets logout flag on customer session destruction
+│   ├── AdminLoginAutoRedirectObserver.php    # Auto-redirects unauthenticated admins to IdP; respects oidc_logout_guard
+│   ├── AdminSetLogoutFlagObserver.php        # Sets logout flag on admin session destruction
 │   ├── TokenAutoRefreshObserver.php          # Refreshes customer access token on controller_action_predispatch (frontend)
 │   ├── AdminTokenAutoRefreshObserver.php     # Refreshes admin access token on controller_action_predispatch (adminhtml)
 │   ├── AdminUserDeleteObserver.php           # Removes OIDC user mapping when admin user is deleted

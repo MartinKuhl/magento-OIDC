@@ -374,9 +374,8 @@ When "Auto Create Admin users while SSO" is enabled, admin users are automatical
 **Role Mapping Fallback Chain**:
 1. Normalized `m2oidc_oauth_role_mappings` table (Phase 4, case-insensitive)
 2. Legacy JSON `oauth_admin_role_mapping` column (case-insensitive)
-3. Default admin role (if configured per provider)
-4. "Administrators" role (searched by name)
-5. Role ID 1 (ultimate fallback)
+3. Default admin role (`defaultRole` config, must be a numeric role ID)
+4. **Deny** — `getAdminRoleFromGroups()` returns `null`; user creation is refused
 
 **Configuration UI** (Attribute Mapping page):
 - **Group Attribute Name**: OIDC claim containing group/role information (e.g., `groups`, `roles`, `memberOf`)
@@ -431,6 +430,7 @@ OIDC claims are mapped to Magento user attributes via configuration:
 - Groups: `group_attribute` (for role/group mapping)
 - DOB: `dob_attribute`; Gender: `gender_attribute`
 - Billing address: `billing_city_attribute`, `billing_state_attribute`, `billing_country_attribute`, `billing_address_attribute`, `billing_phone_attribute`, `billing_zip_attribute`
+- **Country name resolution**: `CustomerAttributeMapper` resolves country values to ISO codes via `CountryCollection`. When the PHP `intl` extension is loaded, English country names (e.g., `Germany` sent by Authelia) are matched via `Locale::getDisplayRegion()` against Magento's active country codes. This prevents mismatches when the IdP always sends English names regardless of store locale.
 
 **Phase 4 Normalized Storage** (in `m2oidc_oauth_attribute_mappings`):
 - `attribute_type` + `attribute_name` per provider

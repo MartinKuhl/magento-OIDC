@@ -563,7 +563,7 @@ Module inherits IdP's security policies:
 - **Module Version**: 1.0.0
 - **Package**: `martinkuhl/magento2-oidc-sso`
 - **License**: MIT
-- **Minimum Requirements**: PHP 8.2+, Magento 2.4.7+
+- **Minimum Requirements**: PHP 8.1+, Magento 2.4.7+
 
 ---
 
