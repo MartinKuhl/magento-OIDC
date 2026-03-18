@@ -50,6 +50,8 @@ tail -f var/log/exception.log
 php bin/magento module:status M2Oidc_OAuth
 ```
 
+Log rotation runs daily via `m2oidc_log_rotation` cron at 03:00. The log is deleted when it exceeds 7 days or when debug logging is disabled.
+
 ## Architecture
 
 ### Authentication Flow
@@ -95,9 +97,11 @@ The module implements a dual authentication flow for admin and customer users:
 5. **Back-Channel Logout** (FEAT-02):
    - Route: `POST /m2oidc/actions/backchannel-logout`
    - `BackChannelLogout` controller implements `CsrfAwareActionInterface` (opts out of form-key CSRF)
+   - IP-based rate limiting via `OidcRateLimiter`; returns HTTP 429 when limit exceeded
    - Decodes logout token without verification to extract `iss`; resolves matching provider
    - Verifies JWT signature via provider's JWKS endpoint
    - Validates `events` claim contains `http://schemas.openid.net/event/backchannel-logout`
+   - Parses `aud` claim supporting both string and array formats
    - Resolves PHP session ID from `OidcSessionRegistry` via `sub`/`sid` claims
    - Destroys target session by temporarily switching session IDs (C-02)
 
@@ -106,7 +110,7 @@ The module implements a dual authentication flow for admin and customer users:
 #### Controllers (Controller/Actions/)
 - `BaseAction.php` / `BaseAdminAction.php`: Base classes for OAuth actions
 - `SendAuthorizationRequest.php`: Initiates OAuth flow; generates PKCE challenge (S256/PLAIN), encodes relay state as `{r, s, a, l, t, p}` JSON+Base64, supports multi-provider via `provider_id` param
-- `ReadAuthorizationResponse.php`: Handles OAuth callback; validates state token, consumes PKCE verifier, verifies JWT, applies rate limiting via `OidcRateLimiter`, stores id_token in transport cookie (2-min TTL)
+- `ReadAuthorizationResponse.php`: Handles OAuth callback; validates state token, consumes PKCE verifier, verifies JWT, applies rate limiting via `OidcRateLimiter`, stores id_token in transport cookie (2-min TTL); validates nonce in `id_token` from the token response even when user data comes from the userinfo endpoint (M-06: prevents replay attacks in hybrid flows)
 - `ProcessResponseAction.php`: Extracts OIDC attributes; delegates to `CheckAttributeMappingAction`
 - `CheckAttributeMappingAction.php`: Routes users based on admin/customer detection; evaluates claims-based access control rules (FEAT-04); handles admin/customer auto-creation; sets ephemeral nonce cookies for secure callback handoff
 - `ProcessUserAction.php`: Creates or updates Magento customers via `CustomerUserCreator`; calls `CustomerProfileSyncService::syncProfile()` and `syncAddress()` on login
@@ -114,8 +118,11 @@ The module implements a dual authentication flow for admin and customer users:
 - `CustomerOidcCallback.php`: Customer login in clean HTTP context; validates `oidc_customer_nonce` cookie via `OAuthSecurityHelper::redeemCustomerLoginNonce()`; enforces website context (SEC-08); sets `oidc_customer_authenticated` cookie
 - `IdpInitiatedLogin.php`: IdP-Initiated SSO entry point (OIDC Third-Party Initiated Login §4); URL: `https://<store>/m2oidc/actions/idpInitiatedLogin?provider_id=<id>`; optional params: `relay_state`, `login_hint`, `login_type`; enforces `is_active` and `idp_initiated_enabled` checks, rate limiting, CSRF state token, PKCE
 - `ShowTestResults.php`: Displays test results for attribute mapping; stores received OIDC claims in `received_oidc_claims` column
-- `BackChannelLogout.php`: OIDC Back-Channel Logout (FEAT-02); POST endpoint for IdP server-side logout
+- `BackChannelLogout.php`: OIDC Back-Channel Logout (FEAT-02); POST endpoint for IdP server-side logout; IP-based rate limiting via `OidcRateLimiter` (returns HTTP 429 on exceeded limit); supports both string and array formats for the `aud` claim
 - `Controller/Health/Check.php`: Health check endpoint; verifies OIDC configuration, database connectivity
+
+#### Cron Jobs (Cron/)
+- `LogRotation.php`: Daily cron job registered as `m2oidc_log_rotation` (runs at 03:00 server time); deletes `var/log/M2Oidc.log` and disables logging when the log file is older than 7 days or when debug logging has been disabled in the admin UI but the file still exists; moves log-rotation logic out of `SendAuthorizationRequest`
 
 #### Admin Controllers (Controller/Adminhtml/)
 - `Actions/Oidccallback.php`: Admin callback that performs native Magento login via `Auth::login()` with ephemeral token; persists id_token in admin session
@@ -179,7 +186,7 @@ The module implements a dual authentication flow for admin and customer users:
 - `CustomerAttributeMapper.php`: Maps OIDC claims to customer attributes including address fields
 
 **Security (Model/Security/):**
-- `OidcRateLimiter.php`: IP-based rate limiting for authentication attempts on the callback endpoint
+- `OidcRateLimiter.php`: IP-based rate limiting using a fixed-window strategy; stores `{count, start}` in cache; the window start is recorded on the first request and all subsequent increments use the remaining TTL so the window never slides; constants: `MAX_ATTEMPTS = 10`, `WINDOW_SECONDS = 60`; applied to both the OAuth callback and back-channel logout endpoints
 
 **Provider/Repository (Model/Provider/):**
 - `MappingRepository.php`: Repository for accessing normalized attribute/role mappings (Phase 4); reads from `m2oidc_oauth_attribute_mappings` and `m2oidc_oauth_role_mappings` tables
@@ -310,7 +317,7 @@ The module implements a dual authentication flow for admin and customer users:
 | **JWT Verification** | Active | JWKS endpoint required; validates issuer, audience, nonce, signature |
 | **PKCE** | Active | S256 (SHA256) preferred, PLAIN fallback; verifier stored per session/provider |
 | **Ephemeral Auth Tokens** | Active (C-01) | Admin login uses single-use tokens with 120s cache TTL — no static markers |
-| **Rate Limiting** | Active | IP-based throttle via `OidcRateLimiter` on callback endpoint |
+| **Rate Limiting** | Active | Fixed-window strategy (10 attempts / 60s) via `OidcRateLimiter`; applied to both callback and back-channel logout endpoints |
 | **Back-Channel Logout** | Active (FEAT-02) | Server-to-server logout via JWT logout token; session destruction by ID |
 | **RP-Initiated Logout** | Active | Admin + customer; id_token_hint; RFC 7009 token revocation; Authelia compat |
 | **Logout Guard** | Active | `oidc_logout_guard` cookie (120s) prevents auto-redirect loop after IdP logout |
@@ -659,7 +666,7 @@ Multi-provider is fully implemented. The `provider_id` parameter flows through t
 
 **CSRF Token Validation**: Already implemented via state token in `OAuthSecurityHelper`. Encodes session ID, app name, login type, state token, and provider ID in relay state.
 
-**Rate Limiting**: Already implemented via `OidcRateLimiter` on the callback endpoint.
+**Rate Limiting**: Already implemented via `OidcRateLimiter` using a fixed-window strategy (10 attempts / 60s) on both the OAuth callback and back-channel logout endpoints.
 
 **Scope Cookie Observer to OIDC Paths Only**:
 ```php
@@ -693,9 +700,11 @@ Schema defined in `etc/schema.graphqls`.
 
 **Already implemented** (`Controller/Actions/BackChannelLogout.php`):
 - POST endpoint: `/m2oidc/actions/backchannel-logout`
+- IP-based rate limiting via `OidcRateLimiter` (fixed-window: 10 attempts / 60s); returns HTTP 429 on exceeded limit
 - Validates logout token JWT via JWKS
+- Parses `aud` claim supporting both string and array formats
 - Resolves PHP session via `OidcSessionRegistry` (sub/sid → session ID)
 - Destroys target session by switching PHP session IDs (C-02 pattern)
-- Returns HTTP 200 (success), 400 (invalid token), 501 (unknown provider)
+- Returns HTTP 200 (success), 400 (invalid token), 429 (rate limited), 501 (unknown provider)
 
 **For detailed technical specifications, refer to** [TECHNICAL_DOCUMENTATION.md](TECHNICAL_DOCUMENTATION.md).

@@ -40,7 +40,7 @@ Modern e-commerce platforms require secure, centralized authentication. This mod
 - ✅ **Optional OIDC-Only Mode**: Disable password logins entirely (with lockout safety net)
 - ✅ **Session Activity View**: Admin UI listing all users who authenticated via OIDC
 - ✅ **Dirty-Field Tracking**: Visual amber highlights on modified provider form fields before save
-- ✅ **Comprehensive Debug Logging**: Detailed flow logs for troubleshooting
+- ✅ **Comprehensive Debug Logging**: Detailed flow logs for troubleshooting, with automatic log rotation via a daily cron job
 - ✅ **Test Configuration UI**: Verify OIDC claims before production deployment
 
 ### Supported Identity Providers
@@ -236,7 +236,7 @@ Map billing and shipping addresses (30+ fields total):
 #### Debug Logging
 
 - **Enable debug logging**: Writes detailed flow logs to `var/log/M2Oidc.log`
-- **Auto-expires**: Logs older than 7 days are automatically deleted
+- **Auto-expires**: A daily cron job (`m2oidc_log_rotation`) rotates the log at 03:00 server time — deletes the file when older than 7 days or when debug logging is disabled
 - **Privacy**: Contains user emails and OIDC claims — handle securely
 
 ---
@@ -463,6 +463,13 @@ Module validates JWT tokens using:
 OAuth `state` parameter includes session ID to prevent CSRF attacks:
 - State format: `encodedRelayState|sessionId|encodedAppName|loginType`
 - Session ID validated on callback—rejects requests with mismatched session
+
+### Rate Limiting
+
+Authentication endpoints are protected by IP-based fixed-window rate limiting (`OidcRateLimiter`):
+- **Strategy**: Fixed-window — 10 attempts per 60-second window
+- **Protected endpoints**: Callback (`ReadAuthorizationResponse`) and back-channel logout (`BackChannelLogout`)
+- Requests that exceed the limit receive an error response before any token processing occurs
 
 ### Emergency Access
 

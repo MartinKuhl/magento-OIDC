@@ -30,10 +30,12 @@ This Magento 2 module adds **OAuth 2.0 / OpenID Connect** single sign-on for bot
 - **User-delete cleanup**: `AdminUserDeleteObserver` and `CustomerDeleteObserver` remove OIDC provider mappings from `m2oidc_oauth_user_provider` when Magento users are deleted, keeping the Sessions activity view accurate.
 - **Dirty-field tracking**: `view/adminhtml/web/js/dirtyTracking.js` highlights modified provider form fields with an amber border before save, using `MutationObserver` to track dynamically added mapping rows.
 - **PKCE (RFC 7636)**: supports S256 and plain code challenge methods. The code verifier is stored per provider ID in the session — concurrent logins for the same provider do not collide.
-- **Rate limiting**: `OidcRateLimiter` enforces an IP-based attempt window on the callback endpoint to prevent code-stuffing attacks.
+- **Rate limiting**: `OidcRateLimiter` enforces a fixed-window IP-based rate limit (10 attempts / 60 s) on both the callback (`ReadAuthorizationResponse`) and back-channel logout (`BackChannelLogout`) endpoints to prevent code-stuffing and endpoint abuse attacks.
 - **CSRF protection**: a token is embedded in the OAuth `state` parameter, generated on authorization request and validated on callback.
 - **RP-Initiated Logout**: on admin logout, the `OidcLogoutPlugin` captures session tokens before destruction, calls the IdP's `end_session_endpoint`, and optionally revokes the access token via RFC 7009. Supports both standard OIDC and Authelia Forward-Auth logout modes.
-- **Back-Channel Logout**: `POST /m2oidc/actions/backchannel-logout` accepts a signed JWT logout token from the IdP and destroys the matching PHP session via `OidcSessionRegistry`.
+- **Back-Channel Logout**: `POST /m2oidc/actions/backchannel-logout` accepts a signed JWT logout token from the IdP and destroys the matching PHP session via `OidcSessionRegistry`. The `aud` claim is supported in both string and array formats per the OIDC spec.
+- **Hybrid flow nonce validation (M-06)**: `ReadAuthorizationResponse` validates the nonce in the `id_token` from the token endpoint even when user data is sourced from the userinfo endpoint, preventing replay attacks in hybrid flows.
+- **Debug log rotation**: a dedicated cron job (`Cron/LogRotation.php`, registered as `m2oidc_log_rotation`, scheduled `0 3 * * *`) deletes `var/log/M2Oidc.log` and disables debug logging when the log exceeds 7 days or when debug logging has been disabled in the admin UI.
 - **Multi-provider**: database schema and utility layer support multiple active providers with per-provider settings, managed via the Provider grid at `/admin/m2oidc/provider/index`.
 - **Session Activity view**: `/admin/m2oidc/sessions/index` lists all users who authenticated via OIDC, with total and active user counts per provider.
 - **CLI tools**: `bin/magento oauth:config:export` and `bin/magento oauth:config:import` for moving provider configuration across environments.
@@ -208,9 +210,10 @@ This module solves real-world authentication challenges in enterprise and e-comm
 - The `state` parameter also includes session ID, app name, login type, and provider ID (JSON+Base64 encoded)
 
 **Rate Limiting**
-- `OidcRateLimiter` enforces per-IP rate limiting on `ReadAuthorizationResponse`
-- Exceeding `MAX_ATTEMPTS` within `WINDOW_SECONDS` results in a blocked response
-- Prevents attackers from replaying or enumerating authorization codes
+- `OidcRateLimiter` enforces per-IP rate limiting using a **fixed-window** strategy: stores `{count, start}` JSON in cache; window start is recorded on the first request and the TTL is never reset on subsequent activity within the window
+- Constants: `MAX_ATTEMPTS = 10`, `WINDOW_SECONDS = 60`
+- Applied to both `ReadAuthorizationResponse` (callback endpoint) and `BackChannelLogout` (back-channel logout endpoint); returns HTTP 429 when the limit is exceeded on `BackChannelLogout`
+- Prevents attackers from replaying or enumerating authorization codes and from hammering the back-channel logout endpoint
 
 **Lockout-Prevention Guard**
 - `Controller/Adminhtml/Provider/Save.php` checks `m2oidc_oauth_user_provider` before saving
@@ -262,6 +265,10 @@ This module solves real-world authentication challenges in enterprise and e-comm
   - **Authelia Forward-Auth**: detects path ending with `/logout` (without `/oauth2/` or `/oidc/`) and sends `rd` parameter instead
 - A short-lived `oidc_logout_guard` cookie (120s) prevents `AdminLoginRestrictionPlugin` from triggering an immediate re-login loop after redirect
 
+**Admin SSO Button XSS Prevention**
+- `view/adminhtml/templates/adminssobutton.phtml` uses a `data-url` attribute with a JavaScript event listener instead of an inline `onclick` handler to prevent XSS via the URL
+- Hidden login form fields are set to `.disabled = true` to prevent form submission with empty credentials when the SSO button is present
+
 **Worker State Isolation (SEC-06)**
 - `OidcCredentialPlugin::beforeLogin()` unconditionally resets all internal flags at the start of every login attempt
 - Prevents PHP-FPM worker process recycling from leaking OIDC state between requests
@@ -277,7 +284,7 @@ This module solves real-world authentication challenges in enterprise and e-comm
 **Federated Logout** *(substantially implemented)*
 - **Admin RP-Initiated Logout**: `OidcLogoutPlugin` redirects to `endsession_endpoint` with `id_token_hint`; revokes access token via RFC 7009; supports Authelia Forward-Auth (`?rd=`) mode
 - **Customer RP-Initiated Logout**: `OAuthLogoutObserver` handles `customer_logout` event; reads id_token, revokes access token, redirects to IdP
-- **Back-Channel Logout** (FEAT-02): `POST /m2oidc/actions/backchannel-logout` validates a signed JWT logout token (JWKS) and destroys the matching PHP session via `OidcSessionRegistry`
+- **Back-Channel Logout** (FEAT-02): `POST /m2oidc/actions/backchannel-logout` validates a signed JWT logout token (JWKS) and destroys the matching PHP session via `OidcSessionRegistry`; rate-limited via `OidcRateLimiter` (HTTP 429 on exceeded limit); supports `aud` claim in both string and array formats (per OIDC spec)
 - **Logout guard**: `oidc_logout_guard` cookie (120s) prevents auto-redirect loops after IdP logout on both admin and customer areas
 
 **Complex Claim Transformations**
@@ -539,7 +546,7 @@ The `SessionCookieObserver` (event: `controller_front_send_response_before`) che
 
 ### 8. Debug logs auto-expire after 7 days
 
-When debug logging is enabled, the `SendAuthorizationRequest` controller checks if the log file is older than 7 days. If so, it disables logging and deletes the log file. You'll need to re-enable it in the admin panel.
+A dedicated cron job (`Cron/LogRotation.php`, scheduled at `0 3 * * *`) handles log rotation. It disables logging and deletes `var/log/M2Oidc.log` when the log exceeds 7 days or when debug logging has been disabled in the admin UI. This logic was removed from `SendAuthorizationRequest` to avoid triggering it on every auth attempt. You'll need to re-enable debug logging in the admin panel after the file is rotated.
 
 ### 9. The OAuth `state` parameter encodes multiple values
 
@@ -605,6 +612,10 @@ When a `well_known_config_url` is configured, every provider save fetches the di
 
 An earlier version called `SessionHelper::configureSSOSession()` at the start of the authorization request to set `SameSite=None` on session cookies. This was removed because it conflicted with `session_regenerate_id()` in the callback handlers, causing session data loss. `SameSite=None` is now applied exclusively at response time via `SessionCookieObserver` for `/m2oidc/` routes. Do not re-add a `configureSSOSession()` call to `SendAuthorizationRequest`.
 
+### 24. Test mode is detected from the relay state URL, not `core_config_data`
+
+Previously, a test-mode run would write an `IS_TEST` flag to `core_config_data` and read it back in the callback. This was replaced: test mode is now detected by checking whether the relay state URL matches the `TEST_RELAYSTATE` constant. The IS_TEST flag is no longer written to or read from the database, which prevents the flag from leaking if the IdP never completes the callback (e.g., the user closes the browser mid-flow).
+
 ---
 
 ## 7. Related Modules
@@ -664,6 +675,7 @@ M2Oidc_OAuth/
 │   ├── db_schema.xml                         # DB tables (4 tables — see below)
 │   ├── acl.xml                               # ACL resources for admin pages
 │   ├── events.xml                            # Global event observers
+│   ├── crontab.xml                           # Cron job registrations (m2oidc_log_rotation)
 │   ├── csp_whitelist.xml                     # Content Security Policy whitelist
 │   ├── frontend/
 │   │   ├── routes.xml                        # Frontend route: m2oidc
@@ -673,6 +685,9 @@ M2Oidc_OAuth/
 │       ├── events.xml                        # Admin event observers
 │       ├── menu.xml                          # Admin menu entries
 │       └── csp_whitelist.xml                 # Admin CSP whitelist
+│
+├── Cron/
+│   └── LogRotation.php                       # Daily cron (03:00) for debug log rotation; deletes log when >7 days old or logging disabled
 │
 ├── Console/
 │   ├── ExportOidcConfig.php                  # CLI: bin/magento oauth:config:export
@@ -691,7 +706,7 @@ M2Oidc_OAuth/
 │   │   ├── CustomerLoginAction.php           # Step 5: Create customer nonce cookie, redirect to CustomerOidcCallback
 │   │   ├── CustomerOidcCallback.php          # Step 6: Redeem nonce, validate website, set customer session, redirect
 │   │   ├── IdpInitiatedLogin.php             # IdP-Initiated SSO entry point (OIDC §4); rate-limited, PKCE, CSRF state
-│   │   └── ShowTestResults.php               # Test Configuration results display
+│   │   └── ShowTestResults.php               # Test Configuration results display; test mode detected from relay state URL (TEST_RELAYSTATE constant) — IS_TEST flag no longer written to core_config_data
 │   └── Adminhtml/
 │       ├── Actions/
 │       │   ├── SendAuthorizationRequest.php  # Step 1: Redirect to IDP (admin); stamps loginType=admin
