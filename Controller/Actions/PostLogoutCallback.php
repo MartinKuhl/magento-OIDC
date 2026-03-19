@@ -30,8 +30,6 @@ use M2Oidc\OAuth\Helper\OAuthUtility;
  *   https://your-site.com/m2oidc/actions/postlogout
  *
  * Authelia (/logout?rd=…) is unaffected — it never calls this endpoint.
- *
- * @package M2Oidc\OAuth\Controller\Actions
  */
 class PostLogoutCallback extends BaseAction implements HttpGetActionInterface
 {
@@ -45,11 +43,11 @@ class PostLogoutCallback extends BaseAction implements HttpGetActionInterface
     private readonly UrlInterface $url;
 
     /**
-     * @param Context            $context
-     * @param OAuthUtility       $oauthUtility
-     * @param FrontNameResolver  $frontNameResolver
+     * @param Context             $context
+     * @param OAuthUtility        $oauthUtility
+     * @param FrontNameResolver   $frontNameResolver
      * @param BackendUrlInterface $backendUrl
-     * @param UrlInterface       $url
+     * @param UrlInterface        $url
      */
     public function __construct(
         Context $context,

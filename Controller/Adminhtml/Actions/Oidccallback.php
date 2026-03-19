@@ -167,116 +167,7 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
 
                 // Verify login success and set OIDC session/cookie data
                 if ($this->auth->isLoggedIn()) {
-
-                    // H-04: Mark session as OIDC-authenticated so OidcPasswordExpirationPlugin
-                    // (and any other plugin checking this flag) can skip inapplicable checks.
-                    /** @psalm-suppress UndefinedInterfaceMethod */
-                    // @phpstan-ignore-next-line
-                    $this->auth->getAuthStorage()->setData('is_oidc_authenticated', true);
-
-                    // ── Persist id_token in post-login admin session ──
-                    $encryptedIdToken = $this->cookieManager->getCookie('oidc_id_token_transport');
-                    $providerId = (int) $this->cookieManager->getCookie('oidc_provider_id_transport');
-
-                    if ($encryptedIdToken) {
-                        try {
-                            $idToken = $this->oauthUtility->getEncryptor()->decrypt($encryptedIdToken);
-                            /** @psalm-suppress UndefinedInterfaceMethod */
-                            // @phpstan-ignore-next-line
-                            $this->auth->getAuthStorage()->setData('oidc_id_token', $idToken);
-                            if ($providerId > 0) {
-                                /** @psalm-suppress UndefinedInterfaceMethod */
-                                // @phpstan-ignore-next-line
-                                $this->auth->getAuthStorage()->setData('oidc_provider_id', $providerId);
-                            } else {
-                                $this->oauthUtility->customlog(
-                                    'WARNING: oidc_provider_id_transport cookie missing/zero — not storing in session'
-                                );
-                            }
-                            $this->oauthUtility->customlog(
-                                'Oidccallback: id_token persisted in admin session, provider_id=' . $providerId
-                            );
-                        } catch (\Exception $e) {
-                            $this->oauthUtility->customlog(
-                                'Oidccallback: Failed to decrypt id_token transport cookie: ' . $e->getMessage()
-                            );
-                        }
-
-                        // Delete transport cookie immediately
-                        $deleteMeta = $this->cookieMetadataFactory
-                            ->createPublicCookieMetadata()
-                            ->setPath('/');
-                        $this->cookieManager->deleteCookie('oidc_id_token_transport', $deleteMeta);
-                        $this->cookieManager->deleteCookie('oidc_provider_id_transport', $deleteMeta);
-                    }
-
-                    // ── FEAT-03 admin: persist access/refresh tokens for mid-session auto-refresh ──
-                    // Tokens were encrypted and placed in transport cookies by ReadAuthorizationResponse
-                    // (frontend process). Read, decrypt, store in AuthSession, then delete cookies.
-                    $encryptedAccess  = $this->cookieManager->getCookie('oidc_access_token_transport');
-                    $encryptedRefresh = $this->cookieManager->getCookie('oidc_refresh_token_transport');
-                    $expiresIn        = (int) $this->cookieManager->getCookie('oidc_expires_in_transport');
-
-                    if ($encryptedAccess !== null && $encryptedAccess !== '') {
-                        try {
-                            $accessToken  = $this->oauthUtility->getEncryptor()->decrypt($encryptedAccess);
-                            $refreshToken = ($encryptedRefresh !== null && $encryptedRefresh !== '')
-                                ? $this->oauthUtility->getEncryptor()->decrypt($encryptedRefresh)
-                                : '';
-                            $this->adminTokenRefreshService->storeTokens(
-                                $refreshToken,
-                                $expiresIn > 0 ? $expiresIn : 3600,
-                                $accessToken
-                            );
-                            $this->oauthUtility->customlog(
-                                'Oidccallback: access/refresh tokens stored in admin session'
-                            );
-                        } catch (\Exception $e) {
-                            $this->oauthUtility->customlog(
-                                'Oidccallback: Failed to decrypt token transport cookies (non-fatal): '
-                                . $e->getMessage()
-                            );
-                        }
-                        $deleteTokenMeta = $this->cookieMetadataFactory
-                            ->createPublicCookieMetadata()
-                            ->setPath('/');
-                        $this->cookieManager->deleteCookie('oidc_access_token_transport', $deleteTokenMeta);
-                        $this->cookieManager->deleteCookie('oidc_refresh_token_transport', $deleteTokenMeta);
-                        $this->cookieManager->deleteCookie('oidc_expires_in_transport', $deleteTokenMeta);
-                    }
-                    // ── END FEAT-03 admin ──
-
-                    // Set OIDC authentication cookie (persists across session boundary).
-                    // Path MUST be '/' so the cookie is readable on all admin sub-paths.
-                    // Using $adminPath (e.g. '/admin') caused the cookie to be invisible
-                    // on sub-routes where performIdentityCheck() is triggered.
-                    $adminSessionLifetime = (int) $this->scopeConfig->getValue(
-                        'admin/security/session_lifetime'
-                    ) ?: 3600;
-                    $metadata = $this->cookieMetadataFactory->createPublicCookieMetadata();
-                    $metadata->setDuration($adminSessionLifetime);
-                    $metadata->setPath('/');
-                    $metadata->setHttpOnly(true);
-                    $metadata->setSameSite('Lax');
-                    $metadata->setSecure($this->request->isSecure());
-                    $this->cookieManager->setPublicCookie('oidc_authenticated', '1', $metadata);
-
-                    $this->oauthUtility->customlog(
-                        "OIDC cookie set with path '/' and duration " . $adminSessionLifetime . "s"
-                    );
-
-                    // H-03: Use post-login auth storage to get user for the welcome message.
-                    // The user was loaded and validated inside OidcCredentialAdapter::authenticate().
-                    /** @psalm-suppress UndefinedInterfaceMethod */
-                    // @phpstan-ignore-next-line
-                    $loggedInUser = $this->auth->getAuthStorage()->getUser();
-                    $displayName = ($loggedInUser !== null)
-                        ? ($loggedInUser->getFirstname() ?: $loggedInUser->getUsername())
-                        : $email;
-
-                    $this->messageManager->addSuccessMessage(
-                        (string) __('Welcome back, %1!', $displayName)
-                    );
+                    $this->persistSessionData($email);
                 } else {
                     $this->oauthUtility->customlog("WARNING: Login processed but isLoggedIn() returned false");
                 }
@@ -309,6 +200,126 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
                 )
             );
         }
+    }
+
+    /**
+     * Persist OIDC session data, transport tokens, and auth cookie after a successful login.
+     *
+     * Extracted to reduce nesting depth in execute().
+     *
+     * @param string $email Authenticated admin email (used for welcome message fallback)
+     */
+    private function persistSessionData(string $email): void
+    {
+        // H-04: Mark session as OIDC-authenticated so OidcPasswordExpirationPlugin
+        // (and any other plugin checking this flag) can skip inapplicable checks.
+        /** @psalm-suppress UndefinedInterfaceMethod */
+        // @phpstan-ignore-next-line
+        $this->auth->getAuthStorage()->setData('is_oidc_authenticated', true);
+
+        // ── Persist id_token in post-login admin session ──
+        $encryptedIdToken = $this->cookieManager->getCookie('oidc_id_token_transport');
+        $providerId = (int) $this->cookieManager->getCookie('oidc_provider_id_transport');
+
+        if ($encryptedIdToken) {
+            try {
+                $idToken = $this->oauthUtility->getEncryptor()->decrypt($encryptedIdToken);
+                /** @psalm-suppress UndefinedInterfaceMethod */
+                // @phpstan-ignore-next-line
+                $this->auth->getAuthStorage()->setData('oidc_id_token', $idToken);
+                if ($providerId > 0) {
+                    /** @psalm-suppress UndefinedInterfaceMethod */
+                    // @phpstan-ignore-next-line
+                    $this->auth->getAuthStorage()->setData('oidc_provider_id', $providerId);
+                } else {
+                    $this->oauthUtility->customlog(
+                        'WARNING: oidc_provider_id_transport cookie missing/zero — not storing in session'
+                    );
+                }
+                $this->oauthUtility->customlog(
+                    'Oidccallback: id_token persisted in admin session, provider_id=' . $providerId
+                );
+            } catch (\Exception $e) {
+                $this->oauthUtility->customlog(
+                    'Oidccallback: Failed to decrypt id_token transport cookie: ' . $e->getMessage()
+                );
+            }
+
+            // Delete transport cookie immediately
+            $deleteMeta = $this->cookieMetadataFactory
+                ->createPublicCookieMetadata()
+                ->setPath('/');
+            $this->cookieManager->deleteCookie('oidc_id_token_transport', $deleteMeta);
+            $this->cookieManager->deleteCookie('oidc_provider_id_transport', $deleteMeta);
+        }
+
+        // ── FEAT-03 admin: persist access/refresh tokens for mid-session auto-refresh ──
+        // Tokens were encrypted and placed in transport cookies by ReadAuthorizationResponse
+        // (frontend process). Read, decrypt, store in AuthSession, then delete cookies.
+        $encryptedAccess  = $this->cookieManager->getCookie('oidc_access_token_transport');
+        $encryptedRefresh = $this->cookieManager->getCookie('oidc_refresh_token_transport');
+        $expiresIn        = (int) $this->cookieManager->getCookie('oidc_expires_in_transport');
+
+        if ($encryptedAccess !== null && $encryptedAccess !== '') {
+            try {
+                $accessToken  = $this->oauthUtility->getEncryptor()->decrypt($encryptedAccess);
+                $refreshToken = ($encryptedRefresh !== null && $encryptedRefresh !== '')
+                    ? $this->oauthUtility->getEncryptor()->decrypt($encryptedRefresh)
+                    : '';
+                $this->adminTokenRefreshService->storeTokens(
+                    $refreshToken,
+                    $expiresIn > 0 ? $expiresIn : 3600,
+                    $accessToken
+                );
+                $this->oauthUtility->customlog(
+                    'Oidccallback: access/refresh tokens stored in admin session'
+                );
+            } catch (\Exception $e) {
+                $this->oauthUtility->customlog(
+                    'Oidccallback: Failed to decrypt token transport cookies (non-fatal): '
+                    . $e->getMessage()
+                );
+            }
+            $deleteTokenMeta = $this->cookieMetadataFactory
+                ->createPublicCookieMetadata()
+                ->setPath('/');
+            $this->cookieManager->deleteCookie('oidc_access_token_transport', $deleteTokenMeta);
+            $this->cookieManager->deleteCookie('oidc_refresh_token_transport', $deleteTokenMeta);
+            $this->cookieManager->deleteCookie('oidc_expires_in_transport', $deleteTokenMeta);
+        }
+        // ── END FEAT-03 admin ──
+
+        // Set OIDC authentication cookie (persists across session boundary).
+        // Path MUST be '/' so the cookie is readable on all admin sub-paths.
+        // Using $adminPath (e.g. '/admin') caused the cookie to be invisible
+        // on sub-routes where performIdentityCheck() is triggered.
+        $adminSessionLifetime = (int) $this->scopeConfig->getValue(
+            'admin/security/session_lifetime'
+        ) ?: 3600;
+        $metadata = $this->cookieMetadataFactory->createPublicCookieMetadata();
+        $metadata->setDuration($adminSessionLifetime);
+        $metadata->setPath('/');
+        $metadata->setHttpOnly(true);
+        $metadata->setSameSite('Lax');
+        $metadata->setSecure($this->request->isSecure());
+        $this->cookieManager->setPublicCookie('oidc_authenticated', '1', $metadata);
+
+        $this->oauthUtility->customlog(
+            "OIDC cookie set with path '/' and duration " . $adminSessionLifetime . "s"
+        );
+
+        // H-03: Use post-login auth storage to get user for the welcome message.
+        // The user was loaded and validated inside OidcCredentialAdapter::authenticate().
+        /** @psalm-suppress UndefinedInterfaceMethod */
+        // @phpstan-ignore-next-line
+        $loggedInUser = $this->auth->getAuthStorage()->getUser();
+        $displayName = ($loggedInUser !== null)
+            ? ($loggedInUser->getFirstname() ?: $loggedInUser->getUsername())
+            : $email;
+
+        $this->messageManager->addSuccessMessage(
+            (string) __('Welcome back, %1!', $displayName)
+        );
     }
 
     /**

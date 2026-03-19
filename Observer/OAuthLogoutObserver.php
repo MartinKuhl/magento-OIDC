@@ -255,7 +255,7 @@ class OAuthLogoutObserver implements ObserverInterface
         $params['state'] = 'customer:' . bin2hex(random_bytes(16));
 
         $separator = str_contains($endpoint, '?') ? '&' : '?';
-        $logoutUrl = $endpoint . ($params === [] ? '' : $separator . http_build_query($params));
+        $logoutUrl = $endpoint . $separator . http_build_query($params);
 
         $this->oauthUtility->customlog('OAuthLogoutObserver: Standard OIDC logout → ' . $logoutUrl);
         return $logoutUrl;
