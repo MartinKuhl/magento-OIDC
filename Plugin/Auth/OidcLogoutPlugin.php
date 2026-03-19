@@ -34,6 +34,7 @@ use Magento\Framework\Stdlib\CookieManagerInterface;
 use M2Oidc\OAuth\Helper\OAuthConstants;
 use M2Oidc\OAuth\Helper\OAuthUtility;
 use Magento\Backend\App\Area\FrontNameResolver;
+use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\UrlInterface;
 
 class OidcLogoutPlugin
@@ -65,6 +66,9 @@ class OidcLogoutPlugin
     /** @var UrlInterface */
     private readonly UrlInterface $url;
 
+    /** @var ResourceConnection */
+    private readonly ResourceConnection $resourceConnection;
+
     /**
      * Initialize OIDC logout plugin.
      *
@@ -77,6 +81,7 @@ class OidcLogoutPlugin
      * @param FrontNameResolver      $frontNameResolver
      * @param CurlFactory            $curlFactory
      * @param UrlInterface           $url
+     * @param ResourceConnection     $resourceConnection
      */
     public function __construct(
         CookieManagerInterface $cookieManager,
@@ -87,7 +92,8 @@ class OidcLogoutPlugin
         ResponseInterface $response,
         FrontNameResolver $frontNameResolver,
         CurlFactory $curlFactory,
-        UrlInterface $url
+        UrlInterface $url,
+        ResourceConnection $resourceConnection
     ) {
         $this->cookieManager         = $cookieManager;
         $this->cookieMetadataFactory = $cookieMetadataFactory;
@@ -98,6 +104,7 @@ class OidcLogoutPlugin
         $this->frontNameResolver     = $frontNameResolver;
         $this->curlFactory           = $curlFactory;
         $this->url                   = $url;
+        $this->resourceConnection    = $resourceConnection;
     }
 
     /**
@@ -112,11 +119,13 @@ class OidcLogoutPlugin
         $idToken     = (string) $this->authSession->getData('oidc_id_token');
         $accessToken = (string) $this->authSession->getData('oidc_access_token');
         $providerId  = (int) $this->authSession->getData('oidc_provider_id');
+        $userId      = (int) ($this->authSession->getUser()?->getId() ?? 0);
 
         $this->oauthUtility->customlog(sprintf(
-            'OidcLogoutPlugin: Pre-logout — id_token=%s, provider_id=%d',
+            'OidcLogoutPlugin: Pre-logout — id_token=%s, provider_id=%d, user_id=%d',
             $idToken !== '' ? 'present(' . strlen($idToken) . ' chars)' : 'MISSING',
-            $providerId
+            $providerId,
+            $userId
         ));
 
         // ── Guard: skip IdP redirect for non-OIDC sessions ──────────────────
@@ -134,6 +143,29 @@ class OidcLogoutPlugin
 
         // ── 2. Execute the original logout (destroys session) ──
         $proceed();
+
+        // ── 2b. Explicitly mark admin_user_session as LOGGED_OUT ──
+        // Magento Security's afterLogout plugin uses session_id() to find the row, but
+        // Auth::logout() destroys/regenerates the session before afterLogout fires, so
+        // session_id() may be empty by then and the status update silently fails.
+        // We do a direct UPDATE by user_id to guarantee the row is cleared.
+        if ($userId > 0) {
+            try {
+                $connection = $this->resourceConnection->getConnection();
+                $connection->update(
+                    $this->resourceConnection->getTableName('admin_user_session'),
+                    ['status' => 0], // AdminSessionInfo::LOGGED_OUT
+                    ['user_id = ?' => $userId, 'status = ?' => 1]
+                );
+                $this->oauthUtility->customlog(
+                    'OidcLogoutPlugin: Marked admin_user_session LOGGED_OUT for user_id=' . $userId
+                );
+            } catch (\Exception $e) {
+                $this->oauthUtility->customlog(
+                    'OidcLogoutPlugin: Failed to update admin_user_session status: ' . $e->getMessage()
+                );
+            }
+        }
 
         // ── 3. Delete OIDC admin cookie ──
         try {

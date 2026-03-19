@@ -184,9 +184,15 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
                             /** @psalm-suppress UndefinedInterfaceMethod */
                             // @phpstan-ignore-next-line
                             $this->auth->getAuthStorage()->setData('oidc_id_token', $idToken);
-                            /** @psalm-suppress UndefinedInterfaceMethod */
-                            // @phpstan-ignore-next-line
-                            $this->auth->getAuthStorage()->setData('oidc_provider_id', $providerId);
+                            if ($providerId > 0) {
+                                /** @psalm-suppress UndefinedInterfaceMethod */
+                                // @phpstan-ignore-next-line
+                                $this->auth->getAuthStorage()->setData('oidc_provider_id', $providerId);
+                            } else {
+                                $this->oauthUtility->customlog(
+                                    'WARNING: oidc_provider_id_transport cookie missing/zero — not storing in session'
+                                );
+                            }
                             $this->oauthUtility->customlog(
                                 'Oidccallback: id_token persisted in admin session, provider_id=' . $providerId
                             );
