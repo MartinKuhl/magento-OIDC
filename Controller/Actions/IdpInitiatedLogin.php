@@ -42,13 +42,21 @@ class IdpInitiatedLogin extends BaseAction implements HttpGetActionInterface
     /** @var \Magento\Framework\App\Request\Http */
     private readonly \Magento\Framework\App\Request\Http $httpRequest;
 
+    /** @var \Magento\Framework\Stdlib\CookieManagerInterface */
+    private readonly \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager;
+
+    /** @var \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory */
+    private readonly \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory;
+
     /**
-     * @param \Magento\Framework\App\Action\Context              $context
-     * @param \M2Oidc\OAuth\Helper\OAuthUtility                  $oauthUtility
-     * @param OAuthSecurityHelper                                $securityHelper
-     * @param \Magento\Framework\Session\SessionManagerInterface $sessionManager
-     * @param OidcRateLimiter                                    $rateLimiter
-     * @param \Magento\Framework\App\Request\Http                $httpRequest
+     * @param \Magento\Framework\App\Action\Context                    $context
+     * @param \M2Oidc\OAuth\Helper\OAuthUtility                        $oauthUtility
+     * @param OAuthSecurityHelper                                      $securityHelper
+     * @param \Magento\Framework\Session\SessionManagerInterface       $sessionManager
+     * @param OidcRateLimiter                                          $rateLimiter
+     * @param \Magento\Framework\App\Request\Http                      $httpRequest
+     * @param \Magento\Framework\Stdlib\CookieManagerInterface         $cookieManager
+     * @param \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory   $cookieMetadataFactory
      */
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
@@ -56,12 +64,16 @@ class IdpInitiatedLogin extends BaseAction implements HttpGetActionInterface
         OAuthSecurityHelper $securityHelper,
         \Magento\Framework\Session\SessionManagerInterface $sessionManager,
         OidcRateLimiter $rateLimiter,
-        \Magento\Framework\App\Request\Http $httpRequest
+        \Magento\Framework\App\Request\Http $httpRequest,
+        \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager,
+        \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory
     ) {
-        $this->securityHelper = $securityHelper;
-        $this->sessionManager = $sessionManager;
-        $this->rateLimiter    = $rateLimiter;
-        $this->httpRequest    = $httpRequest;
+        $this->securityHelper        = $securityHelper;
+        $this->sessionManager        = $sessionManager;
+        $this->rateLimiter           = $rateLimiter;
+        $this->httpRequest           = $httpRequest;
+        $this->cookieManager         = $cookieManager;
+        $this->cookieMetadataFactory = $cookieMetadataFactory;
         parent::__construct($context, $oauthUtility);
     }
 
@@ -178,12 +190,21 @@ class IdpInitiatedLogin extends BaseAction implements HttpGetActionInterface
             $codeVerifier        = $this->securityHelper->generateCodeVerifier();
             $codeChallenge       = $this->securityHelper->computeCodeChallenge($codeVerifier, $pkceFlow);
             $codeChallengeMethod = $pkceFlow;
-            $this->oauthUtility->setSessionData(
-                'pkce_code_verifier_' . $providerId,
-                $codeVerifier
+            // Store verifier in shared cache (not PHP session) + transport via httpOnly cookie.
+            // PHP sessions are lost during the OAuth redirect cycle on multi-server deployments.
+            $pkceNonce = $this->securityHelper->storePkceVerifier($codeVerifier, $providerId);
+            $this->cookieManager->setPublicCookie(
+                'oidc_pkce_nonce',
+                $pkceNonce,
+                $this->cookieMetadataFactory->createPublicCookieMetadata()
+                    ->setDuration(600)
+                    ->setPath('/m2oidc/')
+                    ->setHttpOnly(true)
+                    ->setSecure(true)
+                    ->setSameSite('Lax')
             );
             $this->oauthUtility->customlog(
-                "IdpInitiatedLogin: PKCE {$pkceFlow} enabled — challenge generated, verifier stored in session"
+                "IdpInitiatedLogin: PKCE {$pkceFlow} enabled — challenge generated, verifier stored in cache"
             );
         }
 

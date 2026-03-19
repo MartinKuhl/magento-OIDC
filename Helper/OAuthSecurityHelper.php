@@ -44,6 +44,11 @@ class OAuthSecurityHelper
     /** TTL matches STATE_TTL so nonce stays available until state is consumed. */
     private const OIDC_NONCE_TTL = 600; // 10 minutes
 
+    /** Cache prefix for PKCE code verifiers bridging the customer OAuth redirect. */
+    private const PKCE_VERIFIER_CACHE_PREFIX = 'm2oidc_pkce_verifier_';
+    /** TTL for PKCE verifier cache entries: 10 minutes, matching STATE_TTL. */
+    private const PKCE_VERIFIER_TTL = 600;
+
     /** @var CacheInterface */
     private readonly CacheInterface $cache;
 
@@ -393,6 +398,56 @@ class OAuthSecurityHelper
         throw new \InvalidArgumentException(
             sprintf('Unsupported PKCE code_challenge_method: %s. Use "S256" or "plain".', $method)
         );
+    }
+
+    /**
+     * Store a PKCE code verifier in cache and return a nonce for cookie transport.
+     *
+     * Stores the verifier in Magento's shared cache (Redis in production) rather
+     * than the PHP session. The PHP session is lost during the OAuth redirect cycle
+     * on multi-server/load-balanced deployments; cache + cookie survives the round-trip.
+     *
+     * @param  string $verifier   The PKCE code verifier (43-char base64url string)
+     * @param  int    $providerId The provider row ID (used only for logging)
+     * @return string 32-character hex nonce to store in a browser cookie
+     */
+    public function storePkceVerifier(string $verifier, int $providerId): string
+    {
+        $nonce    = bin2hex(random_bytes(16));
+        $cacheKey = self::PKCE_VERIFIER_CACHE_PREFIX . $nonce;
+        $this->cache->save($verifier, $cacheKey, [], self::PKCE_VERIFIER_TTL);
+        $this->oauthUtility->customlog(
+            "OAuthSecurityHelper: PKCE verifier stored in cache for provider_id={$providerId}"
+        );
+        return $nonce;
+    }
+
+    /**
+     * Retrieve and delete a PKCE code verifier from cache (one-time use).
+     *
+     * Returns null if the nonce is invalid, expired, or already consumed.
+     *
+     * @param  string $nonce The nonce returned by storePkceVerifier()
+     * @return string|null   The code verifier, or null on failure
+     */
+    public function consumePkceVerifier(string $nonce): ?string
+    {
+        if ($nonce === '' || $nonce === '0'
+            || !preg_match('/^[a-f0-9]{32}$/', $nonce)
+        ) {
+            return null;
+        }
+
+        $cacheKey = self::PKCE_VERIFIER_CACHE_PREFIX . $nonce;
+        $verifier = $this->cache->load($cacheKey);
+
+        if (empty($verifier)) {
+            return null;
+        }
+
+        // One-time use: delete immediately
+        $this->cache->remove($cacheKey);
+        return $verifier;
     }
 
     // -------------------------------------------------------------------------

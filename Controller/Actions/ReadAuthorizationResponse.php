@@ -264,28 +264,32 @@ class ReadAuthorizationResponse extends BaseAction
             $body   = (int) ($clientDetails["values_in_body"] ?? 0);
             $redirectURL = $this->oauthUtility->getCallBackUrl();
 
-            // PKCE (RFC 7636 §4.5): retrieve verifier from session (one-time, auto-removed).
-            // Keyed by provider ID so multiple providers can coexist per session.
-            $sessionKey = 'pkce_code_verifier_' . (int) $clientDetails['id'];
+            // PKCE (RFC 7636 §4.5): retrieve verifier from cache via cookie nonce (one-time use).
+            // Two admin paths exist:
+            //   (a) Admin SSO button → frontend SendAuthorizationRequest → verifier in CACHE + cookie
+            //   (b) Admin backend login page → adminhtml SendAuthorizationRequest → verifier in DB
+            // Customer flow always uses cache + cookie.
+            // The cookie's presence/absence routes correctly: adminhtml never sets oidc_pkce_nonce.
+            $pkceNonce    = (string) $this->cookieManager->getCookie('oidc_pkce_nonce', '');
+            $codeVerifier = ($pkceNonce !== '')
+                ? $this->securityHelper->consumePkceVerifier($pkceNonce)
+                : null;
 
-            // Admin flow: the verifier was stored in DB (admin and frontend PHP sessions are
-            // isolated — the admin session cookie is never sent to the frontend callback URL).
-            // Skipping the session lookup prevents a stale verifier from a concurrent or
-            // interrupted customer/IdP-initiated flow from being picked up here and causing
-            // a PKCE challenge mismatch (invalid_grant) at the token endpoint.
-            if ($loginType !== OAuthConstants::LOGIN_TYPE_ADMIN) {
-                $codeVerifier = $this->oauthUtility->getSessionData($sessionKey, true) ?: null;
-            } else {
-                $codeVerifier = null; // admin verifier is in DB — fall through to DB path below
+            // Delete cookie regardless of result (prevent stale cookie on retry)
+            if ($pkceNonce !== '') {
+                $this->cookieManager->deleteCookie(
+                    'oidc_pkce_nonce',
+                    $this->cookieMetadataFactory->createCookieMetadata()->setPath('/m2oidc/')
+                );
             }
 
             if ($codeVerifier !== null) {
                 $this->oauthUtility->customlog(
-                    "ReadAuthResponse: PKCE code_verifier loaded from session — including in token request"
+                    "ReadAuthResponse: PKCE code_verifier loaded from cache — including in token request"
                 );
             } elseif (!empty($clientDetails['pkce_code_verifier'])) {
-                // Fallback: admin flow stores verifier in DB because the admin and frontend
-                // PHP sessions are isolated. Read and immediately clear (one-time use).
+                // Fallback: adminhtml SendAuthorizationRequest stores verifier in DB.
+                // Read and immediately clear (one-time use).
                 $codeVerifier = (string) $clientDetails['pkce_code_verifier'];
                 $this->oauthUtility->saveProviderData(
                     (int) $clientDetails['id'],
@@ -293,6 +297,10 @@ class ReadAuthorizationResponse extends BaseAction
                 );
                 $this->oauthUtility->customlog(
                     "ReadAuthResponse: PKCE code_verifier loaded from DB (admin flow) — including in token request"
+                );
+            } else {
+                $this->oauthUtility->customlog(
+                    "ReadAuthResponse: PKCE code_verifier not found in cache or DB"
                 );
             }
 

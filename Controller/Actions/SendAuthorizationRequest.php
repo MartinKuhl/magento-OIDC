@@ -21,20 +21,32 @@ class SendAuthorizationRequest extends BaseAction
     /** @var \Magento\Framework\Session\SessionManagerInterface */
     private readonly \Magento\Framework\Session\SessionManagerInterface $sessionManager;
 
+    /** @var \Magento\Framework\Stdlib\CookieManagerInterface */
+    private readonly \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager;
+
+    /** @var \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory */
+    private readonly \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory;
+
     /**
-     * @param \Magento\Framework\App\Action\Context              $context
-     * @param \M2Oidc\OAuth\Helper\OAuthUtility                  $oauthUtility
-     * @param OAuthSecurityHelper                                $securityHelper
-     * @param \Magento\Framework\Session\SessionManagerInterface $sessionManager
+     * @param \Magento\Framework\App\Action\Context                    $context
+     * @param \M2Oidc\OAuth\Helper\OAuthUtility                        $oauthUtility
+     * @param OAuthSecurityHelper                                      $securityHelper
+     * @param \Magento\Framework\Session\SessionManagerInterface       $sessionManager
+     * @param \Magento\Framework\Stdlib\CookieManagerInterface         $cookieManager
+     * @param \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory   $cookieMetadataFactory
      */
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
         \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility,
         OAuthSecurityHelper $securityHelper,
-        \Magento\Framework\Session\SessionManagerInterface $sessionManager
+        \Magento\Framework\Session\SessionManagerInterface $sessionManager,
+        \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager,
+        \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory
     ) {
-        $this->securityHelper = $securityHelper;
-        $this->sessionManager = $sessionManager;
+        $this->securityHelper        = $securityHelper;
+        $this->sessionManager        = $sessionManager;
+        $this->cookieManager         = $cookieManager;
+        $this->cookieMetadataFactory = $cookieMetadataFactory;
         parent::__construct($context, $oauthUtility);
     }
 
@@ -169,16 +181,26 @@ class SendAuthorizationRequest extends BaseAction
             $codeChallenge       = $this->securityHelper->computeCodeChallenge($codeVerifier, $pkceFlow);
             $codeChallengeMethod = $pkceFlow;
 
-            // Store verifier in session (per browser session, keyed by provider ID).
-            // Previously stored in the provider DB row, which caused a race condition:
-            // two concurrent logins with the same provider would overwrite each other's verifier.
-            $this->oauthUtility->setSessionData(
-                'pkce_code_verifier_' . (int) $clientDetails['id'],
-                $codeVerifier
+            // Store verifier in shared cache (not PHP session) + transport via httpOnly cookie.
+            // PHP sessions are lost during the OAuth redirect cycle on multi-server deployments;
+            // Magento's shared cache (Redis in production) and cookies survive the round-trip.
+            $pkceNonce = $this->securityHelper->storePkceVerifier(
+                $codeVerifier,
+                (int) $clientDetails['id']
+            );
+            $this->cookieManager->setPublicCookie(
+                'oidc_pkce_nonce',
+                $pkceNonce,
+                $this->cookieMetadataFactory->createPublicCookieMetadata()
+                    ->setDuration(600)
+                    ->setPath('/m2oidc/')
+                    ->setHttpOnly(true)
+                    ->setSecure(true)
+                    ->setSameSite('Lax')
             );
 
             $this->oauthUtility->customlog(
-                "SendAuthorizationRequest: PKCE {$pkceFlow} enabled — challenge generated, verifier stored in session"
+                "SendAuthorizationRequest: PKCE {$pkceFlow} enabled — challenge generated, verifier stored in cache"
             );
         }
 
