@@ -9,6 +9,8 @@ use Magento\Framework\App\Request\Http as HttpRequest;
 use Magento\Framework\Controller\Result\Redirect;
 use Magento\Framework\Controller\Result\RedirectFactory;
 use Magento\Framework\Message\ManagerInterface;
+use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
+use Magento\Framework\Stdlib\CookieManagerInterface;
 use M2Oidc\OAuth\Controller\Actions\IdpInitiatedLogin;
 use M2Oidc\OAuth\Helper\OAuthConstants;
 use M2Oidc\OAuth\Helper\OAuthSecurityHelper;
@@ -58,6 +60,12 @@ class IdpInitiatedLoginTest extends TestCase
     /** @var OidcRateLimiter&MockObject */
     private OidcRateLimiter $rateLimiter;
 
+    /** @var CookieManagerInterface&MockObject */
+    private CookieManagerInterface $cookieManager;
+
+    /** @var CookieMetadataFactory&MockObject */
+    private CookieMetadataFactory $cookieMetadataFactory;
+
     /** @var IdpInitiatedLogin */
     private IdpInitiatedLogin $controller;
 
@@ -91,10 +99,21 @@ class IdpInitiatedLoginTest extends TestCase
         $this->context->method('getResultFactory')
              ->willReturn($this->createMock(\Magento\Framework\Controller\ResultFactory::class));
 
-        $this->oauthUtility  = $this->createMock(OAuthUtility::class);
-        $this->securityHelper = $this->createMock(OAuthSecurityHelper::class);
-        $this->sessionManager = $this->createMock(\Magento\Framework\Session\SessionManagerInterface::class);
-        $this->rateLimiter    = $this->createMock(OidcRateLimiter::class);
+        $this->oauthUtility          = $this->createMock(OAuthUtility::class);
+        $this->securityHelper        = $this->createMock(OAuthSecurityHelper::class);
+        $this->sessionManager        = $this->createMock(\Magento\Framework\Session\SessionManagerInterface::class);
+        $this->rateLimiter           = $this->createMock(OidcRateLimiter::class);
+        $this->cookieManager         = $this->createMock(CookieManagerInterface::class);
+        $this->cookieMetadataFactory = $this->createMock(CookieMetadataFactory::class);
+
+        // Default: cookieMetadataFactory returns a fluent PublicCookieMetadata stub
+        $publicCookieMeta = $this->createMock(\Magento\Framework\Stdlib\Cookie\PublicCookieMetadata::class);
+        $publicCookieMeta->method('setDuration')->willReturnSelf();
+        $publicCookieMeta->method('setPath')->willReturnSelf();
+        $publicCookieMeta->method('setHttpOnly')->willReturnSelf();
+        $publicCookieMeta->method('setSecure')->willReturnSelf();
+        $publicCookieMeta->method('setSameSite')->willReturnSelf();
+        $this->cookieMetadataFactory->method('createPublicCookieMetadata')->willReturn($publicCookieMeta);
 
         // Default: OAuthUtility::customlog() is a no-op
         $this->oauthUtility->method('customlog');
@@ -105,7 +124,9 @@ class IdpInitiatedLoginTest extends TestCase
             $this->securityHelper,
             $this->sessionManager,
             $this->rateLimiter,
-            $this->request
+            $this->request,
+            $this->cookieManager,
+            $this->cookieMetadataFactory
         );
     }
 
@@ -378,7 +399,7 @@ class IdpInitiatedLoginTest extends TestCase
     // ── PKCE ─────────────────────────────────────────────────────────────────
 
     /**
-     * When pkce_flow = 'S256', the verifier is stored in session keyed by provider ID.
+     * When pkce_flow = 'S256', the verifier is stored via storePkceVerifier and a cookie is set.
      */
     public function testPkceVerifierIsStoredInSessionWhenS256Configured(): void
     {
@@ -397,9 +418,14 @@ class IdpInitiatedLoginTest extends TestCase
         $this->securityHelper->method('generateCodeVerifier')->willReturn('verifier-value');
         $this->securityHelper->method('computeCodeChallenge')->willReturn('challenge-value');
 
-        // setSessionData should be called with the PKCE verifier key
-        $this->oauthUtility->expects($this->once())->method('setSessionData')
-            ->with('pkce_code_verifier_1', 'verifier-value');
+        // storePkceVerifier should be called with the verifier and provider ID
+        $this->securityHelper->expects($this->once())->method('storePkceVerifier')
+            ->with('verifier-value', 1)
+            ->willReturn('pkce-nonce-value');
+
+        // The PKCE nonce cookie should be set
+        $this->cookieManager->expects($this->once())->method('setPublicCookie')
+            ->with('oidc_pkce_nonce', 'pkce-nonce-value', $this->anything());
 
         $this->expectRedirect();
         $this->redirect->method('setUrl')->willReturn($this->redirect);
@@ -425,8 +451,10 @@ class IdpInitiatedLoginTest extends TestCase
         $this->securityHelper->method('storeOidcNonce');
         $this->securityHelper->method('encodeRelayState')->willReturn('encoded');
 
-        // setSessionData must NOT be called for PKCE verifier
-        $this->oauthUtility->expects($this->never())->method('setSessionData');
+        // storePkceVerifier must NOT be called when pkce_flow is empty
+        $this->securityHelper->expects($this->never())->method('storePkceVerifier');
+        // No PKCE cookie should be set
+        $this->cookieManager->expects($this->never())->method('setPublicCookie');
 
         $this->expectRedirect();
         $this->redirect->method('setUrl')->willReturn($this->redirect);
