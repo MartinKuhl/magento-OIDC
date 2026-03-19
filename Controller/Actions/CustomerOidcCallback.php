@@ -234,6 +234,33 @@ class CustomerOidcCallback extends BaseAction
             "CustomerOidcCallback: Login successful"
         );
 
+        // ── Persist id_token in customer session (mirrors admin Oidccallback) ──
+        // ReadAuthorizationResponse stores an encrypted id_token in a 2-min transport
+        // cookie for both admin and customer flows. Read, decrypt, and store in session
+        // so OAuthLogoutObserver can build the id_token_hint for RP-Initiated Logout.
+        $encryptedIdToken = $this->cookieManager->getCookie('oidc_id_token_transport');
+        if ($encryptedIdToken !== null && $encryptedIdToken !== '') {
+            try {
+                $idToken = $this->oauthUtility->getEncryptor()->decrypt($encryptedIdToken);
+                $this->customerSession->setData('oidc_id_token', $idToken);
+                $this->oauthUtility->customlog(
+                    'CustomerOidcCallback: id_token persisted in customer session'
+                );
+            } catch (\Exception $e) {
+                $this->oauthUtility->customlog(
+                    'CustomerOidcCallback: Failed to decrypt id_token transport cookie: '
+                    . $e->getMessage()
+                );
+            }
+
+            // Delete transport cookies immediately (one-time use)
+            $deleteMeta = $this->cookieMetadataFactory
+                ->createPublicCookieMetadata()
+                ->setPath('/');
+            $this->cookieManager->deleteCookie('oidc_id_token_transport', $deleteMeta);
+            $this->cookieManager->deleteCookie('oidc_provider_id_transport', $deleteMeta);
+        }
+
         // Set OIDC authentication marker cookie (Item 4)
         try {
             $metadata = $this->cookieMetadataFactory

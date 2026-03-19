@@ -99,6 +99,20 @@ class SendAuthorizationRequest extends BaseAction
             $app_name = $earlyProviderDetails['app_name'] ?? '';
         }
 
+        // If provider_id was not given in params but app_name was, load provider details
+        // early to get the correct numeric ID for embedding in the relay state.
+        // Without this, encodeRelayState() emits no 'p' key and ReadAuthorizationResponse
+        // cannot reconstruct the provider context, causing provider_id=0 throughout the chain.
+        if ($providerId === 0 && !empty($app_name) && $earlyProviderDetails === null) {
+            $earlyProviderDetails = $this->oauthUtility->getClientDetailsByAppName($app_name);
+            if ($earlyProviderDetails !== null) {
+                $providerId = (int) ($earlyProviderDetails['id'] ?? 0);
+                if ($providerId > 0) {
+                    $this->oauthUtility->setActiveProviderId($providerId);
+                }
+            }
+        }
+
         // Fail-safe: abort with user-friendly error if app_name is still unresolvable
         if (empty($app_name)) {
             $errorRedirect = $this->oauthUtility->getBaseUrl() . 'customer/account/login';
