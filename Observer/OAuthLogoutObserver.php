@@ -169,7 +169,12 @@ class OAuthLogoutObserver implements ObserverInterface
         }
 
         // ── 4. Build logout URL ───────────────────────────────────────────────
-        $postLogoutRedirectUri = $this->resolvePostLogoutRedirectUri($provider);
+        // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
+        $parsedPath          = (string) parse_url(rtrim($endSessionEndpoint, '/'), PHP_URL_PATH);
+        $isForwardAuth       = str_ends_with($parsedPath, '/logout')
+            && !str_contains($parsedPath, '/oauth2/')
+            && !str_contains($parsedPath, '/oidc/');
+        $postLogoutRedirectUri = $this->resolvePostLogoutRedirectUri($provider, $isForwardAuth);
         $logoutUrl             = $this->buildLogoutUrl($endSessionEndpoint, $idToken, $postLogoutRedirectUri);
 
         // ── 5. Set logout-guard cookie (survives session destruction) ─────────
@@ -247,6 +252,7 @@ class OAuthLogoutObserver implements ObserverInterface
         if ($postLogoutRedirectUri !== '') {
             $params['post_logout_redirect_uri'] = $postLogoutRedirectUri;
         }
+        $params['state'] = 'customer:' . bin2hex(random_bytes(16));
 
         $separator = str_contains($endpoint, '?') ? '&' : '?';
         $logoutUrl = $endpoint . ($params === [] ? '' : $separator . http_build_query($params));
@@ -260,34 +266,41 @@ class OAuthLogoutObserver implements ObserverInterface
      *
      * Priority:
      *  1) provider.post_logout_url (DB column, if set)
-     *  2) Customer login page URL (programmatically resolved)
+     *  2) Unified callback URL (standard OIDC) — allows one registered URI for both flows
+     *  3) Customer login page URL (Authelia forward-auth only, used in ?rd= parameter)
      *
      * @param array|null $provider
+     * @param bool       $isForwardAuth  True when the endpoint is Authelia-style
      */
-    private function resolvePostLogoutRedirectUri(?array $provider): string
+    private function resolvePostLogoutRedirectUri(?array $provider, bool $isForwardAuth = false): string
     {
         // 1) Explicit value from provider DB row
         if ($provider !== null && !empty($provider['post_logout_url'])) {
             return rtrim((string) $provider['post_logout_url'], '/') . '/';
         }
 
-        // 2) Customer login page as sensible fallback
-        try {
-            $loginUrl = $this->url->getUrl('customer/account/login');
-            // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
-            $parsed   = parse_url($loginUrl);
-            $hasScheme = isset($parsed['scheme']) && $parsed['scheme'] !== '' && $parsed['scheme'] !== '0';
-            if ($hasScheme && !empty($parsed['host'])) {
-                $path = rtrim($parsed['path'] ?? '', '/') . '/';
-                return $parsed['scheme'] . '://' . $parsed['host'] . $path;
+        // Authelia uses ?rd=<url> — must be the customer login page, not the callback.
+        if ($isForwardAuth) {
+            try {
+                $loginUrl = $this->url->getUrl('customer/account/login');
+                // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
+                $parsed   = parse_url($loginUrl);
+                $hasScheme = isset($parsed['scheme']) && $parsed['scheme'] !== '' && $parsed['scheme'] !== '0';
+                if ($hasScheme && !empty($parsed['host'])) {
+                    $path = rtrim($parsed['path'] ?? '', '/') . '/';
+                    return $parsed['scheme'] . '://' . $parsed['host'] . $path;
+                }
+            } catch (\Exception $e) {
+                $this->oauthUtility->customlog(
+                    'OAuthLogoutObserver: Could not resolve customer login URL: ' . $e->getMessage()
+                );
             }
-        } catch (\Exception $e) {
-            $this->oauthUtility->customlog(
-                'OAuthLogoutObserver: Could not resolve customer login URL: ' . $e->getMessage()
-            );
+
+            return '';
         }
 
-        return '';
+        // Standard OIDC: unified callback so one URL covers both admin and customer flows.
+        return $this->url->getUrl('m2oidc/actions/postlogout');
     }
 
     /**

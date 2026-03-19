@@ -34,6 +34,7 @@ use Magento\Framework\Stdlib\CookieManagerInterface;
 use M2Oidc\OAuth\Helper\OAuthConstants;
 use M2Oidc\OAuth\Helper\OAuthUtility;
 use Magento\Backend\App\Area\FrontNameResolver;
+use Magento\Framework\UrlInterface;
 
 class OidcLogoutPlugin
 {
@@ -61,6 +62,9 @@ class OidcLogoutPlugin
     /** @var CurlFactory */
     private readonly CurlFactory $curlFactory;
 
+    /** @var UrlInterface */
+    private readonly UrlInterface $url;
+
     /**
      * Initialize OIDC logout plugin.
      *
@@ -72,6 +76,7 @@ class OidcLogoutPlugin
      * @param ResponseInterface      $response
      * @param FrontNameResolver      $frontNameResolver
      * @param CurlFactory            $curlFactory
+     * @param UrlInterface           $url
      */
     public function __construct(
         CookieManagerInterface $cookieManager,
@@ -81,7 +86,8 @@ class OidcLogoutPlugin
         BackendUrlInterface $backendUrl,
         ResponseInterface $response,
         FrontNameResolver $frontNameResolver,
-        CurlFactory $curlFactory
+        CurlFactory $curlFactory,
+        UrlInterface $url
     ) {
         $this->cookieManager         = $cookieManager;
         $this->cookieMetadataFactory = $cookieMetadataFactory;
@@ -91,6 +97,7 @@ class OidcLogoutPlugin
         $this->response              = $response;
         $this->frontNameResolver     = $frontNameResolver;
         $this->curlFactory           = $curlFactory;
+        $this->url                   = $url;
     }
 
     /**
@@ -203,7 +210,7 @@ class OidcLogoutPlugin
         //     NIEMALS die aktuelle Request-URL verwenden — sie enthält einen
         //     dynamischen key/-Token, der nicht als redirect_uri registriert werden kann.
         $isForwardAuthLogout = $this->isAutheliaForwardAuthLogout($endSessionEndpoint);
-        $postLogoutUri       = $this->resolvePostLogoutRedirectUri($provider);
+        $postLogoutUri       = $this->resolvePostLogoutRedirectUri($provider, $isForwardAuthLogout);
         $params              = [];
 
         if ($isForwardAuthLogout) {
@@ -216,7 +223,7 @@ class OidcLogoutPlugin
             if ($idToken !== '') {
                 $params['id_token_hint'] = $idToken;
             }
-            $params['state'] = bin2hex(random_bytes(16));
+            $params['state'] = 'admin:' . bin2hex(random_bytes(16));
             if ($postLogoutUri !== '') {
                 $params['post_logout_redirect_uri'] = $postLogoutUri;
             }
@@ -244,36 +251,48 @@ class OidcLogoutPlugin
     /**
      * Resolve post_logout_redirect_uri for Admin context.
      *
-     * Order: 1) provider.post_logout_url  2) Admin base URL (static, no key/token!)
+     * Order: 1) provider.post_logout_url  2) Unified callback URL (standard OIDC)
      *
-     * IMPORTANT: Do NOT use getUrl('adminhtml/auth/login') here — it generates
-     * a URL with a dynamic key/-token that cannot be registered as a
-     * post_logout_redirect_uri or rd value in Authelia.
+     * The unified callback URL (m2oidc/actions/postlogout) allows providers that
+     * only accept a single registered Post Logout Redirect URI to serve both the
+     * admin and customer logout flows. The context is carried in the `state`
+     * parameter that the IdP echoes back verbatim.
      *
-     * @param array|null $provider Provider data array or null
+     * For Authelia Forward-Auth mode the caller uses the `rd` parameter instead
+     * of post_logout_redirect_uri, so this method returns the static admin base
+     * URL when $isForwardAuth is true (no dynamic tokens, safe to register).
+     *
+     * @param array|null $provider       Provider data array or null
+     * @param bool       $isForwardAuth  True when the endpoint is Authelia-style
      */
-    private function resolvePostLogoutRedirectUri(?array $provider): string
+    private function resolvePostLogoutRedirectUri(?array $provider, bool $isForwardAuth = false): string
     {
         if ($provider !== null && !empty($provider['post_logout_url'])) {
             return rtrim((string) $provider['post_logout_url'], '/') . '/';
         }
 
-        try {
-            // Liest Admin-Frontnamen aus DB-Config — identisch zu bin/magento info:adminuri
-            $frontName = rtrim($this->frontNameResolver->getFrontName(true), '/');
-            $baseUrl   = rtrim($this->backendUrl->getBaseUrl(), '/');
-            $adminUrl  = $baseUrl . '/' . $frontName . '/';
+        // Authelia uses ?rd=<url> — must be the static admin base URL, not the callback.
+        if ($isForwardAuth) {
+            try {
+                // Reads admin front name from DB config — same as bin/magento info:adminuri
+                $frontName = rtrim($this->frontNameResolver->getFrontName(true), '/');
+                $baseUrl   = rtrim($this->backendUrl->getBaseUrl(), '/');
+                $adminUrl  = $baseUrl . '/' . $frontName . '/';
 
-            if (filter_var($adminUrl, FILTER_VALIDATE_URL)) {
-                return $adminUrl;
+                if (filter_var($adminUrl, FILTER_VALIDATE_URL)) {
+                    return $adminUrl;
+                }
+            } catch (\Exception $e) {
+                $this->oauthUtility->customlog(
+                    'OidcLogoutPlugin: Could not resolve admin URL: ' . $e->getMessage()
+                );
             }
-        } catch (\Exception $e) {
-            $this->oauthUtility->customlog(
-                'OidcLogoutPlugin: Could not resolve admin URL: ' . $e->getMessage()
-            );
+
+            return '';
         }
 
-        return '';
+        // Standard OIDC: point to the unified callback so one URL covers both flows.
+        return $this->url->getUrl('m2oidc/actions/postlogout');
     }
 
     /**

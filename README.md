@@ -34,7 +34,7 @@ Modern e-commerce platforms require secure, centralized authentication. This mod
 - ✅ **Lockout-Prevention Guards**: Prevents enabling OIDC-only mode when no OIDC users exist yet
 - ✅ **Cross-Origin Session Handling**: SameSite=None cookies scoped to OIDC routes only
 - ✅ **JWT Token Verification**: RS256/384/512 signatures with JWKS caching
-- ✅ **RP-Initiated Logout**: Admin and customer logout with IdP redirect and RFC 7009 token revocation
+- ✅ **RP-Initiated Logout**: Admin and customer logout with IdP redirect and RFC 7009 token revocation; unified single Post Logout Redirect URI (`/m2oidc/actions/postlogout`) for providers that only allow one registered URL
 - ✅ **Back-Channel Logout**: Server-to-server logout via signed JWT logout token
 - ✅ **Claims-Based Access Control**: Rules engine with 6 operators to gate login on any claim value
 - ✅ **Optional OIDC-Only Mode**: Disable password logins entirely (with lockout safety net)
@@ -85,6 +85,14 @@ https://your-magento-site.com/m2oidc/actions/ReadAuthorizationResponse
 ```
 
 **Important**: Replace `your-magento-site.com` with your actual domain. The protocol **must be HTTPS** in production.
+
+**(Optional) Post Logout Redirect URI**: If your IdP requires a registered Post Logout Redirect URI, register:
+
+```
+https://your-magento-site.com/m2oidc/actions/postlogout
+```
+
+This single URL handles both admin and customer post-logout redirects. If your IdP allows multiple URIs you can also register the specific admin URL (`/admin/`) and customer login URL (`/customer/account/login/`) directly, but the unified callback is recommended when only one URL is permitted.
 
 ### Step 3: Configure Magento
 
@@ -406,6 +414,23 @@ $customerLoginUrl = $oauthHelper->getSPInitiatedUrl();
      bin/magento admin:user:create
      ```
 3. **Safety net**: If "Show Admin SSO Link" is disabled, password logins automatically allowed (prevents lockout)
+
+---
+
+### Issue 6: Post-Logout Redirect Rejected by IdP
+
+**Symptom**: After clicking "Sign Out", the IdP shows an error about an invalid or unregistered `post_logout_redirect_uri`.
+
+**Cause**: The IdP requires all Post Logout Redirect URIs to be pre-registered, and the URL being sent is not in the allowed list.
+
+**Solution**:
+1. Register the unified callback URL in your IdP's client configuration:
+   ```
+   https://your-magento-site.com/m2oidc/actions/postlogout
+   ```
+2. If your IdP only allows one Post Logout Redirect URI, this single URL handles both admin and customer flows automatically.
+3. Verify in `var/log/M2Oidc.log` — look for `redirect=` in the logout log line to see the exact URL being sent.
+4. If using Authelia (`endsession_endpoint` path ends with `/logout`), no Post Logout Redirect URI registration is needed — Authelia uses the `?rd=` parameter instead.
 
 ---
 

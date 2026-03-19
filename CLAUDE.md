@@ -85,14 +85,23 @@ The module implements a dual authentication flow for admin and customer users:
    - Calls original `logout()`, then deletes `oidc_authenticated` cookie
    - Sets `oidc_logout_guard` cookie (120s TTL) to prevent auto-redirect loops
    - Revokes access token via RFC 7009 revocation endpoint (fire-and-forget)
-   - Redirects to IdP `end_session_endpoint` with `id_token_hint` and `post_logout_redirect_uri`
+   - Redirects to IdP `end_session_endpoint` with `id_token_hint`, `state=admin:<hex>`, and `post_logout_redirect_uri=https://site.com/m2oidc/actions/postlogout`
    - **Authelia detection**: If endpoint path ends with `/logout` (without `/oauth2/` or `/oidc/`), uses `?rd=<adminBaseUrl>` instead of standard params
 
 4. **RP-Initiated Logout (Customer)**:
    - `OAuthLogoutObserver` handles `customer_logout` event
    - Reads id_token + provider_id from customer session
    - Performs token revocation and IdP redirect (same logic as admin)
+   - Uses `state=customer:<hex>` and `post_logout_redirect_uri=https://site.com/m2oidc/actions/postlogout`
    - Sets `oidc_logout_guard` cookie; `CustomerLoginAutoRedirectObserver` checks this to suppress re-login
+
+5b. **Unified Post Logout Callback** (`PostLogoutCallback`):
+   - Route: `GET /m2oidc/actions/postlogout`
+   - Reads `state` query param echoed back by IdP after logout
+   - `state` starts with `admin:` → redirect to static admin login URL
+   - `state` starts with `customer:` → redirect to `customer/account/login`
+   - Absent/unknown state → redirect to store home (safe fallback)
+   - Register this single URL with OIDC providers that only allow one Post Logout Redirect URI
 
 5. **Back-Channel Logout** (FEAT-02):
    - Route: `POST /m2oidc/actions/backchannel-logout`
@@ -117,6 +126,7 @@ The module implements a dual authentication flow for admin and customer users:
 - `CustomerLoginAction.php`: Legacy customer login (superseded by `CustomerOidcCallback`)
 - `CustomerOidcCallback.php`: Customer login in clean HTTP context; validates `oidc_customer_nonce` cookie via `OAuthSecurityHelper::redeemCustomerLoginNonce()`; enforces website context (SEC-08); sets `oidc_customer_authenticated` cookie
 - `IdpInitiatedLogin.php`: IdP-Initiated SSO entry point (OIDC Third-Party Initiated Login §4); URL: `https://<store>/m2oidc/actions/idpInitiatedLogin?provider_id=<id>`; optional params: `relay_state`, `login_hint`, `login_type`; enforces `is_active` and `idp_initiated_enabled` checks, rate limiting, CSRF state token, PKCE
+- `PostLogoutCallback.php`: Unified post-logout redirect handler; URL: `https://<store>/m2oidc/actions/postlogout`; reads `state` param from IdP redirect, routes to admin login or customer login based on `admin:`/`customer:` prefix; use when IdP allows only one Post Logout Redirect URI
 - `ShowTestResults.php`: Displays test results for attribute mapping; stores received OIDC claims in `received_oidc_claims` column
 - `BackChannelLogout.php`: OIDC Back-Channel Logout (FEAT-02); POST endpoint for IdP server-side logout; IP-based rate limiting via `OidcRateLimiter` (returns HTTP 429 on exceeded limit); supports both string and array formats for the `aud` claim
 - `Controller/Health/Check.php`: Health check endpoint; verifies OIDC configuration, database connectivity
@@ -567,6 +577,32 @@ foreach ($providers as $provider) {
 
 ---
 
+#### Scenario 5b: Provider only allows one Post Logout Redirect URI
+
+**Goal**: Register a single Post Logout Redirect URI when the OIDC provider restricts you to one URL.
+
+**Register with your IdP**:
+```
+https://your-site.com/m2oidc/actions/postlogout
+```
+
+No code changes are needed — the module already uses this URL as the default `post_logout_redirect_uri` for both admin and customer logout flows. Context is carried in the OIDC `state` parameter:
+
+| Logout type | state sent to IdP | Landing page after logout |
+|---|---|---|
+| Admin | `admin:<random-hex>` | Admin login page (`/admin/`) |
+| Customer | `customer:<random-hex>` | Customer login page (`/customer/account/login/`) |
+| Unknown/absent | — | Store home (`/`) |
+
+**Per-provider override**: set `post_logout_url` on the provider row if you need a custom landing page for both flows.
+
+**Files involved**:
+- [Controller/Actions/PostLogoutCallback.php](Controller/Actions/PostLogoutCallback.php) — the callback controller
+- [Plugin/Auth/OidcLogoutPlugin.php](Plugin/Auth/OidcLogoutPlugin.php) — sets `state=admin:<hex>` and sends callback URL
+- [Observer/OAuthLogoutObserver.php](Observer/OAuthLogoutObserver.php) — sets `state=customer:<hex>` and sends callback URL
+
+---
+
 #### Scenario 5: Integrate with Authelia RP-Initiated Logout
 
 **Detection is automatic**: If the `endsession_endpoint` path ends with `/logout` (without `/oauth2/` or `/oidc/`), Authelia's forward-auth mode is assumed.
@@ -601,6 +637,8 @@ Before deploying OIDC changes, verify:
   - Verify redirected to IdP logout URL
   - Verify Magento session cleared and `oidc_logout_guard` cookie present
   - Verify auto-redirect does NOT trigger immediately after logout
+  - Verify IdP redirects back to `/m2oidc/actions/postlogout?state=admin:<hex>` (admin) or `?state=customer:<hex>` (customer)
+  - Verify browser ends up on admin login page or customer login page respectively
 
 - [ ] **Test auto-creation** (if enabled):
   - Use a new user email not in Magento database
@@ -695,6 +733,16 @@ Schema defined in `etc/schema.graphqls`.
 2. **Global Cookie Rewrite** (`SessionCookieObserver`): Scope to OIDC paths only using the pattern above.
 
 3. **Attribute Mapper Phase 4**: `MappingRepository` uses normalized tables which are more query-efficient than JSON column parsing.
+
+### If Asked About Single / Unified Post Logout Redirect URI
+
+**Already implemented** (`Controller/Actions/PostLogoutCallback.php`):
+- GET endpoint: `https://your-site.com/m2oidc/actions/postlogout`
+- Reads `state` query param echoed by IdP; parses `admin:` or `customer:` prefix
+- Redirects to admin login page, customer login page, or store home (fallback)
+- Both `OidcLogoutPlugin` (admin) and `OAuthLogoutObserver` (customer) automatically use this URL as `post_logout_redirect_uri` unless `post_logout_url` is set on the provider
+- Admin logout state format: `admin:<16-byte-hex>`; customer: `customer:<16-byte-hex>`
+- **Authelia unaffected**: Authelia mode uses `?rd=` directly and does not call this endpoint
 
 ### If Asked About Back-Channel Logout
 
