@@ -644,7 +644,7 @@ class ReadAuthorizationResponse extends BaseAction
         string $loginType,
         ?string $expectedNonce = null
     ) {
-        $jwksEndpoint = $clientDetails['jwks_uri'] ?? '';
+        $jwksEndpoint = $clientDetails['jwks_endpoint'] ?? '';
         if (!empty($jwksEndpoint)) {
             // Resolve expected issuer from stored discovery document data
             $expectedIssuer = $clientDetails['issuer'] ?? null;
