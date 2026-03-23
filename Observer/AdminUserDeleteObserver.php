@@ -32,6 +32,9 @@ class AdminUserDeleteObserver implements ObserverInterface
     public function execute(Observer $observer): void
     {
         $user = $observer->getEvent()->getObject();
+        if ($user === null) {
+            return;
+        }
         $userId = (int) $user->getId();
         if ($userId > 0) {
             $this->userProviderResource->deleteMapping('admin', $userId);

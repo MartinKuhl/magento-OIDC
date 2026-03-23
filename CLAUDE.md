@@ -221,7 +221,7 @@ The module implements a dual authentication flow for admin and customer users:
 - `TokenAutoRefreshObserver.php`: Listens to `controller_action_predispatch` (frontend); calls `TokenRefreshService::refreshIfNeeded()` to silently renew the customer access token before expiry
 - `AdminTokenAutoRefreshObserver.php`: Listens to `controller_action_predispatch` (adminhtml); calls `AdminTokenRefreshService::refreshIfNeeded()` to silently renew the admin access token before expiry
 - `OAuthObserver.php`: Handles OAuth-specific events
-- `AdminUserDeleteObserver.php`: Fires on `admin_user_delete_before`; removes the matching row from `m2oidc_oauth_user_provider` so the Sessions activity view stays accurate
+- `AdminUserDeleteObserver.php`: Fires on `admin_user_delete_after` (global area); removes the matching row from `m2oidc_oauth_user_provider` so the Sessions activity view stays accurate
 - `CustomerDeleteObserver.php`: Fires on `customer_delete`; same cleanup for customer OIDC mappings
 
 #### UI Components (Ui/)

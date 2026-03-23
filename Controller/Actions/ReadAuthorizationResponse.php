@@ -556,8 +556,7 @@ class ReadAuthorizationResponse extends BaseAction
                     return $this->_redirect($loginUrl);
                 }
 
-                $detectedLoginType = $this->oidcAuthService->extractLoginType($userInfoResponseData);
-                $this->oauthUtility->customlog("ReadAuthorizationResponse: loginType = " . $detectedLoginType);
+                $this->oauthUtility->customlog("ReadAuthorizationResponse: loginType = " . $loginType);
 
                 // MP-07: pass per-provider attribute mappings
                 $this->attrMappingAction->setClientDetails($clientDetails);
@@ -566,7 +565,7 @@ class ReadAuthorizationResponse extends BaseAction
                     ->setUserInfoResponse($userInfoResponseData)
                     ->setFlattenedUserInfoResponse($flattenedResponse)
                     ->setUserEmail($userEmail)
-                    ->setLoginType($detectedLoginType)
+                    ->setLoginType($loginType)
                     ->execute();
             } else {
                 $this->oauthUtility->customlog("ERROR: Invalid token response - no access_token or id_token");

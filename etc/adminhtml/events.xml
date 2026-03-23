@@ -21,11 +21,6 @@
                   instance="M2Oidc\OAuth\Observer\AdminSetLogoutFlagObserver"/>
     </event>
 
-    <event name="admin_user_delete_after">
-        <observer name="m2oidc_admin_user_delete"
-                  instance="M2Oidc\OAuth\Observer\AdminUserDeleteObserver"/>
-    </event>
-
     <!-- OIDC JIT provisioning hooks — third-party modules may observe these events.
          All events carry a DataObject transport; set 'skip_creation' => true on
          before-events to abort user creation and return null. -->

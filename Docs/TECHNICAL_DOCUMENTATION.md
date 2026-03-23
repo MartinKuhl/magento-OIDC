@@ -704,7 +704,7 @@ Previously, a test-mode run would write an `IS_TEST` flag to `core_config_data` 
 | `customer_delete` | `CustomerDeleteObserver` | frontend (removes `m2oidc_oauth_user_provider` row) |
 | `controller_action_predispatch` | `AdminLoginAutoRedirectObserver` | adminhtml (auto-redirects unauthenticated admins to IdP when enabled; suppressed by `oidc_logout_guard` cookie) |
 | `admin_user_authenticate_after` or equivalent | `AdminSetLogoutFlagObserver` | adminhtml (sets logout flag on admin session destruction) |
-| `admin_user_delete_before` | `AdminUserDeleteObserver` | adminhtml (removes `m2oidc_oauth_user_provider` row) |
+| `admin_user_delete_after` | `AdminUserDeleteObserver` | global (removes `m2oidc_oauth_user_provider` row) |
 | Admin logout event | `OAuthLogoutObserver` | adminhtml |
 
 ---

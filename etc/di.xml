@@ -163,6 +163,9 @@
         <plugin name="oidc_identity_verification_bypass"
                 type="M2Oidc\OAuth\Plugin\User\OidcIdentityVerificationPlugin"
                 sortOrder="10"/>
+        <plugin name="m2oidc_admin_user_delete_cleanup"
+                type="M2Oidc\OAuth\Plugin\User\AdminUserDeletePlugin"
+                sortOrder="20"/>
     </type>
 
     <!-- OIDC Identity Field Plugin Configuration -->
