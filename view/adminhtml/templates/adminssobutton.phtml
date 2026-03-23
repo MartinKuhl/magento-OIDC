@@ -49,7 +49,8 @@ $oidcVisibility = $block->getData('oidc_visibility');
         class="action-login action-primary m2oidc-sso-btn"
         style="padding:10px 14px; width:100%; text-align:center;
                box-sizing:border-box; margin-bottom:5px;
-               background-color:<?= $color /* @noEscape */ ?>;"
+               background-color:<?= $color /* @noEscape */ ?>;
+               border-color:<?= $color /* @noEscape */ ?>;"
         data-url="<?= $escaper->escapeHtmlAttr($url) ?>">
         <?= $escaper->escapeHtml(
             !empty($provider['button_label'])
