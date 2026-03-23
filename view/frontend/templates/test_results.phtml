@@ -68,7 +68,9 @@
                         continue;
                     }
                     $escapedValues = array_map(
-                        static fn ($v): string => $escaper->escapeHtml((string) $v),
+                        static fn ($v): string => $escaper->escapeHtml(
+                            is_array($v) ? json_encode($v) : (string) $v
+                        ),
                         $attrValue
                     );
                     ?>
