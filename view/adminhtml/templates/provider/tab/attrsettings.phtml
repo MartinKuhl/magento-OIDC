@@ -47,6 +47,32 @@ $roleMappings = is_array($decoded) ? $decoded : [];
         <tbody>
             <tr>
                 <td style="width:220px;">
+                    <label for="claim_encoding">
+                        <strong><?= $escaper->escapeHtml(__('Claim Value Encoding')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <select id="claim_encoding" name="claim_encoding" class="admin__control-select">
+                        <option value="none"
+                            <?= ($val('claim_encoding', 'none') === 'none') ? 'selected="selected"' : '' ?>>
+                            <?= $escaper->escapeHtml(__('None')) ?>
+                        </option>
+                        <option value="base64"
+                            <?= ($val('claim_encoding', 'none') === 'base64') ? 'selected="selected"' : '' ?>>
+                            <?= $escaper->escapeHtml(__('Base64')) ?>
+                        </option>
+                    </select>
+                    <p class="admin__field-note" style="margin-top:6px;">
+                        <?= $escaper->escapeHtml(
+                            __('Decode claim values before attribute mapping. '
+                                . 'Use "Base64" for providers like Zitadel that Base64-encode '
+                                . 'metadata values and keys. Invalid Base64 strings are left as-is.')
+                        ) ?>
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td style="width:220px;">
                     <label for="email_attribute">
                         <strong><?= $escaper->escapeHtml(__('Email Claim')) ?></strong>
                         <span class="required" style="color:#e02b27;">*</span>

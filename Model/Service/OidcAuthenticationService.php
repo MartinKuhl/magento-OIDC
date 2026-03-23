@@ -56,6 +56,12 @@ class OidcAuthenticationService
     /**
      * Flatten a nested OAuth response into dot-notation keyed array.
      *
+     * When the provider is configured with claim_encoding=base64, each leaf key and
+     * value is passed through tryBase64Decode(): valid Base64 strings that decode to
+     * valid UTF-8 are replaced with their decoded form; everything else is kept as-is.
+     * This transparently handles providers like Zitadel that Base64-encode all metadata
+     * keys and values.
+     *
      * @param  string       $keyPrefix Current key prefix for recursion
      * @param  array|object $arr       The nested data structure
      * @param  array        $result    Accumulator for flattened key-value pairs
@@ -68,16 +74,54 @@ class OidcAuthenticationService
             return $result;
         }
 
+        $decodeBase64 = $this->oauthUtility->getStoreConfig(OAuthConstants::CLAIM_ENCODING)
+            === OAuthConstants::CLAIM_ENCODING_BASE64;
+
         foreach ($arr as $key => $resource) {
+            $resolvedKey = $decodeBase64 ? $this->tryBase64Decode((string) $key) : (string) $key;
             if (is_array($resource) || is_object($resource)) {
-                $newPrefix = $keyPrefix === '' || $keyPrefix === '0' ? $key : $keyPrefix . "." . $key;
+                $newPrefix = $keyPrefix === '' || $keyPrefix === '0'
+                    ? $resolvedKey
+                    : $keyPrefix . '.' . $resolvedKey;
                 $this->flattenAttributes($newPrefix, $resource, $result, $depth + 1);
             } else {
-                $newKey = $keyPrefix === '' || $keyPrefix === '0' ? $key : $keyPrefix . "." . $key;
-                $result[$newKey] = $resource;
+                $newKey = $keyPrefix === '' || $keyPrefix === '0'
+                    ? $resolvedKey
+                    : $keyPrefix . '.' . $resolvedKey;
+                $result[$newKey] = $decodeBase64
+                    ? $this->tryBase64Decode((string) $resource)
+                    : $resource;
             }
         }
         return $result;
+    }
+
+    /**
+     * Attempt to Base64-decode a string in strict mode.
+     *
+     * Returns the decoded value only when:
+     * - base64_decode() succeeds in strict mode (no characters outside the Base64 alphabet)
+     * - The decoded bytes form valid UTF-8
+     *
+     * Otherwise the original string is returned unchanged.
+     *
+     * @param  string $value Raw claim value or key
+     * @return string Decoded value, or original if decoding is not applicable
+     */
+    private function tryBase64Decode(string $value): string
+    {
+        if ($value === '') {
+            return $value;
+        }
+        $decoded = base64_decode($value, true);
+        if ($decoded === false) {
+            return $value;
+        }
+        // Reject decoded output that is not valid UTF-8 (e.g. binary data).
+        if (!mb_check_encoding($decoded, 'UTF-8')) {
+            return $value;
+        }
+        return $decoded;
     }
 
     /**

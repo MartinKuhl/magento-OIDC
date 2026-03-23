@@ -73,6 +73,13 @@
       <!-- Received OIDC claims from test configuration (per-provider) -->
       <column xsi:type="text" name="received_oidc_claims" nullable="true" comment="JSON array of OIDC claim keys received during last test (per-provider)" />
 
+      <!-- Claim value encoding: how to decode raw claim values before attribute mapping.
+           none   = no decoding (default)
+           base64 = Base64-decode each leaf value (and key) in the flattened claim set;
+                    invalid base64 strings are left as-is (strict mode, must be valid UTF-8) -->
+      <column xsi:type="varchar" name="claim_encoding" length="20" nullable="false" default="none"
+              comment="Claim value encoding: none | base64" />
+
       <constraint xsi:type="primary" referenceId="PRIMARY">
          <column name="id" />
       </constraint>

@@ -4,6 +4,7 @@ namespace M2Oidc\OAuth\Controller\Actions;
 
 use M2Oidc\OAuth\Helper\OAuthConstants;
 use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Model\Service\OidcAuthenticationService;
 
 use Magento\Framework\App\Action\Action;
 use Magento\Framework\App\Action\Context;
@@ -42,6 +43,9 @@ class ShowTestResults extends Action
     /** @var OAuthUtility */
     private readonly OAuthUtility $oauthUtility;
 
+    /** @var OidcAuthenticationService */
+    private readonly OidcAuthenticationService $oidcAuthService;
+
     /** @var \Magento\Framework\App\Request\Http */
     protected \Magento\Framework\App\Request\Http $request;
 
@@ -61,6 +65,7 @@ class ShowTestResults extends Action
      *
      * @param Context                                    $context
      * @param OAuthUtility                               $oauthUtility
+     * @param OidcAuthenticationService                  $oidcAuthService
      * @param \Magento\Framework\App\Request\Http        $request
      * @param \Magento\Customer\Model\Session            $customerSession
      * @param \Magento\Framework\Escaper                 $escaper
@@ -68,11 +73,13 @@ class ShowTestResults extends Action
     public function __construct(
         Context $context,
         OAuthUtility $oauthUtility,
+        OidcAuthenticationService $oidcAuthService,
         \Magento\Framework\App\Request\Http $request,
         \Magento\Customer\Model\Session $customerSession,
         \Magento\Framework\Escaper $escaper
     ) {
         $this->oauthUtility    = $oauthUtility;
+        $this->oidcAuthService = $oidcAuthService;
         $this->request         = $request;
         $this->customerSession = $customerSession;
         $this->escaper         = $escaper;
@@ -100,6 +107,24 @@ class ShowTestResults extends Action
         $key        = $this->request->getParam('key');
         $testResults = $this->customerSession->getData('m2oidc_test_results');
         $attrs      = (is_array($testResults) && isset($testResults[$key])) ? $testResults[$key] : null;
+
+        // Resolve provider context so getStoreConfig() reads the correct row.
+        $providerId = (int) $this->request->getParam('provider_id');
+        if ($providerId > 0) {
+            $this->oauthUtility->setActiveProviderId($providerId);
+        }
+
+        // Apply claim value decoding (e.g. Base64 for Zitadel metadata) to the raw
+        // session attrs before rendering, using the same logic as the auth flow.
+        if (!empty($attrs)
+            && $this->oauthUtility->getStoreConfig(OAuthConstants::CLAIM_ENCODING)
+                === OAuthConstants::CLAIM_ENCODING_BASE64
+        ) {
+            $decoded = [];
+            $this->oidcAuthService->flattenAttributes('', $attrs, $decoded);
+            $attrs = $decoded;
+        }
+
         $this->setAttrs($attrs);
         if ($attrs !== null) {
             $this->setUserEmail($attrs['email'] ?? null);
@@ -109,7 +134,6 @@ class ShowTestResults extends Action
         // Store received OIDC claims per-provider for dropdown selection in Attribute Mapping
         if (!empty($attrs)) {
             $claimKeys = $this->extractClaimKeys($attrs);
-            $providerId = (int) $this->request->getParam('provider_id');
 
             if ($providerId > 0) {
                 // Per-provider: save to m2oidc_oauth_client_apps.received_oidc_claims

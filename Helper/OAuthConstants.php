@@ -76,6 +76,11 @@ class OAuthConstants
     // IdP-Initiated SSO (OIDC Third-Party Initiated Login §4)
     public const string IDP_INITIATED_ENABLED = 'idpInitiatedEnabled';
 
+    // Claim value encoding applied during attribute flattening
+    public const string CLAIM_ENCODING        = 'claimEncoding';
+    public const string CLAIM_ENCODING_NONE   = 'none';
+    public const string CLAIM_ENCODING_BASE64 = 'base64';
+
     // attribute mapping constants
     public const string MAP_EMAIL = 'amEmail';
     public const string DEFAULT_MAP_EMAIL = 'email';

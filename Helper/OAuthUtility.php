@@ -233,6 +233,9 @@ class OAuthUtility extends Data
         'sync_customer_group_on_sso'     => 'sync_customer_group_on_sso',
         'sync_admin_profile_on_sso'      => 'sync_admin_profile_on_sso',
         'sync_admin_role_on_sso'         => 'sync_admin_role_on_sso',
+
+        // Claim value encoding
+        'claimEncoding'                  => 'claim_encoding',
     ];
 
     /**

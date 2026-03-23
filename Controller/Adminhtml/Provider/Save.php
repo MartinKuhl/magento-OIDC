@@ -164,6 +164,13 @@ class Save extends Action implements HttpPostActionInterface
                 }
             }
 
+            // Claim value encoding — whitelist-validated select field.
+            $claimEncoding = $this->sanitizeString($data['claim_encoding'] ?? 'none');
+            $model->setData(
+                'claim_encoding',
+                in_array($claimEncoding, ['none', 'base64'], true) ? $claimEncoding : 'none'
+            );
+
             // Checkbox/Toggle fields.
             //
             // Each checkbox in the template is preceded by a hidden field with value="0":
