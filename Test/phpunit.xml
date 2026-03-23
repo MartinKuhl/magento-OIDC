@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd" bootstrap="Test/bootstrap.php" colors="true" stopOnFailure="false">
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd" bootstrap="bootstrap.php" colors="true" stopOnFailure="false">
   <testsuites>
     <testsuite name="M2Oidc OIDC Unit Tests">
-      <directory>Test/Unit</directory>
+      <directory>Unit</directory>
     </testsuite>
     <testsuite name="M2Oidc OIDC Integration Tests">
-      <directory>Test/Integration</directory>
-      <exclude>Test/Integration/AbstractOidcIntegrationTest.php</exclude>
+      <directory>Integration</directory>
+      <exclude>Integration/AbstractOidcIntegrationTest.php</exclude>
     </testsuite>
   </testsuites>
   <php>
@@ -18,13 +18,13 @@
   </php>
   <source>
     <include>
-      <directory>Helper</directory>
-      <directory>Model</directory>
-      <directory>Plugin</directory>
-      <directory>Observer</directory>
+      <directory>../Helper</directory>
+      <directory>../Model</directory>
+      <directory>../Plugin</directory>
+      <directory>../Observer</directory>
     </include>
     <exclude>
-      <directory>Helper/Exception</directory>
+      <directory>../Helper/Exception</directory>
     </exclude>
   </source>
 </phpunit>

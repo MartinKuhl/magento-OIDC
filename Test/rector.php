@@ -9,13 +9,13 @@ use Rector\ValueObject\PhpVersion;
 
 return RectorConfig::configure()
     ->withPaths([
-        __DIR__ . '/Block',
-        __DIR__ . '/Controller',
-        __DIR__ . '/Helper',
-        __DIR__ . '/Model',
-        __DIR__ . '/Observer',
-        __DIR__ . '/Plugin',
-        __DIR__ . '/ViewModel',
+        __DIR__ . '/../Block',
+        __DIR__ . '/../Controller',
+        __DIR__ . '/../Helper',
+        __DIR__ . '/../Model',
+        __DIR__ . '/../Observer',
+        __DIR__ . '/../Plugin',
+        __DIR__ . '/../ViewModel',
     ])
     ->withPhpVersion(PhpVersion::PHP_82)
     ->withSets([
@@ -33,7 +33,7 @@ return RectorConfig::configure()
     ])
     ->withSkip([
         // Template-Dateien ausschließen
-        __DIR__ . '/view',
+        __DIR__ . '/../view',
         // Magento2 PHPCS requires @param and @var docblocks even with native type hints
         \Rector\DeadCode\Rector\ClassMethod\RemoveUselessParamTagRector::class,
         \Rector\DeadCode\Rector\Property\RemoveUselessVarTagRector::class,
@@ -49,6 +49,6 @@ return RectorConfig::configure()
         // signature and incorrectly adds `string $username`, causing a PHP 8 fatal error
         // (Declaration incompatible). Skip this rule for the affected file only.
         \Rector\TypeDeclaration\Rector\ClassMethod\StrictStringParamConcatRector::class => [
-            __DIR__ . '/Model/Auth/OidcCredentialAdapter.php',
+            __DIR__ . '/../Model/Auth/OidcCredentialAdapter.php',
         ],
     ]);

@@ -78,14 +78,14 @@ jobs:
           echo "=== Config ==="
           phpcs --config-show
           echo "=== Checking if phpcs.xml is found ==="
-          ls -la phpcs.xml || echo "phpcs.xml NOT FOUND in CWD"
+          ls -la Test/phpcs.xml || echo "Test/phpcs.xml NOT FOUND in CWD"
           echo "=== Dry-run with -e (explain sniffs) ==="
-          phpcs --standard=phpcs.xml -e | head -50
+          phpcs --standard=Test/phpcs.xml -e | head -50
 
       - name: Magento2 Standard (blocking)
         run: |
           set -o pipefail
-          phpcs --standard=phpcs.xml \
+          phpcs --standard=Test/phpcs.xml \
                 --report=full \
                 --report-checkstyle=reports/phpcs-checkstyle-php${{ matrix.php-version }}.xml \
                 . 2>&1 | tee reports/phpcs-php${{ matrix.php-version }}.txt
@@ -183,24 +183,28 @@ jobs:
         run: |
           set -o pipefail
           vendor/bin/phpstan analyse --memory-limit=1G \
+            --configuration=Test/phpstan.neon \
             --error-format=table 2>&1 | tee reports/phpstan.txt
           # Zusätzlich Checkstyle-Format für Tool-Integration
           vendor/bin/phpstan analyse --memory-limit=1G \
+            --configuration=Test/phpstan.neon \
             --error-format=checkstyle > reports/phpstan-checkstyle.xml 2>/dev/null || true
 
       - name: Adapt psalm.xml for CI environment
         run: |
-          # Lokal zeigt ../../vendor auf den Magento-Root vendor-Ordner.
+          # Lokal zeigt ../../../vendor auf den Magento-Root vendor-Ordner.
           # Im CI liegt vendor/ direkt im Workspace – Pfad anpassen.
-          sed -i 's|<directory name="../../vendor" />|<directory name="vendor" />|' psalm.xml
+          sed -i 's|<directory name="../../../vendor" />|<directory name="vendor" />|' Test/psalm.xml
 
       - name: Run Psalm
         run: |
           set -o pipefail
           vendor/bin/psalm --no-cache \
+            --config=Test/psalm.xml \
             --output-format=text 2>&1 | tee reports/psalm.txt
           # Zusätzlich Checkstyle-Format für Tool-Integration
           vendor/bin/psalm --no-cache \
+            --config=Test/psalm.xml \
             --output-format=checkstyle > reports/psalm-checkstyle.xml 2>/dev/null || true
 
       - name: Upload Static Analysis Reports
@@ -274,7 +278,7 @@ jobs:
       - name: Run Rector dry-run (blocking)
         run: |
           set -o pipefail
-          vendor/bin/rector process --dry-run 2>&1 | tee reports/rector.txt
+          vendor/bin/rector process --dry-run --config=Test/rector.php 2>&1 | tee reports/rector.txt
 
       - name: Upload Rector Report
         if: always()
@@ -346,7 +350,7 @@ jobs:
       - name: Run Unit Tests
         run: |
           set -o pipefail
-          vendor/bin/phpunit --configuration phpunit.xml \
+          vendor/bin/phpunit --configuration Test/phpunit.xml \
             --testsuite "M2Oidc OIDC Unit Tests" \
             --log-junit reports/phpunit-unit-php${{ matrix.php-version }}.xml \
             2>&1 | tee reports/phpunit-unit-php${{ matrix.php-version }}.txt
@@ -414,7 +418,7 @@ jobs:
         run: echo "127.0.0.1 dex.local" | sudo tee -a /etc/hosts
 
       - name: Start Dex OIDC Provider
-        run: docker compose -f docker-compose.test.yml up -d dex
+        run: docker compose -f Test/docker-compose.test.yml up -d dex
 
       - name: Wait for Dex to be healthy
         run: |
@@ -433,14 +437,14 @@ jobs:
       - name: Run Integration Tests
         run: |
           set -o pipefail
-          vendor/bin/phpunit --configuration phpunit.xml \
+          vendor/bin/phpunit --configuration Test/phpunit.xml \
             --testsuite "M2Oidc OIDC Integration Tests" \
             --log-junit reports/phpunit-integration.xml \
             2>&1 | tee reports/phpunit-integration.txt
 
       - name: Stop Dex OIDC Provider
         if: always()
-        run: docker compose -f docker-compose.test.yml down -v
+        run: docker compose -f Test/docker-compose.test.yml down -v
 
       - name: Upload Integration Test Reports
         if: always()

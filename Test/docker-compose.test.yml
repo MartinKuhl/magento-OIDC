@@ -6,17 +6,17 @@
 #
 # Usage:
 #   # Start Dex in the background and run all tests:
-#   docker compose -f docker-compose.test.yml up -d dex
-#   docker compose -f docker-compose.test.yml run --rm php
+#   docker compose -f Test/docker-compose.test.yml up -d dex
+#   docker compose -f Test/docker-compose.test.yml run --rm php
 #
 #   # Run only unit tests (no Dex required):
-#   docker compose -f docker-compose.test.yml run --rm php vendor/bin/phpunit --testsuite "M2Oidc OIDC Unit Tests"
+#   docker compose -f Test/docker-compose.test.yml run --rm php vendor/bin/phpunit --testsuite "M2Oidc OIDC Unit Tests"
 #
 #   # Run only integration tests (requires Dex):
-#   docker compose -f docker-compose.test.yml run --rm php vendor/bin/phpunit --testsuite "M2Oidc OIDC Integration Tests"
+#   docker compose -f Test/docker-compose.test.yml run --rm php vendor/bin/phpunit --testsuite "M2Oidc OIDC Integration Tests"
 #
 #   # Tear down:
-#   docker compose -f docker-compose.test.yml down -v
+#   docker compose -f Test/docker-compose.test.yml down -v
 #
 # Credentials (test-only — never use in production):
 #   Client ID     : m2oidc-test-client
@@ -47,7 +47,7 @@ services:
         ports:
             - "5556:5556"   # OIDC endpoints
         volumes:
-            - ./Test/Integration/fixtures/dex-config.yaml:/etc/dex/config.yaml:ro
+            - ./Integration/fixtures/dex-config.yaml:/etc/dex/config.yaml:ro
             - dex-data:/var/dex
         command: ["dex", "serve", "/etc/dex/config.yaml"]
         healthcheck:
@@ -69,8 +69,8 @@ services:
             - oidc-test
         working_dir: /app
         volumes:
-            - .:/app:ro
-            - ./Test/Integration:/app/Test/Integration:rw
+            - ..:/app:ro
+            - ./Integration:/app/Test/Integration:rw
         environment:
             # Dex endpoint used by integration tests
             OIDC_TEST_ISSUER: "http://dex.local:5556/dex"
@@ -83,5 +83,5 @@ services:
                 php -r \"copy('https://getcomposer.org/installer', 'composer-setup.php');\" &&
                 php composer-setup.php --quiet &&
                 php composer.phar install --no-interaction --prefer-dist --optimize-autoloader &&
-                vendor/bin/phpunit --configuration phpunit.xml
+                vendor/bin/phpunit --configuration Test/phpunit.xml
             "

@@ -5,14 +5,14 @@ parameters:
     phpVersion: 80300  # PHP 8.3.0
     level: 5
     paths:
-        - .
+        - ..
     excludePaths:
         analyseAndScan:
-            - vendor (?)
-            - .github
+            - ../vendor
+            - ../.github
             # Stub file defines minimal class skeletons for CI-only PHPUnit use;
             # scanning it would override PHPStan's real Magento type knowledge.
-            - Test/Stubs
+            - Stubs
         analyse:
             - psalm-stubs.stub
             - rector.php

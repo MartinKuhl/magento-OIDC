@@ -5,17 +5,17 @@ includes:
 parameters:
     treatPhpDocTypesAsCertain: false
     magento:
-        magentoRoot: ../..  # Points to /var/www/html from module directory
+        magentoRoot: ../../..  # Points to /var/www/html from Test/ subdirectory
     stubFiles:
         # Overrides auto-generated FactoryAutoloader stubs for classes whose names
         # end with "Factory" but are NOT simple Magento DI factories.
         - phpstan-stubs.stub
     excludePaths:
         analyseAndScan:
-            - .github
+            - ../.github
             # Stub file defines minimal Magento class skeletons for CI-only use;
             # scanning it would override PHPStan's real Magento type knowledge.
-            - Test/Stubs
+            - Stubs
         analyse:
             - psalm-stubs.stub
             - phpstan-stubs.stub
