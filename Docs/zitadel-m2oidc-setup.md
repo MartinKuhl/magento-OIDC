@@ -323,7 +323,7 @@ and emit it as a flat claim via the Action:
 | Login Type     | `both` (or `customer` / `admin` as needed) |
 | Is Active      | Yes                                        |
 | Button Label   | `Login with Zitadel`                       |
-| Button Color   | e.g. `#5469d4` (Zitadel brand blue)        |
+| Button Color   | e.g. `84, 105, 212` (Zitadel brand blue)        |
 | Sort Order     | `0`                                        |
 
 ---
@@ -337,7 +337,7 @@ Open the **OAuth Settings** tab.
 | **Well-Known Config URL** | `https://zitadel.casa-kuhl.duckdns.org/.well-known/openid-configuration`              |
 | **Client ID**         | *(copy from Zitadel application overview)*                                                 |
 | **Client Secret**     | *(leave empty — PKCE does not use a client secret)*                                        |
-| **Scope**             | `openid profile email`                                                                     |
+| **Scope**             | `openid profile email phone urn:zitadel:iam:user:metadata urn:zitadel:iam:org:project:roles`                                                                     |
 | **PKCE Flow**         | Enabled                                                                                    |
 
 > **Auto-Discovery:** When you save with only the Well-Known Config URL filled in, the plugin
