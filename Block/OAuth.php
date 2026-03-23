@@ -802,16 +802,19 @@ class OAuth extends \Magento\Framework\View\Element\Template
      * @param  int         $providerId
      * @param  string|null $relayState
      * @param  string      $loginType  'customer' or 'admin'
+     * @param  string|null $appName    Optional backup provider identifier
      */
     public function getSPInitiatedUrlForProvider(
         int $providerId,
         ?string $relayState = null,
-        string $loginType = 'customer'
+        string $loginType = 'customer',
+        ?string $appName = null
     ): string {
         return $this->oauthUtility->getSPInitiatedUrlForProvider(
             $providerId,
             $relayState,
-            $loginType
+            $loginType,
+            $appName
         );
     }
 

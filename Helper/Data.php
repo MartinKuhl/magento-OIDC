@@ -519,12 +519,14 @@ class Data extends AbstractHelper
      * @param  int         $providerId  Row `id` from m2oidc_oauth_client_apps
      * @param  string|null $relayState  Optional post-login redirect URL
      * @param  string      $loginType   'customer' or 'admin'
+     * @param  string|null $appName     Optional backup provider identifier (app_name column value)
      * @return string Frontend SSO URL with provider_id + login_type query params
      */
     public function getSPInitiatedUrlForProvider(
         int $providerId,
         ?string $relayState = null,
-        string $loginType = 'customer'
+        string $loginType = 'customer',
+        ?string $appName = null
     ): string {
         $relayState = $relayState ?? $this->getCurrentUrl();
         $params = [
@@ -532,6 +534,12 @@ class Data extends AbstractHelper
             'provider_id' => $providerId,
             'login_type'  => $loginType,
         ];
+
+        // Include app_name as a backup identifier so SendAuthorizationRequest can resolve
+        // the correct provider even if provider_id is unavailable (e.g. stale OPcache).
+        if ($appName !== null && $appName !== '') {
+            $params['app_name'] = $appName;
+        }
 
         return $this->getFrontendUrl(
             OAuthConstants::OAUTH_LOGIN_URL,

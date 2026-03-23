@@ -324,7 +324,7 @@ class OidcLogoutPlugin
         }
 
         // Standard OIDC: point to the unified callback so one URL covers both flows.
-        return $this->url->getUrl('m2oidc/actions/postlogout');
+        return rtrim($this->url->getUrl('m2oidc/actions/postlogout'), '/');
     }
 
     /**

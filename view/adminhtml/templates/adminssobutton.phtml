@@ -41,7 +41,7 @@ $oidcVisibility = $block->getData('oidc_visibility');
             ? $escaper->escapeHtmlAttr($provider['button_color'])
             : '#eb5202';
         $url = $escaper->escapeUrl(
-            $block->getSPInitiatedUrlForProvider($pid, null, 'admin')
+            $block->getSPInitiatedUrlForProvider($pid, null, 'admin', $provider['app_name'] ?? '')
         );
         ?>
     <button

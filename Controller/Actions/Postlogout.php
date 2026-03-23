@@ -31,7 +31,7 @@ use M2Oidc\OAuth\Helper\OAuthUtility;
  *
  * Authelia (/logout?rd=…) is unaffected — it never calls this endpoint.
  */
-class PostLogoutCallback extends BaseAction implements HttpGetActionInterface
+class Postlogout extends BaseAction implements HttpGetActionInterface
 {
     /** @var FrontNameResolver */
     private readonly FrontNameResolver $frontNameResolver;

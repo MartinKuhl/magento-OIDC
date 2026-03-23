@@ -515,6 +515,26 @@ Run through these tests after completing both parts of the configuration.
 
 ---
 
+### `post_logout_redirect_uri invalid` error on logout
+
+**Symptoms:** After clicking Sign Out, Zitadel shows:
+```json
+{"error": "invalid_request", "error_description": "post_logout_redirect_uri invalid"}
+```
+
+**Cause:** The Post Logout Redirect URI registered in Zitadel does not match exactly what the
+plugin sends. Zitadel performs strict string matching — a trailing slash difference is enough to
+cause this error.
+
+**Fix:** In the Zitadel application settings, register exactly:
+```
+https://YOUR-MAGENTO-DOMAIN/m2oidc/actions/postlogout
+```
+No trailing slash. If you previously added the URI with a trailing slash
+(`/m2oidc/actions/postlogout/`), remove it and keep only the version without.
+
+---
+
 ### Callback URL mismatch error
 
 **Symptoms:** Zitadel shows an error like "redirect_uri mismatch" after login.

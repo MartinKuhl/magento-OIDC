@@ -19,6 +19,8 @@
 /* SSO Button Styling */
 .sso-button-container {
     display: flex;
+    flex-direction: column;
+    gap: 8px;
     margin-top: 1%;
     text-decoration: none;
 }

@@ -300,7 +300,7 @@ class OAuthLogoutObserver implements ObserverInterface
         }
 
         // Standard OIDC: unified callback so one URL covers both admin and customer flows.
-        return $this->url->getUrl('m2oidc/actions/postlogout');
+        return rtrim($this->url->getUrl('m2oidc/actions/postlogout'), '/');
     }
 
     /**
