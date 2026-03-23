@@ -356,9 +356,14 @@ auto-populated with your Zitadel instance's URLs.
 ### Step 3: Test the Connection
 
 1. Reopen the provider in **M2 OIDC → Manage Providers**
-2. In the **OAuth Settings** tab, click **Test Configuration**
-3. You will be redirected to Zitadel to authenticate
-4. On successful return, the plugin displays all OIDC claims received from Zitadel
+2. Click the **Test OIDC Flow** button in the top button bar (next to "Save")
+3. A **popup window** opens and redirects to Zitadel — authenticate there
+4. After successful authentication the popup closes and the plugin displays all OIDC
+   claims received from Zitadel
+
+> **Popup blocked?** If nothing happens after clicking the button, your browser is blocking
+> the popup. Look for a blocked-popup indicator in the address bar, allow popups from the
+> Magento admin URL, and try again.
 
 **What to look for:**
 

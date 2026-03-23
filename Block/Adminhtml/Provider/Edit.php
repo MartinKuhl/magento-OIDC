@@ -132,10 +132,15 @@ class Edit extends Container
     {
         $store = $this->storeManager->getStore();
 
+        // Generate a per-test random key so ReadAuthorizationResponse::storeTestResultInSession()
+        // can store and retrieve the results. The key must be a 32+ char hex string to match
+        // the regex /key\/([a-f0-9]{32,})/ used in ReadAuthorizationResponse.
+        $testKey = bin2hex(random_bytes(16));
+
         /** @psalm-suppress UndefinedInterfaceMethod */
         // @phpstan-ignore-next-line
         $relayState = $store->getUrl('m2oidc/actions/showTestResults')
-            . OAuthConstants::TEST_RELAYSTATE;
+            . 'key/' . $testKey . '/';
 
         /** @psalm-suppress UndefinedInterfaceMethod */
         // @phpstan-ignore-next-line

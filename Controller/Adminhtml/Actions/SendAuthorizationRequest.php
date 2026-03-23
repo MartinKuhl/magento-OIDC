@@ -67,12 +67,29 @@ class SendAuthorizationRequest extends BaseAction
 
         $isFromPopup = isset($params['from_popup']) && $params['from_popup'] == '1';
 
+        $currentSessionId = $this->sessionManager->getSessionId();
+
+        // Prefer numeric provider_id (set by multi-provider SSO buttons), fall back to app_name (MP-04)
+        $providerId = isset($params['provider_id']) ? (int) $params['provider_id'] : 0;
+        if ($providerId > 0) {
+            $this->oauthUtility->setActiveProviderId($providerId);
+        }
+
         $app_name = isset($params['app_name'])
             ? $params['app_name']
             : $this->oauthUtility->getStoreConfig(OAuthConstants::APP_NAME);
-        $this->oauthUtility->customlog("SendAuthorizationRequest: Using app_name: " . $app_name);
 
-        $currentSessionId = $this->sessionManager->getSessionId();
+        // Resolve app_name from provider row when only provider_id was given
+        $earlyProviderDetails = null;
+        if (empty($app_name) && $providerId > 0) {
+            $earlyProviderDetails = $this->oauthUtility->getClientDetailsById($providerId);
+            $app_name = $earlyProviderDetails['app_name'] ?? '';
+        }
+
+        $this->oauthUtility->customlog(
+            "SendAuthorizationRequest: Using app_name: " . $app_name . " provider_id: " . $providerId
+        );
+
         $clientDetails = null;
 
         if (!$app_name) {
@@ -84,7 +101,10 @@ class SendAuthorizationRequest extends BaseAction
         }
         $this->oauthUtility->setSessionData(OAuthConstants::APP_NAME, $app_name);
 
-        $clientDetails = $this->oauthUtility->getClientDetailsByAppName($app_name);
+        // Load provider details: prefer by ID to avoid ambiguity when multiple providers share a name
+        $clientDetails = $providerId > 0
+            ? ($earlyProviderDetails ?? $this->oauthUtility->getClientDetailsById($providerId))
+            : $this->oauthUtility->getClientDetailsByAppName($app_name);
         if ($clientDetails === null || $clientDetails === []) {
             $backendLoginUrl = $this->urlBuilder->getUrl('adminhtml/auth/login');
             $msg = 'Provided App name is not configured. Please contact the administrator for assistance.';
