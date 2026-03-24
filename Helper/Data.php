@@ -456,7 +456,7 @@ class Data extends AbstractHelper
      */
     public function getFrontendUrl(string $url, array $params = []): string
     {
-        return $this->frontendUrl->getUrl($url, ['_query' => $params]);
+        return $this->frontendUrl->getUrl($url, ['_query' => $params, '_escape' => false]);
     }
 
     /**

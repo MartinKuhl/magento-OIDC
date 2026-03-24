@@ -96,8 +96,6 @@ urn:zitadel:iam:org:project:roles.non-Admin.365347902450630660	                 
 
 urn:zitadel:iam:user:metadata.groups --> groups
 
-- customer logout url error
-
 - customer is successfully removed from OIDC Session Activity after removel but admin is not removed successfully. Also in OIDC Provider management table to admin user counter is not adjusted after removal of OIDC admin.
 
 

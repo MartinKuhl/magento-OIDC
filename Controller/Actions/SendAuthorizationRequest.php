@@ -67,7 +67,7 @@ class SendAuthorizationRequest extends BaseAction
 
         $params = $this->getRequest()->getParams();
         $this->oauthUtility->customlog(
-            "SendAuthorizationRequest: Request prarms: " . implode(" ", $params)
+            "SendAuthorizationRequest: Request params: " . json_encode($params, JSON_UNESCAPED_SLASHES)
         );
         $isFromPopup = isset($params['from_popup']) && $params['from_popup'] == '1';
 
@@ -136,6 +136,10 @@ class SendAuthorizationRequest extends BaseAction
         if ($loginType !== OAuthConstants::LOGIN_TYPE_ADMIN) {
             $loginType = OAuthConstants::LOGIN_TYPE_CUSTOMER;
         }
+        $this->oauthUtility->customlog(
+            "SendAuthorizationRequest: login_type_raw=[" . ($params['login_type'] ?? 'NULL')
+            . "] loginType_resolved=[" . $loginType . "]"
+        );
         $relayState = $this->securityHelper->encodeRelayState(
             $relayState,
             $currentSessionId,

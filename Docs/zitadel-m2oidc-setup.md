@@ -7,7 +7,7 @@ that Zitadel does not include in tokens by default.
 
 ## Prerequisites
 
-- Zitadel instance with admin access (this guide uses `https://zitadel.casa-kuhl.duckdns.org`)
+- Zitadel instance with admin access (this guide uses `https://zitadel.casa-kuhl.de`)
 - Magento 2 store with the M2Oidc_OAuth module installed and enabled
 - HTTPS on both Zitadel and Magento (required for PKCE and SameSite=None cookies)
 - Magento admin access
