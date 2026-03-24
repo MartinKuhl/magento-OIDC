@@ -81,6 +81,9 @@ class CustomerUserCreator
     /** @var AttributeMapperInterface */
     private readonly AttributeMapperInterface $attributeMapper;
 
+    /** @var OidcAuthenticationService */
+    private readonly OidcAuthenticationService $oidcAuthenticationService;
+
     /**
      * Initialize customer user creator service.
      *
@@ -94,6 +97,7 @@ class CustomerUserCreator
      * @param UserProviderResource                              $userProviderResource
      * @param MappingRepository                                 $mappingRepository
      * @param AttributeMapperInterface                          $attributeMapper
+     * @param OidcAuthenticationService                         $oidcAuthenticationService
      */
     public function __construct(
         CustomerFactory $customerFactory,
@@ -105,7 +109,8 @@ class CustomerUserCreator
         \Magento\Customer\Api\CustomerRepositoryInterface $customerRepository,
         UserProviderResource $userProviderResource,
         MappingRepository $mappingRepository,
-        AttributeMapperInterface $attributeMapper
+        AttributeMapperInterface $attributeMapper,
+        OidcAuthenticationService $oidcAuthenticationService
     ) {
         $this->customerFactory = $customerFactory;
         $this->addressFactory = $addressFactory;
@@ -117,6 +122,7 @@ class CustomerUserCreator
         $this->userProviderResource = $userProviderResource;
         $this->mappingRepository = $mappingRepository;
         $this->attributeMapper = $attributeMapper;
+        $this->oidcAuthenticationService = $oidcAuthenticationService;
     }
 
     /**
@@ -355,13 +361,7 @@ class CustomerUserCreator
         }
 
         $rawGroups = $flattenedAttrs[$groupAttribute] ?? ($rawAttrs[$groupAttribute] ?? null);
-        if (is_string($rawGroups)) {
-            return [$rawGroups];
-        }
-        if (is_array($rawGroups)) {
-            return $rawGroups;
-        }
-        return [];
+        return $this->oidcAuthenticationService->normalizeGroups($rawGroups);
     }
 
     /**

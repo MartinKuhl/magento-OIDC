@@ -588,6 +588,7 @@ class OAuthUtility extends Data
     public function getAllActiveProviders(string $loginType = 'customer'): array
     {
         $collection = $this->getOAuthClientApps();
+        $collection->addFieldToFilter('is_active', ['eq' => 1]);
         $providers = [];
 
         foreach ($collection as $item) {

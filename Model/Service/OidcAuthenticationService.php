@@ -180,6 +180,156 @@ class OidcAuthenticationService
     }
 
     /**
+     * Normalize a raw group/role claim value into a flat string array.
+     *
+     * Handles three formats transparently:
+     *   "admin"                         → ['admin']           (string)
+     *   ["admin", "member"]             → ['admin', 'member']  (flat scalar array — standard IdPs)
+     *   {"admin": {orgId: "domain"}, …} → ['admin', 'member']  (Zitadel nested — keys are role names)
+     *
+     * Used by all group-extraction call sites (admin creation, admin role sync,
+     * customer creation/sync) to guarantee consistent behaviour regardless of IdP.
+     *
+     * @param  mixed $rawValue Raw claim value from the OIDC provider
+     * @return string[]
+     */
+    public function normalizeGroups(mixed $rawValue): array
+    {
+        if ($rawValue === null || $rawValue === '') {
+            return [];
+        }
+        if (is_string($rawValue)) {
+            return [$rawValue];
+        }
+        $arr = is_object($rawValue) ? (array) $rawValue : $rawValue;
+        if (!is_array($arr) || $arr === []) {
+            return [];
+        }
+        // Detect Zitadel-style nested structure: {"roleName": {"orgId": "domain"}}
+        // When values are themselves arrays/objects, the KEYS are the role names.
+        $firstVal = reset($arr);
+        if (is_array($firstVal) || is_object($firstVal)) {
+            return array_keys($arr);
+        }
+        // Flat scalar array — filter out empties and re-index
+        return array_values(array_filter(
+            array_map(fn($v): string => (string) $v, $arr),
+            fn(string $v): bool => $v !== ''
+        ));
+    }
+
+    /**
+     * Normalize all Zitadel-style role claims in an attribute array for display.
+     *
+     * Handles two forms transparently:
+     *
+     * 1. Raw nested (attributes straight from session/userinfo endpoint):
+     *      "urn:zitadel:...:roles" => {"admin": {"orgId": "domain"}, "non-admin": {...}}
+     *    → replaces the value with a flat string array: ["admin", "non-admin"]
+     *
+     * 2. Flat dot-notation (after flattenAttributes() / Base64 decode):
+     *      "urn:zitadel:...:roles.admin.365482058136485891"    => "domain"
+     *      "urn:zitadel:...:roles.non-admin.365482058136485891" => "domain"
+     *    → adds a synthetic parent key: "urn:zitadel:...:roles" => ["admin", "non-admin"]
+     *    Detection heuristic: parent.roleName.orgId where roleName is non-numeric
+     *    and orgId is a long all-digit string (≥ 15 chars, matching Zitadel org IDs).
+     *
+     * Called from ShowTestResults so users see extracted role names regardless of
+     * whether the group attribute mapping has been configured yet.
+     *
+     * @param array $attrs Attribute array (modified in-place)
+     */
+    public function normalizeZitadelRoleClaimsForDisplay(array &$attrs): void
+    {
+        // Step 1 — Raw nested: replace Zitadel nested objects with flat role name arrays.
+        // Only touches keys whose values are associative arrays where the first element
+        // is itself an array/object (the Zitadel pattern; plain address/name objects are safe).
+        foreach ($attrs as $key => $value) {
+            if (!is_array($value) && !is_object($value)) {
+                continue;
+            }
+            $arr = is_object($value) ? (array) $value : $value;
+            if ($arr === []) {
+                continue;
+            }
+            $firstVal = reset($arr);
+            if (is_array($firstVal) || is_object($firstVal)) {
+                $attrs[$key] = array_keys($arr);
+            }
+        }
+
+        // Step 2 — Flat dot-notation: reconstruct parent keys from Zitadel subkey patterns.
+        // Pattern: parentKey.roleName.numericOrgId
+        //   roleName  — non-numeric (e.g. "admin")
+        //   numericOrgId — all digits, length ≥ 15 (Zitadel org IDs are 18-digit numbers)
+        $parents = [];
+        foreach ($attrs as $key => $value) {
+            $key      = (string) $key;
+            $firstDot = strpos($key, '.');
+            if ($firstDot === false) {
+                continue;
+            }
+            $parentKey = substr($key, 0, $firstDot);
+            $remainder = substr($key, $firstDot + 1);
+            $secondDot = strpos($remainder, '.');
+            if ($secondDot === false) {
+                continue; // Need at least parent.role.orgId
+            }
+            $roleName = substr($remainder, 0, $secondDot);
+            $orgPart  = substr($remainder, $secondDot + 1);
+            if ($roleName === '' || is_numeric($roleName)) {
+                continue; // Role names are non-numeric strings
+            }
+            if (!ctype_digit($orgPart) || strlen($orgPart) < 15) {
+                continue; // Zitadel org IDs are long all-digit strings
+            }
+            $parents[$parentKey][$roleName] = true;
+        }
+        foreach ($parents as $parentKey => $roles) {
+            if (!array_key_exists($parentKey, $attrs)) {
+                $attrs[$parentKey] = array_keys($roles);
+            }
+        }
+    }
+
+    /**
+     * Reconstruct a parent group claim key from Zitadel-style flattened subkeys.
+     *
+     * flattenAttributes() only stores leaf keys, so Zitadel's nested object:
+     *   {"admin": {"orgId": "domain"}, "non-admin": {"orgId": "domain"}}
+     * becomes flat keys like:
+     *   "groupAttr.admin.orgId" => "domain"
+     *   "groupAttr.non-admin.orgId" => "domain"
+     *
+     * This method scans for those non-numeric first segments and adds the
+     * synthetic parent key: "groupAttr" => ["admin", "non-admin"]
+     *
+     * No-op when the key already exists or no matching subkeys are found.
+     *
+     * @param  array  $flattenedAttrs Flattened OIDC attributes (modified in-place)
+     * @param  string $groupAttribute Configured group attribute key
+     */
+    public function reconstructNestedGroupClaim(array &$flattenedAttrs, string $groupAttribute): void
+    {
+        if ($groupAttribute === '' || array_key_exists($groupAttribute, $flattenedAttrs)) {
+            return;
+        }
+        $prefix = $groupAttribute . '.';
+        $roles  = [];
+        foreach ($flattenedAttrs as $key => $value) {
+            if (str_starts_with((string) $key, $prefix)) {
+                $firstSegment = explode('.', substr((string) $key, strlen($prefix)), 2)[0];
+                if ($firstSegment !== '' && !is_numeric($firstSegment)) {
+                    $roles[$firstSegment] = true;
+                }
+            }
+        }
+        if ($roles !== []) {
+            $flattenedAttrs[$groupAttribute] = array_keys($roles);
+        }
+    }
+
+    /**
      * Recursively search for an email address in the user info data.
      *
      * @param  mixed $arr

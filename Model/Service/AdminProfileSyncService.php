@@ -21,16 +21,18 @@ class AdminProfileSyncService
     /**
      * Constructor.
      *
-     * @param UserFactory            $userFactory
-     * @param UserResource           $userResource
-     * @param RoleCollectionFactory  $roleCollectionFactory
-     * @param OAuthUtility           $oauthUtility
+     * @param UserFactory                  $userFactory
+     * @param UserResource                 $userResource
+     * @param RoleCollectionFactory        $roleCollectionFactory
+     * @param OAuthUtility                 $oauthUtility
+     * @param OidcAuthenticationService    $oidcAuthenticationService
      */
     public function __construct(
         private readonly UserFactory $userFactory,
         private readonly UserResource $userResource,
         private readonly RoleCollectionFactory $roleCollectionFactory,
-        private readonly OAuthUtility $oauthUtility
+        private readonly OAuthUtility $oauthUtility,
+        private readonly OidcAuthenticationService $oidcAuthenticationService
     ) {
     }
 
@@ -235,11 +237,8 @@ class AdminProfileSyncService
         if ($key === '') {
             return [];
         }
-        $groups = $flat[$key] ?? $raw[$key] ?? [];
-        if (is_string($groups)) {
-            $groups = [$groups];
-        }
-        return is_array($groups) ? array_map(fn(mixed $v): string => (string) $v, $groups) : [];
+        $rawGroups = $flat[$key] ?? $raw[$key] ?? null;
+        return $this->oidcAuthenticationService->normalizeGroups($rawGroups);
     }
 
     /**

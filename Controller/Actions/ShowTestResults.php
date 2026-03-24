@@ -125,6 +125,14 @@ class ShowTestResults extends Action
             $attrs = $decoded;
         }
 
+        // Normalize all Zitadel-style role claims for display — runs unconditionally so
+        // users see extracted role names even before the group attribute is configured.
+        // Handles both raw nested objects (most providers) and flat dot-notation subkeys
+        // (Base64 providers after flattenAttributes has run above).
+        if (!empty($attrs)) {
+            $this->oidcAuthService->normalizeZitadelRoleClaimsForDisplay($attrs);
+        }
+
         $this->setAttrs($attrs);
         if ($attrs !== null) {
             $this->setUserEmail($attrs['email'] ?? null);

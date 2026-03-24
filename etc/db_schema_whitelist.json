@@ -63,6 +63,7 @@
             "last_test_at": true,
             "received_oidc_claims": true,
             "pkce_code_verifier": true,
+            "public_client": true,
             "sync_customer_profile_on_sso": true,
             "sync_customer_address_on_sso": true,
             "sync_customer_group_on_sso": true,

@@ -138,7 +138,7 @@ class Save extends Action implements HttpPostActionInterface
             // Sanitize and apply multi-provider fields
             $model->setData('app_name', $this->sanitizeString($data['app_name'] ?? ''));
             $model->setData('display_name', $this->sanitizeString($data['display_name'] ?? ''));
-            $model->setData('is_active', (int) ($data['is_active'] ?? 1));
+            $model->setData('is_active', (int) ($data['is_active'] ?? 0));
             $model->setData('login_type', $this->validateLoginType($data['login_type'] ?? 'customer'));
             $model->setData('sort_order', max(0, (int) ($data['sort_order'] ?? 0)));
             $model->setData('button_label', $this->sanitizeString($data['button_label'] ?? ''));
@@ -200,6 +200,8 @@ class Save extends Action implements HttpPostActionInterface
                 'sync_admin_role_on_sso',
                 // IdP-Initiated SSO
                 'idp_initiated_enabled',
+                // Public client (RFC 6749 §2.1): no client secret required/expected
+                'public_client',
             ] as $field) {
                 // FIX: use $field (not $checkbox) — variable name matches the foreach above.
                 // (int) cast reads the actual "0"/"1" value sent by the hidden+checkbox pair.
@@ -307,6 +309,23 @@ class Save extends Action implements HttpPostActionInterface
             }
             $model->setData('pkce_flow', $pkceFlow);
 
+            // Require client_secret when creating a new confidential (non-public) client.
+            // Public clients (RFC 6749 §2.1) have no secret by design — PKCE takes its role.
+            if ($providerId === 0
+                && (int) $model->getData('public_client') === 0
+                && empty($data['client_secret'])
+            ) {
+                $this->messageManager->addErrorMessage(
+                    (string) __(
+                        'Client Secret is required for confidential clients. '
+                        . 'For public clients (e.g. Zitadel, Authelia with public: true) '
+                        . 'enable the "Public Client" option.'
+                    )
+                );
+                $this->dataPersistor->set('oidc_provider', $data);
+                return $redirect->setPath('*/*/edit');
+            }
+
             // Auto-discover endpoints when a Discovery URL is provided.
             // Overrides any manually-entered endpoint fields, consistent with the form hint.
             $discoveryUrl = trim((string) ($data['well_known_config_url'] ?? ''));
@@ -334,6 +353,17 @@ class Save extends Action implements HttpPostActionInterface
                     }
                     if (isset($discovered->jwks_uri)) {
                         $model->setData('jwks_endpoint', trim((string) $discovered->jwks_uri));
+                    }
+                    // Public-client hint: if the IdP advertises 'none' as a supported token-endpoint
+                    // auth method, this signals the server supports public clients. Pre-enable the
+                    // toggle so the admin does not have to set it manually.
+                    // This is a soft pre-fill — the admin saves it explicitly and can override it.
+                    if ((int) $model->getData('public_client') === 0
+                        && isset($discovered->token_endpoint_auth_methods_supported)
+                        && is_array($discovered->token_endpoint_auth_methods_supported)
+                        && in_array('none', $discovered->token_endpoint_auth_methods_supported, true)
+                    ) {
+                        $model->setData('public_client', 1);
                     }
                     $discoverySucceeded = true;
                 }

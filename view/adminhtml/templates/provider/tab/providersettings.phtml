@@ -103,15 +103,15 @@ $btnColor  = (string) $val('button_color', '#eb5202');
                     </label>
                 </td>
                 <td>
-                    <input type="checkbox"
-                           id="is_active"
-                           name="is_active"
-                           class="admin__control-checkbox"
-                           value="1"
-                           <?= $isActive ? 'checked="checked"' : '' ?>>
-                    <small class="admin__field-note" style="margin-left:6px;">
+                    <label style="display:flex; align-items:center; gap:8px;">
+                        <input type="hidden" name="is_active" value="0">
+                        <input type="checkbox"
+                               id="is_active"
+                               name="is_active"
+                               value="1"
+                               <?= $isActive ? 'checked="checked"' : '' ?>>
                         <?= $escaper->escapeHtml(__('Uncheck to disable this provider.')) ?>
-                    </small>
+                    </label>
                 </td>
             </tr>
             <tr>

@@ -10,6 +10,7 @@ use M2Oidc\OAuth\Helper\OAuthMessages;
 use M2Oidc\OAuth\Helper\OAuthSecurityHelper;
 use M2Oidc\OAuth\Model\Service\AdminProfileSyncService;
 use M2Oidc\OAuth\Model\Service\AdminUserCreator;
+use M2Oidc\OAuth\Model\Service\OidcAuthenticationService;
 use M2Oidc\OAuth\Model\Service\UserProvisioningService;
 use Magento\Framework\Stdlib\CookieManagerInterface;
 use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
@@ -126,6 +127,9 @@ class CheckAttributeMappingAction extends BaseAction
     /** @var \M2Oidc\OAuth\Model\Service\AdminProfileSyncService */
     private readonly AdminProfileSyncService $adminProfileSyncService;
 
+    /** @var \M2Oidc\OAuth\Model\Service\OidcAuthenticationService */
+    private readonly OidcAuthenticationService $oidcAuthenticationService;
+
     /**
      * Constructor with dependency injection
      *
@@ -142,6 +146,7 @@ class CheckAttributeMappingAction extends BaseAction
      * @param CookieMetadataFactory                              $cookieMetadataFactory
      * @param UserProvisioningService                            $userProvisioningService
      * @param AdminProfileSyncService                            $adminProfileSyncService
+     * @param OidcAuthenticationService                          $oidcAuthenticationService
      */
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
@@ -156,7 +161,8 @@ class CheckAttributeMappingAction extends BaseAction
         CookieManagerInterface $cookieManager,
         CookieMetadataFactory $cookieMetadataFactory,
         UserProvisioningService $userProvisioningService,
-        AdminProfileSyncService $adminProfileSyncService
+        AdminProfileSyncService $adminProfileSyncService,
+        OidcAuthenticationService $oidcAuthenticationService
     ) {
         $this->testAction = $testAction;
         $this->processUserAction = $processUserAction;
@@ -169,6 +175,7 @@ class CheckAttributeMappingAction extends BaseAction
         $this->cookieMetadataFactory = $cookieMetadataFactory;
         $this->userProvisioningService = $userProvisioningService;
         $this->adminProfileSyncService = $adminProfileSyncService;
+        $this->oidcAuthenticationService = $oidcAuthenticationService;
         parent::__construct($context, $oauthUtility);
     }
 
@@ -324,10 +331,8 @@ class CheckAttributeMappingAction extends BaseAction
                     $groupAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_GROUP);
                     $userGroups = [];
                     if (!empty($groupAttribute)) {
-                        $userGroups = $flattenedAttrs[$groupAttribute] ?? $attrs[$groupAttribute] ?? [];
-                        if (is_string($userGroups)) {
-                            $userGroups = [$userGroups];
-                        }
+                        $rawGroups = $flattenedAttrs[$groupAttribute] ?? $attrs[$groupAttribute] ?? null;
+                        $userGroups = $this->oidcAuthenticationService->normalizeGroups($rawGroups);
                     }
                     $groupsJson = json_encode($userGroups);
                     $this->oauthUtility->customlog("User groups from OIDC: " . $groupsJson);
@@ -561,10 +566,21 @@ class CheckAttributeMappingAction extends BaseAction
 
         if ($reconstructed !== []) {
             $attrs[$this->groupName] = $reconstructed;
-        } else {
-            $attrs[$this->groupName] = [];
-            $this->oauthUtility->customlog("Group name not provided, using empty array");
+            return;
         }
+
+        // Zitadel nested format: groupName.roleName.orgId → extract roleName
+        $this->oidcAuthenticationService->reconstructNestedGroupClaim($attrs, $this->groupName);
+        if (isset($attrs[$this->groupName])) {
+            $this->oauthUtility->customlog(
+                "Group names reconstructed from Zitadel subkeys: "
+                . json_encode($attrs[$this->groupName])
+            );
+            return;
+        }
+
+        $attrs[$this->groupName] = [];
+        $this->oauthUtility->customlog("Group name not provided, using empty array");
     }
 
     // Setter methods for dependency injection pattern

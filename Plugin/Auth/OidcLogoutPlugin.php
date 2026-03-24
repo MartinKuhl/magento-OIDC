@@ -323,8 +323,13 @@ class OidcLogoutPlugin
             return '';
         }
 
-        // Standard OIDC: point to the unified callback so one URL covers both flows.
-        return rtrim($this->url->getUrl('m2oidc/actions/postlogout'), '/');
+        // Standard OIDC: build the frontend callback URL from the store base URL.
+        // Do NOT use $this->url->getUrl() here — in the admin area that resolves to
+        // Magento\Backend\Model\Url, which prepends /admin/ and appends a dynamic
+        // CSRF secret key (/key/<hex>). The resulting URL changes every session and
+        // cannot be registered as an allowed Post Logout Redirect URI at the IdP.
+        $baseUrl = rtrim($this->backendUrl->getBaseUrl(), '/');
+        return $baseUrl . '/m2oidc/actions/postlogout';
     }
 
     /**

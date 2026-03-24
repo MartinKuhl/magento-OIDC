@@ -258,7 +258,8 @@ class ReadAuthorizationResponse extends BaseAction
 
             // Build token request
             $clientID = $clientDetails["clientID"];
-            $clientSecret = $clientDetails["client_secret"];
+            // Cast to string: public clients have no secret (DB column is nullable).
+            $clientSecret = (string) ($clientDetails["client_secret"] ?? '');
             $accessTokenURL = $clientDetails["access_token_endpoint"];
             $header = (int) ($clientDetails["values_in_header"] ?? 1);
             $body   = (int) ($clientDetails["values_in_body"] ?? 0);

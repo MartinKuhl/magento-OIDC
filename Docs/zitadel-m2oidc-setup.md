@@ -28,6 +28,14 @@ that Zitadel does not include in tokens by default.
    > PKCE (Proof Key for Code Exchange) is the recommended method for web applications.
    > It does not require a client secret, making it more secure for server-rendered apps.
 
+   > **What you will see in the app overview after saving:**
+   > The application overview shows **Authentifizierungsmethode: None** — this is correct and
+   > expected. In Zitadel, selecting "PKCE" during the wizard sets the token-endpoint
+   > authentication method to **None**, meaning the token endpoint does not expect a
+   > `client_secret`. PKCE (`code_verifier`/`code_challenge`) provides the security instead.
+   > This makes the app a **public client** (RFC 6749 §2.1). The PKCE banner visible in the
+   > app overview confirms this.
+
 7. On the **Redirect URIs** screen, add:
 
    ```
@@ -121,7 +129,7 @@ Example using curl (all fields in one call):
 # Helper to base64-encode a plain text value
 b64() { echo -n "$1" | base64; }
 
-curl -X POST "https://zitadel.casa-kuhl.duckdns.org/v2/users/USER_ID/metadata" \
+curl -X POST "https://zitadel.casa-kuhl.deg/v2/users/USER_ID/metadata" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
   -d "{
@@ -334,11 +342,17 @@ Open the **OAuth Settings** tab.
 
 | Field                 | Value                                                                                      |
 |-----------------------|--------------------------------------------------------------------------------------------|
-| **Well-Known Config URL** | `https://zitadel.casa-kuhl.duckdns.org/.well-known/openid-configuration`              |
+| **Well-Known Config URL** | `https://zitadel.casa-kuhl.de/.well-known/openid-configuration`              |
 | **Client ID**         | *(copy from Zitadel application overview)*                                                 |
-| **Client Secret**     | *(leave empty — PKCE does not use a client secret)*                                        |
+| **Client Secret**     | *(leave empty — this is a public client; see "Public Client" below)*                       |
+| **Public Client**     | ✅ Enable (check the "Public Client" checkbox)                                             |
 | **Scope**             | `openid profile email phone urn:zitadel:iam:user:metadata urn:zitadel:iam:org:project:roles`                                                                     |
-| **PKCE Flow**         | Enabled                                                                                    |
+| **PKCE Flow**         | S256 (recommended)                                                                         |
+
+> **Why "Public Client"?** Zitadel with Authentication Method **None** is a public client
+> (RFC 6749 §2.1) — it does not issue a `client_secret`. Enabling this checkbox tells the
+> module not to require or send a secret during token exchange. Without it, the module will
+> show a validation error when you try to save without a secret.
 
 > **Auto-Discovery:** When you save with only the Well-Known Config URL filled in, the plugin
 > automatically fetches Zitadel's discovery document and populates all endpoint URLs
@@ -445,7 +459,7 @@ Run through these tests after completing both parts of the configuration.
 
 ### Customer login
 - [ ] A **"Login with Zitadel"** button appears on the frontend login page
-- [ ] Clicking the button redirects to `https://zitadel.casa-kuhl.duckdns.org`
+- [ ] Clicking the button redirects to `https://zitadel.casa-kuhl.de`
 - [ ] After authenticating, you are redirected back to the Magento store
 - [ ] A customer account is created (if new user) or the existing account is logged in
 - [ ] Customer name and email are correctly populated

@@ -4,7 +4,7 @@
       <column xsi:type="text" name="app_name" nullable="false" comment="The type of app" />
       <column xsi:type="text" name="callback_uri" nullable="false" comment="The callback uri of the Provider" />
       <column xsi:type="text" name="clientID" nullable="false" comment="The client ID of the Provider" />
-      <column xsi:type="text" name="client_secret" nullable="false" comment="The client secret of the Provider" />
+      <column xsi:type="text" name="client_secret" nullable="true" comment="The client secret of the Provider (null for public clients)" />
       <column xsi:type="text" name="scope" nullable="false" comment="The scope of the Provider" />
       <column xsi:type="text" name="endsession_endpoint" nullable="false" comment="The endsession endpoint" />
       <column xsi:type="text" name="revocation_endpoint" nullable="true" comment="RFC 7009 token revocation endpoint (optional)" />
@@ -17,6 +17,7 @@
       <column xsi:type="text" name="grant_type" nullable="false" comment="Grant Type Selected" />
       <column xsi:type="text" name="pkce_flow" nullable="false" comment="PKCE flow" />
       <column xsi:type="varchar" name="pkce_code_verifier" nullable="true" length="128" comment="Temporary PKCE code_verifier for active flow"/>
+      <column xsi:type="smallint" name="public_client" padding="1" unsigned="true" nullable="false" default="0" comment="1 = public client (no client secret, RFC 6749 §2.1); 0 = confidential client" />
       <column xsi:type="text" name="well_known_config_url" nullable="false" comment="Well Known Config URL" />
       <column xsi:type="text" name="issuer" nullable="false" comment="OIDC Issuer from discovery document" />
       <!-- Attribute mapping columns — nullable after Phase 4 normalization; rows use m2oidc_oauth_attribute_mappings -->

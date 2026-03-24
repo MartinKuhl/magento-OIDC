@@ -87,23 +87,14 @@ Fix all the mentioned issue and warnings. Use sub-agents where applicable. DO no
 
 ### ToDo ###
 
-- how to fetch urn:zitadel:iam:org:project:roles
-
-urn:zitadel:iam:org:project:365367478861168644:roles.admin.365347902450630660	    casa-kuhl.zitadel.casa-kuhl.duckdns.org
-urn:zitadel:iam:org:project:365367478861168644:roles.non-Admin.365347902450630660	casa-kuhl.zitadel.casa-kuhl.duckdns.org
-urn:zitadel:iam:org:project:roles.admin.365347902450630660	                        casa-kuhl.zitadel.casa-kuhl.duckdns.org
-urn:zitadel:iam:org:project:roles.non-Admin.365347902450630660	                    casa-kuhl.zitadel.casa-kuhl.duckdns.org
-
-urn:zitadel:iam:user:metadata.groups --> groups
-
-- customer is successfully removed from OIDC Session Activity after removel but admin is not removed successfully. Also in OIDC Provider management table to admin user counter is not adjusted after removal of OIDC admin.
-
 
 #new provider setup
-- new provider: section provoder settings: Acitve -> checkbox is missing
-- Client secret is mandatory
-- what is Grant type
-- what is Send Credential option
+- Client secret is mandatory. why not for Zitadel? Is it because of the client authentication method? If so, we should clarify this in the UI and docs.
+
+
+
+- what is Grant type for Zitadel? Is it Authorization Code with PKCE? If so, we should clarify this in the UI and docs.
+- what is Send Credential option for Zitadel? Is it needed? If not, we should hide it for Zitadel provider type in the UI and docs.
 
 ### FIX ###
 -

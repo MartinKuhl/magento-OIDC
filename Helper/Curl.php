@@ -54,11 +54,20 @@ class Curl
         int $body
     ): string {
         if ($header === 0 && $body === 1) {
+            // Credentials sent in POST body (handled by caller via $postData).
+            $authHeader = [
+                "Content-Type: application/x-www-form-urlencoded",
+                'Accept: application/json',
+            ];
+        } elseif ($clientSecret === '') {
+            // Public client (RFC 6749 §2.1): no client secret — send no credentials.
+            // client_id is already included in $postData by the request builder.
             $authHeader = [
                 "Content-Type: application/x-www-form-urlencoded",
                 'Accept: application/json',
             ];
         } else {
+            // Confidential client: authenticate via HTTP Basic (RFC 6749 §2.3.1).
             $authHeader = [
                 "Content-Type: application/x-www-form-urlencoded",
                 'Accept: application/json',

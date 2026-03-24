@@ -65,12 +65,17 @@ class AccessTokenRequest
     private function generateRequest(): array
     {
         $body = [
-            'redirect_uri'  => $this->redirectURL,
-            'grant_type'    => OAuthConstants::GRANT_TYPE,
-            'client_id'     => $this->clientID,
-            'client_secret' => $this->clientSecret,
-            'code'          => $this->code,
+            'redirect_uri' => $this->redirectURL,
+            'grant_type'   => OAuthConstants::GRANT_TYPE,
+            'client_id'    => $this->clientID,
+            'code'         => $this->code,
         ];
+
+        // Omit client_secret for public clients (RFC 6749 §4.1.3).
+        // Public clients identify themselves via client_id but do not authenticate.
+        if ($this->clientSecret !== null && $this->clientSecret !== '') {
+            $body['client_secret'] = $this->clientSecret;
+        }
 
         // PKCE (RFC 7636 §4.5): include code_verifier when PKCE is enabled (FEAT-01)
         if ($this->codeVerifier !== null && $this->codeVerifier !== '') {

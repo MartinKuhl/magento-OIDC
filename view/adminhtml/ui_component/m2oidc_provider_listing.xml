@@ -86,12 +86,13 @@
             </settings>
         </column>
 
-        <column name="is_active" component="Magento_Ui/js/grid/columns/select">
+        <column name="is_active"
+                class="M2Oidc\OAuth\Ui\Component\Listing\Column\ActiveStatus">
             <settings>
                 <options class="Magento\Config\Model\Config\Source\Yesno"/>
                 <filter>select</filter>
-                <dataType>select</dataType>
                 <label translate="true">Status</label>
+                <bodyTmpl>ui/grid/cells/html</bodyTmpl>
             </settings>
         </column>
 
