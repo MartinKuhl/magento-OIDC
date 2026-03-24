@@ -21,6 +21,7 @@ use M2Oidc\OAuth\Model\Attribute\CustomerAttributeMapper;
 use M2Oidc\OAuth\Model\Provider\MappingRepository;
 use M2Oidc\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
 use M2Oidc\OAuth\Model\Service\CustomerUserCreator;
+use M2Oidc\OAuth\Model\Service\OidcAuthenticationService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -101,7 +102,8 @@ class CustomerUserCreatorAddressTest extends TestCase
             $this->customerRepository,
             $this->createMock(UserProviderResource::class),
             $this->createMock(MappingRepository::class),
-            $this->attributeMapper
+            $this->attributeMapper,
+            $this->createMock(OidcAuthenticationService::class)
         );
     }
 

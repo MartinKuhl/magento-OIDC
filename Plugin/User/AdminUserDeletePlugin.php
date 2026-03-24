@@ -31,7 +31,6 @@ class AdminUserDeletePlugin
      *
      * @param  User $subject
      * @param  User $result
-     * @return User
      */
     public function afterDelete(User $subject, User $result): User
     {

@@ -352,13 +352,9 @@ class ShowTestResults extends Action
      * @param  int|string $prefix Dot-notation prefix for recursion
      * @return string[]   Flat list of claim key names
      */
-    private function extractClaimKeys($attrs, int|string $prefix = ''): array
+    private function extractClaimKeys(array $attrs, int|string $prefix = ''): array
     {
         $keys = [];
-        if (!is_array($attrs)) {
-            return $keys;
-        }
-
         $nestedChunks = [];
         foreach ($attrs as $key => $value) {
             // Skip numeric array indices (e.g., groups: ["admin", "user"] → 0, 1)

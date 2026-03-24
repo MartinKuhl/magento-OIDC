@@ -35,7 +35,6 @@ use M2Oidc\OAuth\Helper\OAuthConstants;
 use M2Oidc\OAuth\Helper\OAuthUtility;
 use Magento\Backend\App\Area\FrontNameResolver;
 use Magento\Framework\App\ResourceConnection;
-use Magento\Framework\UrlInterface;
 
 class OidcLogoutPlugin
 {
@@ -63,9 +62,6 @@ class OidcLogoutPlugin
     /** @var CurlFactory */
     private readonly CurlFactory $curlFactory;
 
-    /** @var UrlInterface */
-    private readonly UrlInterface $url;
-
     /** @var ResourceConnection */
     private readonly ResourceConnection $resourceConnection;
 
@@ -80,7 +76,6 @@ class OidcLogoutPlugin
      * @param ResponseInterface      $response
      * @param FrontNameResolver      $frontNameResolver
      * @param CurlFactory            $curlFactory
-     * @param UrlInterface           $url
      * @param ResourceConnection     $resourceConnection
      */
     public function __construct(
@@ -92,7 +87,6 @@ class OidcLogoutPlugin
         ResponseInterface $response,
         FrontNameResolver $frontNameResolver,
         CurlFactory $curlFactory,
-        UrlInterface $url,
         ResourceConnection $resourceConnection
     ) {
         $this->cookieManager         = $cookieManager;
@@ -103,7 +97,6 @@ class OidcLogoutPlugin
         $this->response              = $response;
         $this->frontNameResolver     = $frontNameResolver;
         $this->curlFactory           = $curlFactory;
-        $this->url                   = $url;
         $this->resourceConnection    = $resourceConnection;
     }
 

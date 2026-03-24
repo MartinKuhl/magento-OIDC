@@ -87,7 +87,9 @@ $isPublicClient = (bool)(int) $val('public_client', 0);
                     <label for="client_secret">
                         <strong>
                             <?= $escaper->escapeHtml(__('Client Secret')) ?>
-                            <span id="client_secret_required_mark" style="color:red<?= ($isEditMode || $isPublicClient) ? ';display:none' : '' ?>">*</span>
+                            <?php $reqMarkStyle = ($isEditMode || $isPublicClient) ? ';display:none' : ''; ?>
+                            <span id="client_secret_required_mark"
+                                  style="color:red<?= $escaper->escapeHtmlAttr($reqMarkStyle) ?>">*</span>
                         </strong>
                     </label>
                 </td>
@@ -184,7 +186,8 @@ $isPublicClient = (bool)(int) $val('public_client', 0);
                     <small class="admin__field-note">
                         <?= $escaper->escapeHtml(__(
                             'How client credentials (client_id + client_secret) are sent to the token endpoint. '
-                            . 'Not applicable for public clients — leave both unchecked when "Public Client" is enabled.'
+                            . 'Not applicable for public clients — leave both unchecked'
+                            . ' when "Public Client" is enabled.'
                         )) ?>
                     </small>
                 </td>

@@ -113,7 +113,7 @@ class OidcAuthenticationService
         if ($value === '') {
             return $value;
         }
-        $decoded = base64_decode($value, true);
+        $decoded = base64_decode($value, true); // phpcs:ignore Magento2.Functions.DiscouragedFunction
         if ($decoded === false) {
             return $value;
         }
@@ -263,7 +263,7 @@ class OidcAuthenticationService
         //   roleName  — non-numeric (e.g. "admin")
         //   numericOrgId — all digits, length ≥ 15 (Zitadel org IDs are 18-digit numbers)
         $parents = [];
-        foreach ($attrs as $key => $value) {
+        foreach (array_keys($attrs) as $key) {
             $key      = (string) $key;
             $firstDot = strpos($key, '.');
             if ($firstDot === false) {
@@ -295,7 +295,7 @@ class OidcAuthenticationService
     /**
      * Reconstruct a parent group claim key from Zitadel-style flattened subkeys.
      *
-     * flattenAttributes() only stores leaf keys, so Zitadel's nested object:
+     * The flattenAttributes() method only stores leaf keys, so Zitadel's nested object:
      *   {"admin": {"orgId": "domain"}, "non-admin": {"orgId": "domain"}}
      * becomes flat keys like:
      *   "groupAttr.admin.orgId" => "domain"
@@ -316,7 +316,7 @@ class OidcAuthenticationService
         }
         $prefix = $groupAttribute . '.';
         $roles  = [];
-        foreach ($flattenedAttrs as $key => $value) {
+        foreach (array_keys($flattenedAttrs) as $key) {
             if (str_starts_with((string) $key, $prefix)) {
                 $firstSegment = explode('.', substr((string) $key, strlen($prefix)), 2)[0];
                 if ($firstSegment !== '' && !is_numeric($firstSegment)) {

@@ -372,7 +372,7 @@ class CheckAttributeMappingAction extends BaseAction
                         return $this->resultRedirectFactory->create()->setUrl($adminCallbackUrl);
                     } else {
                         $this->oauthUtility->customlog("ERROR: Failed to create admin user for: " . $userEmail);
-                        $groupList = implode(', ', array_map(fn($v): string => (string) $v, $userGroups));
+                        $groupList = implode(', ', array_map(fn(string $v): string => $v, $userGroups));
                         $errorMessage = OAuthMessages::parse(
                             'ADMIN_ROLE_MAPPING_NO_MATCH',
                             ['groups' => $groupList !== '' ? $groupList : '(none)']

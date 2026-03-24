@@ -14,6 +14,9 @@ use Magento\Ui\Component\Listing\Columns\Column;
  */
 class ActiveStatus extends Column
 {
+    /**
+     * @inheritDoc
+     */
     // phpcs:ignore Generic.CodeAnalysis.UselessOverridingMethod
     public function __construct(
         ContextInterface $context,

@@ -73,7 +73,9 @@ $oidcVisibility = $block->getData('oidc_visibility');
             $color    = preg_match('/^#[0-9a-fA-F]{6}$/', (string) ($provider['button_color'] ?? ''))
             ? $escaper->escapeHtmlAttr($provider['button_color'])
             : '#0066cc';
-            $url      = $escaper->escapeUrl($block->getSPInitiatedUrlForProvider($pid, null, 'customer', $provider['app_name'] ?? ''));
+            $url      = $escaper->escapeUrl(
+                $block->getSPInitiatedUrlForProvider($pid, null, 'customer', $provider['app_name'] ?? '')
+            );
             ?>
     <a class="sso-button sso-button--provider"
        href="<?= $url /* @noEscape */ ?>"
