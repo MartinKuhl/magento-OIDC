@@ -357,8 +357,13 @@ class Save extends Action implements HttpPostActionInterface
                     // Public-client hint: if the IdP advertises 'none' as a supported token-endpoint
                     // auth method, this signals the server supports public clients. Pre-enable the
                     // toggle so the admin does not have to set it manually.
-                    // This is a soft pre-fill — the admin saves it explicitly and can override it.
-                    if ((int) $model->getData('public_client') === 0
+                    // Only applied on CREATE ($providerId === 0) — never on EDIT, so the admin's
+                    // explicit choice is always preserved when re-saving an existing provider.
+                    // Background: token_endpoint_auth_methods_supported is server-wide, not
+                    // per-client. Authelia and other IdPs list 'none' even for confidential clients,
+                    // so overriding on every save would incorrectly flip confidential clients to public.
+                    if ($providerId === 0
+                        && (int) $model->getData('public_client') === 0
                         && isset($discovered->token_endpoint_auth_methods_supported)
                         && is_array($discovered->token_endpoint_auth_methods_supported)
                         && in_array('none', $discovered->token_endpoint_auth_methods_supported, true)

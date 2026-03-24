@@ -86,15 +86,7 @@ Fix all the mentioned issue and warnings. Use sub-agents where applicable. DO no
 ##############################################
 
 ### ToDo ###
-
-
-#new provider setup
-- Client secret is mandatory. why not for Zitadel? Is it because of the client authentication method? If so, we should clarify this in the UI and docs.
-
-
-
-- what is Grant type for Zitadel? Is it Authorization Code with PKCE? If so, we should clarify this in the UI and docs.
-- what is Send Credential option for Zitadel? Is it needed? If not, we should hide it for Zitadel provider type in the UI and docs.
+-
 
 ### FIX ###
 -

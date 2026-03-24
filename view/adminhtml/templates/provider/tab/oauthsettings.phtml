@@ -140,23 +140,19 @@ $isPublicClient = (bool)(int) $val('public_client', 0);
                 </td>
                 <td>
                     <select id="grant_type" name="grant_type" class="admin__control-select" style="width:100%;">
-                        <option value="authorization_code"
-                            <?= $grantType === 'authorization_code' ? 'selected="selected"' : '' ?>>
+                        <option value="authorization_code" selected="selected">
                             <?= $escaper->escapeHtml(__('Authorization Code')) ?>
-                        </option>
-                        <option value="implicit"
-                            <?= $grantType === 'implicit' ? 'selected="selected"' : '' ?>>
-                            <?= $escaper->escapeHtml(__('Implicit')) ?>
                         </option>
                     </select>
                     <small class="admin__field-note">
-                        <?= $escaper->escapeHtml(
-                            __('Authorization Code is recommended for server-side applications.')
-                        ) ?>
+                        <?= $escaper->escapeHtml(__(
+                            'Only Authorization Code is supported. '
+                            . 'To use PKCE, configure the "PKCE Method" field below.'
+                        )) ?>
                     </small>
                 </td>
             </tr>
-            <tr>
+            <tr id="send_credentials_row"<?= $isPublicClient ? ' style="opacity:0.4;pointer-events:none;"' : '' ?>>
                 <td>
                     <label>
                         <strong><?= $escaper->escapeHtml(__('Send Credentials')) ?></strong>
@@ -169,7 +165,7 @@ $isPublicClient = (bool)(int) $val('public_client', 0);
                                name="values_in_header"
                                class="admin__control-checkbox"
                                value="1"
-                               <?= $inHeader ? 'checked="checked"' : '' ?>>
+                               <?= ($inHeader && !$isPublicClient) ? 'checked="checked"' : '' ?>>
                         <label class="admin__control-checkbox-label" for="values_in_header">
                             <?= $escaper->escapeHtml(__('In Authorization Header')) ?>
                         </label>
@@ -180,15 +176,16 @@ $isPublicClient = (bool)(int) $val('public_client', 0);
                                name="values_in_body"
                                class="admin__control-checkbox"
                                value="1"
-                               <?= $inBody ? 'checked="checked"' : '' ?>>
+                               <?= ($inBody && !$isPublicClient) ? 'checked="checked"' : '' ?>>
                         <label class="admin__control-checkbox-label" for="values_in_body">
                             <?= $escaper->escapeHtml(__('In Request Body')) ?>
                         </label>
                     </div>
                     <small class="admin__field-note">
-                        <?= $escaper->escapeHtml(
-                            __('How client credentials are sent to the token endpoint.')
-                        ) ?>
+                        <?= $escaper->escapeHtml(__(
+                            'How client credentials (client_id + client_secret) are sent to the token endpoint. '
+                            . 'Not applicable for public clients — leave both unchecked when "Public Client" is enabled.'
+                        )) ?>
                     </small>
                 </td>
             </tr>
@@ -402,10 +399,29 @@ $isPublicClient = (bool)(int) $val('public_client', 0);
             }
         }
 
+        var sendCredentialsRow  = document.getElementById('send_credentials_row');
+        var headerCb            = document.getElementById('values_in_header');
+        var bodyCb              = document.getElementById('values_in_body');
+
+        function updateSendCredentials() {
+            if (!sendCredentialsRow) { return; }
+            if (publicClientCb && publicClientCb.checked) {
+                sendCredentialsRow.style.opacity       = '0.4';
+                sendCredentialsRow.style.pointerEvents = 'none';
+                if (headerCb) { headerCb.checked = false; }
+                if (bodyCb)   { bodyCb.checked   = false; }
+            } else {
+                sendCredentialsRow.style.opacity       = '';
+                sendCredentialsRow.style.pointerEvents = '';
+            }
+        }
+
         if (publicClientCb) {
             publicClientCb.addEventListener('change', updateSecretRequired);
+            publicClientCb.addEventListener('change', updateSendCredentials);
         }
         updateSecretRequired();
+        updateSendCredentials();
     });
 }());
 </script>

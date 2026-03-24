@@ -347,12 +347,20 @@ Open the **OAuth Settings** tab.
 | **Client Secret**     | *(leave empty — this is a public client; see "Public Client" below)*                       |
 | **Public Client**     | ✅ Enable (check the "Public Client" checkbox)                                             |
 | **Scope**             | `openid profile email phone urn:zitadel:iam:user:metadata urn:zitadel:iam:org:project:roles`                                                                     |
+| **Grant Type**        | Authorization Code *(PKCE is a separate field — see "PKCE Flow" below)*                    |
+| **Send Credentials**  | *(leave both checkboxes unchecked — public client sends no secret)*                        |
 | **PKCE Flow**         | S256 (recommended)                                                                         |
 
 > **Why "Public Client"?** Zitadel with Authentication Method **None** is a public client
 > (RFC 6749 §2.1) — it does not issue a `client_secret`. Enabling this checkbox tells the
 > module not to require or send a secret during token exchange. Without it, the module will
 > show a validation error when you try to save without a secret.
+
+> **Confidential client settings (if you changed Authentifizierungsmethode to Basic or POST):**
+> Leave "Public Client" **unchecked**, enter the Client Secret copied from Zitadel, keep
+> PKCE = S256, and check **"Send Credentials In Authorization Header"** (for Basic) or
+> **"In Request Body"** (for POST). Leave both credential checkboxes unchecked only for
+> public clients.
 
 > **Auto-Discovery:** When you save with only the Well-Known Config URL filled in, the plugin
 > automatically fetches Zitadel's discovery document and populates all endpoint URLs
