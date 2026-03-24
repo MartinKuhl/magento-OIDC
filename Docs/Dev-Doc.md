@@ -65,6 +65,7 @@ please look at @github/magento2-oidc-sso/Docs/Code-Review.md here you find phpcs
 
 ####### check all ######
 Please run PHPStan, Psalm, PHPCS, PHPUnit and Rector via:
+
 ## Run PHPStan:
 cd /var/www/html/github/magento2-oidc-sso && /var/www/html/vendor/bin/phpstan analyse --memory-limit=1G --configuration=Test/phpstan.local.neon
 

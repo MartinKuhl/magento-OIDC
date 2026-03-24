@@ -93,6 +93,20 @@ class UserProvider extends AbstractDb
     }
 
     /**
+     * Delete a session activity record by its primary key.
+     *
+     * @param int $id m2oidc_oauth_user_provider.id
+     */
+    public function deleteById(int $id): void
+    {
+        $connection = $this->getConnection();
+        if ($connection === false) {
+            return;
+        }
+        $connection->delete($this->getMainTable(), ['id = ?' => $id]);
+    }
+
+    /**
      * Count users of a given type that were created via a specific provider.
      *
      * @param  string $userType   'customer' or 'admin'

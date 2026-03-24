@@ -117,6 +117,15 @@
             </settings>
         </column>
 
+        <actionsColumn name="actions"
+                       class="M2Oidc\OAuth\Ui\Component\Listing\Column\SessionActions">
+            <settings>
+                <indexField>id</indexField>
+                <label translate="true">Actions</label>
+                <sortable>false</sortable>
+            </settings>
+        </actionsColumn>
+
     </columns>
 
 </listing>
