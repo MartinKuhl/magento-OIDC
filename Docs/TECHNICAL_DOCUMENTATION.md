@@ -7,7 +7,7 @@
 
 ## 1. Overview
 
-This Magento 2 module adds **OAuth 2.0 / OpenID Connect** single sign-on for both **Customer** (frontend) and **Admin** (backend) users. It replaces Magento's native login flow with an external Identity Provider (Authelia, Keycloak, Auth0, etc.) while keeping all of Magento's built-in security events, ACL checks, and session handling intact.
+This Magento 2 module adds **OAuth 2.0 / OpenID Connect** single sign-on for both **Customer** (frontend) and **Admin** (backend) users. It replaces Magento's native login flow with an external Identity Provider (Authelia, Keycloak, Auth0, Zitadel, etc.) while keeping all of Magento's built-in security events, ACL checks, and session handling intact.
 
 ### What it does
 
@@ -37,7 +37,9 @@ This Magento 2 module adds **OAuth 2.0 / OpenID Connect** single sign-on for bot
 - **Hybrid flow nonce validation (M-06)**: `ReadAuthorizationResponse` validates the nonce in the `id_token` from the token endpoint even when user data is sourced from the userinfo endpoint, preventing replay attacks in hybrid flows.
 - **Debug log rotation**: a dedicated cron job (`Cron/LogRotation.php`, registered as `m2oidc_log_rotation`, scheduled `0 3 * * *`) deletes `var/log/M2Oidc.log` and disables debug logging when the log exceeds 7 days or when debug logging has been disabled in the admin UI.
 - **Multi-provider**: database schema and utility layer support multiple active providers with per-provider settings, managed via the Provider grid at `/admin/m2oidc/provider/index`.
-- **Session Activity view**: `/admin/m2oidc/sessions/index` lists all users who authenticated via OIDC, with total and active user counts per provider.
+- **Session Activity view**: `/admin/m2oidc/sessions/index` lists all users who authenticated via OIDC, with total and active user counts per provider. Individual session records can be deleted via `Sessions/Delete.php` (POST, with confirmation dialog).
+- **Zitadel support**: `OidcAuthenticationService` handles Zitadel-specific claim encoding (`claim_encoding = base64`) and nested role objects (`{"role_name": {"orgId": ...}}`), normalizing them into the standard flat group list consumed by the rest of the module.
+- **Public client support**: `AccessTokenRequest` omits `client_secret` when `public_client` is enabled, supporting RFC 6749 §2.1 public clients (e.g., Zitadel PKCE apps without a secret).
 - **CLI tools**: `bin/magento oauth:config:export` and `bin/magento oauth:config:import` for moving provider configuration across environments.
 - **Health check**: `GET /m2oidc/health/check` tests IdP reachability from Magento and returns JSON status.
 
@@ -93,7 +95,7 @@ Click **Test Configuration** in the admin panel. You'll be redirected to your ID
 This module solves real-world authentication challenges in enterprise and e-commerce environments:
 
 **Enterprise SSO Integration**
-- Centralize identity management with corporate IdP (Authelia, Keycloak, Auth0, Azure AD, Okta, Google)
+- Centralize identity management with corporate IdP (Authelia, Keycloak, Auth0, Azure AD, Okta, Google, Zitadel)
 - Single identity across multiple systems (Magento + other enterprise applications)
 - Compliance requirements: audit trails via IdP, centralized access logs, GDPR-compliant identity management
 - Eliminate password management overhead: no password resets, no credential storage, no password policies
@@ -392,6 +394,23 @@ Syncs customer profile and address fields from OIDC claims on every login when t
 | `syncProfile` | `(CustomerInterface $customer, array $flattenedAttrs)` | `void` | Re-maps core profile fields (name, DOB, gender, phone) from the current OIDC claim set and saves the customer. Called by `ProcessUserAction` when `sync_customer_profile_on_sso` is set. |
 | `syncAddress` | `(CustomerInterface $customer, array $flattenedAttrs)` | `void` | Re-maps billing and shipping address fields from OIDC claims and upserts the customer's default addresses. Called by `ProcessUserAction` when `sync_customer_address_on_sso` is set. |
 
+### `\M2Oidc\OAuth\Model\Service\OidcAuthenticationService`
+
+Core service for processing OIDC provider responses. Centralizes parsing logic previously scattered across controllers. Injected into `CheckAttributeMappingAction` and `CustomerUserCreator`.
+
+| Method | Signature | Returns | Description |
+|---|---|---|---|
+| `validateUserInfo` | `(array $userInfo): void` | `void` | Validates that the OAuth provider response is not empty and contains no error keys. Throws `IncorrectUserInfoDataException` on failure. |
+| `flattenAttributes` | `(array $attrs, string $prefix = '', int $depth = 0): array` | `array` | Recursively flattens a nested OIDC attribute array into a dot-notation keyed flat array (e.g., `address.city`). When `claim_encoding = base64` is active, attempts to Base64-decode string values and validates UTF-8 before including them. Depth limit: `MAX_RECURSION_DEPTH = 5`. |
+| `extractEmail` | `(array $flatAttrs, string $emailAttrKey): string` | `string` | Reads `$emailAttrKey` from the flattened attributes. Falls back to `findEmailRecursive()` on the raw response if not found. Returns an empty string if no email is located. |
+| `extractLoginType` | `(array $flatAttrs): string` | `string` | Determines whether the current flow is an admin or customer login based on the stored session context. Returns `'admin'` or `'customer'`. |
+| `normalizeGroups` | `(mixed $groups): array` | `array` | Normalizes the OIDC group claim into a plain PHP string array. Handles three formats: (1) plain string → single-element array, (2) flat array of strings → returned as-is, (3) Zitadel nested object (`{"role_name": {"orgId": ...}}`) → extracts top-level keys as group names. |
+| `normalizeZitadelRoleClaimsForDisplay` | `(array $flatAttrs, string $groupAttr): array` | `array` | For Zitadel providers, reconstructs human-readable parent role keys from dot-notation flattened subkeys (e.g., `roles.admin.orgId → admin`). Used in the Test Configuration display to show the original role names. |
+| `reconstructNestedGroupClaim` | `(array $flatAttrs, string $groupAttr): void` | `void` | Synthesizes a parent group key from dot-notation subkeys in the flattened attribute array, mutating `$flatAttrs` in place. Called internally by `normalizeZitadelRoleClaimsForDisplay()`. |
+| `findEmailRecursive` | `(mixed $data): ?string` | `string\|null` | Recursively searches any depth of the raw OIDC response for a value that passes PHP's `filter_var($v, FILTER_VALIDATE_EMAIL)`. Used as a last-resort fallback when the configured `email_attribute` is not present. |
+
+---
+
 ### `\M2Oidc\OAuth\Model\Auth\OidcCredentialAdapter`
 
 Implements `Magento\Backend\Model\Auth\Credential\StorageInterface`. This is the bridge between OIDC and Magento's native admin auth.
@@ -628,6 +647,18 @@ The context is carried in the OIDC `state` parameter that the IdP echoes back ve
 
 **Authelia is unaffected**: Authelia uses `?rd=<url>` and never calls this callback endpoint — it redirects directly to the URL in `rd`. No configuration change is needed for Authelia setups.
 
+### 26. Zitadel sends claims Base64-encoded — set `claim_encoding = base64`
+
+By default Zitadel encodes custom metadata claim values as Base64 strings. If you see garbled or unreadable attribute values in the Test Configuration view, set **Claim Encoding** to `base64` in the OAuth Settings tab for the Zitadel provider. `OidcAuthenticationService::flattenAttributes()` will then attempt to Base64-decode each string value and validate UTF-8 before including it in the flattened attribute map. If decoding fails or the result is not valid UTF-8, the original (encoded) value is used instead.
+
+### 27. Zitadel roles arrive as nested objects — not a flat group array
+
+Zitadel sends role claims in the format `{"role_name": {"orgId": "..."}}` rather than a simple `["role1", "role2"]` array. `OidcAuthenticationService::normalizeGroups()` detects this structure and extracts the top-level keys (`role_name`) as the effective group names, which are then matched against `m2oidc_oauth_role_mappings`. Configure your role mappings using the role **name** (the object key), not the nested `orgId` value.
+
+### 28. Public clients must have `public_client = 1` set — not just an empty secret
+
+If your Zitadel application is a PKCE app without a client secret (RFC 6749 §2.1), leave **Client Secret** blank **and** enable the **Public Client** toggle. Without the toggle, `AccessTokenRequest` will still include an empty `client_secret` parameter in the POST body, which some IdPs (including Zitadel) reject as an invalid client assertion. The toggle instructs the module to omit the parameter entirely.
+
 ### 18. Multi-website customer login uses website context validation (SEC-08)
 
 `CustomerOidcCallback` checks that the authenticated customer belongs to the current Magento website. A customer created on website A cannot log in via OIDC on website B. This prevents cross-site session injection in multi-website setups. If a customer reports SSO working in one store but not another, verify their customer account's website assignment in **Customers > All Customers**.
@@ -690,6 +721,7 @@ Previously, a test-mode run would write an `IS_TEST` flag to `core_config_data` 
 | `Magento\Backend\Block\System\Account\Edit\Form` | `OidcIdentityFieldPlugin` | 20 | adminhtml | Same for account settings form |
 | `Magento\User\Block\User\Edit\Tab\Main` | `OidcUserInfoPlugin` | 20 | adminhtml | Injects OIDC provider info into admin user profile page |
 | `Magento\Customer\Block\Account\Dashboard` | `OidcInfoPlugin` | 20 | frontend | Injects OIDC provider info into customer account page |
+| `Magento\User\Model\User` | `AdminUserDeletePlugin` | 10 | global | `afterDelete`: removes matching row from `m2oidc_oauth_user_provider`; belt-and-suspenders alongside `AdminUserDeleteObserver` |
 
 ### Events Observed
 
@@ -760,7 +792,9 @@ M2Oidc_OAuth/
 │       │   └── Oidccallback.php              # Admin login: redeems nonce, calls Auth::login() with OIDC marker
 │       ├── OAuthsettings/Index.php           # Admin page: OAuth Settings
 │       ├── Attrsettings/Index.php            # Admin page: Attribute Mapping
-│       └── Signinsettings/Index.php          # Admin page: Sign In Settings
+│       ├── Signinsettings/Index.php          # Admin page: Sign In Settings
+│       ├── Provider/Save.php                 # Provider CRUD save; validates required attr fields; runs lockout-prevention guard; auto-discovery fetch
+│       └── Sessions/Delete.php               # POST: deletes individual session activity record by ID; requires M2Oidc_OAuth::oidc_sessions
 │
 ├── Model/
 │   ├── Auth/
@@ -774,7 +808,7 @@ M2Oidc_OAuth/
 │   │   ├── AdminTokenRefreshService.php      # Silent access-token refresh for admin AuthSession
 │   │   ├── CustomerUserCreator.php           # JIT customer provisioning + address/group creation
 │   │   ├── CustomerProfileSyncService.php    # Syncs customer profile and address from OIDC claims on login
-│   │   ├── OidcAuthenticationService.php     # Validates extracted user info post-token exchange
+│   │   ├── OidcAuthenticationService.php     # Core OIDC response processor: validates, flattens, extracts email/type/groups; Zitadel Base64 + nested role normalization
 │   │   ├── TokenRefreshService.php           # Silent access-token refresh for customer session
 │   │   └── UserProvisioningService.php       # Orchestrates admin/customer provisioning
 │   ├── Resolver/                             # GraphQL resolvers (if GraphQL module present)
@@ -799,6 +833,7 @@ M2Oidc_OAuth/
 │   │   └── Block/
 │   │       └── OidcInfoPlugin.php            # Injects OIDC provider info into customer account page
 │   └── User/
+│       ├── AdminUserDeletePlugin.php           # afterDelete on Magento\User\Model\User; removes m2oidc_oauth_user_provider row; belt-and-suspenders alongside AdminUserDeleteObserver
 │       ├── OidcIdentityVerificationPlugin.php  # Bypasses password re-verification
 │       ├── OidcPasswordExpirationPlugin.php    # Suppresses password expiry warnings
 │       ├── OidcForcePasswordChangePlugin.php   # Suppresses forced password change
@@ -818,7 +853,7 @@ M2Oidc_OAuth/
 │   ├── TestResults.php                       # Test configuration HTML output
 │   └── OAuth/
 │       ├── AuthorizationRequest.php          # Builds the authorize URL query string (includes PKCE challenge)
-│       ├── AccessTokenRequest.php            # Builds the token exchange POST body
+│       ├── AccessTokenRequest.php            # Builds the token exchange POST body; PKCE code_verifier support; omits client_secret for public clients (RFC 6749 §2.1)
 │       └── AccessTokenRequestBody.php        # Alternate token body (header auth variant)
 │
 ├── UI/
@@ -829,7 +864,9 @@ M2Oidc_OAuth/
 │   ├── Component/Listing/Column/OnlineStatus.php       # Shows providers with active sessions
 │   ├── Component/Listing/Column/PkceStatus.php         # PKCE configuration status badge
 │   ├── Component/Listing/Column/JwksStatus.php         # JWKS endpoint status badge
-│   └── Component/Listing/Column/TestStatusOptions.php  # Test result status badge
+│   ├── Component/Listing/Column/TestStatusOptions.php  # Test result status badge
+│   ├── Component/Listing/Column/ActiveStatus.php       # Colored Active/Inactive badge for provider listing; reads is_active from collection — no extra DB query
+│   └── Component/Listing/Column/SessionActions.php     # "Delete" action link per row in the session activity grid; POST URL with confirmation dialog
 ├── ViewModel/                                # View models for admin templates
 │
 ├── Block/
@@ -949,6 +986,8 @@ Key columns:
 | `autoredirect_admin`, `autoredirect_customer` | Auto-redirect from login page |
 | `is_active`, `login_type`, `sort_order` | Multi-provider: activation, scope ('customer'/'admin'/'both'), display order |
 | `idp_initiated_enabled` | Smallint (default 0); enables IdP-Initiated SSO for this provider (Login Options tab) |
+| `claim_encoding` | Varchar; `'none'` (default) or `'base64'`. Set to `'base64'` for Zitadel providers that Base64-encode their claim values; `OidcAuthenticationService::flattenAttributes()` decodes and UTF-8-validates each value before use. |
+| `public_client` | Smallint 0\|1 (default 0). When enabled, `AccessTokenRequest` omits `client_secret` from the token exchange — required for RFC 6749 §2.1 public clients (e.g., Zitadel PKCE apps without a client secret). |
 | `display_name`, `button_label`, `button_color` | Multi-provider UI customization |
 | `sync_customer_profile_on_sso`, `sync_customer_address_on_sso`, `sync_customer_group_on_sso` | Re-sync customer data on every login |
 | `sync_admin_profile_on_sso`, `sync_admin_role_on_sso` | Re-sync admin data on every login |
@@ -994,6 +1033,13 @@ Key columns:
 | `created_at` | Timestamp, auto-set on insert |
 
 Unique constraint on `(user_type, user_id)` — each Magento user is linked to at most one provider. Used by the logout observer to retrieve the correct `endsession_endpoint` for the logged-in user's provider.
+
+Records are cleaned up in three ways:
+1. **`AdminUserDeleteObserver`** — fires on `admin_user_delete_after`; removes the row for the deleted admin
+2. **`AdminUserDeletePlugin`** (`Plugin/User/AdminUserDeletePlugin.php`) — `afterDelete` on `Magento\User\Model\User`; belt-and-suspenders redundancy alongside the observer
+3. **`Sessions/Delete.php`** admin controller — allows individual record deletion from the Sessions UI (`/admin/m2oidc/sessions/index`) via a POST action; uses `UserProviderResource::deleteById()`
+
+`UserProviderResource` key methods: `saveMapping()` (INSERT … ON DUPLICATE KEY UPDATE), `deleteMapping()`, `getProviderInfo()`, `deleteById()`, `countByTypeAndProvider()` (used by lockout-prevention guards in `Provider/Save.php`).
 
 ---
 

@@ -38,7 +38,7 @@ Modern e-commerce platforms require secure, centralized authentication. This mod
 - ✅ **Back-Channel Logout**: Server-to-server logout via signed JWT logout token
 - ✅ **Claims-Based Access Control**: Rules engine with 6 operators to gate login on any claim value
 - ✅ **Optional OIDC-Only Mode**: Disable password logins entirely (with lockout safety net)
-- ✅ **Session Activity View**: Admin UI listing all users who authenticated via OIDC
+- ✅ **Session Activity View**: Admin UI listing all users who authenticated via OIDC, with per-record deletion
 - ✅ **Dirty-Field Tracking**: Visual amber highlights on modified provider form fields before save
 - ✅ **Comprehensive Debug Logging**: Detailed flow logs for troubleshooting, with automatic log rotation via a daily cron job
 - ✅ **Test Configuration UI**: Verify OIDC claims before production deployment
@@ -51,6 +51,7 @@ Modern e-commerce platforms require secure, centralized authentication. This mod
 - Okta
 - Azure Active Directory (Azure AD)
 - Google Workspace
+- Zitadel (including Base64-encoded claims and nested role objects)
 - Any OIDC-compliant Identity Provider
 
 ---
@@ -176,6 +177,8 @@ This single URL handles both admin and customer post-logout redirects. If your I
 | Scope | OAuth scopes (space-separated) | `openid profile email groups` |
 | JWKS Endpoint | (Optional) JWT verification keys URL | `https://auth.example.com/api/oidc/jwks` |
 | Logout URL | (Optional) IdP logout URL | `https://auth.example.com/api/oidc/logout` |
+| Claim Encoding | Set to `base64` for providers that Base64-encode claim values (e.g. Zitadel) | `none` (default), `base64` |
+| Public Client | Enable for providers that use PKCE without a client secret (RFC 6749 §2.1) | `No` (default) |
 
 **Tip**: Most OIDC providers support auto-discovery via `.well-known/openid-configuration`. Check your IdP's documentation.
 
@@ -482,6 +485,7 @@ Module validates JWT tokens using:
 - **Expiration validation**: Rejects expired tokens
 - **Issuer validation**: Verifies token issued by configured IdP
 - **Audience validation**: Ensures token intended for this Magento instance
+- **Public client support**: PKCE flows without `client_secret` are supported (RFC 6749 §2.1) — enable the **Public Client** setting per provider
 
 ### CSRF Protection
 

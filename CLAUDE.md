@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-This is a Magento 2 module that provides OAuth/OIDC authentication for both customer (frontend) and admin (backend) users. The module is registered as `M2Oidc_OAuth` and supports automatic admin and customer login after successful OIDC authentication, multi-provider configuration, RP-Initiated Logout, back-channel logout, and claims-based access control.
+This is a Magento 2 module that provides OAuth/OIDC authentication for both customer (frontend) and admin (backend) users. The module is registered as `M2Oidc_OAuth` and supports automatic admin and customer login after successful OIDC authentication, multi-provider configuration, RP-Initiated Logout, back-channel logout, claims-based access control, and Zitadel-specific Base64-encoded claims with nested role normalization.
 
 ## Magento 2 Development Commands
 
@@ -121,7 +121,7 @@ The module implements a dual authentication flow for admin and customer users:
 - `SendAuthorizationRequest.php`: Initiates OAuth flow; generates PKCE challenge (S256/PLAIN), encodes relay state as `{r, s, a, l, t, p}` JSON+Base64, supports multi-provider via `provider_id` param
 - `ReadAuthorizationResponse.php`: Handles OAuth callback; validates state token, consumes PKCE verifier, verifies JWT, applies rate limiting via `OidcRateLimiter`, stores id_token in transport cookie (2-min TTL); validates nonce in `id_token` from the token response even when user data comes from the userinfo endpoint (M-06: prevents replay attacks in hybrid flows)
 - `ProcessResponseAction.php`: Extracts OIDC attributes; delegates to `CheckAttributeMappingAction`
-- `CheckAttributeMappingAction.php`: Routes users based on admin/customer detection; evaluates claims-based access control rules (FEAT-04); handles admin/customer auto-creation; sets ephemeral nonce cookies for secure callback handoff
+- `CheckAttributeMappingAction.php`: Routes users based on admin/customer detection; evaluates claims-based access control rules (FEAT-04); handles admin/customer auto-creation; sets ephemeral nonce cookies for secure callback handoff; delegates OIDC response parsing to `OidcAuthenticationService`
 - `ProcessUserAction.php`: Creates or updates Magento customers via `CustomerUserCreator`; calls `CustomerProfileSyncService::syncProfile()` and `syncAddress()` on login
 - `CustomerLoginAction.php`: Legacy customer login (superseded by `CustomerOidcCallback`)
 - `CustomerOidcCallback.php`: Customer login in clean HTTP context; validates `oidc_customer_nonce` cookie via `OAuthSecurityHelper::redeemCustomerLoginNonce()`; enforces website context (SEC-08); sets `oidc_customer_authenticated` cookie
@@ -140,6 +140,7 @@ The module implements a dual authentication flow for admin and customer users:
 - `Attrsettings/Index.php`: Saves attribute mapping configuration including admin role mappings as JSON
 - `Provider/Index.php`, `Provider/Edit.php`, `Provider/Save.php`, `Provider/Delete.php`: Multi-provider management grid and CRUD
 - `Sessions/Index.php`: Admin UI listing of active OIDC sessions via `SessionDataProvider`
+- `Sessions/Delete.php`: POST handler for deleting individual session activity records; validates `id` param, calls `UserProviderResource::deleteById()`; requires admin resource `M2Oidc_OAuth::oidc_sessions`
 - `Adminhtml/Actions/HealthCheck.php`: Admin health check with configuration diagnostics
 
 #### Authentication Integration (Model/Auth/)
@@ -163,6 +164,7 @@ The module implements a dual authentication flow for admin and customer users:
 - `User/Block/OidcUserInfoPlugin.php`: Injects OIDC info block into admin user profile page
 - `Customer/Block/OidcInfoPlugin.php`: Injects OIDC info block into customer account page
 - `Csp/OidcCspPolicyCollector.php`: Adds IdP domains to Content Security Policy whitelist dynamically
+- `User/AdminUserDeletePlugin.php`: `afterDelete` on `Magento\User\Model\User`; removes the matching row from `m2oidc_oauth_user_provider` after admin user deletion; works alongside `AdminUserDeleteObserver` for belt-and-suspenders reliability
 
 #### Helpers (Helper/)
 - `OAuthUtility.php`: Core utility class; provider-aware config resolution (MP-05) via `setActiveProviderId()`/`resolveActiveProvider()`; maps 40+ config keys to `m2oidc_oauth_client_apps` columns; multi-provider support via `getAllActiveProviders()`; structured JSON logging with sensitive field masking
@@ -174,7 +176,7 @@ The module implements a dual authentication flow for admin and customer users:
 - `Data.php`: Data access layer for configuration
 - `Curl.php`: HTTP client wrapper for token endpoint calls
 - `TestResults.php`: Test configuration helpers
-- `OAuth/AuthorizationRequest.php`, `OAuth/AccessTokenRequest.php`, `OAuth/AccessTokenRequestBody.php`: OAuth protocol request builders
+- `OAuth/AuthorizationRequest.php`, `OAuth/AccessTokenRequest.php`, `OAuth/AccessTokenRequestBody.php`: OAuth protocol request builders; `AccessTokenRequest` supports PKCE via optional `$codeVerifier` parameter and public clients (omits `client_secret` when empty, per RFC 6749 §2.1)
 - `Exception/`: Custom exception types (RequiredFields, MissingAttributes, IncorrectUserInfo, etc.)
 
 #### Models & Services
@@ -186,7 +188,15 @@ The module implements a dual authentication flow for admin and customer users:
 - `CustomerUserCreator.php`: Creates/updates customers; uses `CustomerAttributeMapper` (Phase 3.2); supports DOB, gender, billing address; customer group resolution from claims; can deny creation if group not mapped (`m2oidc_dont_create_customer_if_group_not_mapped`); profile sync on SSO login
 - `CustomerProfileSyncService.php`: Syncs customer profile fields (`syncProfile()`) and billing/shipping address fields (`syncAddress()`) from OIDC claims on every login; called by `ProcessUserAction`
 - `UserProvisioningService.php`: Orchestrates admin/customer creation; fires `oidc_before_user_create` and `oidc_after_user_create` events; tracks provider ID
-- `OidcAuthenticationService.php`: Validates user info structure; extracts email; flattens nested OIDC attributes
+- `OidcAuthenticationService.php`: Core service for OIDC response processing; called by `CheckAttributeMappingAction`
+  - `validateUserInfo()`: Validates OAuth provider response for errors or empty data
+  - `flattenAttributes()`: Recursively flattens nested OIDC claims into dot-notation keys; supports Base64-decoded values (Zitadel `claim_encoding=base64`); depth limit: `MAX_RECURSION_DEPTH = 5`
+  - `extractEmail()`: Extracts email from flattened attrs with fallback recursive search
+  - `extractLoginType()`: Determines admin vs customer login context
+  - `normalizeGroups()`: Handles 3 formats — plain string, flat array, Zitadel nested object (`{"role_name": {"orgId": ...}}`)
+  - `normalizeZitadelRoleClaimsForDisplay()`: Reconstructs parent role keys from Zitadel's flattened subkeys for UI display
+  - `reconstructNestedGroupClaim()`: Synthesizes parent group keys from dot-notation subkeys
+  - `findEmailRecursive()`: Recursively searches raw response for any valid email address
 - `OidcSessionRegistry.php`: Tracks active OIDC sessions (sub/sid → PHP session ID mapping); used by `BackChannelLogout` for session destruction
 - `TokenRefreshService.php`: Manages access-token lifecycle for the customer session; mirrors `AdminTokenRefreshService` for the frontend area
 
@@ -205,7 +215,7 @@ The module implements a dual authentication flow for admin and customer users:
 - `M2oidcOauthClientApps.php` + ResourceModel: Primary provider configuration model
 - `OauthAttributeMapping.php` + ResourceModel: Normalized attribute mappings (Phase 4)
 - `OauthRoleMapping.php` + ResourceModel: Normalized role/group mappings (Phase 4)
-- `UserProvider.php` + ResourceModel: Tracks which provider created each Magento user (`m2oidc_oauth_user_provider` table)
+- `UserProvider.php` + ResourceModel: Tracks which provider created each Magento user (`m2oidc_oauth_user_provider` table); key ResourceModel methods: `saveMapping()` (upsert), `deleteMapping()` (on user deletion), `getProviderInfo()`, `deleteById()` (session record deletion), `countByTypeAndProvider()` (lockout-prevention guard)
 
 **GraphQL (Model/Resolver/):**
 - `OidcLoginUrl.php`: Resolver for `oidcLoginUrl(relayState: String)` query
@@ -233,6 +243,8 @@ The module implements a dual authentication flow for admin and customer users:
 - `Ui/Component/Listing/Column/PkceStatus.php`: Shows PKCE configuration status
 - `Ui/Component/Listing/Column/JwksStatus.php`: Shows JWKS endpoint status
 - `Ui/Component/Listing/Column/TestStatusOptions.php`: Test status badge column
+- `Ui/Component/Listing/Column/ActiveStatus.php`: Colored Active/Inactive badge for provider listing; reads `is_active` from collection data — no extra DB query; green bullet for Active, red bullet for Inactive
+- `Ui/Component/Listing/Column/SessionActions.php`: Renders "Delete" action link per row in the session activity grid; generates POST URL via `UrlBuilder`; includes confirmation dialog
 
 #### Frontend Assets (view/adminhtml/web/)
 - `js/dirtyTracking.js`: Vanilla JS (ES5-compatible) that snapshots provider form values on page load and highlights modified fields with amber border (`m2oidc-field-modified` CSS class) and modified rows (`m2oidc-row-modified`); uses `MutationObserver` to track dynamically added mapping rows
@@ -259,6 +271,8 @@ The module implements a dual authentication flow for admin and customer users:
 - Login behavior: `show_admin_link`, `show_customer_link`, `autoredirect_admin`, `autoredirect_customer`, `m2oidc_auto_create_admin`, `m2oidc_auto_create_customer`, `m2oidc_disable_non_oidc_admin_login`, `m2oidc_disable_non_oidc_customer_login`
 - Profile sync: `sync_customer_profile_on_sso`, `sync_customer_address_on_sso`, `sync_customer_group_on_sso`, `sync_admin_profile_on_sso`, `sync_admin_role_on_sso`
 - Multi-provider: `display_name`, `is_active`, `login_type` ('customer'|'admin'|'both'), `sort_order`, `button_label`, `button_color`, `idp_initiated_enabled` (smallint, default 0)
+- Encoding: `claim_encoding` ('none'|'base64') — set to `base64` for Zitadel providers that Base64-encode claim values
+- Public client: `public_client` (smallint 0|1) — omits `client_secret` from token requests for RFC 6749 §2.1 public clients
 - Testing: `last_test_status`, `last_test_at`, `received_oidc_claims` (JSON array of claim keys from last test)
 
 **Normalized Tables (Phase 4):**
@@ -277,11 +291,13 @@ The module implements a dual authentication flow for admin and customer users:
 - `sort_order`: evaluation order
 
 `m2oidc_oauth_user_provider`:
-- Tracks which OIDC provider created each Magento user
+- Tracks which OIDC provider created each Magento user; also used as the session activity log
 - `user_type`: 'customer' | 'admin'
 - `user_id`: customer entity_id or admin user_id
 - `provider_id`: FK to provider
 - `created_at`: timestamp
+- Unique constraint on `user_type + user_id` (one provider per user)
+- Records can be individually deleted from the Sessions admin UI (`Sessions/Delete.php`)
 
 ### Configuration
 
