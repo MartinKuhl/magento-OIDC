@@ -8,8 +8,9 @@ use Magento\Framework\App\Action\HttpPostActionInterface;
 use Magento\Framework\App\CsrfAwareActionInterface;
 use Magento\Framework\App\Request\InvalidRequestException;
 use Magento\Framework\App\RequestInterface;
-use Magento\Framework\App\ResponseInterface;
+use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\Controller\Result\JsonFactory;
+use Magento\Framework\Controller\ResultInterface;
 use Magento\Framework\Session\SessionManagerInterface;
 use M2Oidc\OAuth\Helper\JwtVerifier;
 use M2Oidc\OAuth\Helper\OAuthUtility;
@@ -19,7 +20,7 @@ use M2Oidc\OAuth\Model\Service\OidcSessionRegistry;
 /**
  * Back-channel (server-to-server) OIDC logout endpoint (FEAT-02).
  *
- * Route: POST /m2oidc/actions/backchannel-logout
+ * Route: POST /m2oidc/actions/backchannellogout
  *
  * The IdP calls this endpoint when a user's SSO session is terminated.
  * It validates the logout token (RFC 9068 / OIDC Back-Channel Logout 1.0),
@@ -55,6 +56,9 @@ class BackChannelLogout extends BaseAction implements HttpPostActionInterface, C
     /** @var OidcRateLimiter */
     private readonly OidcRateLimiter $rateLimiter;
 
+    /** @var ResourceConnection */
+    private readonly ResourceConnection $resourceConnection;
+
     /**
      * Initialize back-channel logout controller.
      *
@@ -64,6 +68,7 @@ class BackChannelLogout extends BaseAction implements HttpPostActionInterface, C
      * @param JwtVerifier                           $jwtVerifier
      * @param OidcSessionRegistry                   $sessionRegistry
      * @param OidcRateLimiter                       $rateLimiter
+     * @param ResourceConnection                    $resourceConnection
      */
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
@@ -71,12 +76,14 @@ class BackChannelLogout extends BaseAction implements HttpPostActionInterface, C
         JsonFactory $jsonFactory,
         JwtVerifier $jwtVerifier,
         OidcSessionRegistry $sessionRegistry,
-        OidcRateLimiter $rateLimiter
+        OidcRateLimiter $rateLimiter,
+        ResourceConnection $resourceConnection
     ) {
-        $this->jsonFactory     = $jsonFactory;
-        $this->jwtVerifier     = $jwtVerifier;
-        $this->sessionRegistry = $sessionRegistry;
-        $this->rateLimiter     = $rateLimiter;
+        $this->jsonFactory          = $jsonFactory;
+        $this->jwtVerifier          = $jwtVerifier;
+        $this->sessionRegistry      = $sessionRegistry;
+        $this->rateLimiter          = $rateLimiter;
+        $this->resourceConnection   = $resourceConnection;
         parent::__construct($context, $oauthUtility);
     }
 
@@ -84,7 +91,7 @@ class BackChannelLogout extends BaseAction implements HttpPostActionInterface, C
      * Process the IdP back-channel logout POST.
      */
     #[\Override]
-    public function execute(): ResponseInterface
+    public function execute(): ResultInterface
     {
         $request = $this->getRequest();
         $clientIp = ($request instanceof \Magento\Framework\App\Request\Http)
@@ -147,10 +154,12 @@ class BackChannelLogout extends BaseAction implements HttpPostActionInterface, C
             return $this->jsonError('logout_token must contain sub or sid.', 400);
         }
 
-        // Resolve the Magento session ID from the registry
-        $phpSessionId = $this->sessionRegistry->resolve($sub, $sid);
+        // Resolve the list of registered Magento sessions for this OIDC identity.
+        // A single OIDC sub/sid can map to multiple PHP sessions when the user is
+        // logged in as both admin and customer simultaneously.
+        $entries = $this->sessionRegistry->resolve($sub, $sid);
 
-        if ($phpSessionId === null) {
+        if ($entries === null) {
             // Session may have already expired or not been registered — treat as success
             $this->oauthUtility->customlogContext('oidc.backchannel_logout', [
                 'sub'    => $sub,
@@ -160,17 +169,24 @@ class BackChannelLogout extends BaseAction implements HttpPostActionInterface, C
             return $this->jsonOk('Session not found (already expired or logged out).');
         }
 
-        // Destroy the target session by switching to it and regenerating
-        $this->destroySession($phpSessionId);
+        // Destroy every registered PHP session and clear the Online status in DB.
+        foreach ($entries as $entry) {
+            $phpSessionId = (string) ($entry['php_session_id'] ?? '');
+            if ($phpSessionId !== '') {
+                $this->destroySession($phpSessionId);
+                $this->clearOnlineStatus($entry);
+            }
+        }
         $this->sessionRegistry->revoke($sub, $sid);
 
         $this->oauthUtility->customlogContext('oidc.backchannel_logout', [
             'sub'    => $sub,
             'sid'    => $sid,
             'result' => 'session_destroyed',
+            'count'  => count($entries),
         ]);
 
-        return $this->jsonOk('Session destroyed.');
+        return $this->jsonOk('Session(s) destroyed.');
     }
 
     // -------------------------------------------------------------------------
@@ -287,16 +303,58 @@ class BackChannelLogout extends BaseAction implements HttpPostActionInterface, C
     }
 
     /**
+     * Clear the "Online" status in core Magento tables after a back-channel session destroy.
+     *
+     * PHP session destruction removes the session data file/record but does not update
+     * the separate DB tables that `SessionDataProvider` uses for the is_online calculation:
+     *   - admin: admin_user_session.status (1 = active, 0 = logged out)
+     *   - customer: customer_log.last_logout_at (NULL or older than last_login_at = online)
+     *
+     * @param array $entry Session entry from OidcSessionRegistry::resolve()
+     */
+    private function clearOnlineStatus(array $entry): void
+    {
+        $userType  = (string) ($entry['user_type']      ?? '');
+        $userId    = (int)    ($entry['user_id']         ?? 0);
+        $sessionId = (string) ($entry['php_session_id'] ?? '');
+
+        try {
+            $conn = $this->resourceConnection->getConnection();
+            if ($userType === 'admin' && $userId > 0) {
+                // admin_user_session.session_id is deprecated (VARCHAR(1), never populated
+                // by Magento core). Filter by user_id instead and mark all active sessions
+                // for this admin as logged out (status 0 = LOGGED_OUT).
+                $conn->update(
+                    $this->resourceConnection->getTableName('admin_user_session'),
+                    ['status' => 0],
+                    ['user_id = ?' => $userId, 'status = ?' => 1]
+                );
+            } elseif ($userType === 'customer' && $userId > 0) {
+                // Setting last_logout_at makes the is_online expression evaluate to 0.
+                $conn->update(
+                    $this->resourceConnection->getTableName('customer_log'),
+                    ['last_logout_at' => (new \DateTime())->format('Y-m-d H:i:s')],
+                    ['customer_id = ?' => $userId]
+                );
+            }
+        } catch (\Exception $e) {
+            // Non-fatal: the PHP session is already destroyed; the UI will eventually
+            // show the correct offline status on its own (session expiry / next page load).
+            $this->oauthUtility->customlog(
+                'BackChannelLogout: clearOnlineStatus failed (non-fatal): ' . $e->getMessage()
+            );
+        }
+    }
+
+    /**
      * Return a JSON 200 OK response.
      *
      * @param string $message
-     * @psalm-suppress InvalidReturnType, InvalidReturnStatement
      */
-    private function jsonOk(string $message): ResponseInterface
+    private function jsonOk(string $message): ResultInterface
     {
         $result = $this->jsonFactory->create();
         $result->setData(['status' => 'ok', 'message' => $message]);
-        // @phpstan-ignore return.type
         return $result;
     }
 
@@ -305,14 +363,12 @@ class BackChannelLogout extends BaseAction implements HttpPostActionInterface, C
      *
      * @param string $message
      * @param int    $statusCode
-     * @psalm-suppress InvalidReturnType, InvalidReturnStatement
      */
-    private function jsonError(string $message, int $statusCode = 400): ResponseInterface
+    private function jsonError(string $message, int $statusCode = 400): ResultInterface
     {
         $result = $this->jsonFactory->create();
         $result->setHttpResponseCode($statusCode);
         $result->setData(['status' => 'error', 'message' => $message]);
-        // @phpstan-ignore return.type
         return $result;
     }
 }

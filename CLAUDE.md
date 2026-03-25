@@ -104,7 +104,7 @@ The module implements a dual authentication flow for admin and customer users:
    - Register this single URL with OIDC providers that only allow one Post Logout Redirect URI
 
 5. **Back-Channel Logout** (FEAT-02):
-   - Route: `POST /m2oidc/actions/backchannel-logout`
+   - Route: `POST /m2oidc/actions/backchannellogout`
    - `BackChannelLogout` controller implements `CsrfAwareActionInterface` (opts out of form-key CSRF)
    - IP-based rate limiting via `OidcRateLimiter`; returns HTTP 429 when limit exceeded
    - Decodes logout token without verification to extract `iss`; resolves matching provider
@@ -765,7 +765,7 @@ Schema defined in `etc/schema.graphqls`.
 ### If Asked About Back-Channel Logout
 
 **Already implemented** (`Controller/Actions/BackChannelLogout.php`):
-- POST endpoint: `/m2oidc/actions/backchannel-logout`
+- POST endpoint: `/m2oidc/actions/backchannellogout`
 - IP-based rate limiting via `OidcRateLimiter` (fixed-window: 10 attempts / 60s); returns HTTP 429 on exceeded limit
 - Validates logout token JWT via JWKS
 - Parses `aud` claim supporting both string and array formats

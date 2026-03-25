@@ -14,12 +14,14 @@ use Magento\Framework\App\CacheInterface;
  *
  * Storage is Magento's cache layer (default: file / Redis).
  * TTL defaults to 86400 seconds (24 h) — matching a typical IdP token lifetime.
- * Each entry is stored under a key derived from the OIDC `sub` and optional `sid`.
+ * Each key (derived from sub + sid) maps to a JSON array of session entries,
+ * supporting multiple concurrent sessions per OIDC identity (e.g. a user
+ * logged in as both admin and customer simultaneously).
  *
  * API:
- *   register(sub, sid, phpSessionId, ttl)  — call at login time
- *   resolve(sub, sid)                       — call in back-channel handler
- *   revoke(sub, sid)                        — call after the session is destroyed
+ *   register(sub, sid, phpSessionId, userType, userId, ttl) — call at login time
+ *   resolve(sub, sid)                                        — call in back-channel handler
+ *   revoke(sub, sid)                                         — call after sessions are destroyed
  */
 class OidcSessionRegistry
 {
@@ -48,46 +50,64 @@ class OidcSessionRegistry
     /**
      * Register an OIDC session mapping at login time.
      *
-     * Call this immediately after the Magento customer session is established
-     * so that a subsequent back-channel logout request can locate the session.
+     * Appends to the existing list for this sub/sid key so multiple concurrent
+     * sessions (e.g. admin + customer with the same OIDC identity) are all
+     * tracked. A stale entry with the same PHP session ID is replaced first to
+     * handle re-login without accumulating duplicate entries.
      *
      * @param string $sub          OIDC subject identifier (`sub` claim)
      * @param string $sid          OIDC session ID (`sid` claim); may be empty
      * @param string $phpSessionId PHP session ID to be destroyed on back-channel logout
+     * @param string $userType     Magento user type: 'customer' or 'admin'
+     * @param int    $userId       Magento customer entity_id or admin user_id
      * @param int    $ttl          Cache TTL in seconds (default: 86400)
      */
-    public function register(string $sub, string $sid, string $phpSessionId, int $ttl = self::DEFAULT_TTL): void
-    {
+    public function register(
+        string $sub,
+        string $sid,
+        string $phpSessionId,
+        string $userType,
+        int    $userId,
+        int    $ttl = self::DEFAULT_TTL
+    ): void {
         if ($sub === '' || $phpSessionId === '') {
             return;
         }
-        $key   = $this->buildKey($sub, $sid);
-        $value = json_encode(['php_session_id' => $phpSessionId, 'sub' => $sub, 'sid' => $sid]);
-        $this->cache->save((string) $value, $key, [self::CACHE_TAG], $ttl);
+        $key      = $this->buildKey($sub, $sid);
+        $existing = $this->loadEntries($key);
+        // Replace any stale entry with the same PHP session ID (re-login case)
+        $existing = array_values(
+            array_filter($existing, static fn($e) => $e['php_session_id'] !== $phpSessionId)
+        );
+        $existing[] = [
+            'php_session_id' => $phpSessionId,
+            'user_type'      => $userType,
+            'user_id'        => $userId,
+            'sub'            => $sub,
+            'sid'            => $sid,
+        ];
+        $this->cache->save((string) json_encode($existing), $key, [self::CACHE_TAG], $ttl);
     }
 
     /**
-     * Resolve a (sub, sid) pair to its Magento PHP session ID.
+     * Resolve a (sub, sid) pair to its list of registered session entries.
      *
-     * Returns null when the mapping does not exist or has expired.
+     * Returns null when no mapping exists or the list is empty.
+     * Each entry is an array with keys: php_session_id, user_type, user_id, sub, sid.
      *
      * @param  string $sub OIDC subject identifier
      * @param  string $sid OIDC session ID (may be empty for sub-only lookup)
-     * @return string|null PHP session ID or null if not found
+     * @return array[]|null List of session entry arrays, or null if not found
      */
-    public function resolve(string $sub, string $sid = ''): ?string
+    public function resolve(string $sub, string $sid = ''): ?array
     {
-        $key  = $this->buildKey($sub, $sid);
-        $data = $this->cache->load($key);
-        if ($data === false) {
-            return null;
-        }
-        $payload = json_decode((string) $data, true);
-        return is_array($payload) ? ($payload['php_session_id'] ?? null) : null;
+        $key     = $this->buildKey($sub, $sid);
+        $entries = $this->loadEntries($key);
+        return $entries !== [] ? $entries : null;
     }
 
     /**
-     * Remove the cached session mapping after the session has been destroyed.
+     * Remove the cached session mapping after the sessions have been destroyed.
      *
      * @param string $sub OIDC subject identifier
      * @param string $sid OIDC session ID (may be empty)
@@ -98,13 +118,41 @@ class OidcSessionRegistry
     }
 
     /**
-     * Build a stable, unique cache key for a (sub, sid) pair.
+     * Load and normalise session entries from cache.
      *
-     * SHA-1 is used for compactness — no cryptographic strength is required here.
+     * Handles both the new list format (JSON array) and the legacy single-entry
+     * format (JSON object with 'php_session_id' key) so stale cache entries
+     * written by older versions of this class do not cause errors.
+     *
+     * @param  string $key Cache key
+     * @return array[] List of session entry arrays (may be empty)
+     */
+    private function loadEntries(string $key): array
+    {
+        $raw = $this->cache->load($key);
+        if ($raw === false) {
+            return [];
+        }
+        $decoded = json_decode((string) $raw, true);
+        if (!is_array($decoded)) {
+            return [];
+        }
+        // Legacy format: single object {"php_session_id": "...", ...}
+        if (isset($decoded['php_session_id'])) {
+            return [$decoded];
+        }
+        // New format: list of entry objects
+        return array_values(
+            array_filter($decoded, static fn($e) => is_array($e) && isset($e['php_session_id']))
+        );
+    }
+
+    /**
+     * Build a stable, unique cache key for a (sub, sid) pair.
      *
      * @param  string $sub
      * @param  string $sid
-     * @return string Cache key, e.g. "oidc_sess_<40-char hash>"
+     * @return string Cache key, e.g. "oidc_sess_<64-char hash>"
      */
     private function buildKey(string $sub, string $sid): string
     {

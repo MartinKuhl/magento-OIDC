@@ -55,7 +55,7 @@ staticClients:
       name: "M2Oidc OIDC Test Client"
       redirectURIs:
           - "http://localhost/m2oidc/actions/readauthresponse"
-          - "http://localhost/m2oidc/actions/backchannel-logout"
+          - "http://localhost/m2oidc/actions/backchannellogout"
       # Grant types — password is required for the ROPC flow used by integration tests
       grantTypes:
           - authorization_code

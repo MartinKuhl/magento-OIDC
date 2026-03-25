@@ -17,8 +17,10 @@ use Magento\Store\Model\StoreManagerInterface;
 use Magento\Framework\Stdlib\CookieManagerInterface;
 use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
 use Magento\Customer\Api\CustomerRepositoryInterface;
+use M2Oidc\OAuth\Helper\JwtVerifier;
 use M2Oidc\OAuth\Helper\OAuthSecurityHelper;
 use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Model\Service\OidcSessionRegistry;
 use Magento\Framework\Controller\Result\Redirect;
 
 /**
@@ -52,6 +54,12 @@ class CustomerOidcCallback extends BaseAction
     /** @var CustomerRepositoryInterface */
     private readonly CustomerRepositoryInterface $customerRepository;
 
+    /** @var JwtVerifier */
+    private readonly JwtVerifier $jwtVerifier;
+
+    /** @var OidcSessionRegistry */
+    private readonly OidcSessionRegistry $sessionRegistry;
+
     /**
      * Initialize customer OIDC callback controller.
      *
@@ -66,6 +74,8 @@ class CustomerOidcCallback extends BaseAction
      * @param OAuthSecurityHelper $securityHelper Security helper
      * @param CustomerRepositoryInterface $customerRepository
      *        Customer repository
+     * @param JwtVerifier $jwtVerifier JWT decoder (for sub/sid extraction)
+     * @param OidcSessionRegistry $sessionRegistry OIDC session registry
      */
     public function __construct(
         Context $context,
@@ -76,7 +86,9 @@ class CustomerOidcCallback extends BaseAction
         CookieManagerInterface $cookieManager,
         CookieMetadataFactory $cookieMetadataFactory,
         OAuthSecurityHelper $securityHelper,
-        CustomerRepositoryInterface $customerRepository
+        CustomerRepositoryInterface $customerRepository,
+        JwtVerifier $jwtVerifier,
+        OidcSessionRegistry $sessionRegistry
     ) {
         $this->customerFactory = $customerFactory;
         $this->customerSession = $customerSession;
@@ -85,6 +97,8 @@ class CustomerOidcCallback extends BaseAction
         $this->cookieMetadataFactory = $cookieMetadataFactory;
         $this->securityHelper = $securityHelper;
         $this->customerRepository = $customerRepository;
+        $this->jwtVerifier = $jwtVerifier;
+        $this->sessionRegistry = $sessionRegistry;
         parent::__construct($context, $oauthUtility);
     }
 
@@ -246,6 +260,21 @@ class CustomerOidcCallback extends BaseAction
                 $this->oauthUtility->customlog(
                     'CustomerOidcCallback: id_token persisted in customer session'
                 );
+
+                // FEAT-02: Register this PHP session so BackChannelLogout can destroy it.
+                // The token was already verified in ReadAuthorizationResponse; decoding
+                // without verification here is safe and avoids a redundant JWKS fetch.
+                $claims = $this->jwtVerifier->decodeWithoutVerification($idToken);
+                $sub = (string) ($claims['sub'] ?? '');
+                $sid = (string) ($claims['sid'] ?? '');
+                $phpSessionId = $this->customerSession->getSessionId();
+                $cid = (int) $this->customerSession->getCustomerId();
+                if ($sub !== '' && $phpSessionId !== '') {
+                    $this->sessionRegistry->register($sub, $sid, $phpSessionId, 'customer', $cid);
+                    $this->oauthUtility->customlog(
+                        'CustomerOidcCallback: OIDC session registered for back-channel logout'
+                    );
+                }
             } catch (\Exception $e) {
                 $this->oauthUtility->customlog(
                     'CustomerOidcCallback: Failed to decrypt id_token transport cookie: '

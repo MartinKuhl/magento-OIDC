@@ -13,9 +13,11 @@ use Magento\Framework\UrlInterface;
 use Magento\Framework\Stdlib\CookieManagerInterface;
 use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
 use Magento\Backend\Model\UrlInterface as BackendUrlInterface;
+use M2Oidc\OAuth\Helper\JwtVerifier;
 use M2Oidc\OAuth\Helper\OAuthSecurityHelper;
 use M2Oidc\OAuth\Model\Security\OidcRateLimiter;
 use M2Oidc\OAuth\Model\Service\AdminTokenRefreshService;
+use M2Oidc\OAuth\Model\Service\OidcSessionRegistry;
 
 /**
  * OIDC Callback Controller for Admin Login
@@ -72,6 +74,12 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
     /** @var OidcRateLimiter */
     private readonly OidcRateLimiter $rateLimiter;
 
+    /** @var JwtVerifier */
+    private readonly JwtVerifier $jwtVerifier;
+
+    /** @var OidcSessionRegistry */
+    private readonly OidcSessionRegistry $sessionRegistry;
+
     /**
      * Initialize OIDC callback action.
      *
@@ -88,6 +96,8 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
      * @param \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
      * @param AdminTokenRefreshService                           $adminTokenRefreshService
      * @param OidcRateLimiter                                    $rateLimiter
+     * @param JwtVerifier                                        $jwtVerifier
+     * @param OidcSessionRegistry                                $sessionRegistry
      */
     public function __construct(
         \Magento\Backend\Model\Auth $auth,
@@ -102,7 +112,9 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
         OAuthSecurityHelper $securityHelper,
         \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
         AdminTokenRefreshService $adminTokenRefreshService,
-        OidcRateLimiter $rateLimiter
+        OidcRateLimiter $rateLimiter,
+        JwtVerifier $jwtVerifier,
+        OidcSessionRegistry $sessionRegistry
     ) {
         $this->auth = $auth;
         $this->resultFactory = $resultFactory;
@@ -117,6 +129,8 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
         $this->scopeConfig = $scopeConfig;
         $this->adminTokenRefreshService = $adminTokenRefreshService;
         $this->rateLimiter = $rateLimiter;
+        $this->jwtVerifier = $jwtVerifier;
+        $this->sessionRegistry = $sessionRegistry;
     }
 
     /**
@@ -257,6 +271,24 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
                 $this->oauthUtility->customlog(
                     'Oidccallback: id_token persisted in admin session, provider_id=' . $providerId
                 );
+
+                // FEAT-02: Register admin session for back-channel logout.
+                // The token was already verified in ReadAuthorizationResponse; decoding
+                // without verification here is safe and avoids a redundant JWKS fetch.
+                $claims = $this->jwtVerifier->decodeWithoutVerification($idToken);
+                $sub = (string) ($claims['sub'] ?? '');
+                $sid = (string) ($claims['sid'] ?? '');
+                /** @psalm-suppress UndefinedInterfaceMethod */
+                // @phpstan-ignore-next-line
+                $adminUser = $this->auth->getAuthStorage()->getUser();
+                $adminId = $adminUser ? (int) $adminUser->getId() : 0;
+                $phpSessionId = (string) session_id();
+                if ($sub !== '' && $phpSessionId !== '' && $adminId > 0) {
+                    $this->sessionRegistry->register($sub, $sid, $phpSessionId, 'admin', $adminId);
+                    $this->oauthUtility->customlog(
+                        'Oidccallback: OIDC session registered for back-channel logout, admin_id=' . $adminId
+                    );
+                }
             } catch (\Exception $e) {
                 $this->oauthUtility->customlog(
                     'Oidccallback: Failed to decrypt id_token transport cookie: ' . $e->getMessage()
