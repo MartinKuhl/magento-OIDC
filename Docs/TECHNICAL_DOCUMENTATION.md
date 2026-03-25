@@ -30,12 +30,12 @@ This Magento 2 module adds **OAuth 2.0 / OpenID Connect** single sign-on for bot
 - **User-delete cleanup**: `AdminUserDeleteObserver` and `CustomerDeleteObserver` remove OIDC provider mappings from `m2oidc_oauth_user_provider` when Magento users are deleted, keeping the Sessions activity view accurate.
 - **Dirty-field tracking**: `view/adminhtml/web/js/dirtyTracking.js` highlights modified provider form fields with an amber border before save, using `MutationObserver` to track dynamically added mapping rows.
 - **PKCE (RFC 7636)**: supports S256 and plain code challenge methods. The code verifier is stored per provider ID in the session — concurrent logins for the same provider do not collide.
-- **Rate limiting**: `OidcRateLimiter` enforces a fixed-window IP-based rate limit (10 attempts / 60 s) on both the callback (`ReadAuthorizationResponse`) and back-channel logout (`BackChannelLogout`) endpoints to prevent code-stuffing and endpoint abuse attacks.
+- **Rate limiting**: `OidcRateLimiter` enforces a fixed-window IP-based rate limit (10 attempts / 60 s) on the customer callback (`ReadAuthorizationResponse`), admin callback (`Oidccallback`), and back-channel logout (`BackChannelLogout`) endpoints to prevent code-stuffing and endpoint abuse attacks.
 - **CSRF protection**: a token is embedded in the OAuth `state` parameter, generated on authorization request and validated on callback.
 - **RP-Initiated Logout**: on admin logout, the `OidcLogoutPlugin` captures session tokens before destruction, calls the IdP's `end_session_endpoint`, and optionally revokes the access token via RFC 7009. Supports both standard OIDC and Authelia Forward-Auth logout modes. When the IdP only allows registering a single Post Logout Redirect URI, both admin and customer flows are routed through a unified callback (`m2oidc/actions/postlogout`) that uses a context-prefix in the `state` parameter to determine the final redirect destination.
 - **Back-Channel Logout**: `POST /m2oidc/actions/backchannel-logout` accepts a signed JWT logout token from the IdP and destroys the matching PHP session via `OidcSessionRegistry`. The `aud` claim is supported in both string and array formats per the OIDC spec.
 - **Hybrid flow nonce validation (M-06)**: `ReadAuthorizationResponse` validates the nonce in the `id_token` from the token endpoint even when user data is sourced from the userinfo endpoint, preventing replay attacks in hybrid flows.
-- **Debug log rotation**: a dedicated cron job (`Cron/LogRotation.php`, registered as `m2oidc_log_rotation`, scheduled `0 3 * * *`) deletes `var/log/M2Oidc.log` and disables debug logging when the log exceeds 7 days or when debug logging has been disabled in the admin UI.
+- **Debug log cleanup**: a dedicated cron job (`Cron/LogCleanup.php`, registered as `m2oidc_log_rotation`, scheduled `0 3 * * *`) deletes `var/log/M2Oidc.log` and disables debug logging when the log exceeds 7 days or when debug logging has been disabled in the admin UI. `Cron/LogRotation.php` is a `@deprecated 3.0.8` backward-compatibility wrapper that extends `LogCleanup`.
 - **Multi-provider**: database schema and utility layer support multiple active providers with per-provider settings, managed via the Provider grid at `/admin/m2oidc/provider/index`.
 - **Session Activity view**: `/admin/m2oidc/sessions/index` lists all users who authenticated via OIDC, with total and active user counts per provider. Individual session records can be deleted via `Sessions/Delete.php` (POST, with confirmation dialog).
 - **Zitadel support**: `OidcAuthenticationService` handles Zitadel-specific claim encoding (`claim_encoding = base64`) and nested role objects (`{"role_name": {"orgId": ...}}`), normalizing them into the standard flat group list consumed by the rest of the module.
@@ -213,10 +213,10 @@ This module solves real-world authentication challenges in enterprise and e-comm
 - The `state` parameter also includes session ID, app name, login type, and provider ID (JSON+Base64 encoded)
 
 **Rate Limiting**
-- `OidcRateLimiter` enforces per-IP rate limiting using a **fixed-window** strategy: stores `{count, start}` JSON in cache; window start is recorded on the first request and the TTL is never reset on subsequent activity within the window
+- `OidcRateLimiter` enforces per-IP rate limiting using a **fixed-window** strategy: stores `{count, start}` JSON in cache; window start is recorded on the first request and the TTL is never reset on subsequent activity within the window; corrupted cache entries are detected and reset safely (guards against divide-by-zero and JSON parse errors)
 - Constants: `MAX_ATTEMPTS = 10`, `WINDOW_SECONDS = 60`
-- Applied to both `ReadAuthorizationResponse` (callback endpoint) and `BackChannelLogout` (back-channel logout endpoint); returns HTTP 429 when the limit is exceeded on `BackChannelLogout`
-- Prevents attackers from replaying or enumerating authorization codes and from hammering the back-channel logout endpoint
+- Applied to `ReadAuthorizationResponse` (customer callback), `Oidccallback` (admin callback), and `BackChannelLogout` (back-channel logout); returns HTTP 429 when the limit is exceeded on `BackChannelLogout`; redirects to the admin login page with an error on `Oidccallback`
+- Prevents attackers from replaying or enumerating authorization codes and from hammering both callback and back-channel logout endpoints
 
 **Lockout-Prevention Guard**
 - `Controller/Adminhtml/Provider/Save.php` checks `m2oidc_oauth_user_provider` before saving
@@ -242,7 +242,7 @@ This module solves real-world authentication challenges in enterprise and e-comm
 - No Magento-specific MFA plugins required
 
 **Session Security**
-- Nonce cookies (`oidc_admin_nonce`, `oidc_customer_nonce`) are one-time use, 120s TTL, HttpOnly, Secure, SameSite=Lax
+- Nonce cookies (`oidc_admin_nonce`, `oidc_customer_nonce`) are one-time use, 300s TTL (5 minutes), HttpOnly, Secure, SameSite=Lax
 - Nonces are created and validated by `OAuthSecurityHelper` via Magento's cache layer
 - Cross-origin session handling: `SameSite=None; Secure; HttpOnly` applied to session cookies during OIDC routes only
 - `SessionCookieObserver` applies only to `/m2oidc/` routes — does not affect other cookies globally
@@ -250,8 +250,10 @@ This module solves real-world authentication challenges in enterprise and e-comm
 
 **JWT Verification**
 - Validates JWT tokens using RS256/384/512 signatures
-- JWKS endpoint fetching with 24-hour cache (SHA-256 keyed); auto-refresh on signature mismatch for key rotation support
+- JWKS endpoint fetching with a configurable per-provider cache TTL (default 86400 s / 24 h) via the `jwks_cache_ttl` column in `m2oidc_oauth_client_apps`; SHA-256 keyed; auto-refresh on signature mismatch for key rotation support
+- **Circuit-breaker**: after a failed JWKS re-fetch, a `m2oidc_jwks_fail_*` cache key blocks further re-fetch attempts for 60 s to prevent hammering an unavailable IdP
 - Key ID (kid) matching, token expiration, issuer, and audience validation
+- Nonce validation: if `expectedNonce` is `null`, a WARNING is logged so operators can detect misconfigured hybrid flows
 - Prevents token forgery and replay attacks
 
 **PKCE (RFC 7636)**
@@ -269,6 +271,11 @@ This module solves real-world authentication challenges in enterprise and e-comm
 - Customer logout (`OAuthLogoutObserver`) follows the same pattern: `state` is prefixed `customer:<hex>`, `post_logout_redirect_uri` points to the unified callback; Authelia mode uses `rd=<customerLoginUrl>` unchanged
 - A short-lived `oidc_logout_guard` cookie (120s) prevents `AdminLoginRestrictionPlugin` from triggering an immediate re-login loop after redirect
 - **Unified Post Logout Callback** (`Controller/Actions/PostLogoutCallback.php`): `GET /m2oidc/actions/postlogout` reads the `state` parameter echoed back by the IdP, parses the `admin:` or `customer:` prefix, and redirects to the admin login page or customer login page respectively; unknown/absent state falls back to store home
+
+**Open Redirect Protection**
+- `validateRedirectUrl()` in `OAuthSecurityHelper` enforces same-origin validation for all relay-state redirects
+- Additionally rejects URLs containing null bytes (`\x00`) or backslashes (`\`) — common browser-specific bypass vectors
+- Login-page relay states are also blocked to prevent redirect loops
 
 **Admin SSO Button XSS Prevention**
 - `view/adminhtml/templates/adminssobutton.phtml` uses a `data-url` attribute with a JavaScript event listener instead of an inline `onclick` handler to prevent XSS via the URL
@@ -351,9 +358,9 @@ Handles nonce creation and validation for both admin and customer login flows. N
 
 | Method | Signature | Returns | Description |
 |---|---|---|---|
-| `createAdminLoginNonce` | `(string $email, string $relayState)` | `string` | Generates a cryptographically random nonce, stores it in cache with a 120-second TTL, and returns the nonce value. The cache entry encodes the target email and relay state. |
+| `createAdminLoginNonce` | `(string $email, string $relayState)` | `string` | Generates a cryptographically random nonce, stores it in cache with a 300-second TTL (5 minutes), and returns the nonce value. The cache entry encodes the target email and relay state. |
 | `redeemAdminLoginNonce` | `(string $nonce)` | `array\|null` | Looks up the nonce in cache. If found, deletes it immediately (one-time use) and returns the stored payload `['email', 'relay_state']`. Returns `null` if expired or not found. |
-| `createCustomerLoginNonce` | `(string $email, string $relayState)` | `string` | Same as admin variant but for customer login flows. |
+| `createCustomerLoginNonce` | `(string $email, string $relayState)` | `string` | Same as admin variant but for customer login flows. 300-second TTL. |
 | `redeemCustomerLoginNonce` | `(string $nonce)` | `array\|null` | Same as admin variant but for customer login flows. |
 
 ### `\M2Oidc\OAuth\Model\Service\AdminUserCreator`
@@ -401,7 +408,7 @@ Core service for processing OIDC provider responses. Centralizes parsing logic p
 | Method | Signature | Returns | Description |
 |---|---|---|---|
 | `validateUserInfo` | `(array $userInfo): void` | `void` | Validates that the OAuth provider response is not empty and contains no error keys. Throws `IncorrectUserInfoDataException` on failure. |
-| `flattenAttributes` | `(array $attrs, string $prefix = '', int $depth = 0): array` | `array` | Recursively flattens a nested OIDC attribute array into a dot-notation keyed flat array (e.g., `address.city`). When `claim_encoding = base64` is active, attempts to Base64-decode string values and validates UTF-8 before including them. Depth limit: `MAX_RECURSION_DEPTH = 5`. |
+| `flattenAttributes` | `(array $attrs, string $prefix = '', int $depth = 0): array` | `array` | Recursively flattens a nested OIDC attribute array into a dot-notation keyed flat array (e.g., `address.city`). When `claim_encoding = base64` is active, attempts to Base64-decode string values; validates UTF-8 and rejects decoded strings containing C0/C1 control characters (null bytes, non-printable chars) before including them. Depth limit: `MAX_RECURSION_DEPTH = 5`. **`@internal public`** — callable from `ReadAuthorizationResponse` and `ShowTestResults` controllers but not part of the stable module API. |
 | `extractEmail` | `(array $flatAttrs, string $emailAttrKey): string` | `string` | Reads `$emailAttrKey` from the flattened attributes. Falls back to `findEmailRecursive()` on the raw response if not found. Returns an empty string if no email is located. |
 | `extractLoginType` | `(array $flatAttrs): string` | `string` | Determines whether the current flow is an admin or customer login based on the stored session context. Returns `'admin'` or `'customer'`. |
 | `normalizeGroups` | `(mixed $groups): array` | `array` | Normalizes the OIDC group claim into a plain PHP string array. Handles three formats: (1) plain string → single-element array, (2) flat array of strings → returned as-is, (3) Zitadel nested object (`{"role_name": {"orgId": ...}}`) → extracts top-level keys as group names. |
@@ -417,7 +424,7 @@ Implements `Magento\Backend\Model\Auth\Credential\StorageInterface`. This is the
 
 | Method | Signature | Returns | Description |
 |---|---|---|---|
-| `authenticate` | `($username, $password)` | `bool` | Verifies the OIDC token marker (`OIDC_VERIFIED_USER`), loads the admin user by email, checks active status and role assignment. Fires `admin_user_authenticate_before` and `admin_user_authenticate_after` events with `oidc_auth => true`. |
+| `authenticate` | `($username, $password)` | `bool` | Validates the single-use ephemeral OIDC auth token (300 s cache TTL; generated by `OAuthSecurityHelper::createOidcAuthToken()`). Loads the admin user by email, checks active status and role assignment. Fires `admin_user_authenticate_before` and `admin_user_authenticate_after` events with `oidc_auth => true`. Note: `OIDC_TOKEN_MARKER` (`OIDC_VERIFIED_USER`) is deprecated and actively rejected — never use it to authenticate. |
 | `login` | `($username, $password)` | `$this` | Calls `authenticate()`, then records the login and reloads the user. |
 | `reload` | `()` | `$this` | Reloads the user model from the database. |
 
@@ -589,7 +596,7 @@ The `SessionCookieObserver` (event: `controller_front_send_response_before`) che
 
 ### 8. Debug logs auto-expire after 7 days
 
-A dedicated cron job (`Cron/LogRotation.php`, scheduled at `0 3 * * *`) handles log rotation. It disables logging and deletes `var/log/M2Oidc.log` when the log exceeds 7 days or when debug logging has been disabled in the admin UI. This logic was removed from `SendAuthorizationRequest` to avoid triggering it on every auth attempt. You'll need to re-enable debug logging in the admin panel after the file is rotated.
+A dedicated cron job (`Cron/LogCleanup.php`, registered as `m2oidc_log_rotation`, scheduled at `0 3 * * *`) handles log cleanup. It disables logging and **deletes** (does not rotate) `var/log/M2Oidc.log` when the log exceeds 7 days or when debug logging has been disabled in the admin UI. This logic was removed from `SendAuthorizationRequest` to avoid triggering it on every auth attempt. You'll need to re-enable debug logging in the admin panel after the file is deleted. Note: `Cron/LogRotation.php` still exists as a `@deprecated 3.0.8` backward-compatibility wrapper — it is no longer the class used by the cron scheduler.
 
 ### 9. The OAuth `state` parameter encodes multiple values
 
@@ -599,9 +606,9 @@ The state is formatted as a JSON+Base64 structure containing relay state, sessio
 
 When `m2oidc_disable_non_oidc_admin_login` is enabled on a provider, the `AdminLoginRestrictionPlugin` throws an `AuthenticationException` for any password-based admin login — but only if the OIDC button (`show_admin_link`) is visible on that provider. If the button is hidden, password login is allowed regardless, preventing a total lockout.
 
-### 11. Nonce cookies are one-time use with a 120-second TTL
+### 11. Nonce cookies are one-time use with a 300-second (5-minute) TTL
 
-Both `oidc_admin_nonce` and `oidc_customer_nonce` are deleted immediately upon use (via cache delete in `OAuthSecurityHelper`). If a browser is slow, has cookies blocked, or if the user navigates away and back, the nonce will be missing or expired and the callback will redirect to the login page with an error. Ensure the browser has cookies enabled and the session path is not overly restrictive.
+Both `oidc_admin_nonce` and `oidc_customer_nonce` are deleted immediately upon use (via cache delete in `OAuthSecurityHelper`). The 300 s TTL provides a comfortable window for slow IdPs and users with intermittent connectivity. If a browser has cookies blocked or the user navigates away and back, the nonce will be missing or expired and the callback will redirect to the login page with an error. Ensure the browser has cookies enabled and the session path is not overly restrictive.
 
 ### 12. PKCE verifier race condition — FIXED in current version
 
@@ -658,6 +665,14 @@ Zitadel sends role claims in the format `{"role_name": {"orgId": "..."}}` rather
 ### 28. Public clients must have `public_client = 1` set — not just an empty secret
 
 If your Zitadel application is a PKCE app without a client secret (RFC 6749 §2.1), leave **Client Secret** blank **and** enable the **Public Client** toggle. Without the toggle, `AccessTokenRequest` will still include an empty `client_secret` parameter in the POST body, which some IdPs (including Zitadel) reject as an invalid client assertion. The toggle instructs the module to omit the parameter entirely.
+
+### 29. JWKS fetch failures trigger a circuit-breaker
+
+`JwtVerifier` opens a 60-second circuit-breaker (`m2oidc_jwks_fail_*` cache key) after a failed JWKS re-fetch. While the breaker is open, signature verification returns `null` immediately rather than hammering the IdP endpoint on every auth attempt. The breaker expires automatically after 60 s. If JWKS failures persist longer, check IdP reachability and network connectivity from Magento. Check `var/log/M2Oidc.log` for `JWKS circuit-breaker open` log entries.
+
+### 30. Admin callback is now rate-limited
+
+The admin callback controller (`Controller/Adminhtml/Actions/Oidccallback.php`) applies the same IP-based rate limit (10 attempts / 60 s) as the frontend callback. Requests exceeding the limit are redirected to the admin login page with an error message (not a bare HTTP 429). All three OIDC entry points are now protected: `ReadAuthorizationResponse`, `BackChannelLogout`, and `Oidccallback`. If a legitimate admin triggers the rate limit (e.g., multiple rapid test logins), they must wait 60 s for the window to reset.
 
 ### 18. Multi-website customer login uses website context validation (SEC-08)
 
@@ -765,7 +780,8 @@ M2Oidc_OAuth/
 │       └── csp_whitelist.xml                 # Admin CSP whitelist
 │
 ├── Cron/
-│   └── LogRotation.php                       # Daily cron (03:00) for debug log rotation; deletes log when >7 days old or logging disabled
+│   ├── LogCleanup.php                        # Daily cron (03:00); deletes var/log/M2Oidc.log when >7 days old or logging disabled
+│   └── LogRotation.php                       # @deprecated 3.0.8 — BC wrapper extending LogCleanup; crontab.xml uses LogCleanup
 │
 ├── Console/
 │   ├── ExportOidcConfig.php                  # CLI: bin/magento oauth:config:export
@@ -926,7 +942,7 @@ CUSTOMER FLOW:
     -> ReadAuthorizationResponse (callback: validates CSRF+state, rate-limit check, exchanges code + PKCE verifier for tokens, verifies JWT)
     -> CheckAttributeMappingAction (evaluates access control rules, maps attributes, per-provider config override)
     -> ProcessUserAction (find/create customer, validate relay state)
-    -> CustomerLoginAction (creates oidc_customer_nonce cookie via OAuthSecurityHelper, 120s TTL)
+    -> CustomerLoginAction (creates oidc_customer_nonce cookie via OAuthSecurityHelper, 300s TTL)
     -> CustomerOidcCallback (redeems nonce via OAuthSecurityHelper, validates website context SEC-08,
                              sets customer session, sets oidc_customer_authenticated cookie, redirects to relay state)
 
@@ -935,10 +951,12 @@ ADMIN FLOW:
     -> IDP (authorize endpoint)
     -> ReadAuthorizationResponse (callback, same as customer: CSRF validation, rate limiting, JWT verification)
     -> CheckAttributeMappingAction (evaluates access control rules, loginType=admin)
-    -> [if user exists] -> creates oidc_admin_nonce cookie via OAuthSecurityHelper (120s TTL) -> redirect to Oidccallback
+    -> [if user exists] -> creates oidc_admin_nonce cookie via OAuthSecurityHelper (300s TTL) -> redirect to Oidccallback
     -> [if auto-create] -> AdminUserCreator (group→role mapping) -> creates nonce -> redirect to Oidccallback
-    -> Oidccallback -> redeems nonce via OAuthSecurityHelper -> Auth::login($email, 'OIDC_VERIFIED_USER')
-       |-> OidcCredentialPlugin detects marker (after resetting guard flags) -> injects OidcCredentialAdapter
+    -> Oidccallback -> rate-limit check (OidcRateLimiter) -> redeems nonce via OAuthSecurityHelper
+                    -> creates ephemeral auth token (OAuthSecurityHelper::createOidcAuthToken(), 300s TTL)
+                    -> Auth::login($email, $ephemeralToken)
+       |-> OidcCredentialPlugin detects OIDC_ token prefix (after resetting guard flags) -> injects OidcCredentialAdapter
        |-> OidcCaptchaBypassPlugin skips CAPTCHA
        |-> OidcCredentialAdapter authenticates (no password check; fires auth events with oidc_auth=true)
        |-> All Magento security events fire normally
@@ -986,7 +1004,8 @@ Key columns:
 | `autoredirect_admin`, `autoredirect_customer` | Auto-redirect from login page |
 | `is_active`, `login_type`, `sort_order` | Multi-provider: activation, scope ('customer'/'admin'/'both'), display order |
 | `idp_initiated_enabled` | Smallint (default 0); enables IdP-Initiated SSO for this provider (Login Options tab) |
-| `claim_encoding` | Varchar; `'none'` (default) or `'base64'`. Set to `'base64'` for Zitadel providers that Base64-encode their claim values; `OidcAuthenticationService::flattenAttributes()` decodes and UTF-8-validates each value before use. |
+| `jwks_cache_ttl` | Int, nullable, default 86400. Per-provider JWKS public-key cache lifetime in seconds. Read by `JwtVerifier` via `OAuthConstants::JWKS_CACHE_TTL`; falls back to 86400 when null. Run `bin/magento setup:upgrade` after adding this column via schema migration. |
+| `claim_encoding` | Varchar; `'none'` (default) or `'base64'`. Set to `'base64'` for Zitadel providers that Base64-encode their claim values; `OidcAuthenticationService::flattenAttributes()` decodes, UTF-8-validates, and rejects decoded strings containing C0/C1 control characters before use. |
 | `public_client` | Smallint 0\|1 (default 0). When enabled, `AccessTokenRequest` omits `client_secret` from the token exchange — required for RFC 6749 §2.1 public clients (e.g., Zitadel PKCE apps without a client secret). |
 | `display_name`, `button_label`, `button_color` | Multi-provider UI customization |
 | `sync_customer_profile_on_sso`, `sync_customer_address_on_sso`, `sync_customer_group_on_sso` | Re-sync customer data on every login |
@@ -1096,3 +1115,44 @@ This section documents remaining technical debt and potential enhancements. Item
 - **Remaining**: Error messages for attribute mapping mismatches and role-mapping failures are still generic in some paths
   - "OIDC provider returned email claim 'Email' but expected 'email' — check attribute mapping"
   - "Admin role mapping failed: no role found for group 'Engineers' — configure role mapping or set default role"
+
+---
+
+### Pending Architectural Refactors (v4.x)
+
+**God-Class Split: `Helper/OAuthUtility.php` (~600 lines)** *(Issue #12)*
+
+Incremental extraction order (backward-compatible facade pattern):
+1. `OidcLogger` — wraps `customlog()`, `customlogContext()`, sensitive-field masking
+2. `ProviderResolver` — `setActiveProviderId()`, `resolveActiveProvider()`, `getAllActiveProviders()`
+3. `OidcConfigReader` — 40+ config key → DB column mappings (`getStoreConfig()`)
+
+Keep `OAuthUtility` as a thin facade delegating to the above; zero breakage for existing callers. One PR per extracted class.
+
+**God-Class Split: `Helper/Data.php` (~627 lines)** *(Issue #13)*
+
+After #12: audit duplication with `OAuthUtility`; migrate DB operations to `OidcProviderRepository`; extract encryption to `OidcEncryptionService`; unify config reads with `OidcConfigReader`.
+
+**Sliding-Window Rate Limiting** *(F1)*
+
+Replace the current fixed-window strategy with a sliding-window approach using Redis `ZRANGEBYSCORE` for burst tolerance. Requires a Redis-specific rate-limiter strategy and a DI virtual type.
+
+**Configurable PKCE Storage for Admin** *(F2)*
+
+Migrate admin PKCE code verifier from the `pkce_code_verifier` database column to session/cache storage (mirrors the already-fixed customer flow).
+
+**Atomic Token Operations via `GETDEL`** *(F3)*
+
+Introduce an `AtomicCacheInterface` strategy with a Redis adapter to eliminate the TOCTOU (read-then-delete) race condition on state token and nonce consume operations. On file cache (single-server), the current non-atomic pattern is low risk; on Redis in high-concurrency deployments, two concurrent callbacks could both pass validation without `GETDEL`.
+
+**OIDC Discovery Periodic Re-fetch** *(F4)*
+
+Add `Cron/RefreshOidcDiscovery.php` to automatically re-fetch `.well-known/openid-configuration` on a schedule, keeping endpoints and issuer up-to-date without requiring a manual provider save.
+
+**Granular Sync Flags per Attribute** *(F5)*
+
+Move `sync_admin_role_on_sso`, `sync_customer_profile_on_sso`, etc. into per-row flags on `m2oidc_oauth_attribute_mappings`, allowing per-attribute sync control instead of coarse all-or-nothing toggles.
+
+**Structured JSON-Lines Logging** *(F6)*
+
+Emit all `customlog()` calls as JSON-lines (`{"ts":"...","level":"debug","message":"..."}`) for structured log ingestion. This is a backward-incompatible change for existing log parsers and regex-based monitoring.

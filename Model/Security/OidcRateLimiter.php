@@ -59,9 +59,22 @@ class OidcRateLimiter
             return true;
         }
 
+        try {
+            $data = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
+        } catch (\JsonException $e) {
+            $data = null;
+        }
+        // Guard against corrupted or unexpected cache entries.
+        // If the decoded value is not a valid array with the expected keys, reset to a fresh window.
+        // Falling back to start=0 would set elapsed≈time(), exceeding WINDOW_SECONDS and resetting
+        // the limiter — which would allow unlimited attempts via a single corrupted entry.
+        if (!is_array($data) || !isset($data['count'], $data['start'])) {
+            $entry = json_encode(['count' => 1, 'start' => time()], JSON_THROW_ON_ERROR);
+            $this->cache->save($entry, $key, [], self::WINDOW_SECONDS);
+            return true;
+        }
         /** @var array{count: int, start: int} $data */
-        $data    = json_decode($raw, true);
-        $elapsed = time() - (int) ($data['start'] ?? 0);
+        $elapsed = time() - (int) $data['start'];
 
         if ($elapsed >= self::WINDOW_SECONDS) {
             // Window has expired — start a fresh window

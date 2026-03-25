@@ -27,10 +27,10 @@ use M2Oidc\OAuth\Helper\OAuthSecurityHelper;
 class OidcCredentialAdapter implements StorageInterface
 {
     /**
-     * @deprecated C-01: Replaced by ephemeral per-request tokens via OAuthSecurityHelper::createOidcAuthToken().
-     *             Kept as a named constant only so that any external code that still
-     *             references it gets a deprecation-visible symbol rather than a fatal error.
-     *             Do NOT use this value to authenticate — it will be rejected.
+     * @deprecated 3.0.0 Use OAuthSecurityHelper::createOidcAuthToken() instead. Will be removed in v4.0.0.
+     *             Value 'OIDC_VERIFIED_USER' is actively rejected inside authenticate() — it can never
+     *             be used to log in. Kept only so external code referencing this constant gets a
+     *             deprecation warning from static analysis tools rather than a fatal error at runtime.
      */
     public const OIDC_TOKEN_MARKER = 'OIDC_VERIFIED_USER';
 

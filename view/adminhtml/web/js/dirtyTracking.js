@@ -10,10 +10,8 @@
  * Dynamic mapping rows added via cloneNode() are handled by a MutationObserver
  * so newly added inputs are snapshotted as "empty = original" and highlight as
  * soon as the user types a value.
- *
- * No external dependencies — plain vanilla JS, ES5-compatible.
  */
-(function () {
+define(['domReady!'], function () {
     'use strict';
 
     var DIRTY_CLASS     = 'm2oidc-field-modified';
@@ -135,21 +133,10 @@
         }
     }
 
-    // ── Bootstrap ─────────────────────────────────────────────────────────────
-    function boot() {
-        // Widget\Form\Container renders a <form> that wraps all tab content.
-        // Try the known edit-form ID first, then fall back to the save-action URL.
-        var form = document.getElementById('provider-edit-form') ||
-                   document.querySelector('form[action*="provider/save"]');
-        if (form) {
-            initForm(form);
-        }
+    // ── Bootstrap — domReady! dependency ensures DOM is fully loaded ──────────
+    var form = document.getElementById('provider-edit-form') ||
+               document.querySelector('form[action*="provider/save"]');
+    if (form) {
+        initForm(form);
     }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', boot);
-    } else {
-        // DOM already ready (e.g. script loaded deferred/async).
-        boot();
-    }
-}());
+});

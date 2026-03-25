@@ -14,6 +14,7 @@ use Magento\Framework\Stdlib\CookieManagerInterface;
 use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
 use Magento\Backend\Model\UrlInterface as BackendUrlInterface;
 use M2Oidc\OAuth\Helper\OAuthSecurityHelper;
+use M2Oidc\OAuth\Model\Security\OidcRateLimiter;
 use M2Oidc\OAuth\Model\Service\AdminTokenRefreshService;
 
 /**
@@ -33,31 +34,31 @@ use M2Oidc\OAuth\Model\Service\AdminTokenRefreshService;
 class Oidccallback implements ActionInterface, HttpGetActionInterface
 {
     /** @var \Magento\Backend\Model\Auth */
-    protected \Magento\Backend\Model\Auth $auth;
+    private readonly \Magento\Backend\Model\Auth $auth;
 
     /** @var \Magento\Framework\Controller\ResultFactory */
-    protected \Magento\Framework\Controller\ResultFactory $resultFactory;
+    private readonly \Magento\Framework\Controller\ResultFactory $resultFactory;
 
     /** @var \Magento\Framework\App\RequestInterface */
-    protected \Magento\Framework\App\RequestInterface $request;
+    private readonly \Magento\Framework\App\RequestInterface $request;
 
     /** @var \M2Oidc\OAuth\Helper\OAuthUtility */
-    protected \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility;
+    private readonly \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility;
 
     /** @var \Magento\Framework\Message\ManagerInterface */
-    protected \Magento\Framework\Message\ManagerInterface $messageManager;
+    private readonly \Magento\Framework\Message\ManagerInterface $messageManager;
 
     /** @var \Magento\Framework\UrlInterface */
-    protected \Magento\Framework\UrlInterface $url;
+    private readonly \Magento\Framework\UrlInterface $url;
 
     /** @var \Magento\Framework\Stdlib\CookieManagerInterface */
-    protected \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager;
+    private readonly \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager;
 
     /** @var \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory */
-    protected \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory;
+    private readonly \Magento\Framework\Stdlib\Cookie\CookieMetadataFactory $cookieMetadataFactory;
 
     /** @var BackendUrlInterface */
-    protected BackendUrlInterface $backendUrl;
+    private readonly BackendUrlInterface $backendUrl;
 
     /** @var \M2Oidc\OAuth\Helper\OAuthSecurityHelper */
     private readonly \M2Oidc\OAuth\Helper\OAuthSecurityHelper $securityHelper;
@@ -67,6 +68,9 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
 
     /** @var AdminTokenRefreshService */
     private readonly AdminTokenRefreshService $adminTokenRefreshService;
+
+    /** @var OidcRateLimiter */
+    private readonly OidcRateLimiter $rateLimiter;
 
     /**
      * Initialize OIDC callback action.
@@ -83,6 +87,7 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
      * @param OAuthSecurityHelper                                $securityHelper
      * @param \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
      * @param AdminTokenRefreshService                           $adminTokenRefreshService
+     * @param OidcRateLimiter                                    $rateLimiter
      */
     public function __construct(
         \Magento\Backend\Model\Auth $auth,
@@ -96,7 +101,8 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
         BackendUrlInterface $backendUrl,
         OAuthSecurityHelper $securityHelper,
         \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
-        AdminTokenRefreshService $adminTokenRefreshService
+        AdminTokenRefreshService $adminTokenRefreshService,
+        OidcRateLimiter $rateLimiter
     ) {
         $this->auth = $auth;
         $this->resultFactory = $resultFactory;
@@ -110,6 +116,7 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
         $this->securityHelper = $securityHelper;
         $this->scopeConfig = $scopeConfig;
         $this->adminTokenRefreshService = $adminTokenRefreshService;
+        $this->rateLimiter = $rateLimiter;
     }
 
     /**
@@ -120,6 +127,17 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
     #[\Override]
     public function execute()
     {
+        // Rate-limit: block IPs that exceed MAX_ATTEMPTS within the fixed window
+        $clientIp = (string) $this->request->getClientIp();
+        if (!$this->rateLimiter->isAllowed($clientIp)) {
+            $this->oauthUtility->customlog(
+                "OIDC Admin Callback: Rate limit exceeded for IP: " . $clientIp
+            );
+            return $this->redirectToLoginWithError(
+                __('Too many authentication attempts. Please try again later.')
+            );
+        }
+
         $nonce = $this->cookieManager->getCookie('oidc_admin_nonce');
 
         // Delete the cookie immediately (one-time use)

@@ -21,7 +21,7 @@ class OAuthSecurityHelper
      */
     private const CUSTOMER_NONCE_CACHE_PREFIX = 'm2oidc_custnonce_';
     private const STATE_CACHE_PREFIX = 'm2oidc_state_';
-    private const NONCE_TTL = 120;     // 2 minutes
+    private const NONCE_TTL = 300;     // 5 minutes — covers browser round-trips to slow IdPs
     private const STATE_TTL = 600;     // 10 minutes
 
     /**
@@ -30,7 +30,7 @@ class OAuthSecurityHelper
      */
     private const OIDC_AUTH_TOKEN_PREFIX = 'm2oidc_authtoken_';
     /** TTL for ephemeral OIDC auth tokens: long enough to survive a single login round-trip. */
-    private const OIDC_AUTH_TOKEN_TTL = 120; // 2 minutes
+    private const OIDC_AUTH_TOKEN_TTL = 300; // 5 minutes
 
     /**
      * Prefix used as a fast, non-secret distinguisher for OIDC auth tokens (C-01).
@@ -210,11 +210,15 @@ class OAuthSecurityHelper
      * Validate and consume a CSRF state token.
      *
      * C-03: The cache read and subsequent delete are two separate operations and are
-     * therefore not atomic. In practice this is acceptable: PHP's file-based session
-     * handler holds an exclusive lock for the duration of the request, and Magento's
-     * default cache backends (file, Redis with phpredis) are single-threaded per key.
-     * A distributed race between two simultaneous callbacks with the same state token
-     * would be an IdP bug; we log the failure on the second attempt.
+     * therefore not atomic. Risk profile by cache backend:
+     *  - File cache (single server): OS-level file locks make concurrent access effectively
+     *    serialised — negligible race window.
+     *  - Redis (phpredis / Predis): no mutual exclusion between two concurrent PHP-FPM workers
+     *    accessing the same key. Two simultaneous callbacks carrying the same state token
+     *    could both pass validation before either delete executes.
+     *  - Mitigation: use Redis ≥6.2 GETDEL for atomic read-and-delete (see Future Improvement #3
+     *    in Docs/Code-Review.md). Until then the residual window is milliseconds and requires
+     *    an attacker to replay a token that was never exposed outside the OAuth flow.
      *
      * @param  string $sessionId  The session ID used when the token was created
      * @param  string $stateToken The state token to validate
@@ -325,6 +329,14 @@ class OAuthSecurityHelper
         $url = trim($url);
 
         if ($url === '' || $url === '0') {
+            return $fallback;
+        }
+
+        // Reject null bytes and backslashes before any further checks.
+        // Backslashes (\) are treated as path separators by some browsers (e.g. old IE/Edge),
+        // enabling "/\evil.com" to be interpreted as "//evil.com" (open redirect bypass).
+        // Null bytes can bypass downstream string comparisons.
+        if (str_contains($url, "\x00") || str_contains($url, '\\')) {
             return $fallback;
         }
 

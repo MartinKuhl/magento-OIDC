@@ -247,7 +247,7 @@ Map billing and shipping addresses (30+ fields total):
 #### Debug Logging
 
 - **Enable debug logging**: Writes detailed flow logs to `var/log/M2Oidc.log`
-- **Auto-expires**: A daily cron job (`m2oidc_log_rotation`) rotates the log at 03:00 server time — deletes the file when older than 7 days or when debug logging is disabled
+- **Auto-expires**: A daily cron job (`m2oidc_log_rotation`, implemented by `Cron\LogCleanup`) cleans up the log at 03:00 server time — deletes the file when older than 7 days or when debug logging is disabled
 - **Privacy**: Contains user emails and OIDC claims — handle securely
 
 ---
@@ -497,7 +497,7 @@ OAuth `state` parameter includes session ID to prevent CSRF attacks:
 
 Authentication endpoints are protected by IP-based fixed-window rate limiting (`OidcRateLimiter`):
 - **Strategy**: Fixed-window — 10 attempts per 60-second window
-- **Protected endpoints**: Callback (`ReadAuthorizationResponse`) and back-channel logout (`BackChannelLogout`)
+- **Protected endpoints**: Customer callback (`ReadAuthorizationResponse`), admin callback (`Oidccallback`), and back-channel logout (`BackChannelLogout`)
 - Requests that exceed the limit receive an error response before any token processing occurs
 
 ### Emergency Access

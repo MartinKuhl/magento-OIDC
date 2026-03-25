@@ -11,7 +11,14 @@ class OidcErrorMessage extends Template
 {
     // No constructor required; parent constructor is sufficient.
     /**
-     * Get OIDC error message from URL parameter
+     * Get OIDC error message from URL parameter.
+     *
+     * Returns the raw decoded string. Callers MUST escape the return value before
+     * rendering it in HTML (e.g. via $escaper->escapeHtml()). The template
+     * oidc_error_message.phtml already does this — do not add raw output in any
+     * new template without escaping.
+     *
+     * @return string|null Decoded message, or null if absent / invalid
      */
     public function getOidcErrorMessage(): ?string
     {

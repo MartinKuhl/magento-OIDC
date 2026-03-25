@@ -62,6 +62,10 @@ class OidcAuthenticationService
      * This transparently handles providers like Zitadel that Base64-encode all metadata
      * keys and values.
      *
+     * @internal This method is public only because it is called from ReadAuthorizationResponse
+     *           and ShowTestResults controllers. It is not part of the stable module API and
+     *           may be made private in a future major version once those callers are refactored.
+     *
      * @param  string       $keyPrefix Current key prefix for recursion
      * @param  array|object $arr       The nested data structure
      * @param  array        $result    Accumulator for flattened key-value pairs
@@ -119,6 +123,15 @@ class OidcAuthenticationService
         }
         // Reject decoded output that is not valid UTF-8 (e.g. binary data).
         if (!mb_check_encoding($decoded, 'UTF-8')) {
+            return $value;
+        }
+        // Reject decoded output containing C0/C1 control characters (null bytes, non-printable chars).
+        // mb_check_encoding() validates UTF-8 structure but does not reject control characters.
+        // A null byte in a group claim could cause strpos() comparisons to match unexpectedly.
+        if (preg_match('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', $decoded)) {
+            $this->oauthUtility->customlog(
+                "OidcAuthenticationService: WARNING — decoded Base64 claim contains control characters, rejecting decoded form"
+            );
             return $value;
         }
         return $decoded;

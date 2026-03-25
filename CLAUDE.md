@@ -83,7 +83,7 @@ The module implements a dual authentication flow for admin and customer users:
    - `OidcLogoutPlugin` intercepts `Auth::logout()` via `aroundLogout`
    - Reads `oidc_id_token`, `oidc_access_token`, `oidc_provider_id` from session **before** session is destroyed
    - Calls original `logout()`, then deletes `oidc_authenticated` cookie
-   - Sets `oidc_logout_guard` cookie (120s TTL) to prevent auto-redirect loops
+   - Sets `oidc_logout_guard` cookie (120 s TTL) to prevent auto-redirect loops
    - Revokes access token via RFC 7009 revocation endpoint (fire-and-forget)
    - Redirects to IdP `end_session_endpoint` with `id_token_hint`, `state=admin:<hex>`, and `post_logout_redirect_uri=https://site.com/m2oidc/actions/postlogout`
    - **Authelia detection**: If endpoint path ends with `/logout` (without `/oauth2/` or `/oidc/`), uses `?rd=<adminBaseUrl>` instead of standard params
@@ -132,7 +132,8 @@ The module implements a dual authentication flow for admin and customer users:
 - `Controller/Health/Check.php`: Health check endpoint; verifies OIDC configuration, database connectivity
 
 #### Cron Jobs (Cron/)
-- `LogRotation.php`: Daily cron job registered as `m2oidc_log_rotation` (runs at 03:00 server time); deletes `var/log/M2Oidc.log` and disables logging when the log file is older than 7 days or when debug logging has been disabled in the admin UI but the file still exists; moves log-rotation logic out of `SendAuthorizationRequest`
+- `LogCleanup.php`: Active daily cron job registered as `m2oidc_log_rotation` (runs at 03:00 server time); deletes `var/log/M2Oidc.log` and disables logging when the log file is older than 7 days or when debug logging has been disabled in the admin UI; `crontab.xml` uses this class
+- `LogRotation.php`: `@deprecated 3.0.8` — backward-compatibility wrapper that extends `LogCleanup`; kept so third-party code referencing the old class name does not break; will be removed in v4.0.0
 
 #### Admin Controllers (Controller/Adminhtml/)
 - `Actions/Oidccallback.php`: Admin callback that performs native Magento login via `Auth::login()` with ephemeral token; persists id_token in admin session
@@ -145,7 +146,7 @@ The module implements a dual authentication flow for admin and customer users:
 
 #### Authentication Integration (Model/Auth/)
 - `OidcCredentialAdapter.php`: Implements `StorageInterface` to bridge OIDC with Magento's native auth
-  - Validates ephemeral auth token (single-use, 120s TTL from cache) — never checks password
+  - Validates ephemeral auth token (single-use, 300s TTL from cache) — never checks password
   - Fires `admin_user_authenticate_before` and `admin_user_authenticate_after` events with `oidc_auth` marker
   - Handles serialization for session storage via `__sleep()` and `__wakeup()`
   - Proxies User model methods via `__call()` magic method
@@ -168,8 +169,8 @@ The module implements a dual authentication flow for admin and customer users:
 
 #### Helpers (Helper/)
 - `OAuthUtility.php`: Core utility class; provider-aware config resolution (MP-05) via `setActiveProviderId()`/`resolveActiveProvider()`; maps 40+ config keys to `m2oidc_oauth_client_apps` columns; multi-provider support via `getAllActiveProviders()`; structured JSON logging with sensitive field masking
-- `OAuthSecurityHelper.php`: Security primitives — PKCE generation/verification (S256/PLAIN), state token create/validate/consume (one-time use), relay state encode/decode (JSON+Base64 with legacy pipe-delimited fallback), OIDC nonce store/consume, **ephemeral admin login tokens** (C-01: `createOidcAuthToken()` / `validateAndConsumeOidcAuthToken()` with 120s cache TTL), **customer login nonces** (`createCustomerLoginNonce()` / `redeemCustomerLoginNonce()`), redirect URL validation (same-origin check)
-- `JwtVerifier.php`: Fetches JWKS (cached), verifies JWT signature, validates issuer/audience/nonce
+- `OAuthSecurityHelper.php`: Security primitives — PKCE generation/verification (S256/PLAIN), state token create/validate/consume (one-time use), relay state encode/decode (JSON+Base64 with legacy pipe-delimited fallback), OIDC nonce store/consume, **ephemeral admin login tokens** (C-01: `createOidcAuthToken()` / `validateAndConsumeOidcAuthToken()` with **300s (5-minute) cache TTL**), **customer login nonces** (`createCustomerLoginNonce()` / `redeemCustomerLoginNonce()`, **300s TTL**), redirect URL validation (same-origin check; also rejects null bytes and backslashes as bypass vectors)
+- `JwtVerifier.php`: Fetches JWKS (cached with configurable per-provider TTL via `jwks_cache_ttl` column, default 86400 s, read via `OAuthConstants::JWKS_CACHE_TTL`); verifies JWT signature; validates issuer/audience/nonce; logs WARNING when nonce validation is skipped (null `expectedNonce`); circuit-breaker: opens a 60 s `m2oidc_jwks_fail_*` cache flag after a failed JWKS re-fetch to prevent hammering an unavailable IdP
 - `SessionHelper.php`: Cross-origin SSO cookie helpers (SameSite=None); `updateSessionCookies()` re-sets cookies for cross-origin flows
 - `OAuthConstants.php`: Constants for config paths and defaults
 - `OAuthMessages.php`: Centralized user-facing messages
@@ -206,7 +207,7 @@ The module implements a dual authentication flow for admin and customer users:
 - `CustomerAttributeMapper.php`: Maps OIDC claims to customer attributes including address fields
 
 **Security (Model/Security/):**
-- `OidcRateLimiter.php`: IP-based rate limiting using a fixed-window strategy; stores `{count, start}` in cache; the window start is recorded on the first request and all subsequent increments use the remaining TTL so the window never slides; constants: `MAX_ATTEMPTS = 10`, `WINDOW_SECONDS = 60`; applied to both the OAuth callback and back-channel logout endpoints
+- `OidcRateLimiter.php`: IP-based rate limiting using a fixed-window strategy; stores `{count, start}` in cache; the window start is recorded on the first request and all subsequent increments use the remaining TTL so the window never slides; constants: `MAX_ATTEMPTS = 10`, `WINDOW_SECONDS = 60`; applied to the customer callback (`ReadAuthorizationResponse`), admin callback (`Oidccallback`), and back-channel logout (`BackChannelLogout`); corrupted cache entries (invalid JSON or missing keys) are detected and safely reset to start a fresh window
 
 **Provider/Repository (Model/Provider/):**
 - `MappingRepository.php`: Repository for accessing normalized attribute/role mappings (Phase 4); reads from `m2oidc_oauth_attribute_mappings` and `m2oidc_oauth_role_mappings` tables
@@ -342,11 +343,11 @@ The module implements a dual authentication flow for admin and customer users:
 | **Replay Protection** | Active | OIDC nonce in id_token; one-time nonce cookies for callback handoff |
 | **JWT Verification** | Active | JWKS endpoint required; validates issuer, audience, nonce, signature |
 | **PKCE** | Active | S256 (SHA256) preferred, PLAIN fallback; verifier stored per session/provider |
-| **Ephemeral Auth Tokens** | Active (C-01) | Admin login uses single-use tokens with 120s cache TTL — no static markers |
-| **Rate Limiting** | Active | Fixed-window strategy (10 attempts / 60s) via `OidcRateLimiter`; applied to both callback and back-channel logout endpoints |
+| **Ephemeral Auth Tokens** | Active (C-01) | Admin login uses single-use tokens with 300s (5-minute) cache TTL — no static markers; `OIDC_TOKEN_MARKER` constant is deprecated |
+| **Rate Limiting** | Active | Fixed-window strategy (10 attempts / 60s) via `OidcRateLimiter`; applied to customer callback (`ReadAuthorizationResponse`), admin callback (`Oidccallback`), and back-channel logout (`BackChannelLogout`) |
 | **Back-Channel Logout** | Active (FEAT-02) | Server-to-server logout via JWT logout token; session destruction by ID |
 | **RP-Initiated Logout** | Active | Admin + customer; id_token_hint; RFC 7009 token revocation; Authelia compat |
-| **Logout Guard** | Active | `oidc_logout_guard` cookie (120s) prevents auto-redirect loop after IdP logout |
+| **Logout Guard** | Active | `oidc_logout_guard` cookie (120s TTL) prevents auto-redirect loop after IdP logout |
 | **Login Restriction** | Configurable | Block non-OIDC logins per provider; safety net prevents lockout |
 | **Claims Access Control** | Active (FEAT-04) | Rules engine with 6 operators (eq, neq, contains, not_contains, exists, not_exists); AND-combined |
 | **Cross-Website Guard** | Active (SEC-08) | Customer login rejects cross-website account login attempts |
@@ -369,8 +370,9 @@ The module implements a dual authentication flow for admin and customer users:
    - If admin doesn't exist and auto-create is enabled, creates admin user first (see Admin Auto-Creation below)
 
 2. **Native Authentication Flow** (`Controller/Adminhtml/Actions/Oidccallback.php`):
-   - Validates and consumes ephemeral admin nonce (one-time use, 120s TTL) via `OAuthSecurityHelper`
-   - Creates ephemeral OIDC auth token (`OIDC_TOKEN_<random>`) stored in cache with 120s TTL
+   - **Rate limit check** (first): `OidcRateLimiter::isAllowed($clientIp)` — redirects to admin login with error if exceeded
+   - Validates and consumes ephemeral admin nonce (one-time use, **300s TTL**) via `OAuthSecurityHelper`
+   - Creates ephemeral OIDC auth token (`OIDC_TOKEN_<random>`) stored in cache with **300s TTL**
    - Calls `Auth::login($email, $ephemeralToken)` — plugin system intercepts
    - All security events fire properly; CAPTCHA is automatically bypassed via plugin
    - Persists id_token in admin session for logout flow
@@ -720,7 +722,7 @@ Multi-provider is fully implemented. The `provider_id` parameter flows through t
 
 **CSRF Token Validation**: Already implemented via state token in `OAuthSecurityHelper`. Encodes session ID, app name, login type, state token, and provider ID in relay state.
 
-**Rate Limiting**: Already implemented via `OidcRateLimiter` using a fixed-window strategy (10 attempts / 60s) on both the OAuth callback and back-channel logout endpoints.
+**Rate Limiting**: Already implemented via `OidcRateLimiter` using a fixed-window strategy (10 attempts / 60s) on the customer callback (`ReadAuthorizationResponse`), admin callback (`Oidccallback`), and back-channel logout (`BackChannelLogout`) endpoints.
 
 **Scope Cookie Observer to OIDC Paths Only**:
 ```php
@@ -744,7 +746,7 @@ Schema defined in `etc/schema.graphqls`.
 
 ### If Asked About Performance Optimization
 
-1. **JWKS Caching**: `JwtVerifier` already caches JWKS responses. Consider configuring longer TTL or Redis backend.
+1. **JWKS Caching**: `JwtVerifier` caches JWKS responses with a configurable per-provider TTL (column `jwks_cache_ttl`, default 86400 s). A circuit-breaker (`m2oidc_jwks_fail_*`, 60 s) prevents hammering an unavailable JWKS endpoint after a re-fetch failure.
 
 2. **Global Cookie Rewrite** (`SessionCookieObserver`): Scope to OIDC paths only using the pattern above.
 

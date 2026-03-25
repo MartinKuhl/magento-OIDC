@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace M2Oidc\OAuth\Helper;
 
 use Magento\Framework\App\CacheInterface;
+use M2Oidc\OAuth\Helper\OAuthConstants;
 use M2Oidc\OAuth\Helper\OAuthMessages;
 
 /**
@@ -111,6 +112,17 @@ class JwtVerifier
             $this->oauthUtility->customlog(
                 "JwtVerifier: Signature verification FAILED with cached JWKS. Retrying with fresh JWKS."
             );
+
+            // #11: Circuit-breaker — if JWKS endpoint recently returned an error, skip re-fetch
+            // to prevent 30 s cURL timeouts cascading across concurrent login attempts during IdP outage.
+            $failKey = 'm2oidc_jwks_fail_' . hash('sha256', $jwksUrl);
+            if ($this->cache->load($failKey) !== false) {
+                $this->oauthUtility->customlog(
+                    "JwtVerifier: JWKS circuit-breaker open — skipping re-fetch to avoid IdP hammering"
+                );
+                return null;
+            }
+
             // Invalidate cache and re-fetch in case the IdP rotated its keys
             $cacheKey = 'm2oidc_jwks_' . hash('sha256', $jwksUrl);
             $this->cache->remove($cacheKey);
@@ -120,6 +132,9 @@ class JwtVerifier
                 if ($freshPem !== null) {
                     $result = openssl_verify($dataToVerify, $signature, $freshPem, $algMap[$alg]);
                 }
+            } else {
+                // fetchJwks failed — open circuit for 60 s to stop concurrent requests hammering the endpoint
+                $this->cache->save('1', $failKey, [], 60);
             }
             if ($result !== 1) {
                 $this->oauthUtility->customlog("JwtVerifier: Signature verification FAILED after JWKS refresh");
@@ -197,16 +212,25 @@ class JwtVerifier
                 return null;
             }
             $this->oauthUtility->customlog("JwtVerifier: Nonce validation PASSED");
+        } else {
+            // #5: Log when nonce validation is skipped so operators can detect misconfigured flows
+            $this->oauthUtility->customlog(
+                "JwtVerifier: WARNING — nonce validation skipped (expectedNonce is null). "
+                . "If the IdP supports nonces, verify that consumeOidcNonce() is called before verifyAndDecode()."
+            );
         }
 
         return $payload;
     }
 
     /**
-     * Decode a JWT without verifying the signature.
+     * Decode a JWT WITHOUT verifying the signature.
      *
-     * Used as fallback when no JWKS endpoint is configured.
+     * ⚠️  DANGER: This method bypasses ALL signature, issuer, audience, and nonce
+     * validation. It MUST NOT be used in any authentication code path. Use only
+     * for debugging/logging claim structure, or in unit tests with mock tokens.
      *
+     * @internal For debug and test use only — never call from production auth code.
      * @param  string $idToken The raw JWT string
      * @return array|null Decoded payload array, or null on failure
      */
@@ -264,7 +288,8 @@ class JwtVerifier
             return null;
         }
 
-        $this->cache->save($response, $cacheKey, [], 86400);
+        $cacheTtl = (int) $this->oauthUtility->getStoreConfig(OAuthConstants::JWKS_CACHE_TTL) ?: 86400;
+        $this->cache->save($response, $cacheKey, [], $cacheTtl);
 
         return $data['keys'];
     }
