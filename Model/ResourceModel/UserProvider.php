@@ -93,6 +93,27 @@ class UserProvider extends AbstractDb
     }
 
     /**
+     * Return the provider_id bound to a user, or null if no binding exists.
+     *
+     * @param string $userType 'customer' or 'admin'
+     * @param int    $userId
+     */
+    public function getBoundProviderId(string $userType, int $userId): ?int
+    {
+        $connection = $this->getConnection();
+        if ($connection === false) {
+            return null;
+        }
+        $select = $connection->select()
+            ->from($this->getMainTable(), ['provider_id'])
+            ->where('user_type = ?', $userType)
+            ->where('user_id = ?', $userId)
+            ->limit(1);
+        $result = $connection->fetchOne($select);
+        return $result !== false ? (int) $result : null;
+    }
+
+    /**
      * Delete a session activity record by its primary key.
      *
      * @param int $id m2oidc_oauth_user_provider.id

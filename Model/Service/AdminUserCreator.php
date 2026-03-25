@@ -308,4 +308,25 @@ class AdminUserCreator
 
         return false;
     }
+
+    /**
+     * Load an admin User model by email (or username), or return null if not found.
+     *
+     * @param  string $email
+     * @return \Magento\User\Model\User|null
+     */
+    public function getAdminUserByEmail(string $email): ?\Magento\User\Model\User
+    {
+        $userCollection = $this->userCollectionFactory->create()
+            ->addFieldToFilter(
+                ['email', 'username'],
+                [['eq' => $email], ['eq' => $email]]
+            );
+        if ($userCollection->getSize() > 0) {
+            /** @var \Magento\User\Model\User $user */
+            $user = $userCollection->getFirstItem();
+            return $user;
+        }
+        return null;
+    }
 }

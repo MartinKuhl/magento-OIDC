@@ -7,6 +7,7 @@ namespace M2Oidc\OAuth\Controller\Actions;
 use M2Oidc\OAuth\Helper\Exception\MissingAttributesException;
 use M2Oidc\OAuth\Helper\OAuthConstants;
 use M2Oidc\OAuth\Helper\OAuthMessages;
+use M2Oidc\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
 use M2Oidc\OAuth\Helper\OAuthSecurityHelper;
 use M2Oidc\OAuth\Model\Service\AdminProfileSyncService;
 use M2Oidc\OAuth\Model\Service\AdminUserCreator;
@@ -130,6 +131,9 @@ class CheckAttributeMappingAction extends BaseAction
     /** @var \M2Oidc\OAuth\Model\Service\OidcAuthenticationService */
     private readonly OidcAuthenticationService $oidcAuthenticationService;
 
+    /** @var \M2Oidc\OAuth\Model\ResourceModel\UserProvider */
+    private readonly UserProviderResource $userProviderResource;
+
     /**
      * Constructor with dependency injection
      *
@@ -147,6 +151,7 @@ class CheckAttributeMappingAction extends BaseAction
      * @param UserProvisioningService                            $userProvisioningService
      * @param AdminProfileSyncService                            $adminProfileSyncService
      * @param OidcAuthenticationService                          $oidcAuthenticationService
+     * @param UserProviderResource                               $userProviderResource
      */
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
@@ -162,7 +167,8 @@ class CheckAttributeMappingAction extends BaseAction
         CookieMetadataFactory $cookieMetadataFactory,
         UserProvisioningService $userProvisioningService,
         AdminProfileSyncService $adminProfileSyncService,
-        OidcAuthenticationService $oidcAuthenticationService
+        OidcAuthenticationService $oidcAuthenticationService,
+        UserProviderResource $userProviderResource
     ) {
         $this->testAction = $testAction;
         $this->processUserAction = $processUserAction;
@@ -176,6 +182,7 @@ class CheckAttributeMappingAction extends BaseAction
         $this->userProvisioningService = $userProvisioningService;
         $this->adminProfileSyncService = $adminProfileSyncService;
         $this->oidcAuthenticationService = $oidcAuthenticationService;
+        $this->userProviderResource = $userProviderResource;
         parent::__construct($context, $oauthUtility);
     }
 
@@ -279,6 +286,29 @@ class CheckAttributeMappingAction extends BaseAction
             $this->oauthUtility->customlog($hasAccountMsg);
 
             if ($hasAdminAccount) {
+                // Provider binding check: reject if account is bound to a different IdP
+                $adminUser = $this->adminUserCreator->getAdminUserByEmail($userEmail);
+                if ($adminUser && $adminUser->getId()) {
+                    $boundProvider = $this->userProviderResource->getBoundProviderId('admin', (int) $adminUser->getId());
+                    if ($boundProvider !== null && $boundProvider !== $this->providerId) {
+                        $this->oauthUtility->customlog(
+                            "Provider mismatch for admin " . $userEmail
+                            . " (bound=" . $boundProvider . ", current=" . $this->providerId . ")"
+                        );
+                        $errorMessage = OAuthMessages::parse('PROVIDER_MISMATCH', ['email' => $userEmail]);
+                        $this->messageManager->addErrorMessage((string) __($errorMessage));
+                        return $this->resultRedirectFactory->create()->setUrl($this->backendUrl->getUrl('admin'));
+                    }
+                    // First OIDC login of a pre-existing admin account — claim the binding
+                    if ($boundProvider === null && $this->providerId > 0) {
+                        $this->userProviderResource->saveMapping('admin', (int) $adminUser->getId(), $this->providerId);
+                        $this->oauthUtility->customlog(
+                            "Provider binding claimed for existing admin " . $userEmail
+                            . " → provider " . $this->providerId
+                        );
+                    }
+                }
+
                 // Redirect admin users to dedicated admin login endpoint
                 $this->oauthUtility->customlog("Routing admin user to admin callback endpoint");
 

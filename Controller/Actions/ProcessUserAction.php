@@ -12,6 +12,7 @@ use M2Oidc\OAuth\Helper\Exception\MissingAttributesException;
 use M2Oidc\OAuth\Helper\OAuthConstants;
 use M2Oidc\OAuth\Helper\OAuthUtility;
 use M2Oidc\OAuth\Helper\OAuthMessages;
+use M2Oidc\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Controller\Result\RedirectFactory;
 use Magento\Customer\Api\CustomerRepositoryInterface;
@@ -92,6 +93,9 @@ class ProcessUserAction
     /** @var \Magento\Customer\Api\CustomerRepositoryInterface */
     private readonly \Magento\Customer\Api\CustomerRepositoryInterface $customerRepository;
 
+    /** @var \M2Oidc\OAuth\Model\ResourceModel\UserProvider */
+    private readonly UserProviderResource $userProviderResource;
+
     /**
      * Initialize ProcessUserAction.
      *
@@ -102,6 +106,7 @@ class ProcessUserAction
      * @param CustomerUserCreator $customerUserCreator
      * @param RedirectFactory $resultRedirectFactory
      * @param CustomerProfileSyncService $profileSyncService
+     * @param UserProviderResource $userProviderResource
      */
     public function __construct(
         OAuthUtility $oauthUtility,
@@ -110,7 +115,8 @@ class ProcessUserAction
         CustomerLoginAction $customerLoginAction,
         CustomerUserCreator $customerUserCreator,
         RedirectFactory $resultRedirectFactory,
-        CustomerProfileSyncService $profileSyncService
+        CustomerProfileSyncService $profileSyncService,
+        UserProviderResource $userProviderResource
     ) {
         $this->customerRepository = $customerRepository;
         $this->storeManager = $storeManager;
@@ -119,6 +125,7 @@ class ProcessUserAction
         $this->customerUserCreator = $customerUserCreator;
         $this->resultRedirectFactory = $resultRedirectFactory;
         $this->profileSyncService = $profileSyncService;
+        $this->userProviderResource = $userProviderResource;
     }
 
     /**
@@ -212,6 +219,31 @@ class ProcessUserAction
     ): \Magento\Framework\Controller\Result\Redirect {
         $user = $this->getCustomerFromAttributes($userEmail);
         $isNewCustomer = false;
+
+        if ($user) {
+            // Provider binding check: reject if account is bound to a different IdP
+            $boundProvider = $this->userProviderResource->getBoundProviderId('customer', (int) $user->getId());
+            if ($boundProvider !== null && $boundProvider !== $this->providerId) {
+                $this->oauthUtility->customlog(
+                    "Provider mismatch for customer " . $userEmail
+                    . " (bound=" . $boundProvider . ", current=" . $this->providerId . ")"
+                );
+                $encodedError = base64_encode(
+                    OAuthMessages::parse('PROVIDER_MISMATCH', ['email' => $userEmail])
+                );
+                $baseLoginUrl = $this->oauthUtility->getCustomerLoginUrl();
+                $sep = (strpos($baseLoginUrl, '?') !== false) ? '&' : '?';
+                return $this->resultRedirectFactory->create()->setUrl($baseLoginUrl . $sep . 'oidc_error=' . $encodedError);
+            }
+            // First OIDC login of a pre-existing (non-OIDC-created) account — claim the binding
+            if ($boundProvider === null && $this->providerId > 0) {
+                $this->userProviderResource->saveMapping('customer', (int) $user->getId(), $this->providerId);
+                $this->oauthUtility->customlog(
+                    "Provider binding claimed for existing customer " . $userEmail
+                    . " → provider " . $this->providerId
+                );
+            }
+        }
 
         if (!$user) {
             $this->oauthUtility->customlog("User not found. Checking auto-create configuration");

@@ -141,6 +141,11 @@ class OAuthMessages
         . " Auto-creation is disabled. Create the admin account manually or enable"
         . " 'Auto Create Admin Users' in Sign In Settings.";
 
+    /** Login rejected because the account was created by a different IdP. */
+    public const PROVIDER_MISMATCH
+        = "Login failed for '{{email}}': this account was created with a different identity provider."
+        . " Please use the same login method you originally registered with.";
+
     /** Auto-create is disabled and the customer does not exist. */
     public const CUSTOMER_AUTO_CREATE_DISABLED_FOR_EMAIL
         = "Account not found for '{{email}}'."

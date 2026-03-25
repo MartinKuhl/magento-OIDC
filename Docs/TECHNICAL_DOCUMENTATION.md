@@ -25,6 +25,7 @@ This Magento 2 module adds **OAuth 2.0 / OpenID Connect** single sign-on for bot
 - **Profile sync**: optionally re-syncs profile, address, and group/role assignments on every SSO login.
 - **Identity verification bypass**: OIDC-authenticated admins skip the "enter your password" prompt when editing users/roles/account settings.
 - **Password lifecycle suppression**: `OidcPasswordExpirationPlugin` and `OidcForcePasswordChangePlugin` prevent password expiry warnings and forced password-change redirects for OIDC-authenticated admins.
+- **Per-user IdP binding**: the `m2oidc_oauth_user_provider` table is now read during authentication — not just written. `ProcessUserAction` (customer flow) and `CheckAttributeMappingAction` (admin flow) call `UserProviderResource::getBoundProviderId()` on every login. If a binding exists and does not match the current provider the login is rejected with `OAuthMessages::PROVIDER_MISMATCH`. If no binding exists (pre-OIDC account), the first IdP to authenticate the user claims the binding immediately via `saveMapping()`, making all subsequent cross-IdP attempts fail.
 - **Login restriction**: optionally blocks all non-OIDC admin or customer logins, per provider. Protected by a lockout-prevention guard that reverts the setting if no OIDC users exist yet.
 - **Lockout-prevention guards**: on provider save, if "disable non-OIDC login" is enabled but no users of that type have authenticated via OIDC for that provider, the setting is automatically reverted with a warning.
 - **User-delete cleanup**: `AdminUserDeleteObserver` and `CustomerDeleteObserver` remove OIDC provider mappings from `m2oidc_oauth_user_provider` when Magento users are deleted, keeping the Sessions activity view accurate.
@@ -223,6 +224,15 @@ This module solves real-world authentication challenges in enterprise and e-comm
 - If "disable non-OIDC admin login" is requested but no admin has ever authenticated via OIDC for this provider, the setting is auto-reset to `0` and a warning is displayed
 - Same guard applies to customer login restriction (`m2oidc_disable_non_oidc_customer_login`)
 - `Block/Adminhtml/Provider/Edit/Tab/LoginOptions.php` surfaces warnings in the Login Options tab via `hasOidcAdminUsers()` / `hasOidcCustomerUsers()` — auto-redirect setting also guarded when multiple providers exist
+
+**Per-User IdP Binding**
+- When multiple OIDC providers are configured, an account with the same email can exist in both. Without binding enforcement, the effective security level is the lowest common denominator of all IdPs — revoking a user in one IdP leaves them able to log in via another.
+- Binding is recorded in `m2oidc_oauth_user_provider.provider_id` and enforced at login time:
+  - **Customer flow**: `ProcessUserAction::processUserAction()` calls `UserProviderResource::getBoundProviderId('customer', $userId)` after the email lookup. Mismatch → redirects to customer login with `PROVIDER_MISMATCH` error. No binding → claims it immediately.
+  - **Admin flow**: `CheckAttributeMappingAction::execute()` calls `AdminUserCreator::getAdminUserByEmail()` to get the admin's ID, then `getBoundProviderId('admin', $adminId)`. Mismatch → redirects to admin login with error. No binding → claims it immediately.
+- **First-login claim**: existing Magento accounts (created before OIDC was set up) have no row in `m2oidc_oauth_user_provider`. The first IdP to authenticate them writes the binding via `saveMapping()`, locking out all other IdPs for that account.
+- **Manual override**: an admin can re-assign a user's IdP by updating `provider_id` in `m2oidc_oauth_user_provider` (e.g., when migrating users from one IdP to another).
+- Log entries: `"Provider mismatch for customer <email> (bound=X, current=Y)"` and `"Provider binding claimed for existing customer <email> → provider Y"`.
 
 **Required Field Validation**
 - On provider save, `Controller/Adminhtml/Provider/Save.php` validates that `email_attribute`, `username_attribute`, `firstname_attribute`, and `lastname_attribute` are all non-empty
@@ -1051,14 +1061,14 @@ Key columns:
 | `provider_id` | References `m2oidc_oauth_client_apps.id` |
 | `created_at` | Timestamp, auto-set on insert |
 
-Unique constraint on `(user_type, user_id)` — each Magento user is linked to at most one provider. Used by the logout observer to retrieve the correct `endsession_endpoint` for the logged-in user's provider.
+Unique constraint on `(user_type, user_id)` — each Magento user is linked to at most one provider. Used both for login-time IdP binding enforcement and by the logout observer to retrieve the correct `endsession_endpoint` for the logged-in user's provider.
 
 Records are cleaned up in three ways:
 1. **`AdminUserDeleteObserver`** — fires on `admin_user_delete_after`; removes the row for the deleted admin
 2. **`AdminUserDeletePlugin`** (`Plugin/User/AdminUserDeletePlugin.php`) — `afterDelete` on `Magento\User\Model\User`; belt-and-suspenders redundancy alongside the observer
 3. **`Sessions/Delete.php`** admin controller — allows individual record deletion from the Sessions UI (`/admin/m2oidc/sessions/index`) via a POST action; uses `UserProviderResource::deleteById()`
 
-`UserProviderResource` key methods: `saveMapping()` (INSERT … ON DUPLICATE KEY UPDATE), `deleteMapping()`, `getProviderInfo()`, `deleteById()`, `countByTypeAndProvider()` (used by lockout-prevention guards in `Provider/Save.php`).
+`UserProviderResource` key methods: `saveMapping()` (INSERT … ON DUPLICATE KEY UPDATE), `deleteMapping()`, `getProviderInfo()`, `getBoundProviderId(userType, userId)` (returns the bound `provider_id` or `null` — called by `ProcessUserAction` and `CheckAttributeMappingAction` to enforce per-user IdP binding), `deleteById()`, `countByTypeAndProvider()` (used by lockout-prevention guards in `Provider/Save.php`).
 
 ---
 
@@ -1075,8 +1085,8 @@ This section documents remaining technical debt and potential enhancements. Item
   - `AdminUserCreatorRoleMappingTest` (389), `CustomerUserCreatorAddressTest` (517)
   - `IdpInitiatedLoginTest` (5 security regression tests: relay state URL validation, rate limiting, CSRF state token, `idp_initiated_enabled` gate, `is_active` gate)
   - Integration: `AdminOidcLoginFlowTest` (175), `CustomerOidcLoginFlowTest` (148), `SecurityPluginsTest` (168), `AccessControlRulesTest`
-- **Remaining gap**: `BackChannelLogout`, `OidcLogoutPlugin`, `OAuthLogoutObserver`, `OidcRateLimiter`, `AdminUserDeleteObserver`, `CustomerDeleteObserver`, `TokenAutoRefreshObserver`, `AdminTokenAutoRefreshObserver` have no dedicated tests
-- **Recommendation**: Add tests for the logout flow, rate limiter, back-channel logout controller, new delete observers, and token refresh observers
+- **Remaining gap**: `BackChannelLogout`, `OidcLogoutPlugin`, `OAuthLogoutObserver`, `OidcRateLimiter`, `AdminUserDeleteObserver`, `CustomerDeleteObserver`, `TokenAutoRefreshObserver`, `AdminTokenAutoRefreshObserver` have no dedicated tests; per-user IdP binding logic in `ProcessUserAction` and `CheckAttributeMappingAction` is not yet covered by unit tests
+- **Recommendation**: Add tests for the logout flow, rate limiter, back-channel logout controller, new delete observers, token refresh observers, and IdP binding enforcement (binding check rejects cross-IdP login, first-login claim writes correct `provider_id`, no binding allows login and creates row)
 
 **Fix Unsafe ObjectManager Usage**
 - **Location**: `Model/Auth/OidcCredentialAdapter.php` `__wakeup()` method

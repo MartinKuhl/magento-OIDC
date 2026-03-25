@@ -121,8 +121,8 @@ The module implements a dual authentication flow for admin and customer users:
 - `SendAuthorizationRequest.php`: Initiates OAuth flow; generates PKCE challenge (S256/PLAIN), encodes relay state as `{r, s, a, l, t, p}` JSON+Base64, supports multi-provider via `provider_id` param
 - `ReadAuthorizationResponse.php`: Handles OAuth callback; validates state token, consumes PKCE verifier, verifies JWT, applies rate limiting via `OidcRateLimiter`, stores id_token in transport cookie (2-min TTL); validates nonce in `id_token` from the token response even when user data comes from the userinfo endpoint (M-06: prevents replay attacks in hybrid flows)
 - `ProcessResponseAction.php`: Extracts OIDC attributes; delegates to `CheckAttributeMappingAction`
-- `CheckAttributeMappingAction.php`: Routes users based on admin/customer detection; evaluates claims-based access control rules (FEAT-04); handles admin/customer auto-creation; sets ephemeral nonce cookies for secure callback handoff; delegates OIDC response parsing to `OidcAuthenticationService`
-- `ProcessUserAction.php`: Creates or updates Magento customers via `CustomerUserCreator`; calls `CustomerProfileSyncService::syncProfile()` and `syncAddress()` on login
+- `CheckAttributeMappingAction.php`: Routes users based on admin/customer detection; evaluates claims-based access control rules (FEAT-04); handles admin/customer auto-creation; enforces per-user IdP binding for admin logins (rejects if bound to a different provider, claims binding on first OIDC login of a pre-existing account); sets ephemeral nonce cookies for secure callback handoff; delegates OIDC response parsing to `OidcAuthenticationService`
+- `ProcessUserAction.php`: Creates or updates Magento customers via `CustomerUserCreator`; enforces per-user IdP binding for customer logins (rejects if bound to a different provider, claims binding on first OIDC login of a pre-existing account); calls `CustomerProfileSyncService::syncProfile()` and `syncAddress()` on login
 - `CustomerLoginAction.php`: Legacy customer login (superseded by `CustomerOidcCallback`)
 - `CustomerOidcCallback.php`: Customer login in clean HTTP context; validates `oidc_customer_nonce` cookie via `OAuthSecurityHelper::redeemCustomerLoginNonce()`; enforces website context (SEC-08); sets `oidc_customer_authenticated` cookie
 - `IdpInitiatedLogin.php`: IdP-Initiated SSO entry point (OIDC Third-Party Initiated Login §4); URL: `https://<store>/m2oidc/actions/idpInitiatedLogin?provider_id=<id>`; optional params: `relay_state`, `login_hint`, `login_type`; enforces `is_active` and `idp_initiated_enabled` checks, rate limiting, CSRF state token, PKCE
@@ -216,7 +216,7 @@ The module implements a dual authentication flow for admin and customer users:
 - `M2oidcOauthClientApps.php` + ResourceModel: Primary provider configuration model
 - `OauthAttributeMapping.php` + ResourceModel: Normalized attribute mappings (Phase 4)
 - `OauthRoleMapping.php` + ResourceModel: Normalized role/group mappings (Phase 4)
-- `UserProvider.php` + ResourceModel: Tracks which provider created each Magento user (`m2oidc_oauth_user_provider` table); key ResourceModel methods: `saveMapping()` (upsert), `deleteMapping()` (on user deletion), `getProviderInfo()`, `deleteById()` (session record deletion), `countByTypeAndProvider()` (lockout-prevention guard)
+- `UserProvider.php` + ResourceModel: Tracks which provider created each Magento user (`m2oidc_oauth_user_provider` table); key ResourceModel methods: `saveMapping()` (upsert), `deleteMapping()` (on user deletion), `getProviderInfo()`, `getBoundProviderId()` (returns the bound `provider_id` for a user — used by IdP binding enforcement), `deleteById()` (session record deletion), `countByTypeAndProvider()` (lockout-prevention guard)
 
 **GraphQL (Model/Resolver/):**
 - `OidcLoginUrl.php`: Resolver for `oidcLoginUrl(relayState: String)` query
@@ -298,6 +298,7 @@ The module implements a dual authentication flow for admin and customer users:
 - `provider_id`: FK to provider
 - `created_at`: timestamp
 - Unique constraint on `user_type + user_id` (one provider per user)
+- **IdP binding is enforced at login**: `ProcessUserAction` (customer) and `CheckAttributeMappingAction` (admin) call `getBoundProviderId()` on every login; if the stored `provider_id` differs from the current provider the login is rejected with `OAuthMessages::PROVIDER_MISMATCH`. If no binding exists yet (pre-OIDC account), the first IdP to authenticate the user claims the binding via `saveMapping()`.
 - Records can be individually deleted from the Sessions admin UI (`Sessions/Delete.php`)
 
 ### Configuration
@@ -356,6 +357,7 @@ The module implements a dual authentication flow for admin and customer users:
 | **CAPTCHA Bypass** | Controlled | Intentional bypass for OIDC (auth already done at IdP) |
 | **Password Bypass** | Protected | `OidcPasswordExpirationPlugin`, `OidcForcePasswordChangePlugin` suppress password flows for OIDC users |
 | **Stale Flag Guard** | Active (SEC-06) | `OidcCredentialPlugin` unconditionally clears OIDC flag in `afterLogin()` |
+| **Per-User IdP Binding** | Active | `ProcessUserAction` / `CheckAttributeMappingAction` check `m2oidc_oauth_user_provider` on every login; cross-IdP login rejected with `PROVIDER_MISMATCH`; first OIDC login of a pre-existing account claims the binding |
 | **Lockout Prevention** | Active | Provider save auto-reverts `disable_non_oidc_*_login` if no OIDC users exist yet for that provider |
 | **Required Field Validation** | Active | Email, username, firstname, lastname claims validated as non-empty on provider save |
 | **Address Integrity Guard** | Active | Billing address only created when all four fields (street, ZIP, city, country) are mapped |

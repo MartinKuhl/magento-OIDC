@@ -37,6 +37,7 @@ Modern e-commerce platforms require secure, centralized authentication. This mod
 - ✅ **RP-Initiated Logout**: Admin and customer logout with IdP redirect and RFC 7009 token revocation; unified single Post Logout Redirect URI (`/m2oidc/actions/postlogout`) for providers that only allow one registered URL
 - ✅ **Back-Channel Logout**: Server-to-server logout via signed JWT logout token
 - ✅ **Claims-Based Access Control**: Rules engine with 6 operators to gate login on any claim value
+- ✅ **Per-User IdP Binding**: The IdP that first authenticates a user is permanently bound to that account — cross-IdP login attempts are rejected
 - ✅ **Optional OIDC-Only Mode**: Disable password logins entirely (with lockout safety net)
 - ✅ **Session Activity View**: Admin UI listing all users who authenticated via OIDC, with per-record deletion
 - ✅ **Dirty-Field Tracking**: Visual amber highlights on modified provider form fields before save
@@ -77,23 +78,27 @@ bin/magento setup:di:compile
 bin/magento cache:flush
 ```
 
-### Step 2: Register Callback URL with Your Identity Provider
+### Step 2: Register URLs with Your Identity Provider
 
-In your IdP's OAuth/OIDC client configuration, register this callback URL:
+Register the following URLs in your IdP's OAuth/OIDC client configuration. Only the **Redirect URI** is required; all others are optional depending on the features you want to use.
 
-```
-https://your-magento-site.com/m2oidc/actions/ReadAuthorizationResponse
-```
+| URL | IdP field | Required | Feature |
+|-----|-----------|----------|---------|
+| `https://your-magento-site.com/m2oidc/actions/ReadAuthorizationResponse` | Redirect URI / Callback URL | **Yes** | Authorization code callback |
+| `https://your-magento-site.com/m2oidc/actions/postlogout` | Post Logout Redirect URI | Optional | RP-Initiated Logout (unified admin + customer) |
+| `https://your-magento-site.com/m2oidc/actions/backchannellogout` | Back-Channel Logout URI | Optional | Server-side session termination (OIDC CIBA) |
+| `https://your-magento-site.com/m2oidc/actions/idpInitiatedLogin?provider_id=<id>` | Initiate Login URI | Optional | IdP-Initiated SSO (OIDC §4) |
 
-**Important**: Replace `your-magento-site.com` with your actual domain. The protocol **must be HTTPS** in production.
+Replace `your-magento-site.com` with your actual domain. The protocol **must be HTTPS** in production.
 
-**(Optional) Post Logout Redirect URI**: If your IdP requires a registered Post Logout Redirect URI, register:
+**Notes:**
 
-```
-https://your-magento-site.com/m2oidc/actions/postlogout
-```
+- **Redirect URI**: the only URL every IdP integration requires. Some IdPs label this "Callback URL" or "Allowed Redirect URL".
+- **Post Logout Redirect URI**: this single URL handles both admin and customer post-logout redirects automatically (context is carried in the OIDC `state` parameter). If your IdP allows multiple URIs you can also register the admin base URL (`/admin/`) and customer login URL (`/customer/account/login/`) directly, but the unified endpoint is recommended when only one URL is permitted.
+- **Back-Channel Logout URI**: the IdP POSTs a signed JWT logout token to this URL to terminate the user's Magento session server-side — useful when the user signs out of the IdP from another device or application. Rate-limited to 10 requests per 60 seconds.
+- **Initiate Login URI**: register this URL to allow users to start the SSO flow from the IdP portal. Replace `<id>` with the numeric provider ID shown in **M2 OIDC > Manage Providers**. You must also enable the **IdP-Initiated SSO** toggle (`idp_initiated_enabled`) in the provider's Login Options tab.
 
-This single URL handles both admin and customer post-logout redirects. If your IdP allows multiple URIs you can also register the specific admin URL (`/admin/`) and customer login URL (`/customer/account/login/`) directly, but the unified callback is recommended when only one URL is permitted.
+> **Health check** (not registered with IdP): `https://your-magento-site.com/m2oidc/health/check` — returns JSON status of active providers; useful for uptime monitoring.
 
 ### Step 3: Configure Magento
 
@@ -420,7 +425,28 @@ $customerLoginUrl = $oauthHelper->getSPInitiatedUrl();
 
 ---
 
-### Issue 6: Post-Logout Redirect Rejected by IdP
+### Issue 6: "Login failed — different identity provider"
+
+**Symptom**: Login is rejected with "this account was created with a different identity provider."
+
+**Cause**: Per-user IdP binding is enforced. The account was originally authenticated (or created) via a different OIDC provider than the one currently being used.
+
+**Solution**:
+1. Direct the user to log in via the provider that originally created their account. Check `m2oidc_oauth_user_provider` to see which provider (`provider_id`) is bound to their account.
+2. If a migration to a new IdP is intended, update the binding in the database:
+   ```sql
+   UPDATE m2oidc_oauth_user_provider SET provider_id = <new_id>
+   WHERE user_type = 'customer' AND user_id = <magento_customer_id>;
+   ```
+3. If you want to clear all bindings and let the next login re-claim them:
+   ```sql
+   DELETE FROM m2oidc_oauth_user_provider WHERE provider_id = <old_id>;
+   ```
+4. Check `var/log/M2Oidc.log` for "Provider mismatch" entries to identify affected users.
+
+---
+
+### Issue 7: Post-Logout Redirect Rejected by IdP
 
 **Symptom**: After clicking "Sign Out", the IdP shows an error about an invalid or unregistered `post_logout_redirect_uri`.
 
@@ -434,6 +460,8 @@ $customerLoginUrl = $oauthHelper->getSPInitiatedUrl();
 2. If your IdP only allows one Post Logout Redirect URI, this single URL handles both admin and customer flows automatically.
 3. Verify in `var/log/M2Oidc.log` — look for `redirect=` in the logout log line to see the exact URL being sent.
 4. If using Authelia (`endsession_endpoint` path ends with `/logout`), no Post Logout Redirect URI registration is needed — Authelia uses the `?rd=` parameter instead.
+
+---
 
 ---
 
@@ -513,6 +541,16 @@ Authentication endpoints are protected by IP-based fixed-window rate limiting (`
 **During IdP outage**:
 - Emergency admin account can still log in via password (if OIDC-only mode not enabled)
 - Or temporarily disable OIDC-only via database query
+
+### Per-User IdP Binding
+
+When multiple OIDC providers are configured, each Magento account is permanently bound to the IdP that first authenticated it:
+
+- **First login wins**: the IdP that creates (or first claims via OIDC login) an account is recorded in `m2oidc_oauth_user_provider`.
+- **Cross-IdP rejection**: if the same email exists in two IdPs (e.g., Zitadel and Authelia), login via the second IdP is rejected with a clear error message.
+- **Pre-existing accounts**: a Magento account created before OIDC was set up has no binding — the first IdP to authenticate it claims the binding permanently.
+- **Why this matters**: without binding, the effective security level of an account is the lowest common denominator of all IdPs. Revoking a user in one IdP would leave them able to log in via another.
+- **Manual override**: an admin can change a user's binding by updating the `provider_id` column in `m2oidc_oauth_user_provider` directly.
 
 ### IdP Security is Your Security
 
