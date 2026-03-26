@@ -165,8 +165,8 @@ class RefreshOidcDiscovery
     /**
      * Compare discovered values against stored values; return only changed fields.
      *
-     * @param  array<string, mixed> $storedData  Current provider DB row
-     * @param  \stdClass            $discovered  Decoded discovery document
+     * @param  mixed[]   $storedData Current provider DB row
+     * @param  \stdClass $discovered Decoded discovery document
      * @return array<string, string> Column => new value (only fields that changed)
      */
     private function computeChanges(array $storedData, \stdClass $discovered): array

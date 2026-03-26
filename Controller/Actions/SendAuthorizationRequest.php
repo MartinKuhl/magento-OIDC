@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace M2Oidc\OAuth\Controller\Actions;
 
 use M2Oidc\OAuth\Helper\OAuth\AuthorizationRequest;
@@ -67,7 +69,7 @@ class SendAuthorizationRequest extends BaseAction
 
         $params = $this->getRequest()->getParams();
         $this->oauthUtility->customlog(
-            "SendAuthorizationRequest: Request params: " . json_encode($params, JSON_UNESCAPED_SLASHES)
+            "SendAuthorizationRequest: Request params: " . (json_encode($params, JSON_UNESCAPED_SLASHES) ?: '{}')
         );
         $isFromPopup = isset($params['from_popup']) && $params['from_popup'] == '1';
 
@@ -117,7 +119,7 @@ class SendAuthorizationRequest extends BaseAction
         if (empty($app_name)) {
             $errorRedirect = $this->oauthUtility->getBaseUrl() . 'customer/account/login';
             $this->messageManager->addErrorMessage(
-                __('App name not found. Please contact the administrator for assistance.')
+                (string)__('App name not found. Please contact the administrator for assistance.')
             );
             return $this->resultRedirectFactory->create()->setUrl($errorRedirect);
         }
@@ -174,7 +176,7 @@ class SendAuthorizationRequest extends BaseAction
         }
         if (!$clientDetails["authorize_endpoint"]) {
             $this->messageManager->addErrorMessage(
-                __('Authorization endpoint is not configured. Please contact the administrator.')
+                (string)__('Authorization endpoint is not configured. Please contact the administrator.')
             );
             return $this->resultRedirectFactory->create()->setUrl(
                 $this->oauthUtility->getBaseUrl() . 'customer/account/login'

@@ -34,7 +34,7 @@ class OidcCspPolicyCollector implements PolicyCollectorInterface
      *  - frame-src   : some IdP flows use iframes for silent refresh
      *  - img-src     : IdP may serve logos or user avatars
      */
-    private const DIRECTIVES = [
+    private const array DIRECTIVES = [
         'form-action',
         'connect-src',
         'frame-src',

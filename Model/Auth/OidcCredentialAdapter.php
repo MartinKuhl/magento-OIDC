@@ -141,6 +141,14 @@ class OidcCredentialAdapter implements StorageInterface
     public function authenticate($username, $password): bool
     {
         $this->restoreDependencies();
+
+        if (!$this->securityHelper instanceof \M2Oidc\OAuth\Helper\OAuthSecurityHelper
+            || !$this->eventManager instanceof \Magento\Framework\Event\ManagerInterface
+            || !$this->userCollectionFactory instanceof \Magento\User\Model\ResourceModel\User\CollectionFactory
+        ) {
+            throw new \RuntimeException('OidcCredentialAdapter: dependencies not available');
+        }
+
         $this->log("OidcCredentialAdapter: Starting authentication for: " . $username);
 
         // C-01: Validate and consume the ephemeral auth token (one-time use, expires in 120s)
@@ -221,7 +229,13 @@ class OidcCredentialAdapter implements StorageInterface
     {
         $this->restoreDependencies();
 
+        if (!$this->userResource instanceof \Magento\User\Model\ResourceModel\User) {
+            throw new \RuntimeException('OidcCredentialAdapter: userResource dependency not available');
+        }
+
         if ($this->authenticate($username, $password)) {
+            // phpcs:ignore Magento2.Security.InsecureFunction.Found
+            assert($this->user instanceof \Magento\User\Model\User);
             $this->userResource->recordLogin($this->user);
             $this->log("Login recorded for user ID: " . $this->user->getId());
             $this->reload();
@@ -240,6 +254,12 @@ class OidcCredentialAdapter implements StorageInterface
     public function reload(): static
     {
         $this->restoreDependencies();
+
+        if (!$this->userFactory instanceof \Magento\User\Model\UserFactory
+            || !$this->userResource instanceof \Magento\User\Model\ResourceModel\User
+        ) {
+            throw new \RuntimeException('OidcCredentialAdapter: userFactory or userResource dependency not available');
+        }
 
         /** @psalm-suppress DocblockTypeContradiction */
         if (!$this->user instanceof \Magento\User\Model\User) {
@@ -334,7 +354,7 @@ class OidcCredentialAdapter implements StorageInterface
      * Calls restoreDependencies() eagerly so that all injected services are
      * available before the User model is reloaded from the database.
      *
-     * @param array{userId: int|null, hasAvailableResources: bool} $data
+     * @param mixed[] $data Serialized state array with userId and hasAvailableResources
      */
     public function __unserialize(array $data): void
     {
@@ -342,7 +362,10 @@ class OidcCredentialAdapter implements StorageInterface
         $this->restoreDependencies();
 
         $userId = isset($data['userId']) ? $data['userId'] : null;
-        if ($userId !== null && $this->userFactory instanceof \Magento\User\Model\UserFactory && $this->userResource instanceof \Magento\User\Model\ResourceModel\User) {
+        if ($userId !== null
+            && $this->userFactory instanceof \Magento\User\Model\UserFactory
+            && $this->userResource instanceof \Magento\User\Model\ResourceModel\User
+        ) {
             $this->user = $this->userFactory->create();
             $this->userResource->load($this->user, $userId);
         }
@@ -351,8 +374,8 @@ class OidcCredentialAdapter implements StorageInterface
     /**
      * Magic method to proxy unknown method calls to the User object
      *
-     * @param  string              $method
-     * @param  array<int, mixed>   $args
+     * @param  string  $method Method name to proxy
+     * @param  mixed[] $args   Method arguments
      * @throws \BadMethodCallException
      */
     public function __call(string $method, array $args): mixed

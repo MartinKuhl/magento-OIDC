@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace M2Oidc\OAuth\Controller\Adminhtml\Providersettings;
 
 use Magento\Backend\App\Action\Context;
@@ -108,7 +110,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         }
 
         $resultPage = $this->resultPageFactory->create();
-        $resultPage->getConfig()->getTitle()->prepend(__('M2Oidc OAuth'));
+        $resultPage->getConfig()->getTitle()->prepend((string)__('M2Oidc OAuth'));
         return $resultPage;
     }
 

@@ -57,15 +57,22 @@ class OidcInfoPlugin
         }
 
         $info = $this->userProviderResource->getProviderInfo('customer', $customerId);
+        $displayName = $info ? $info['display_name'] : '';
+        $createdAt   = $info ? $info['created_at'] : '';
+        /** @var string $escapedDisplayName */
+        $escapedDisplayName = $this->escaper->escapeHtml($displayName);
+        /** @var string $escapedCreatedAt */
+        $escapedCreatedAt = $this->escaper->escapeHtml($createdAt);
         $providerText = $info
-            ? $this->escaper->escapeHtml($info['display_name'])
-              . ' (' . $this->escaper->escapeHtml($info['created_at']) . ')'
+            ? $escapedDisplayName . ' (' . $escapedCreatedAt . ')'
             : 'none';
 
         $label = __('OIDC Provider');
+        /** @var string $escapedLabel */
+        $escapedLabel = $this->escaper->escapeHtml((string) $label);
         $row = '<tr>'
             . '<td class="label"><span>'
-            . $this->escaper->escapeHtml((string) $label)
+            . $escapedLabel
             . '</span></td>'
             . '<td class="value">' . $providerText . '</td>'
             . '</tr>';

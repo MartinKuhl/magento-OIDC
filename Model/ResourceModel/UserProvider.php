@@ -76,6 +76,9 @@ class UserProvider extends AbstractDb
     public function getProviderInfo(string $userType, int $userId): ?array
     {
         $connection = $this->getConnection();
+        if ($connection === false) {
+            return null;
+        }
         $select = $connection->select()
             ->from(['up' => $this->getMainTable()], ['created_at'])
             ->join(
@@ -136,6 +139,9 @@ class UserProvider extends AbstractDb
     public function countByTypeAndProvider(string $userType, int $providerId): int
     {
         $connection = $this->getConnection();
+        if ($connection === false) {
+            return 0;
+        }
         $select = $connection->select()
             ->from($this->getMainTable(), [new \Zend_Db_Expr('COUNT(*)')])
             ->where('user_type = ?', $userType)

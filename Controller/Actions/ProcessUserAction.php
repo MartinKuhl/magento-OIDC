@@ -28,12 +28,12 @@ use Magento\Customer\Api\Data\CustomerInterface;
 class ProcessUserAction
 {
     /**
-     * @var array<string, mixed>|null
+     * @var mixed
      */
     private $attrs;
 
     /**
-     * @var array<string, mixed>|null
+     * @var mixed
      */
     private $flattenedattrs;
 
@@ -187,6 +187,8 @@ class ProcessUserAction
             $this->defaultRole = OAuthConstants::DEFAULT_ROLE;
         }
 
+        // phpcs:ignore Magento2.Security.InsecureFunction.Found
+        assert($this->userEmail !== null, 'userEmail must be set');
         return $this->processUserAction($this->userEmail, $firstName, $lastName, $userName);
     }
 
@@ -233,7 +235,8 @@ class ProcessUserAction
                 );
                 $baseLoginUrl = $this->oauthUtility->getCustomerLoginUrl();
                 $sep = (strpos($baseLoginUrl, '?') !== false) ? '&' : '?';
-                return $this->resultRedirectFactory->create()->setUrl($baseLoginUrl . $sep . 'oidc_error=' . $encodedError);
+                $redirectUrl = $baseLoginUrl . $sep . 'oidc_error=' . $encodedError;
+                return $this->resultRedirectFactory->create()->setUrl($redirectUrl);
             }
             // First OIDC login of a pre-existing (non-OIDC-created) account — claim the binding
             if ($boundProvider === null && $this->providerId > 0) {
@@ -298,7 +301,7 @@ class ProcessUserAction
                 $this->attrs['relayState'] = $store_url;
                 $this->oauthUtility->customlog(
                     "SEC-09: relayState host mismatch ('"
-                    . ($relayHost ?? '') . "' != '" . ($storeHost ?? '') . "'), reset to store URL."
+                    . (string)($relayHost ?? '') . "' != '" . (string)($storeHost ?? '') . "'), reset to store URL."
                 );
             }
         }
@@ -348,17 +351,17 @@ class ProcessUserAction
             $lastName = $parts[1] ?? $parts[0];
         }
 
-        $userName = $this->oauthUtility->isBlank($userName) ? $userEmail : $userName;
+        $userName = $this->oauthUtility->isBlank($userName) ? $userEmail : (string)$userName;
         $firstName = $this->oauthUtility->isBlank($firstName) ? $userName : $firstName;
-        $lastName = $this->oauthUtility->isBlank($lastName) ? $userName : $lastName;
+        $lastName  = $this->oauthUtility->isBlank($lastName)  ? $userName  : $lastName;
 
         $customer = $this->customerUserCreator->createCustomer(
             $userEmail,
             $userName,
             $firstName,
             $lastName,
-            $this->flattenedattrs,
-            $this->attrs,
+            $this->flattenedattrs ?? [],
+            $this->attrs ?? [],
             $this->providerId
         );
 
@@ -389,7 +392,7 @@ class ProcessUserAction
     /**
      * Set raw attribute array received from OIDC provider.
      *
-     * @param  array<string, mixed> $attrs
+     * @param  mixed $attrs
      * @return $this
      */
     public function setAttrs($attrs): static
@@ -401,7 +404,7 @@ class ProcessUserAction
     /**
      * Set flattened attribute map (simple key => value mapping).
      *
-     * @param  array<string, mixed> $flattenedattrs
+     * @param  mixed $flattenedattrs
      * @return $this
      */
     public function setFlattenedAttrs($flattenedattrs): static

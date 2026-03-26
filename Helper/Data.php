@@ -24,7 +24,6 @@ use M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps as AppResource;
 use M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps\CollectionFactory as ClientCollectionFactory;
 use M2Oidc\OAuth\Model\ResourceModel\OidcProviderRepository;
 
-
 /**
  * Helper class for reading/writing OAuth configuration data,
  * managing OAuth client app records, and providing URL utilities.
@@ -350,8 +349,8 @@ class Data extends AbstractHelper
     /**
      * Get a URL based on the given path and parameters.
      *
-     * @param string $url
-     * @param array<string, mixed>  $params
+     * @param string  $url
+     * @param mixed[] $params
      */
     public function getUrl(string $url, array $params = []): string
     {
@@ -361,8 +360,8 @@ class Data extends AbstractHelper
     /**
      * Get a frontend URL for the given path and parameters.
      *
-     * @param string $url
-     * @param array<string, mixed>  $params
+     * @param string  $url
+     * @param mixed[] $params
      */
     public function getFrontendUrl(string $url, array $params = []): string
     {
@@ -480,8 +479,8 @@ class Data extends AbstractHelper
     /**
      * Get the admin URL for the site based on the path passed.
      *
-     * @param  string $url
-     * @param  array<string, mixed>  $params
+     * @param  string  $url
+     * @param  mixed[] $params
      */
     public function getAdminUrl(string $url, array $params = []): string
     {
@@ -491,8 +490,8 @@ class Data extends AbstractHelper
     /**
      * Get the admin secure URL for the site based on the path passed.
      *
-     * @param  string $url
-     * @param  array<string, mixed>  $params
+     * @param  string  $url
+     * @param  mixed[] $params
      */
     public function getAdminSecureUrl(string $url, array $params = []): string
     {

@@ -266,10 +266,9 @@ class ReadAuthorizationResponse extends BaseAction
             $redirectURL = $this->oauthUtility->getCallBackUrl();
 
             // PKCE (RFC 7636 §4.5): retrieve verifier from cache via cookie nonce (one-time use).
-            // Three paths:
+            // Two paths:
             //   (a) Customer flow / admin SSO button → frontend SendAuthorizationRequest → oidc_pkce_nonce cookie
             //   (b) Admin backend login → adminhtml SendAuthorizationRequest (F2) → oidc_admin_pkce_nonce cookie
-            //   (c) Legacy DB fallback — pkce_code_verifier column (pre-F2; kept for safety)
             $pkceNonce    = (string) $this->cookieManager->getCookie('oidc_pkce_nonce', '');
             $codeVerifier = ($pkceNonce !== '')
                 ? $this->securityHelper->consumePkceVerifier($pkceNonce)
@@ -299,19 +298,9 @@ class ReadAuthorizationResponse extends BaseAction
                 $this->oauthUtility->customlog(
                     "ReadAuthResponse: PKCE code_verifier loaded from cache — including in token request"
                 );
-            } elseif (!empty($clientDetails['pkce_code_verifier'])) {
-                // Path (c): legacy DB fallback — read and immediately clear (one-time use).
-                $codeVerifier = (string) $clientDetails['pkce_code_verifier'];
-                $this->oauthUtility->saveProviderData(
-                    (int) $clientDetails['id'],
-                    ['pkce_code_verifier' => null]
-                );
-                $this->oauthUtility->customlog(
-                    "ReadAuthResponse: PKCE code_verifier loaded from DB (legacy fallback) — including in token request"
-                );
             } else {
                 $this->oauthUtility->customlog(
-                    "ReadAuthResponse: PKCE code_verifier not found in cache or DB"
+                    "ReadAuthResponse: PKCE code_verifier not found in cache"
                 );
             }
 
@@ -638,13 +627,13 @@ class ReadAuthorizationResponse extends BaseAction
      * Returns the decoded claims array on success, a redirect ResultInterface on
      * verification failure, or null when no JWKS endpoint is configured.
      *
-     * @param  string      $idToken        Raw JWT id_token from the token endpoint
-     * @param  array<string, mixed> $clientDetails  Provider configuration row
-     * @param  string      $clientID       OAuth client identifier
-     * @param  string      $relayState     Relay state URL for test-mode error redirect
-     * @param  string      $loginType      Login type (admin|customer) for error routing
-     * @param  string|null $expectedNonce  H-01: OIDC nonce to validate, null to skip
-     * @return array<string, mixed>|\Magento\Framework\App\ResponseInterface
+     * @param  string      $idToken       Raw JWT id_token from the token endpoint
+     * @param  mixed[]     $clientDetails Provider configuration row
+     * @param  string      $clientID      OAuth client identifier
+     * @param  string      $relayState    Relay state URL for test-mode error redirect
+     * @param  string      $loginType     Login type (admin|customer) for error routing
+     * @param  string|null $expectedNonce H-01: OIDC nonce to validate, null to skip
+     * @return mixed
      */
     private function resolveUserInfoFromIdToken(
         string $idToken,

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace M2Oidc\OAuth\Controller\Adminhtml\Attrsettings;
 
 use Magento\Backend\App\Action\Context;
@@ -90,7 +92,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
             $this->oauthUtility->customlog($e->getMessage());
         }
         $resultPage = $this->resultPageFactory->create();
-        $resultPage->getConfig()->getTitle()->prepend(__('M2Oidc OAuth'));
+        $resultPage->getConfig()->getTitle()->prepend((string)__('M2Oidc OAuth'));
         return $resultPage;
     }
     /**
@@ -99,7 +101,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
      * Saves directly to the specific provider's row in m2oidc_oauth_client_apps
      * identified by provider_id in $params.
      *
-     * @param array<string, mixed> $params
+     * @param mixed[] $params
      */
     private function processValuesAndSaveData(array $params): void
     {

@@ -18,6 +18,7 @@ class TokenAutoRefreshObserverTest extends TestCase
     /** @var TokenRefreshService&MockObject */
     private TokenRefreshService $tokenRefreshService;
 
+    /** @var TokenAutoRefreshObserver */
     private TokenAutoRefreshObserver $observer;
 
     protected function setUp(): void
@@ -44,18 +45,16 @@ class TokenAutoRefreshObserverTest extends TestCase
             ->willReturn(null);
 
         $this->observer->execute(new Observer([]));
-        // No assertion on the observer return — void method
-        $this->addToAssertionCount(1);
     }
 
     public function testRefreshFailureIsSwallowedbByService(): void
     {
+        $this->expectNotToPerformAssertions();
         // Service handles exceptions internally; observer must not re-throw.
         $this->tokenRefreshService
             ->method('refreshIfNeeded')
             ->willReturn(null); // Service returns null when no refresh needed/possible
 
         $this->observer->execute(new Observer([]));
-        $this->addToAssertionCount(1); // no exception thrown
     }
 }

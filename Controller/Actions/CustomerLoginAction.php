@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace M2Oidc\OAuth\Controller\Actions;
 
 use Magento\Framework\App\Action\Context;
@@ -77,7 +79,7 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
             $this->oauthUtility->customlog(
                 "CustomerLoginAction: ERROR - user is null"
             );
-            $this->messageManager->addErrorMessage(__(
+            $this->messageManager->addErrorMessage((string)__(
                 'Authentication failed. Please try again.'
             ));
             return $this->resultRedirectFactory->create()->setUrl(
@@ -120,7 +122,7 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
                 "CustomerLoginAction: Error setting nonce cookie: "
                 . $e->getMessage()
             );
-            $this->messageManager->addErrorMessage(__(
+            $this->messageManager->addErrorMessage((string)__(
                 'Authentication failed. Please try again.'
             ));
             return $this->resultRedirectFactory->create()

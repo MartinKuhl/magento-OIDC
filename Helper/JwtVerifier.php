@@ -230,9 +230,9 @@ class JwtVerifier
      * validation. It MUST NOT be used in any authentication code path. Use only
      * for debugging/logging claim structure, or in unit tests with mock tokens.
      *
-     * @internal For debug and test use only — never call from production auth code.
-     * @param  string $idToken The raw JWT string
+     * @param string $idToken The raw JWT string
      * @return array<string, mixed>|null Decoded payload array, or null on failure
+     * @internal For debug and test use only — never call from production auth code.
      */
     public function decodeWithoutVerification(string $idToken): ?array
     {
@@ -297,7 +297,7 @@ class JwtVerifier
     /**
      * Find the matching RSA public key from JWKS and convert to PEM.
      *
-     * @param  array<int, mixed>  $keys The JWKS keys array
+     * @param  mixed[]     $keys The JWKS keys array
      * @param  string|null $kid  Key ID from the JWT header
      * @param  string      $alg  Algorithm from the JWT header
      * @return string|null PEM-encoded public key, or null if not found

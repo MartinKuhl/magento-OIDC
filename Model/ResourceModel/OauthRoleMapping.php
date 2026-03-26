@@ -14,13 +14,13 @@ use Magento\Framework\Model\ResourceModel\Db\AbstractDb;
  */
 class OauthRoleMapping extends AbstractDb
 {
-    private const TABLE_NAME = 'm2oidc_oauth_role_mappings';
+    private const string TABLE_NAME = 'm2oidc_oauth_role_mappings';
 
     /** Mapping type constant for admin role mappings. */
-    public const TYPE_ADMIN_ROLE = 'admin_role';
+    public const string TYPE_ADMIN_ROLE = 'admin_role';
 
     /** Mapping type constant for customer group mappings. */
-    public const TYPE_CUSTOMER_GROUP = 'customer_group';
+    public const string TYPE_CUSTOMER_GROUP = 'customer_group';
 
     /**
      * @inheritDoc
@@ -42,6 +42,9 @@ class OauthRoleMapping extends AbstractDb
     public function getMappingsForProvider(int $providerId, string $mappingType): array
     {
         $connection = $this->getConnection();
+        if ($connection === false) {
+            return [];
+        }
         $select = $connection->select()
             ->from($this->getMainTable(), ['oidc_group', 'magento_role_id'])
             ->where('provider_id = ?', $providerId)
@@ -64,6 +67,9 @@ class OauthRoleMapping extends AbstractDb
     public function replaceProviderMappings(int $providerId, string $mappingType, array $rows): void
     {
         $connection = $this->getConnection();
+        if ($connection === false) {
+            return;
+        }
         $connection->beginTransaction();
         try {
             $connection->delete(

@@ -33,7 +33,7 @@ use M2Oidc\OAuth\Helper\OAuthConstants;
 class OAuthLogoutObserver implements ObserverInterface
 {
     /** Logout-guard cookie name — must match CustomerLoginAutoRedirectObserver */
-    private const LOGOUT_GUARD_COOKIE = 'oidc_logout_guard';
+    private const string LOGOUT_GUARD_COOKIE = 'oidc_logout_guard';
 
     /** @var \M2Oidc\OAuth\Helper\OAuthUtility */
     private readonly \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility;
@@ -269,8 +269,8 @@ class OAuthLogoutObserver implements ObserverInterface
      *  2) Unified callback URL (standard OIDC) — allows one registered URI for both flows
      *  3) Customer login page URL (Authelia forward-auth only, used in ?rd= parameter)
      *
-     * @param array<string, mixed>|null $provider
-     * @param bool       $isForwardAuth  True when the endpoint is Authelia-style
+     * @param mixed[]|null $provider      Provider data array or null
+     * @param bool         $isForwardAuth True when the endpoint is Authelia-style
      */
     private function resolvePostLogoutRedirectUri(?array $provider, bool $isForwardAuth = false): string
     {

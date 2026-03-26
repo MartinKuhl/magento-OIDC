@@ -31,12 +31,12 @@ use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
 class CheckAttributeMappingAction extends BaseAction
 {
     /**
-     * @var array<string, mixed>|null Raw userinfo response from provider
+     * @var mixed Raw userinfo response from provider
      */
     private $userInfoResponse;
 
     /**
-     * @var array<string, mixed>|null Flattened userinfo attributes
+     * @var mixed Flattened userinfo attributes
      */
     private $flattenedUserInfoResponse;
 
@@ -76,7 +76,7 @@ class CheckAttributeMappingAction extends BaseAction
     private $groupName;
 
     /**
-     * @var array<int, mixed>|null Decoded access_control_rules from the provider row (FEAT-04)
+     * @var mixed[]|null Decoded access_control_rules from the provider row (FEAT-04)
      */
     private ?array $accessControlRules = null;
 
@@ -289,7 +289,10 @@ class CheckAttributeMappingAction extends BaseAction
                 // Provider binding check: reject if account is bound to a different IdP
                 $adminUser = $this->adminUserCreator->getAdminUserByEmail($userEmail);
                 if ($adminUser && $adminUser->getId()) {
-                    $boundProvider = $this->userProviderResource->getBoundProviderId('admin', (int) $adminUser->getId());
+                    $boundProvider = $this->userProviderResource->getBoundProviderId(
+                        'admin',
+                        (int) $adminUser->getId()
+                    );
                     if ($boundProvider !== null && $boundProvider !== $this->providerId) {
                         $this->oauthUtility->customlog(
                             "Provider mismatch for admin " . $userEmail
@@ -364,7 +367,7 @@ class CheckAttributeMappingAction extends BaseAction
                         $rawGroups = $flattenedAttrs[$groupAttribute] ?? $attrs[$groupAttribute] ?? null;
                         $userGroups = $this->oidcAuthenticationService->normalizeGroups($rawGroups);
                     }
-                    $groupsJson = json_encode($userGroups);
+                    $groupsJson = json_encode($userGroups) ?: '[]';
                     $this->oauthUtility->customlog("User groups from OIDC: " . $groupsJson);
 
                     // Create the admin user via UserProvisioningService (fires before/after events)
@@ -433,7 +436,15 @@ class CheckAttributeMappingAction extends BaseAction
             return $this->moOAuthCheckMapping($attrs, $flattenedAttrs, $userEmail ?? '');
         } catch (MissingAttributesException $e) {
             $this->oauthUtility->customlog("ERROR: Missing attributes - " . $e->getMessage());
-            $encodedError = urlencode(base64_encode('Authentication failed: Required user attributes not received.'));
+            $receivedClaims = is_array($attrs) ? implode(', ', array_keys($attrs)) : '(none)';
+            $msg = OAuthMessages::parse(
+                'MISSING_ATTRIBUTES_DETAIL',
+                [
+                    'received_claims'    => $receivedClaims !== '' ? $receivedClaims : '(none)',
+                    'missing_attributes' => $e->getMessage(),
+                ]
+            );
+            $encodedError = urlencode(base64_encode($msg));
             $loginUrl = $this->oauthUtility->getCustomerLoginUrl() . '?oidc_error=' . $encodedError;
             return $this->resultRedirectFactory->create()->setUrl($loginUrl);
         }
@@ -445,9 +456,9 @@ class CheckAttributeMappingAction extends BaseAction
      * Maps OAuth attributes to Magento customer fields based on
      * the configuration set in the admin panel.
      *
-     * @param  array<string, mixed>  $attrs          Raw OAuth response attributes
-     * @param  array<string, mixed>  $flattenedAttrs Flattened attribute array
-     * @param  string $userEmail      User email from OAuth response
+     * @param  mixed   $attrs          Raw OAuth response attributes
+     * @param  mixed[] $flattenedAttrs Flattened attribute array
+     * @param  string  $userEmail      User email from OAuth response
      * @throws MissingAttributesException
      */
     private function moOAuthCheckMapping(
@@ -492,9 +503,9 @@ class CheckAttributeMappingAction extends BaseAction
     /**
      * Process the result - either show test screen or login/create user
      *
-     * @param  array<string, mixed>  $attrs          Raw attributes
-     * @param  array<string, mixed>  $flattenedattrs Flattened attributes
-     * @param  string $email          User email
+     * @param  mixed[] $attrs          Raw attributes
+     * @param  mixed[] $flattenedattrs Flattened attributes
+     * @param  string  $email          User email
      */
     private function processResult(
         array $attrs,
@@ -518,7 +529,7 @@ class CheckAttributeMappingAction extends BaseAction
      *
      * Falls back to email prefix if not provided
      *
-     * @param array<string, mixed> $attrs Attribute array
+     * @param mixed[] $attrs Attribute array
      */
     private function processFirstName(array &$attrs): void
     {
@@ -534,7 +545,7 @@ class CheckAttributeMappingAction extends BaseAction
      *
      * Falls back to email domain if not provided
      *
-     * @param array<string, mixed> $attrs Attribute array
+     * @param mixed[] $attrs Attribute array
      */
     private function processLastName(array &$attrs): void
     {
@@ -554,7 +565,7 @@ class CheckAttributeMappingAction extends BaseAction
      *
      * Falls back to email if not provided
      *
-     * @param array<string, mixed> $attrs Attribute array
+     * @param mixed[] $attrs Attribute array
      */
     private function processUserName(array &$attrs): void
     {
@@ -569,7 +580,7 @@ class CheckAttributeMappingAction extends BaseAction
      *
      * Falls back to userEmail if not provided
      *
-     * @param array<string, mixed> $attrs Attribute array
+     * @param mixed[] $attrs Attribute array
      */
     private function processEmail(array &$attrs): void
     {
@@ -581,7 +592,9 @@ class CheckAttributeMappingAction extends BaseAction
         $lowerConfigured = strtolower($this->emailAttribute);
         $caseMatchKey    = null;
         foreach (array_keys($attrs) as $key) {
+            /** @psalm-suppress InvalidCast */
             if (strtolower((string) $key) === $lowerConfigured) {
+                /** @psalm-suppress InvalidCast */
                 $caseMatchKey = (string) $key;
                 break;
             }
@@ -617,7 +630,7 @@ class CheckAttributeMappingAction extends BaseAction
      *
      * Defaults to empty array if not provided
      *
-     * @param array<string, mixed> $attrs Attribute array
+     * @param mixed[] $attrs Attribute array
      */
     private function processGroupName(array &$attrs): void
     {
@@ -647,7 +660,7 @@ class CheckAttributeMappingAction extends BaseAction
         if (isset($attrs[$this->groupName])) {
             $this->oauthUtility->customlog(
                 "Group names reconstructed from Zitadel subkeys: "
-                . json_encode($attrs[$this->groupName])
+                . (json_encode($attrs[$this->groupName]) ?: '[]')
             );
             return;
         }
@@ -661,7 +674,7 @@ class CheckAttributeMappingAction extends BaseAction
     /**
      * Set user info response
      *
-     * @param  array<string, mixed> $userInfoResponse
+     * @param  mixed $userInfoResponse
      * @return $this
      */
     public function setUserInfoResponse($userInfoResponse): static
@@ -673,7 +686,7 @@ class CheckAttributeMappingAction extends BaseAction
     /**
      * Set flattened user info response
      *
-     * @param  array<string, mixed> $flattenedUserInfoResponse
+     * @param  mixed $flattenedUserInfoResponse
      * @return $this
      */
     public function setFlattenedUserInfoResponse($flattenedUserInfoResponse): static
@@ -717,7 +730,7 @@ class CheckAttributeMappingAction extends BaseAction
      *   email_attribute, username_attribute, firstname_attribute,
      *   lastname_attribute, group_attribute
      *
-     * @param  array<string, mixed> $clientDetails Provider row data array
+     * @param  mixed[] $clientDetails Provider row data array
      * @return $this
      */
     public function setClientDetails(array $clientDetails): static
@@ -783,8 +796,8 @@ class CheckAttributeMappingAction extends BaseAction
      *
      * Array-valued claims (e.g. groups) are joined with commas for string comparison.
      *
-     * @param  array<string, mixed> $claims Flattened OIDC claims from the IdP response
-     * @return string|null                  Denial message if access is denied, null if granted
+     * @param  mixed[] $claims Flattened OIDC claims from the IdP response
+     * @return string|null  Denial message if access is denied, null if granted
      */
     private function evaluateAccessControlRules(array $claims): ?string
     {
@@ -891,9 +904,9 @@ class CheckAttributeMappingAction extends BaseAction
      * Called in the admin routing path before the nonce cookie is set so that
      * profile data is up-to-date by the time the admin logs in.
      *
-     * @param string $email Admin email (lookup key)
-     * @param array<string, mixed>  $flat  Flattened OIDC attributes
-     * @param array<string, mixed>  $raw   Raw (nested) OIDC attributes
+     * @param string  $email Admin email (lookup key)
+     * @param mixed[] $flat  Flattened OIDC attributes
+     * @param mixed[] $raw   Raw (nested) OIDC attributes
      */
     private function syncAdminProfileIfEnabled(string $email, array $flat, array $raw): void
     {
@@ -922,9 +935,9 @@ class CheckAttributeMappingAction extends BaseAction
     /**
      * Re-evaluate and update admin role from OIDC group claims when sync_admin_role_on_sso is enabled.
      *
-     * @param string $email Admin email
-     * @param array<string, mixed>  $flat  Flattened OIDC attributes
-     * @param array<string, mixed>  $raw   Raw (nested) OIDC attributes
+     * @param string  $email Admin email
+     * @param mixed[] $flat  Flattened OIDC attributes
+     * @param mixed[] $raw   Raw (nested) OIDC attributes
      */
     private function syncAdminRoleIfEnabled(string $email, array $flat, array $raw): void
     {

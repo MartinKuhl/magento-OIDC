@@ -269,9 +269,9 @@ class ImportOidcConfig extends Command
      * Extracted from execute() to keep nesting level within coding-standard limits.
      *
      * @param \M2Oidc\OAuth\Model\M2oidcOauthClientApps $model
-     * @param array<string, mixed> $importData
-     * @param array<string, mixed> $attributeMappings
-     * @param array<string, mixed> $roleMappings
+     * @param mixed[]                                   $importData         Provider import data
+     * @param mixed[]                                   $attributeMappings  Attribute mappings
+     * @param mixed[]                                   $roleMappings       Role mappings
      */
     private function persistProvider(
         \M2Oidc\OAuth\Model\M2oidcOauthClientApps $model,

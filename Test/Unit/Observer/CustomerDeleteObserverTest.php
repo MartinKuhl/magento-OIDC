@@ -20,6 +20,7 @@ class CustomerDeleteObserverTest extends TestCase
     /** @var UserProvider&MockObject */
     private UserProvider $userProviderResource;
 
+    /** @var CustomerDeleteObserver */
     private CustomerDeleteObserver $observer;
 
     protected function setUp(): void

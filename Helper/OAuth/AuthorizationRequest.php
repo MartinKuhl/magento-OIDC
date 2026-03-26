@@ -60,13 +60,13 @@ class AuthorizationRequest
     /**
      * Initialize authorization request parameters.
      *
-     * @param string      $clientID
-     * @param string      $scope
-     * @param string      $authorizeURL
-     * @param string      $responseType
-     * @param string      $redirectURL
+     * @param string      $clientID            OAuth client ID
+     * @param string      $scope               OAuth scope string
+     * @param string      $authorizeURL        Authorization endpoint URL
+     * @param string      $responseType        OAuth response type
+     * @param string      $redirectURL         Redirect URI
      * @param string      $relayState          The pre-validated, encoded state string (SEC-09)
-     * @param array<string, mixed> $params              Extra OAuth parameters (nonce, prompt, …)
+     * @param mixed       $params              Extra OAuth parameters (nonce, prompt, …)
      * @param string|null $codeChallenge       PKCE code_challenge (FEAT-01); null disables PKCE
      * @param string|null $codeChallengeMethod PKCE method ('S256' or 'plain'); null when disabled
      */

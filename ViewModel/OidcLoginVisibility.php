@@ -146,7 +146,7 @@ class OidcLoginVisibility implements ArgumentInterface
     /**
      * Validate that a provider row has the minimum required OIDC fields.
      *
-     * @param array<string, mixed> $provider
+     * @param mixed[] $provider Provider row data
      */
     private function isProviderConfigured(array $provider): bool
     {

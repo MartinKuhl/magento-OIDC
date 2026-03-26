@@ -14,7 +14,7 @@ use Magento\Framework\Model\ResourceModel\Db\AbstractDb;
  */
 class OauthAttributeMapping extends AbstractDb
 {
-    private const TABLE_NAME = 'm2oidc_oauth_attribute_mappings';
+    private const string TABLE_NAME = 'm2oidc_oauth_attribute_mappings';
 
     /**
      * @inheritDoc
@@ -35,6 +35,9 @@ class OauthAttributeMapping extends AbstractDb
     public function getMappingsForProvider(int $providerId): array
     {
         $connection = $this->getConnection();
+        if ($connection === false) {
+            return [];
+        }
         $select = $connection->select()
             ->from($this->getMainTable(), ['attribute_type', 'attribute_name', 'sync_on_sso'])
             ->where('provider_id = ?', $providerId);
@@ -67,6 +70,9 @@ class OauthAttributeMapping extends AbstractDb
         int $syncOnSso = 0
     ): void {
         $connection = $this->getConnection();
+        if ($connection === false) {
+            return;
+        }
         $connection->insertOnDuplicate(
             $this->getMainTable(),
             [

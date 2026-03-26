@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 /**
  * Customer OIDC Callback Controller
  *
@@ -192,7 +195,7 @@ class CustomerOidcCallback extends BaseAction
         // persistence. The load() method is required here.
         /** @phpstan-ignore-next-line */
         $customerModel = $this->customerFactory->create()
-            ->load($customerId);
+            ->load((int)$customerId);
 
         // Verify model was loaded correctly
         if (!$customerModel->getId()) {

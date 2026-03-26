@@ -16,39 +16,39 @@ use M2Oidc\OAuth\Model\Cache\AtomicCacheInterface;
  */
 class OAuthSecurityHelper
 {
-    private const NONCE_CACHE_PREFIX = 'm2oidc_nonce_';
+    private const string NONCE_CACHE_PREFIX = 'm2oidc_nonce_';
     /**
      * Cache prefix for customer OIDC login nonces
      */
-    private const CUSTOMER_NONCE_CACHE_PREFIX = 'm2oidc_custnonce_';
-    private const STATE_CACHE_PREFIX = 'm2oidc_state_';
-    private const NONCE_TTL = 300;     // 5 minutes — covers browser round-trips to slow IdPs
-    private const STATE_TTL = 600;     // 10 minutes
+    private const string CUSTOMER_NONCE_CACHE_PREFIX = 'm2oidc_custnonce_';
+    private const string STATE_CACHE_PREFIX = 'm2oidc_state_';
+    private const int NONCE_TTL = 300;     // 5 minutes — covers browser round-trips to slow IdPs
+    private const int STATE_TTL = 600;     // 10 minutes
 
     /**
      * Cache prefix for ephemeral OIDC auth tokens (C-01).
      * Key: hash('sha256', token) → value: email address.
      */
-    private const OIDC_AUTH_TOKEN_PREFIX = 'm2oidc_authtoken_';
+    private const string OIDC_AUTH_TOKEN_PREFIX = 'm2oidc_authtoken_';
     /** TTL for ephemeral OIDC auth tokens: long enough to survive a single login round-trip. */
-    private const OIDC_AUTH_TOKEN_TTL = 300; // 5 minutes
+    private const int OIDC_AUTH_TOKEN_TTL = 300; // 5 minutes
 
     /**
      * Prefix used as a fast, non-secret distinguisher for OIDC auth tokens (C-01).
      * The token itself is a cryptographically random hex string — this prefix merely
      * lets plugin code skip the cache lookup when the password is clearly not an OIDC token.
      */
-    private const OIDC_AUTH_TOKEN_MARKER = 'OIDC_';
+    private const string OIDC_AUTH_TOKEN_MARKER = 'OIDC_';
 
     /** Cache prefix for per-flow OIDC id_token nonces (H-01). */
-    private const OIDC_NONCE_CACHE_PREFIX = 'm2oidc_oidcnonce_';
+    private const string OIDC_NONCE_CACHE_PREFIX = 'm2oidc_oidcnonce_';
     /** TTL matches STATE_TTL so nonce stays available until state is consumed. */
-    private const OIDC_NONCE_TTL = 600; // 10 minutes
+    private const int OIDC_NONCE_TTL = 600; // 10 minutes
 
     /** Cache prefix for PKCE code verifiers bridging the customer OAuth redirect. */
-    private const PKCE_VERIFIER_CACHE_PREFIX = 'm2oidc_pkce_verifier_';
+    private const string PKCE_VERIFIER_CACHE_PREFIX = 'm2oidc_pkce_verifier_';
     /** TTL for PKCE verifier cache entries: 10 minutes, matching STATE_TTL. */
-    private const PKCE_VERIFIER_TTL = 600;
+    private const int PKCE_VERIFIER_TTL = 600;
 
     /** @var CacheInterface Used for write (save) operations */
     private readonly CacheInterface $cache;
@@ -67,8 +67,8 @@ class OAuthSecurityHelper
     /**
      * Initialize OAuth security helper.
      *
-     * @param CacheInterface      $cache
-     * @param OAuthUtility        $oauthUtility
+     * @param CacheInterface       $cache
+     * @param OAuthUtility         $oauthUtility
      * @param AtomicCacheInterface $atomicCache
      */
     public function __construct(

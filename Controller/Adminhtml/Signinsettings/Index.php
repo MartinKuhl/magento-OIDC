@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace M2Oidc\OAuth\Controller\Adminhtml\Signinsettings;
 
 use Magento\Backend\App\Action\Context;
@@ -130,7 +132,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         }
 
         $resultPage = $this->resultPageFactory->create();
-        $resultPage->getConfig()->getTitle()->prepend(__('OIDC Miscellaneous Settings'));
+        $resultPage->getConfig()->getTitle()->prepend((string)__('OIDC Miscellaneous Settings'));
         return $resultPage;
     }
 
@@ -144,7 +146,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         $collection = $this->oauthUtility->getOAuthClientApps();
 
         if ($collection->getSize() === 0) {
-            $this->messageManager->addErrorMessage(__('No providers found to export.'));
+            $this->messageManager->addErrorMessage((string)__('No providers found to export.'));
             return null;
         }
 
@@ -195,7 +197,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         $file  = $files['import_config_file'] ?? null;
 
         if (!$file || empty($file['tmp_name']) || $file['error'] !== UPLOAD_ERR_OK) {
-            $this->messageManager->addErrorMessage(__('Please select a valid JSON file.'));
+            $this->messageManager->addErrorMessage((string)__('Please select a valid JSON file.'));
             return;
         }
 
@@ -203,26 +205,26 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         $pathInfo = $this->ioFile->getPathInfo((string) $file['name']);
         $ext = strtolower((string) ($pathInfo['extension'] ?? ''));
         if ($ext !== 'json') {
-            $this->messageManager->addErrorMessage(__('Only .json files are allowed.'));
+            $this->messageManager->addErrorMessage((string)__('Only .json files are allowed.'));
             return;
         }
 
         try {
             $content = $this->fileDriver->fileGetContents($file['tmp_name']);
         } catch (\Magento\Framework\Exception\FileSystemException $e) {
-            $this->messageManager->addErrorMessage(__('Could not read uploaded file.'));
+            $this->messageManager->addErrorMessage((string)__('Could not read uploaded file.'));
             return;
         }
 
         try {
             $data = json_decode($content, true, 512, JSON_THROW_ON_ERROR);
         } catch (\JsonException $e) {
-            $this->messageManager->addErrorMessage(__('Invalid JSON: %1', $e->getMessage()));
+            $this->messageManager->addErrorMessage((string)__('Invalid JSON: %1', $e->getMessage()));
             return;
         }
 
         if (!isset($data['providers']) || !is_array($data['providers'])) {
-            $this->messageManager->addErrorMessage(__('Invalid format: "providers" key missing.'));
+            $this->messageManager->addErrorMessage((string)__('Invalid format: "providers" key missing.'));
             return;
         }
 
@@ -268,7 +270,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         }
 
         $this->messageManager->addSuccessMessage(
-            __('Import complete: %1 provider(s) imported, %2 skipped.', $imported, $skipped)
+            (string)__('Import complete: %1 provider(s) imported, %2 skipped.', $imported, $skipped)
         );
     }
 
@@ -367,7 +369,9 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
     {
         $this->oauthUtility->customlog("......................................................................");
         $this->oauthUtility->customlog("Plugin: OAuth Free : " . $values[12]);
-        $this->oauthUtility->customlog("Plugin: Magento version : " . $values[13] . " ; Php version: " . $values[14]);
+        $this->oauthUtility->customlog(
+            "Plugin: Magento version : " . $values[13] . " ; Php version: " . (string)$values[14]
+        );
         $this->oauthUtility->customlog("Appname: " . $values[0]);
         $this->oauthUtility->customlog("Scope: " . $values[1]);
         $this->oauthUtility->customlog("Authorize_url: " . $values[2]);

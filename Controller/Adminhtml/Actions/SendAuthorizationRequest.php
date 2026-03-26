@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace M2Oidc\OAuth\Controller\Adminhtml\Actions;
 
 use M2Oidc\OAuth\Helper\OAuth\AuthorizationRequest;
@@ -76,7 +78,7 @@ class SendAuthorizationRequest extends BaseAction
 
         $params = $this->getRequest()->getParams();
         $this->oauthUtility->customlog(
-            "SendAuthorizationRequest: params: " . json_encode($params, JSON_UNESCAPED_SLASHES)
+            "SendAuthorizationRequest: params: " . (json_encode($params, JSON_UNESCAPED_SLASHES) ?: '{}')
         );
 
         $isFromPopup = isset($params['from_popup']) && $params['from_popup'] == '1';
@@ -128,7 +130,7 @@ class SendAuthorizationRequest extends BaseAction
 
         if (!$clientDetails["authorize_endpoint"]) {
             $this->messageManager->addErrorMessage(
-                __('Authorization endpoint is not configured. Please contact the administrator.')
+                (string)__('Authorization endpoint is not configured. Please contact the administrator.')
             );
             $backendUrl = $this->urlBuilder->getUrl('adminhtml/auth/login');
             return $this->resultRedirectFactory->create()->setUrl($backendUrl);

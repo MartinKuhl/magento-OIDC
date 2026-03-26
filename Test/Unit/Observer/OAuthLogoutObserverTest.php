@@ -330,4 +330,247 @@ class OAuthLogoutObserverTest extends TestCase
         $this->assertStringNotContainsString('id_token_hint', (string) $capturedUrl);
         $this->assertStringNotContainsString('post_logout_redirect_uri', (string) $capturedUrl);
     }
+
+    // -------------------------------------------------------------------------
+    // Test 6 – Token revocation is called when access token and revocation endpoint are present
+    // -------------------------------------------------------------------------
+
+    public function testTokenRevocationIsCalledWhenAccessTokenAndEndpointPresent(): void
+    {
+        $this->customerSession->method('getData')->willReturnMap([
+            ['oidc_id_token',    false, 'some.id.token'],
+            ['oidc_provider_id', false, 8],
+            ['oidc_access_token', false, 'access_token_value'],
+        ]);
+
+        $this->oauthUtility->method('getClientDetailsById')->with(8)->willReturn([
+            'endsession_endpoint' => 'https://idp.example.com/connect/endsession',
+            'revocation_endpoint' => 'https://idp.example.com/connect/revoke',
+            'clientID'            => 'my-client',
+            'client_secret'       => 'my-secret',
+        ]);
+
+        $this->stubCookieMetadata();
+        $this->url->method('getUrl')->willReturn('https://store.example.com/m2oidc/actions/postlogout');
+
+        // Expect the Curl adapter to be created (revocation attempt)
+        $curlAdapter = $this->createMock(\Magento\Framework\HTTP\Adapter\Curl::class);
+        $curlAdapter->expects($this->once())->method('write');
+        $curlAdapter->method('read')->willReturn('');
+        $curlAdapter->method('close');
+        $this->curlFactory->expects($this->once())->method('create')->willReturn($curlAdapter);
+
+        // Use a non-HttpResponse so we don't hit exit(0)
+        $observer = new OAuthLogoutObserver(
+            $this->oauthUtility,
+            $this->createMock(\Magento\Framework\App\ResponseInterface::class),
+            $this->cookieManager,
+            $this->cookieMetadataFactory,
+            $this->customerSession,
+            $this->url,
+            $this->curlFactory
+        );
+        $observer->execute($this->observer);
+    }
+
+    // -------------------------------------------------------------------------
+    // Test 7 – Token revocation is skipped when revocation endpoint is empty
+    // -------------------------------------------------------------------------
+
+    public function testTokenRevocationSkippedWhenEndpointIsEmpty(): void
+    {
+        $this->customerSession->method('getData')->willReturnMap([
+            ['oidc_id_token',    false, 'some.id.token'],
+            ['oidc_provider_id', false, 9],
+            ['oidc_access_token', false, 'access_token_value'],
+        ]);
+
+        $this->oauthUtility->method('getClientDetailsById')->with(9)->willReturn([
+            'endsession_endpoint' => 'https://idp.example.com/connect/endsession',
+            'revocation_endpoint' => '',  // empty → skip
+        ]);
+
+        $this->stubCookieMetadata();
+        $this->url->method('getUrl')->willReturn('https://store.example.com/m2oidc/actions/postlogout');
+
+        // Curl factory should NOT be called
+        $this->curlFactory->expects($this->never())->method('create');
+
+        $observer = new OAuthLogoutObserver(
+            $this->oauthUtility,
+            $this->createMock(\Magento\Framework\App\ResponseInterface::class),
+            $this->cookieManager,
+            $this->cookieMetadataFactory,
+            $this->customerSession,
+            $this->url,
+            $this->curlFactory
+        );
+        $observer->execute($this->observer);
+    }
+
+    // -------------------------------------------------------------------------
+    // Test 8 – Token revocation is skipped when access token is empty
+    // -------------------------------------------------------------------------
+
+    public function testTokenRevocationSkippedWhenAccessTokenIsEmpty(): void
+    {
+        $this->customerSession->method('getData')->willReturnMap([
+            ['oidc_id_token',    false, 'some.id.token'],
+            ['oidc_provider_id', false, 10],
+            ['oidc_access_token', false, ''],  // no access token
+        ]);
+
+        $this->oauthUtility->method('getClientDetailsById')->with(10)->willReturn([
+            'endsession_endpoint' => 'https://idp.example.com/connect/endsession',
+            'revocation_endpoint' => 'https://idp.example.com/connect/revoke',
+        ]);
+
+        $this->stubCookieMetadata();
+        $this->url->method('getUrl')->willReturn('https://store.example.com/m2oidc/actions/postlogout');
+
+        $this->curlFactory->expects($this->never())->method('create');
+
+        $observer = new OAuthLogoutObserver(
+            $this->oauthUtility,
+            $this->createMock(\Magento\Framework\App\ResponseInterface::class),
+            $this->cookieManager,
+            $this->cookieMetadataFactory,
+            $this->customerSession,
+            $this->url,
+            $this->curlFactory
+        );
+        $observer->execute($this->observer);
+    }
+
+    // -------------------------------------------------------------------------
+    // Test 9 – oidc_logout_guard cookie is set with 300 s duration
+    // -------------------------------------------------------------------------
+
+    public function testLogoutGuardCookieIsSetWithCorrectDuration(): void
+    {
+        $this->customerSession->method('getData')->willReturnMap([
+            ['oidc_id_token',    false, 'header.payload.sig'],
+            ['oidc_provider_id', false, 11],
+            ['oidc_access_token', false, ''],
+        ]);
+
+        $this->oauthUtility->method('getClientDetailsById')->with(11)->willReturn([
+            'endsession_endpoint' => 'https://idp.example.com/connect/endsession',
+            'revocation_endpoint' => '',
+        ]);
+
+        $this->url->method('getUrl')->willReturn('https://store.example.com/m2oidc/actions/postlogout');
+
+        $meta = $this->createMock(PublicCookieMetadata::class);
+        $meta->method('setPath')->willReturnSelf();
+        $meta->method('setHttpOnly')->willReturnSelf();
+        $meta->method('setSecure')->willReturnSelf();
+        $meta->method('setSameSite')->willReturnSelf();
+        $meta->expects($this->once())->method('setDuration')->with(300)->willReturnSelf();
+
+        $this->cookieMetadataFactory->method('createPublicCookieMetadata')->willReturn($meta);
+
+        $capturedCookieValue = null;
+        $this->cookieManager->method('setPublicCookie')
+            ->willReturnCallback(function (string $name, string $value) use (&$capturedCookieValue): void {
+                if ($name === 'oidc_logout_guard') {
+                    $capturedCookieValue = $value;
+                }
+            });
+
+        $observer = new OAuthLogoutObserver(
+            $this->oauthUtility,
+            $this->createMock(\Magento\Framework\App\ResponseInterface::class),
+            $this->cookieManager,
+            $this->cookieMetadataFactory,
+            $this->customerSession,
+            $this->url,
+            $this->curlFactory
+        );
+        $observer->execute($this->observer);
+
+        $this->assertSame('1', $capturedCookieValue, 'oidc_logout_guard cookie value must be "1"');
+    }
+
+    // -------------------------------------------------------------------------
+    // Test 10 – Empty endsession_endpoint → no redirect (early return)
+    // -------------------------------------------------------------------------
+
+    public function testNoRedirectWhenEndSessionEndpointIsEmptyAndNoStoreFallback(): void
+    {
+        $this->customerSession->method('getData')->willReturnMap([
+            ['oidc_id_token',    false, 'some.id.token'],
+            ['oidc_provider_id', false, 12],
+            ['oidc_access_token', false, ''],
+        ]);
+
+        // Provider has no endsession_endpoint
+        $this->oauthUtility->method('getClientDetailsById')->with(12)->willReturn([
+            'endsession_endpoint' => '',
+            'revocation_endpoint' => '',
+        ]);
+
+        // Store-config fallback also empty
+        $this->oauthUtility->method('getStoreConfig')
+            ->with(OAuthConstants::OAUTH_LOGOUT_URL)
+            ->willReturn('');
+
+        $this->response->expects($this->never())->method('setRedirect');
+
+        $observer = $this->buildObserver();
+        $observer->execute($this->observer);
+    }
+
+    // -------------------------------------------------------------------------
+    // Test 11 – Standard OIDC URL contains state= parameter with customer: prefix
+    // -------------------------------------------------------------------------
+
+    public function testStandardOidcLogoutUrlContainsCustomerStatePrefix(): void
+    {
+        $endSession = 'https://idp.example.com/connect/endsession';
+
+        $this->customerSession->method('getData')->willReturnMap([
+            ['oidc_id_token',    false, 'some.jwt'],
+            ['oidc_provider_id', false, 13],
+            ['oidc_access_token', false, ''],
+        ]);
+
+        $this->oauthUtility->method('getClientDetailsById')->with(13)->willReturn([
+            'endsession_endpoint' => $endSession,
+            'revocation_endpoint' => '',
+        ]);
+
+        $this->url->method('getUrl')->willReturn('https://store.example.com/m2oidc/actions/postlogout');
+        $this->stubCookieMetadata();
+
+        $httpResponse = $this->createMock(\Magento\Framework\HTTP\PhpEnvironment\Response::class);
+        $capturedUrl  = null;
+        $httpResponse->expects($this->once())
+            ->method('setRedirect')
+            ->willReturnCallback(function (string $url) use (&$capturedUrl): void {
+                $capturedUrl = $url;
+                throw new \RuntimeException('redirect_intercepted');
+            });
+
+        $observer = new OAuthLogoutObserver(
+            $this->oauthUtility,
+            $httpResponse,
+            $this->cookieManager,
+            $this->cookieMetadataFactory,
+            $this->customerSession,
+            $this->url,
+            $this->curlFactory
+        );
+
+        try {
+            $observer->execute($this->observer);
+        } catch (\RuntimeException $e) {
+            if ($e->getMessage() !== 'redirect_intercepted') {
+                throw $e;
+            }
+        }
+
+        $this->assertNotNull($capturedUrl);
+        $this->assertStringContainsString('state=customer%3A', (string) $capturedUrl);
+    }
 }

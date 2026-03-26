@@ -41,8 +41,7 @@ use M2Oidc\OAuth\Model\Service\OidcSessionRegistry;
 class BackChannelLogout extends BaseAction implements HttpPostActionInterface, CsrfAwareActionInterface
 {
     /** OIDC Back-Channel Logout event URI (spec §2.4). */
-    // H-07: Typed constants (private const string) require PHP 8.3+. Magento 2.4 supports PHP 8.1+.
-    private const LOGOUT_EVENT_URI = 'http://schemas.openid.net/event/backchannel-logout';
+    private const string LOGOUT_EVENT_URI = 'http://schemas.openid.net/event/backchannel-logout';
 
     /** @var JsonFactory */
     private readonly JsonFactory $jsonFactory;
@@ -310,7 +309,7 @@ class BackChannelLogout extends BaseAction implements HttpPostActionInterface, C
      *   - admin: admin_user_session.status (1 = active, 0 = logged out)
      *   - customer: customer_log.last_logout_at (NULL or older than last_login_at = online)
      *
-     * @param array<string, mixed> $entry Session entry from OidcSessionRegistry::resolve()
+     * @param mixed[] $entry Session entry from OidcSessionRegistry::resolve()
      */
     private function clearOnlineStatus(array $entry): void
     {

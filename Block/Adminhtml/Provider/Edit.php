@@ -35,7 +35,7 @@ class Edit extends Container
      * @param Registry              $registry
      * @param FormKey               $formKey
      * @param StoreManagerInterface $storeManager
-     * @param array<string, mixed>  $data
+     * @param mixed[]               $data
      */
     public function __construct(
         Context $context,
@@ -116,7 +116,7 @@ class Edit extends Container
                 'class'      => 'save',
                 'onclick'    => sprintf(
                     "window.open(%s, 'TEST_OIDC', 'scrollbars=1,width=800,height=600'); return false;",
-                    json_encode($testUrl)
+                    json_encode($testUrl) ?: 'null'
                 ),
                 'sort_order' => 25,
             ]

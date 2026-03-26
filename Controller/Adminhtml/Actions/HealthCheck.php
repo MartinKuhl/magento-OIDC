@@ -171,7 +171,7 @@ class HealthCheck extends Action implements HttpGetActionInterface
     /**
      * Build a JSON result object.
      *
-     * @param  array<string, mixed> $data
+     * @param  mixed[] $data
      */
     private function buildResponse(array $data): JsonResult
     {

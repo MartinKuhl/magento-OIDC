@@ -20,6 +20,7 @@ class AdminUserDeleteObserverTest extends TestCase
     /** @var UserProvider&MockObject */
     private UserProvider $userProviderResource;
 
+    /** @var AdminUserDeleteObserver */
     private AdminUserDeleteObserver $observer;
 
     protected function setUp(): void

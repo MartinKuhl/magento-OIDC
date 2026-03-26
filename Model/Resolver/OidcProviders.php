@@ -34,7 +34,7 @@ use M2Oidc\OAuth\Helper\OAuthUtility;
 class OidcProviders implements ResolverInterface
 {
     /** Allowed login_type filter values. */
-    private const ALLOWED_LOGIN_TYPES = ['customer', 'admin', 'both'];
+    private const array ALLOWED_LOGIN_TYPES = ['customer', 'admin', 'both'];
 
     /** @var OAuthUtility */
     private readonly OAuthUtility $oauthUtility;
@@ -50,11 +50,11 @@ class OidcProviders implements ResolverInterface
     /**
      * @inheritdoc
      *
-     * @param  Field       $field
-     * @param  mixed       $context
-     * @param  ResolveInfo $info
-     * @param  array<array-key, mixed>|null  $value
-     * @param  array<array-key, mixed>|null  $args
+     * @param  Field        $field
+     * @param  mixed        $context
+     * @param  ResolveInfo  $info
+     * @param  mixed[]|null $value
+     * @param  mixed[]|null $args
      * @throws GraphQlInputException When an invalid login_type is supplied
      * @return list<array<string, int|string|null>>
      */
@@ -66,6 +66,7 @@ class OidcProviders implements ResolverInterface
         ?array $value = null,
         ?array $args = null
     ): array {
+        $args ??= [];
         $loginType = isset($args['login_type']) ? (string) $args['login_type'] : 'customer';
 
         if (!in_array($loginType, self::ALLOWED_LOGIN_TYPES, true)) {

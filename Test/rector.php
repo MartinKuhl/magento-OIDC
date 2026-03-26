@@ -17,7 +17,7 @@ return RectorConfig::configure()
         __DIR__ . '/../Plugin',
         __DIR__ . '/../ViewModel',
     ])
-    ->withPhpVersion(PhpVersion::PHP_82)
+    ->withPhpVersion(PhpVersion::PHP_83)
     ->withSets([
         // Allgemeine Code-Qualität
         SetList::CODE_QUALITY,
@@ -26,6 +26,7 @@ return RectorConfig::configure()
         // PHP 8.1+ Features nutzen
         SetList::PHP_81,
         SetList::PHP_82,
+        SetList::PHP_83,
     ])
     ->withRules([
         // Magento-spezifische Rector-Regel aus magento-coding-standard

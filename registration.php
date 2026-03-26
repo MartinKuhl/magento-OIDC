@@ -1,6 +1,8 @@
 <?php
- 
- /**
+
+declare(strict_types=1);
+
+/**
   * The code below is used to register the
   * OAuth extension/component with the Mangeto
   * core Module. It specifies the root directory

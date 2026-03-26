@@ -190,8 +190,8 @@ class OAuthUtility extends Data
      *
      * Delegates to OidcLogger::customlogContext().
      *
-     * @param string               $event   Short dot-notation event name
-     * @param array<string, mixed> $context Additional key-value context
+     * @param string  $event   Short dot-notation event name
+     * @param mixed[] $context Additional key-value context
      */
     public function customlogContext(string $event, array $context = []): void
     {
@@ -341,7 +341,7 @@ class OAuthUtility extends Data
 
         $emailsize = strlen($email);
         $partialemail = substr($email, 0, 1);
-        $temp = strrpos($email, "@");
+        $temp = (int)strrpos($email, "@");
         $endemail = substr($email, $temp - 1, $emailsize);
         for ($i = 1; $i < $temp; $i++) {
             $partialemail .= 'x';
@@ -532,7 +532,7 @@ class OAuthUtility extends Data
      * @return         bool
      * @psalm-suppress PossiblyUnusedMethod – Called from templates
      */
-    public function getIsTestConfigurationClicked()
+    public function getIsTestConfigurationClicked(): mixed
     {
         return $this->getStoreConfig(OAuthConstants::IS_TEST);
     }
@@ -872,8 +872,8 @@ class OAuthUtility extends Data
     /**
      * Update specific fields on a provider row (e.g. PKCE code_verifier).
      *
-     * @param int                  $providerId Row `id` from m2oidc_oauth_client_apps
-     * @param array<string, mixed> $data       Column => value pairs to update
+     * @param int     $providerId Row `id` from m2oidc_oauth_client_apps
+     * @param mixed[] $data       Column => value pairs to update
      */
     public function saveProviderData(int $providerId, array $data): void
     {

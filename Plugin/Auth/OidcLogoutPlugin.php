@@ -287,8 +287,8 @@ class OidcLogoutPlugin
      * of post_logout_redirect_uri, so this method returns the static admin base
      * URL when $isForwardAuth is true (no dynamic tokens, safe to register).
      *
-     * @param array<string, mixed>|null $provider Provider data array or null
-     * @param bool       $isForwardAuth  True when the endpoint is Authelia-style
+     * @param mixed[]|null $provider Provider data array or null
+     * @param bool $isForwardAuth True when the endpoint is Authelia-style
      */
     private function resolvePostLogoutRedirectUri(?array $provider, bool $isForwardAuth = false): string
     {
@@ -300,7 +300,7 @@ class OidcLogoutPlugin
         if ($isForwardAuth) {
             try {
                 // Reads admin front name from DB config — same as bin/magento info:adminuri
-                $frontName = rtrim($this->frontNameResolver->getFrontName(true), '/');
+                $frontName = rtrim((string)$this->frontNameResolver->getFrontName(true), '/');
                 $baseUrl   = rtrim($this->backendUrl->getBaseUrl(), '/');
                 $adminUrl  = $baseUrl . '/' . $frontName . '/';
 

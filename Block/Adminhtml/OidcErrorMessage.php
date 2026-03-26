@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace M2Oidc\OAuth\Block\Adminhtml;
 
 use Magento\Framework\View\Element\Template;

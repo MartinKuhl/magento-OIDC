@@ -45,7 +45,7 @@ class TokenRefreshService
     public const SESSION_TOKEN_EXPIRES   = 'oidc_access_token_expires';
 
     /** Refresh this many seconds before the token actually expires. */
-    private const REFRESH_THRESHOLD_SECS = 60;
+    private const int REFRESH_THRESHOLD_SECS = 60;
 
     /** @var OAuthUtility */
     private readonly OAuthUtility $oauthUtility;
@@ -207,8 +207,8 @@ class TokenRefreshService
     /**
      * Send the RFC 6749 §6 refresh token grant request.
      *
-     * @param  array<string, mixed> $provider     Provider data row
-     * @param  string $refreshToken Plain-text refresh token
+     * @param  mixed[] $provider      Provider data row
+     * @param  string  $refreshToken  Plain-text refresh token
      * @return string|null          New access token or null on failure
      */
     private function sendRefreshRequest(array $provider, string $refreshToken): ?string

@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace M2Oidc\OAuth\Model\ResourceModel;
 
 class M2OidcOauthClientApps extends \Magento\Framework\Model\ResourceModel\Db\AbstractDb

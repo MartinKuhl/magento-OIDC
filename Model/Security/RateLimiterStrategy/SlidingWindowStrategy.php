@@ -28,9 +28,9 @@ use Magento\Framework\App\CacheInterface;
  */
 class SlidingWindowStrategy implements StrategyInterface
 {
-    private const SORTED_SET_PREFIX = 'oidc_rl_';
-    private const MAX_ATTEMPTS      = 10;
-    private const WINDOW_SECONDS    = 60;
+    private const string SORTED_SET_PREFIX = 'oidc_rl_';
+    private const int MAX_ATTEMPTS      = 10;
+    private const int WINDOW_SECONDS    = 60;
 
     /** @var CacheInterface Non-Redis fallback */
     private readonly CacheInterface $cache;
@@ -70,11 +70,14 @@ class SlidingWindowStrategy implements StrategyInterface
      * The sorted set key is NOT prefixed with the Zend cache prefix because
      * we manage it directly via Redis commands — it lives outside the Magento
      * cache namespace.
+     *
+     * @param \Credis_Client $client     Redis client instance
+     * @param string         $identifier Unique rate-limit key (e.g. client IP)
      */
     private function isAllowedRedis(\Credis_Client $client, string $identifier): bool
     {
         $key = self::SORTED_SET_PREFIX . hash('sha256', $identifier);
-        $now = microtime(true);
+        microtime(true);
 
         try {
             // Remove entries outside the window, then count + add + expire atomically
@@ -110,6 +113,8 @@ LUA;
      *
      * Suffers from a TOCTOU window under high concurrency.  Use the Redis path
      * in production.
+     *
+     * @param string $identifier Unique rate-limit key (e.g. client IP)
      */
     private function isAllowedFallback(string $identifier): bool
     {
@@ -150,6 +155,7 @@ LUA;
 
     /**
      * Attempt to retrieve the Credis_Client from the cache backend via reflection.
+     *
      * Returns null if not on a Redis backend.
      */
     private function tryGetRedisClient(): ?\Credis_Client

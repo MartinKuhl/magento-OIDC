@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps;
 
 use Magento\Framework\ObjectManagerInterface;
@@ -21,7 +24,7 @@ class CollectionFactory
     /**
      * Create collection instance
      *
-     * @param  array<string, mixed> $data
+     * @param  mixed[] $data
      */
     public function create(array $data = []) : Collection
     {

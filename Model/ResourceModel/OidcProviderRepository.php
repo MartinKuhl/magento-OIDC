@@ -23,11 +23,11 @@ use Psr\Log\LoggerInterface;
 class OidcProviderRepository
 {
     /**
-     * @param M2oidcOauthClientAppsFactory $clientAppsFactory     Factory for individual provider models
-     * @param ClientCollectionFactory       $clientCollectionFactory Factory for provider collections
-     * @param AppResource                   $appResource            Resource model for save/load operations
-     * @param EncryptorInterface            $encryptor              Magento encryptor for client_secret decryption
-     * @param LoggerInterface               $logger                 PSR-3 logger
+     * @param M2oidcOauthClientAppsFactory $clientAppsFactory       Factory for individual provider models
+     * @param ClientCollectionFactory      $clientCollectionFactory Factory for provider collections
+     * @param AppResource                  $appResource             Resource model for save/load operations
+     * @param EncryptorInterface           $encryptor               Magento encryptor for client_secret decryption
+     * @param LoggerInterface              $logger                  PSR-3 logger
      */
     public function __construct(
         private readonly M2oidcOauthClientAppsFactory $clientAppsFactory,

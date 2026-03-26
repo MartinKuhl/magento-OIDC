@@ -8,9 +8,8 @@ use M2Oidc\OAuth\Helper\OAuthUtility;
 use M2Oidc\OAuth\Logger\OidcLogger;
 
 /**
- * @deprecated 3.0.8 Use LogCleanup instead. This class is kept only for backward compatibility
- *             with third-party code that may reference M2Oidc\OAuth\Cron\LogRotation.
- *             Will be removed in v4.0.0.
+ * @deprecated since 3.0.8, use LogCleanup. Will be removed in v4.0.0.
+ * @see \M2Oidc\OAuth\Cron\LogCleanup
  */
 class LogRotation extends LogCleanup
 {
@@ -18,6 +17,7 @@ class LogRotation extends LogCleanup
      * @param OAuthUtility $oauthUtility
      * @param OidcLogger   $oidcLogger
      */
+    // phpcs:ignore Generic.CodeAnalysis.UselessOverridingMethod.Found
     public function __construct(OAuthUtility $oauthUtility, OidcLogger $oidcLogger)
     {
         parent::__construct($oauthUtility, $oidcLogger);

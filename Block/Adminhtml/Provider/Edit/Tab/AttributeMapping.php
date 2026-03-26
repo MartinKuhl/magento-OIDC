@@ -65,7 +65,7 @@ class AttributeMapping extends Template implements TabInterface
      * @param OAuthUtility             $oauthUtility
      * @param GroupRepositoryInterface $groupRepository
      * @param SearchCriteriaBuilder    $searchCriteriaBuilder
-     * @param array<string, mixed>     $data
+     * @param mixed[]                  $data
      */
     public function __construct(
         Context $context,

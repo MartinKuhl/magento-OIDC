@@ -20,11 +20,11 @@ class Actions extends Column
     private UrlInterface $urlBuilder;
 
     /**
-     * @param ContextInterface    $context
-     * @param UiComponentFactory  $uiComponentFactory
-     * @param UrlInterface        $urlBuilder
-     * @param array<string, mixed> $components
-     * @param array<string, mixed> $data
+     * @param ContextInterface   $context
+     * @param UiComponentFactory $uiComponentFactory
+     * @param UrlInterface       $urlBuilder
+     * @param mixed[]            $components
+     * @param mixed[]            $data
      */
     public function __construct(
         ContextInterface $context,
@@ -40,7 +40,7 @@ class Actions extends Column
     /**
      * Add Edit and Delete URLs to each grid row.
      *
-     * @param  array<string, mixed> $dataSource
+     * @param  mixed[] $dataSource
      * @return array<string, mixed>
      */
     public function prepareDataSource(array $dataSource): array

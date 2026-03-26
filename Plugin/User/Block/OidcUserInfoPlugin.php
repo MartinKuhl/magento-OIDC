@@ -75,9 +75,14 @@ class OidcUserInfoPlugin
             ? $this->userProviderResource->getProviderInfo('admin', $userId)
             : null;
 
+        $displayName = $info ? $info['display_name'] : '';
+        $createdAt   = $info ? $info['created_at'] : '';
+        /** @var string $escapedDisplayName */
+        $escapedDisplayName = $this->escaper->escapeHtml($displayName);
+        /** @var string $escapedCreatedAt */
+        $escapedCreatedAt = $this->escaper->escapeHtml($createdAt);
         $providerText = $info
-            ? $this->escaper->escapeHtml($info['display_name'])
-              . ' (' . $this->escaper->escapeHtml($info['created_at']) . ')'
+            ? $escapedDisplayName . ' (' . $escapedCreatedAt . ')'
             : 'none';
 
         $fieldset = $form->getElement('base_fieldset');

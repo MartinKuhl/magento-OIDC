@@ -30,7 +30,7 @@ class RedisAtomicCache implements AtomicCacheInterface
      * Lua script: atomically GET then DEL a key.
      * Compatible with all Redis versions ≥ 2.6.
      */
-    private const GETDEL_LUA =
+    private const string GETDEL_LUA =
         "local v = redis.call('GET', KEYS[1]) " .
         "if v then redis.call('DEL', KEYS[1]) end " .
         "return v";
@@ -82,7 +82,8 @@ class RedisAtomicCache implements AtomicCacheInterface
                     return (string) $value;
                 }
                 return null;
-            } catch (\Throwable) {
+            // phpcs:ignore Magento2.CodeAnalysis.EmptyBlock.DetectedCatch
+            } catch (\Throwable $e) {
                 // Fall through to non-atomic fallback
             }
         }

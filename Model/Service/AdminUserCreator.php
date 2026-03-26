@@ -87,13 +87,16 @@ class AdminUserCreator
      *
      * Uses the MapperPool when available (prefers provider-specific override),
      * then falls back to the directly-injected default mapper.
+     *
+     * @param int $providerId OIDC provider ID
      */
     private function resolveMapper(int $providerId): AttributeMapperInterface
     {
         if ($this->mapperPool instanceof \M2Oidc\OAuth\Model\Attribute\MapperPool && $providerId > 0) {
             try {
                 return $this->mapperPool->getMapper($providerId, 'admin');
-            } catch (\InvalidArgumentException) {
+            // phpcs:ignore Magento2.CodeAnalysis.EmptyBlock.DetectedCatch
+            } catch (\InvalidArgumentException $e) {
                 // No mapper registered for this provider — fall through to default
             }
         }
@@ -107,8 +110,8 @@ class AdminUserCreator
      * @param  mixed       $userName
      * @param  string|null $firstName
      * @param  string|null $lastName
-     * @param  array<int|string, mixed> $userGroups
-     * @param  int                     $providerId OIDC provider ID (0 = unknown / not tracked)
+     * @param  mixed[]     $userGroups
+     * @param  int         $providerId OIDC provider ID (0 = unknown / not tracked)
      * @return \Magento\User\Model\User|null
      */
     public function createAdminUser(string $email, $userName, $firstName, $lastName, array $userGroups, int $providerId = 0) // phpcs:ignore Generic.Files.LineLength.TooLong
@@ -130,7 +133,10 @@ class AdminUserCreator
         $roleId = $this->getAdminRoleFromGroups($userGroups, $providerId);
 
         if (!$roleId) {
-            $this->oauthUtility->customlog("AdminUserCreator: No suitable role found for user. Creation aborted.");
+            $groupList = $userGroups !== [] ? implode(', ', $userGroups) : '(none)';
+            $this->oauthUtility->customlog(
+                OAuthMessages::parse('ADMIN_ROLE_MAPPING_NO_MATCH', ['groups' => $groupList])
+            );
             return null;
         }
 
@@ -172,6 +178,9 @@ class AdminUserCreator
             ->setIsActive(1);
 
         $connection = $this->userResource->getConnection();
+        if ($connection === false) {
+            throw new \RuntimeException('AdminUserCreator: Database connection unavailable');
+        }
         $connection->beginTransaction();
         try {
             $this->userResource->save($user);
@@ -212,8 +221,8 @@ class AdminUserCreator
      * Falls back to the legacy JSON column when the new table has no data for this provider
      * (e.g. before the migration patch runs or on providers saved through older admin UI).
      *
-     * @param  array<int|string, mixed> $userGroups Groups from OIDC response
-     * @param  int   $providerId OIDC provider ID (used for new table lookup)
+     * @param  mixed[] $userGroups Groups from OIDC response
+     * @param  int     $providerId OIDC provider ID (used for new table lookup)
      * @return int|null Admin role ID or null if denied
      */
     private function getAdminRoleFromGroups(array $userGroups, int $providerId = 0): ?int

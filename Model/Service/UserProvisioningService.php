@@ -68,7 +68,7 @@ class UserProvisioningService
      * @param  string      $username
      * @param  string|null $firstName
      * @param  string|null $lastName
-     * @param  array<int|string, mixed> $oidcGroups
+     * @param  mixed[]     $oidcGroups
      * @param  int         $providerId
      */
     public function provisionAdmin(
@@ -125,13 +125,13 @@ class UserProvisioningService
      * after the creation attempt. If an observer sets 'skip_creation' => true on
      * the before-event transport, creation is skipped and null is returned.
      *
-     * @param  string $email
-     * @param  string $username
-     * @param  string $firstName
-     * @param  string $lastName
-     * @param  array<string, mixed> $flattenedAttrs  Flattened OIDC claims
-     * @param  array<string, mixed> $rawAttrs        Raw (nested) OIDC response
-     * @param  int    $providerId
+     * @param  string  $email
+     * @param  string  $username
+     * @param  string  $firstName
+     * @param  string  $lastName
+     * @param  mixed[] $flattenedAttrs Flattened OIDC claims
+     * @param  mixed[] $rawAttrs       Raw (nested) OIDC response
+     * @param  int     $providerId
      */
     public function provisionCustomer(
         string $email,

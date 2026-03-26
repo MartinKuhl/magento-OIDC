@@ -18,6 +18,7 @@ class AdminTokenAutoRefreshObserverTest extends TestCase
     /** @var AdminTokenRefreshService&MockObject */
     private AdminTokenRefreshService $adminTokenRefreshService;
 
+    /** @var AdminTokenAutoRefreshObserver */
     private AdminTokenAutoRefreshObserver $observer;
 
     protected function setUp(): void
@@ -43,16 +44,15 @@ class AdminTokenAutoRefreshObserverTest extends TestCase
             ->willReturn(null);
 
         $this->observer->execute(new Observer([]));
-        $this->addToAssertionCount(1);
     }
 
     public function testRefreshFailureIsSwallowedbByService(): void
     {
+        $this->expectNotToPerformAssertions();
         $this->adminTokenRefreshService
             ->method('refreshIfNeeded')
             ->willReturn(null);
 
         $this->observer->execute(new Observer([]));
-        $this->addToAssertionCount(1);
     }
 }

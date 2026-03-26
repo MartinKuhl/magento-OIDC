@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace M2Oidc\OAuth\Block\Adminhtml;
 
 use Magento\Backend\Block\Template;
@@ -44,12 +47,12 @@ class Debug extends Template
     /**
      * Initialize Debug block.
      *
-     * @param Context                                         $context
-     * @param OAuthUtility                                    $oauthUtility
-     * @param DirectoryList                                   $directoryList
-     * @param \Magento\Framework\Filesystem\Driver\File|null  $fileDriver
-     * @param \Magento\Framework\HTTP\Client\Curl|null        $curlClient
-     * @param array<string, mixed>                            $data
+     * @param Context                                        $context
+     * @param OAuthUtility                                   $oauthUtility
+     * @param DirectoryList                                  $directoryList
+     * @param \Magento\Framework\Filesystem\Driver\File|null $fileDriver
+     * @param \Magento\Framework\HTTP\Client\Curl|null       $curlClient
+     * @param mixed[]                                        $data
      */
     public function __construct(
         Context $context,

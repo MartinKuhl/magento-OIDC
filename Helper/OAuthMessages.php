@@ -151,6 +151,25 @@ class OAuthMessages
         = "Account not found for '{{email}}'."
         . " Auto-creation is disabled. Please register first or contact the store administrator.";
 
+    // -------------------------------------------------------------------------
+    // Customer group mapping errors
+    // -------------------------------------------------------------------------
+
+    /** Customer creation denied because the user's OIDC groups have no matching customer group mapping. */
+    public const CUSTOMER_GROUP_MAPPING_NO_MATCH
+        = "Customer creation denied: OIDC groups [{{groups}}] are not mapped to any Magento customer group."
+        . " Configure customer group mappings in Attribute Settings, or set a Default Customer Group.";
+
+    // -------------------------------------------------------------------------
+    // Missing attribute errors (context-aware)
+    // -------------------------------------------------------------------------
+
+    /** Required OIDC claims were absent from the authentication response. */
+    public const MISSING_ATTRIBUTES_DETAIL
+        = "Authentication failed: received claims [{{received_claims}}] do not include"
+        . " the required attribute(s): {{missing_attributes}}."
+        . " Verify the Email Attribute and other configured mappings match the actual OIDC claim names.";
+
     /**
      * Parse the message and replace the dynamic values with the
      * necessary values. The dynamic values needs to be passed in

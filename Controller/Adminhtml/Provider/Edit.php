@@ -89,7 +89,7 @@ class Edit extends Action implements HttpGetActionInterface
         /** @var \Magento\Backend\Model\View\Result\Page $page */
         $page->setActiveMenu('M2Oidc_OAuth::provider_management');
 
-        $providerName = $providerId > 0
+        $providerName = $providerId > 0 && $model instanceof \M2Oidc\OAuth\Model\M2oidcOauthClientApps
             ? ($model->getData('display_name') ?: $model->getData('app_name') ?: (string) $providerId)
             : '';
         $title = $providerId > 0

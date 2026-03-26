@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <psalm
-    errorLevel="4"
+    errorLevel="3"
     phpVersion="8.3"
     resolveFromConfigFile="true"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -39,6 +39,10 @@
 
         <!-- Magento modules need extensible classes — do not require final -->
         <ClassMustBeFinal errorLevel="suppress" />
+
+        <!-- Magento base class interfaces often lack typehints — unfixable at module level -->
+        <MissingReturnType errorLevel="suppress" />
+        <MissingParamType errorLevel="suppress" />
 
     </issueHandlers>
 </psalm>

@@ -282,6 +282,7 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
                 // @phpstan-ignore-next-line
                 $adminUser = $this->auth->getAuthStorage()->getUser();
                 $adminId = $adminUser ? (int) $adminUser->getId() : 0;
+                // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
                 $phpSessionId = (string) session_id();
                 if ($sub !== '' && $phpSessionId !== '' && $adminId > 0) {
                     $this->sessionRegistry->register($sub, $sid, $phpSessionId, 'admin', $adminId);

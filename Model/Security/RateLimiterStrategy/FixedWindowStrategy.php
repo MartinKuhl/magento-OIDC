@@ -23,9 +23,9 @@ use Magento\Framework\App\CacheInterface;
  */
 class FixedWindowStrategy implements StrategyInterface
 {
-    private const CACHE_PREFIX  = 'oidc_rate_limit_';
-    private const MAX_ATTEMPTS  = 10;
-    private const WINDOW_SECONDS = 60;
+    private const string CACHE_PREFIX  = 'oidc_rate_limit_';
+    private const int MAX_ATTEMPTS  = 10;
+    private const int WINDOW_SECONDS = 60;
 
     /** @var CacheInterface */
     private readonly CacheInterface $cache;
@@ -72,7 +72,7 @@ class FixedWindowStrategy implements StrategyInterface
             return true;
         }
 
-        $count = (int) $data['count'];
+        $count = $data['count'];
         if ($count >= self::MAX_ATTEMPTS) {
             return false;
         }
@@ -83,6 +83,8 @@ class FixedWindowStrategy implements StrategyInterface
     }
 
     /**
+     * Persist a rate-limit entry to cache.
+     *
      * @param string $key
      * @param int    $count
      * @param int    $start

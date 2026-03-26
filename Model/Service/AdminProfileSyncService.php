@@ -55,14 +55,14 @@ class AdminProfileSyncService
      * the attribute is skipped.  When no normalized row exists (legacy mode) the attribute
      * is always synced (the coarse global flag still guards the call-site).
      *
-     * @param string $email          Admin email (lookup key)
-     * @param array<string, mixed>  $flattenedAttrs Flattened OIDC attributes
-     * @param array<string, mixed>  $rawAttrs       Raw (nested) OIDC attributes
-     * @param string $firstNameKey   OIDC claim key for firstname
-     * @param string $lastNameKey    OIDC claim key for lastname
-     * @param string $usernameKey    OIDC claim key for username
-     * @param string $emailKey       OIDC claim key for email (empty = skip email sync)
-     * @param int    $providerId     Provider ID for per-attribute sync flag lookup (0 = legacy)
+     * @param string  $email          Admin email (lookup key)
+     * @param mixed[] $flattenedAttrs Flattened OIDC attributes
+     * @param mixed[] $rawAttrs       Raw (nested) OIDC attributes
+     * @param string  $firstNameKey   OIDC claim key for firstname
+     * @param string  $lastNameKey    OIDC claim key for lastname
+     * @param string  $usernameKey    OIDC claim key for username
+     * @param string  $emailKey       OIDC claim key for email (empty = skip email sync)
+     * @param int     $providerId     Provider ID for per-attribute sync flag lookup (0 = legacy)
      */
     public function syncProfile(
         string $email,
@@ -148,12 +148,12 @@ class AdminProfileSyncService
      * iterate provider role mappings, match against OIDC groups,
      * assign first matching role.
      *
-     * @param string $email          Admin email
-     * @param array<string, mixed>  $flattenedAttrs Flattened OIDC attributes
-     * @param array<string, mixed>  $rawAttrs       Raw (nested) OIDC attributes
-     * @param string $groupAttribute OIDC claim key for groups
-     * @param array<int, mixed>  $roleMappings   [['group' => 'idp-group', 'role' => 'magento-role-id'], ...]
-     * @param string $defaultRole    Fallback role name if no mapping matches
+     * @param string  $email          Admin email
+     * @param mixed[] $flattenedAttrs Flattened OIDC attributes
+     * @param mixed[] $rawAttrs       Raw (nested) OIDC attributes
+     * @param string  $groupAttribute OIDC claim key for groups
+     * @param mixed[] $roleMappings   [['group' => 'idp-group', 'role' => 'magento-role-id'], ...]
+     * @param string  $defaultRole    Fallback role name if no mapping matches
      */
     public function syncRole(
         string $email,
@@ -186,7 +186,7 @@ class AdminProfileSyncService
         foreach ($roleMappings as $mapping) {
             $idpGroup = $mapping['group'] ?? '';
             $roleId   = $mapping['role'] ?? '';
-            if ($idpGroup !== '' && in_array($idpGroup, $userGroups, true)) {
+            if ($idpGroup !== '' && $roleId !== '' && in_array($idpGroup, $userGroups, true)) {
                 $targetRoleId = (int) $roleId;
                 break;
             }
@@ -224,8 +224,8 @@ class AdminProfileSyncService
      * Rule: if a normalized mapping row exists for $attributeType and its
      * `sync_on_sso` flag is 0 → skip.  If no row exists → sync (legacy behaviour).
      *
-     * @param  array<string, array{attribute_name: string, sync_on_sso: int}> $attrMap
-     * @param  string $attributeType  e.g. 'firstname', 'lastname', 'email'
+     * @param  mixed[] $attrMap        Normalized attribute map from MappingRepository
+     * @param  string  $attributeType  e.g. 'firstname', 'lastname', 'email'
      */
     private function shouldSync(array $attrMap, string $attributeType): bool
     {
@@ -251,9 +251,9 @@ class AdminProfileSyncService
     /**
      * Extract a single value from flattened or raw attributes.
      *
-     * @param string $key  Attribute key to look up
-     * @param array<string, mixed>  $flat Flattened OIDC attributes
-     * @param array<string, mixed>  $raw  Raw (nested) OIDC attributes
+     * @param string  $key  Attribute key to look up
+     * @param mixed[] $flat Flattened OIDC attributes
+     * @param mixed[] $raw  Raw (nested) OIDC attributes
      */
     private function extract(string $key, array $flat, array $raw): ?string
     {
@@ -270,9 +270,9 @@ class AdminProfileSyncService
     /**
      * Extract groups array from OIDC claims.
      *
-     * @param string $key  Attribute key for groups claim
-     * @param array<string, mixed>  $flat Flattened OIDC attributes
-     * @param array<string, mixed>  $raw  Raw (nested) OIDC attributes
+     * @param string  $key  Attribute key for groups claim
+     * @param mixed[] $flat Flattened OIDC attributes
+     * @param mixed[] $raw  Raw (nested) OIDC attributes
      * @return string[]
      */
     private function extractGroups(string $key, array $flat, array $raw): array

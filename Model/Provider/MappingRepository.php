@@ -28,7 +28,7 @@ class MappingRepository
     /** @var array<int, array<string, array{attribute_name: string, sync_on_sso: int}>> */
     private array $attrCache = [];
 
-    /** @var array<int, array<string, list<array{oidc_group: string, magento_role_id: string}>>> */
+    /** @var array<int, array<string, array<int, array{oidc_group: string, magento_role_id: string}>>> */
     private array $roleCache = [];
 
     /**
@@ -87,7 +87,7 @@ class MappingRepository
      * Return admin role mappings for a provider.
      *
      * @param  int $providerId
-     * @return list<array{oidc_group: string, magento_role_id: string}>
+     * @return array<int, array{oidc_group: string, magento_role_id: string}>
      */
     public function getAdminRoleMappings(int $providerId): array
     {
@@ -98,7 +98,7 @@ class MappingRepository
      * Return customer group mappings for a provider.
      *
      * @param  int $providerId
-     * @return list<array{oidc_group: string, magento_role_id: string}>
+     * @return array<int, array{oidc_group: string, magento_role_id: string}>
      *         (magento_role_id holds the customer group ID in this context)
      */
     public function getCustomerGroupMappings(int $providerId): array
@@ -178,7 +178,7 @@ class MappingRepository
      *
      * @param  int    $providerId
      * @param  string $mappingType
-     * @return list<array{oidc_group: string, magento_role_id: string}>
+     * @return array<int, array{oidc_group: string, magento_role_id: string}>
      */
     private function getRoleMappings(int $providerId, string $mappingType): array
     {

@@ -27,7 +27,7 @@ class OAuthObserver implements ObserverInterface
     /**
      * Query-parameter keys this observer reacts to.
      */
-    private const REQUEST_PARAMS = ['option'];
+    private const array REQUEST_PARAMS = ['option'];
 
     /**
      * Initialize OAuth observer.
@@ -86,8 +86,8 @@ class OAuthObserver implements ObserverInterface
     /**
      * Route the request to the appropriate action based on the `option` parameter.
      *
-     * @param string               $op
-     * @param array<string, mixed> $params
+     * @param string  $op
+     * @param mixed[] $params
      */
     private function routeData(string $op, array $params): void
     {

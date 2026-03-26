@@ -35,7 +35,7 @@ class PkceStatus extends Column
     /**
      * @inheritDoc
      *
-     * @param  array<string, mixed> $dataSource
+     * @param  mixed[] $dataSource
      * @return array<string, mixed>
      */
     public function prepareDataSource(array $dataSource): array

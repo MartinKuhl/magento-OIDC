@@ -121,8 +121,8 @@ class OidcLogger
      * JSON Lines format (json_lines = 1):
      *   {"ts":"...","level":"info","event":"...","context":{"key":"value",...}}
      *
-     * @param string               $event   Short dot-notation event name (e.g. "oidc.login.success")
-     * @param array<string, mixed> $context Additional key-value context to include in the log entry
+     * @param string  $event   Short dot-notation event name (e.g. "oidc.login.success")
+     * @param mixed[] $context Additional key-value context to include in the log entry
      */
     public function customlogContext(string $event, array $context = []): void
     {

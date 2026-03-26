@@ -22,9 +22,9 @@ class ProviderSettings extends Template implements TabInterface
     private readonly Registry $registry;
 
     /**
-     * @param Context              $context
-     * @param Registry             $registry
-     * @param array<string, mixed> $data
+     * @param Context  $context
+     * @param Registry $registry
+     * @param mixed[]  $data
      */
     public function __construct(
         Context $context,

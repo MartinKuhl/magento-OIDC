@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace M2Oidc\OAuth\Controller\Actions;
 
 use M2Oidc\OAuth\Helper\Exception\IncorrectUserInfoDataException;
@@ -17,7 +20,7 @@ use M2Oidc\OAuth\Helper\OAuthConstants;
 class ProcessResponseAction extends BaseAction
 {
     /**
-     * @var array<string, mixed>|object|null Raw userinfo response (array or stdClass)
+     * @var mixed Raw userinfo response (array or stdClass)
      */
     private $userInfoResponse;
 
@@ -58,7 +61,7 @@ class ProcessResponseAction extends BaseAction
                 "ERROR: Invalid user info data from OAuth provider - " . $e->getMessage()
             );
             $this->messageManager->addErrorMessage(
-                __('Authentication failed: Invalid user information received from identity provider.')
+                (string)__('Authentication failed: Invalid user information received from identity provider.')
             );
             return $this->resultRedirectFactory->create()->setPath('customer/account/login');
         }
@@ -93,7 +96,7 @@ class ProcessResponseAction extends BaseAction
 
         if (empty($userEmail)) {
             $this->messageManager->addErrorMessage(
-                __('Email address not received. Please check attribute mapping.')
+                (string)__('Email address not received. Please check attribute mapping.')
             );
             return $this->resultRedirectFactory->create()->setPath('customer/account/login');
         }
@@ -123,7 +126,7 @@ class ProcessResponseAction extends BaseAction
         return $result;
     }
 
-    private const MAX_RECURSION_DEPTH = 5;
+    private const int MAX_RECURSION_DEPTH = 5;
 
     /**
      * Recursively search for an email address in the user info array
@@ -164,11 +167,11 @@ class ProcessResponseAction extends BaseAction
     /**
      * Flatten a multidimensional array with dot notation keys
      *
-     * @param  string       $keyprefix
-     * @param  mixed        $arr
-     * @param  array<string, mixed> $flattenedattributesarray
-     * @param  int          $depth
-     * @return array<string, mixed>
+     * @param  string  $keyprefix
+     * @param  mixed   $arr
+     * @param  mixed[] $flattenedattributesarray
+     * @param  int     $depth
+     * @return mixed[]
      */
     private function getflattenedArray(
         ?string $keyprefix,
@@ -218,7 +221,7 @@ class ProcessResponseAction extends BaseAction
     /**
      * Setter for the UserInfo Parameter.
      *
-     * @param array<string, mixed>|object|null $userInfoResponse
+     * @param mixed $userInfoResponse
      */
     public function setUserInfoResponse($userInfoResponse): static
     {

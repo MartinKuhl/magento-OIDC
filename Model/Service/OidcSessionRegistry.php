@@ -29,10 +29,10 @@ class OidcSessionRegistry
     public const CACHE_TAG = 'm2oidc_oidc_session';
 
     /** Default TTL: 24 h, matching a typical access token lifetime. */
-    private const DEFAULT_TTL = 86400;
+    private const int DEFAULT_TTL = 86400;
 
     /** Prefix for cache keys to avoid collisions. */
-    private const KEY_PREFIX = 'oidc_sess_';
+    private const string KEY_PREFIX = 'oidc_sess_';
 
     /** @var CacheInterface */
     private readonly CacheInterface $cache;

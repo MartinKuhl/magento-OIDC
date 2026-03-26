@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace M2Oidc\OAuth\Block;
 
 use M2Oidc\OAuth\Helper\OAuthConstants;
@@ -41,7 +44,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
      * @param Session $customerSession
      * @param Escaper $escaper
      * @param \Magento\Framework\Data\Form\FormKey $formKey
-     * @param array<string, mixed> $data
+     * @param mixed[] $data
      */
     public function __construct(
         \Magento\Framework\View\Element\Template\Context $context,
@@ -73,8 +76,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
     /**
      * Escape HTML to prevent XSS
      *
-     * @param array<array-key, mixed>|string $data Data to escape
-     * @param array<array-key, mixed>|string|null $allowedTags Allowed HTML tags
+     * @param mixed $data Data to escape
+     * @param mixed $allowedTags Allowed HTML tags
      * @return array<int|string, mixed>|string
      * @psalm-suppress ImplementedReturnTypeMismatch Parent only declares string, but Escaper supports array
      */
@@ -152,20 +155,16 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * Check if header sending is enabled.
-     *
-     * @return string|null
      */
-    public function isHeader()
+    public function isHeader(): mixed
     {
         return $this->oauthUtility->getStoreConfig(OAuthConstants::SEND_HEADER);
     }
 
     /**
      * Check if body sending is enabled.
-     *
-     * @return string|null
      */
-    public function isBody()
+    public function isBody(): mixed
     {
         return $this->oauthUtility->getStoreConfig(OAuthConstants::SEND_BODY);
     }
@@ -362,90 +361,72 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * This function fetches the OAuth App name saved by the admin
-     *
-     * @return string|null
      */
-    public function getAppName()
+    public function getAppName(): mixed
     {
         return $this->oauthUtility->getStoreConfig(OAuthConstants::APP_NAME);
     }
 
     /**
      * This function fetches the Client ID saved by the admin
-     *
-     * @return string|null
      */
-    public function getClientID()
+    public function getClientID(): mixed
     {
         return $this->oauthUtility->getStoreConfig(OAuthConstants::CLIENT_ID);
     }
 
     /**
      * Retrieve the configured endpoint URL.
-     *
-     * @return string|null
      */
-    public function getConfigUrl()
+    public function getConfigUrl(): mixed
     {
         return $this->oauthUtility->getStoreConfig(OAuthConstants::ENDPOINT_URL);
     }
 
     /**
      * This function fetches the Client secret saved by the admin
-     *
-     * @return string|null
      */
-    public function getClientSecret()
+    public function getClientSecret(): mixed
     {
         return $this->oauthUtility->getStoreConfig(OAuthConstants::CLIENT_SECRET);
     }
 
     /**
      * This function fetches the Scope saved by the admin
-     *
-     * @return string|null
      */
-    public function getScope()
+    public function getScope(): mixed
     {
         return $this->oauthUtility->getStoreConfig(OAuthConstants::SCOPE);
     }
 
     /**
      * This function fetches the Authorize URL saved by the admin
-     *
-     * @return string|null
      */
-    public function getAuthorizeURL()
+    public function getAuthorizeURL(): mixed
     {
         return $this->oauthUtility->getStoreConfig(OAuthConstants::AUTHORIZE_URL);
     }
 
     /**
      * This function fetches the AccessToken URL saved by the admin
-     *
-     * @return string|null
      */
-    public function getAccessTokenURL()
+    public function getAccessTokenURL(): mixed
     {
         return $this->oauthUtility->getStoreConfig(OAuthConstants::ACCESSTOKEN_URL);
     }
 
     /**
      * This function fetches the GetUserInfo URL saved by the admin
-     *
-     * @return string|null
      */
-    public function getUserInfoURL()
+    public function getUserInfoURL(): mixed
     {
         return $this->oauthUtility->getStoreConfig(OAuthConstants::GETUSERINFO_URL);
     }
 
     /**
      * Retrieve the configured logout URL.
-     *
-     * @return string|null
      */
-    public function getLogoutURL()
+    public function getLogoutURL(): mixed
     {
         return $this->oauthUtility->getStoreConfig(OAuthConstants::OAUTH_LOGOUT_URL);
     }
@@ -583,8 +564,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
     public function getCurrentActiveTab(): string
     {
         $page = $this->getUrl('*/*/*', ['_current' => true, '_use_rewrite' => false]);
-        $start = strpos($page, '/m2oidc') + 9;
-        $end = strpos($page, '/index/key');
+        $start = (int)strpos($page, '/m2oidc') + 9;
+        $end   = (int)strpos($page, '/index/key');
         return substr($page, $start, $end - $start);
     }
 
@@ -616,10 +597,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * Check if auto-redirect to login is enabled.
-     *
-     * @return string|null
      */
-    public function isLoginRedirectEnabled()
+    public function isLoginRedirectEnabled(): mixed
     {
         return $this->oauthUtility->getStoreConfig(OAuthConstants::ENABLE_LOGIN_REDIRECT);
     }
@@ -707,10 +686,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * Fetch the setting saved by the admin which decides if the account should be mapped to username or email.
-     *
-     * @return string|null
      */
-    public function getAccountMatcher()
+    public function getAccountMatcher(): mixed
     {
         return $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_MAP_BY);
     }
@@ -935,30 +912,24 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * Check if log printing is on or off
-     *
-     * @return string|null
      */
-    public function isDebugLogEnable()
+    public function isDebugLogEnable(): mixed
     {
         return $this->oauthUtility->getStoreConfig(OAuthConstants::ENABLE_DEBUG_LOG);
     }
 
     /**
      * Fetch the X509 cert saved by the admin for the IDP in the plugin settings.
-     *
-     * @return string|null
      */
-    public function getX509Cert()
+    public function getX509Cert(): mixed
     {
         return $this->oauthUtility->getStoreConfig(OAuthConstants::X509CERT);
     }
 
     /**
      * Retrieve the configured license type.
-     *
-     * @return string|null
      */
-    public function getJwksUrl()
+    public function getJwksUrl(): mixed
     {
         return $this->oauthUtility->getStoreConfig(OAuthConstants::JWKS_URL);
     }

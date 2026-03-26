@@ -57,8 +57,8 @@ class SessionDataProvider extends AbstractDataProvider
      * @param string               $requestFieldName
      * @param ResourceConnection   $resource
      * @param ScopeConfigInterface $scopeConfig
-     * @param array<string, mixed> $meta
-     * @param array<string, mixed> $data
+     * @param mixed[]              $meta
+     * @param mixed[]              $data
      */
     public function __construct(
         string $name,

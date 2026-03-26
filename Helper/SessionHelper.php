@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace M2Oidc\OAuth\Helper;
 
 use Magento\Backend\Model\UrlInterface as BackendUrlInterface;
@@ -18,7 +21,7 @@ class SessionHelper
      * Known admin-related cookie names to update with SameSite=None.
      * Used instead of iterating $_COOKIE directly.
      */
-    private const ADMIN_COOKIE_NAMES = ['PHPSESSID', 'admin'];
+    private const array ADMIN_COOKIE_NAMES = ['PHPSESSID', 'admin'];
 
     /** @var \Magento\Framework\Stdlib\CookieManagerInterface */
     private readonly \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager;

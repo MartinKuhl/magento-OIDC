@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace M2Oidc\OAuth\Controller\Actions;
 
 use M2Oidc\OAuth\Helper\OAuthConstants;
@@ -21,7 +23,7 @@ use Magento\Framework\Controller\ResultFactory;
 class ShowTestResults extends Action
 {
     /**
-     * @var array<string, mixed>|null Attributes received from OIDC provider
+     * @var mixed Attributes received from OIDC provider
      */
     private $attrs;
 
@@ -146,8 +148,9 @@ class ShowTestResults extends Action
             if ($providerId > 0) {
                 // Per-provider: save to m2oidc_oauth_client_apps.received_oidc_claims
                 $this->oauthUtility->saveReceivedOidcClaims($providerId, $claimKeys);
+                $encodedKeys = json_encode($claimKeys) ?: '[]';
                 $this->oauthUtility->customlog(
-                    'Stored received OIDC claims for provider ID=' . $providerId . ': ' . json_encode($claimKeys)
+                    'Stored received OIDC claims for provider ID=' . $providerId . ': ' . $encodedKeys
                 );
             } else {
                 $this->oauthUtility->customlog(
@@ -253,7 +256,7 @@ class ShowTestResults extends Action
     /**
      * Render the test_results PHTML template with the given variables.
      *
-     * @param  array<string, mixed>  $vars Associative array of variables to extract into the template scope
+     * @param  mixed[] $vars Associative array of variables to extract into the template scope
      * @return string Rendered HTML
      */
     private function renderTemplate(array $vars): string
@@ -269,7 +272,7 @@ class ShowTestResults extends Action
     /**
      * Set the user attributes for display.
      *
-     * @param array<string, mixed>|null $attrs
+     * @param mixed $attrs
      */
     public function setAttrs($attrs): void
     {
@@ -289,7 +292,7 @@ class ShowTestResults extends Action
     /**
      * Derive a greeting name from the OIDC attributes and store it.
      *
-     * @param array<string, mixed>|null $attrs
+     * @param mixed $attrs
      */
     public function setGreetingName($attrs): void
     {
@@ -348,7 +351,7 @@ class ShowTestResults extends Action
      * Flattens nested objects using dot-notation (e.g. address.locality).
      * Skips numeric array indices to avoid entries like "0", "1".
      *
-     * @param  array<int|string, mixed>  $attrs  OIDC attributes
+     * @param  mixed[]    $attrs  OIDC attributes
      * @param  int|string $prefix Dot-notation prefix for recursion
      * @return string[]   Flat list of claim key names
      */
@@ -382,7 +385,7 @@ class ShowTestResults extends Action
     /**
      * Check if array is numerically indexed (list) vs associative (object).
      *
-     * @param array<int|string, mixed> $arr
+     * @param mixed[] $arr
      */
     private function isIndexedArray(array $arr): bool
     {

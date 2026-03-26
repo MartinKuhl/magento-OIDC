@@ -18,6 +18,8 @@ class ProviderResolver
     /**
      * Active provider ID for the current request.
      * Set via setActiveProviderId() in the controller/action execute() method.
+     *
+     * @var int|null
      */
     private ?int $activeProviderId = null;
 

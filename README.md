@@ -41,8 +41,13 @@ Modern e-commerce platforms require secure, centralized authentication. This mod
 - ✅ **Optional OIDC-Only Mode**: Disable password logins entirely (with lockout safety net)
 - ✅ **Session Activity View**: Admin UI listing all users who authenticated via OIDC, with per-record deletion
 - ✅ **Dirty-Field Tracking**: Visual amber highlights on modified provider form fields before save
-- ✅ **Comprehensive Debug Logging**: Detailed flow logs for troubleshooting, with automatic log rotation via a daily cron job
+- ✅ **Comprehensive Debug Logging**: Detailed flow logs for troubleshooting, with automatic log rotation via a daily cron job; optional JSON Lines mode (`oidc/logging/json_lines`) for structured log ingestion
 - ✅ **Test Configuration UI**: Verify OIDC claims before production deployment
+- ✅ **OIDC Discovery Auto-Refresh**: Endpoints automatically re-fetched every 6 hours via cron — no manual provider re-save needed when IdP endpoints change
+- ✅ **Per-Attribute Sync Control**: Fine-grained `sync_on_sso` flag per mapped attribute in the normalized mappings table, enabling selective sync instead of all-or-nothing toggles
+- ✅ **Per-Provider Attribute Mapper Overrides**: Third-party modules can inject custom `AttributeMapperInterface` implementations per OIDC provider via DI (`MapperPool`)
+- ✅ **Sliding-Window Rate Limiter**: Redis deployments can switch to the `OidcSlidingWindowRateLimiter` virtual type for burst-tolerant sliding-window rate limiting
+- ✅ **Atomic Token Operations**: `AtomicCacheInterface` eliminates the TOCTOU race condition in one-time token consumption (nonces, state tokens, PKCE verifiers) — Redis deployments use Lua `GETDEL`
 
 ### Supported Identity Providers
 
@@ -253,6 +258,8 @@ Map billing and shipping addresses (30+ fields total):
 
 - **Enable debug logging**: Writes detailed flow logs to `var/log/M2Oidc.log`
 - **Auto-expires**: A daily cron job (`m2oidc_log_rotation`, implemented by `Cron\LogCleanup`) cleans up the log at 03:00 server time — deletes the file when older than 7 days or when debug logging is disabled
+- **JSON Lines mode**: Enable `oidc/logging/json_lines` in `core_config_data` to emit raw newline-delimited JSON (`{"ts":"...","level":"debug","message":"..."}`) for structured log ingestion (e.g., Loki, Elasticsearch, Datadog)
+- **Auto-refresh discovery**: A separate cron job (`m2oidc_refresh_oidc_discovery`) re-fetches `.well-known/openid-configuration` for all active providers every 6 hours, keeping endpoints up-to-date automatically
 - **Privacy**: Contains user emails and OIDC claims — handle securely
 
 ---
@@ -523,8 +530,9 @@ OAuth `state` parameter includes session ID to prevent CSRF attacks:
 
 ### Rate Limiting
 
-Authentication endpoints are protected by IP-based fixed-window rate limiting (`OidcRateLimiter`):
-- **Strategy**: Fixed-window — 10 attempts per 60-second window
+Authentication endpoints are protected by IP-based rate limiting via the `OidcRateLimiter` strategy pattern:
+- **Default strategy**: Fixed-window — 10 attempts per 60-second window (`FixedWindowStrategy`; safe for all cache backends)
+- **Redis deployments**: Inject `OidcSlidingWindowRateLimiter` DI virtual type to switch to a true sliding-window strategy (`SlidingWindowStrategy`, Lua-based) for burst tolerance
 - **Protected endpoints**: Customer callback (`ReadAuthorizationResponse`), admin callback (`Oidccallback`), and back-channel logout (`BackChannelLogout`)
 - Requests that exceed the limit receive an error response before any token processing occurs
 

@@ -200,8 +200,8 @@ class ExportOidcConfig extends Command
      * value can be safely stored in version control or passed between environments.
      * Use --no-encrypt only in non-production scenarios.
      *
-     * @param  array<string, mixed> $provider    Raw provider data from the database
-     * @param  bool                 $noEncrypt   When true, sensitive fields are stored in plain text
+     * @param  mixed[] $provider   Raw provider data from the database
+     * @param  bool    $noEncrypt  When true, sensitive fields are stored in plain text
      * @return array<string, mixed> Export-ready array
      */
     private function sanitizeProviderForExport(array $provider, bool $noEncrypt): array

@@ -30,8 +30,8 @@ class ActiveUserCount extends Column
      * @param ContextInterface   $context
      * @param UiComponentFactory $uiComponentFactory
      * @param CollectionFactory  $collectionFactory
-     * @param array<string, mixed> $components
-     * @param array<string, mixed> $data
+     * @param mixed[]            $components
+     * @param mixed[]            $data
      */
     public function __construct(
         ContextInterface $context,
@@ -47,7 +47,7 @@ class ActiveUserCount extends Column
     /**
      * @inheritDoc
      *
-     * @param  array<string, mixed> $dataSource
+     * @param  mixed[] $dataSource
      * @return array<string, mixed>
      */
     public function prepareDataSource(array $dataSource): array

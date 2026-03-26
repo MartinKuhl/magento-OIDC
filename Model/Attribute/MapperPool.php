@@ -31,7 +31,7 @@ class MapperPool
     private array $mappers;
 
     /**
-     * @param array<string, AttributeMapperInterface> $mappers Mapper registry keyed by "{providerId}_{type}" or "default_{type}"
+     * @param mixed[] $mappers Mapper registry keyed by "{providerId}_{type}" or "default_{type}"
      */
     public function __construct(array $mappers = [])
     {

@@ -17,7 +17,7 @@ use M2Oidc\OAuth\Helper\OAuthUtility;
  */
 class OidcAuthenticationService
 {
-    private const MAX_RECURSION_DEPTH = 5;
+    private const int MAX_RECURSION_DEPTH = 5;
 
     /** @var \M2Oidc\OAuth\Helper\OAuthUtility */
     private readonly \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility;
@@ -62,14 +62,10 @@ class OidcAuthenticationService
      * This transparently handles providers like Zitadel that Base64-encode all metadata
      * keys and values.
      *
-     * @internal This method is public only because it is called from ReadAuthorizationResponse
-     *           and ShowTestResults controllers. It is not part of the stable module API and
-     *           may be made private in a future major version once those callers are refactored.
-     *
-     * @param  string                  $keyPrefix Current key prefix for recursion
-     * @param  array<mixed>|object     $arr       The nested data structure
-     * @param  array<string, mixed>    $result    Accumulator for flattened key-value pairs
-     * @param  int                     $depth     Current recursion depth
+     * @param string  $keyPrefix Current key prefix for recursion
+     * @param mixed   $arr       The nested data structure
+     * @param mixed[] $result    Accumulator for flattened key-value pairs
+     * @param int     $depth     Current recursion depth
      * @return array<string, mixed> Flattened associative array
      */
     public function flattenAttributes(string $keyPrefix, $arr, array &$result, int $depth = 0): array
@@ -130,7 +126,8 @@ class OidcAuthenticationService
         // A null byte in a group claim could cause strpos() comparisons to match unexpectedly.
         if (preg_match('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', $decoded)) {
             $this->oauthUtility->customlog(
-                "OidcAuthenticationService: WARNING — decoded Base64 claim contains control characters, rejecting decoded form"
+                "OidcAuthenticationService: WARNING — decoded Base64 claim"
+                . " contains control characters, rejecting decoded form"
             );
             return $value;
         }
@@ -140,8 +137,8 @@ class OidcAuthenticationService
     /**
      * Extract email from OAuth response using configured attribute and recursive fallback.
      *
-     * @param  array<string, mixed> $flattenedResponse Flattened attributes
-     * @param  array<string, mixed>|object $rawResponse Raw OAuth response for recursive search
+     * @param  mixed[] $flattenedResponse Flattened attributes
+     * @param  mixed   $rawResponse       Raw OAuth response for recursive search
      * @return string Email address or empty string if not found
      */
     public function extractEmail(array $flattenedResponse, $rawResponse): string
@@ -178,7 +175,7 @@ class OidcAuthenticationService
     /**
      * Extract login type from user info response.
      *
-     * @param  array<string, mixed>|object $userInfoResponse
+     * @param  mixed $userInfoResponse Array or object with loginType
      * @return string Login type constant
      */
     public function extractLoginType($userInfoResponse): string
@@ -250,7 +247,7 @@ class OidcAuthenticationService
      * Called from ShowTestResults so users see extracted role names regardless of
      * whether the group attribute mapping has been configured yet.
      *
-     * @param array<string, mixed> $attrs Attribute array (modified in-place)
+     * @param mixed[] $attrs Attribute array (modified in-place)
      */
     public function normalizeZitadelRoleClaimsForDisplay(array &$attrs): void
     {
@@ -319,8 +316,8 @@ class OidcAuthenticationService
      *
      * No-op when the key already exists or no matching subkeys are found.
      *
-     * @param  array<string, mixed> $flattenedAttrs Flattened OIDC attributes (modified in-place)
-     * @param  string $groupAttribute Configured group attribute key
+     * @param  mixed[] $flattenedAttrs  Flattened OIDC attributes (modified in-place)
+     * @param  string  $groupAttribute  Configured group attribute key
      */
     public function reconstructNestedGroupClaim(array &$flattenedAttrs, string $groupAttribute): void
     {
@@ -330,7 +327,9 @@ class OidcAuthenticationService
         $prefix = $groupAttribute . '.';
         $roles  = [];
         foreach (array_keys($flattenedAttrs) as $key) {
+            /** @psalm-suppress InvalidCast */
             if (str_starts_with((string) $key, $prefix)) {
+                /** @psalm-suppress InvalidCast */
                 $firstSegment = explode('.', substr((string) $key, strlen($prefix)), 2)[0];
                 if ($firstSegment !== '' && !is_numeric($firstSegment)) {
                     $roles[$firstSegment] = true;

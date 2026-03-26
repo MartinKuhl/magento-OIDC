@@ -26,6 +26,11 @@
         <severity>0</severity>
     </rule>
 
+    <!-- Enforce declare(strict_types=1) in all PHP files -->
+    <rule ref="Generic.PHP.RequireStrictTypes">
+        <exclude-pattern>*.phtml</exclude-pattern>
+    </rule>
+
     <!-- Only scan PHP and PHTML files -->
     <arg name="extensions" value="php,phtml"/>
 

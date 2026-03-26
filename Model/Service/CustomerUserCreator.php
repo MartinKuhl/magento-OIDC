@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace M2Oidc\OAuth\Model\Service;
 
 use M2Oidc\OAuth\Helper\OAuthConstants;
+use M2Oidc\OAuth\Helper\OAuthMessages;
 use M2Oidc\OAuth\Helper\OAuthUtility;
 use M2Oidc\OAuth\Model\Attribute\AttributeMapperInterface;
 use M2Oidc\OAuth\Model\Attribute\MapperPool;
@@ -137,13 +138,16 @@ class CustomerUserCreator
      *
      * Uses the MapperPool when available (prefers provider-specific override),
      * then falls back to the directly-injected default mapper.
+     *
+     * @param int $providerId OIDC provider ID
      */
     private function resolveMapper(int $providerId): AttributeMapperInterface
     {
         if ($this->mapperPool instanceof \M2Oidc\OAuth\Model\Attribute\MapperPool && $providerId > 0) {
             try {
                 return $this->mapperPool->getMapper($providerId, 'customer');
-            } catch (\InvalidArgumentException) {
+            // phpcs:ignore Magento2.CodeAnalysis.EmptyBlock.DetectedCatch
+            } catch (\InvalidArgumentException $e) {
                 // No mapper registered for this provider — fall through to default
             }
         }
@@ -187,13 +191,13 @@ class CustomerUserCreator
     /**
      * Create a customer from OIDC attributes.
      *
-     * @param  string $email
-     * @param  string $userName
-     * @param  string $firstName
-     * @param  string $lastName
-     * @param  array<string, mixed> $flattenedAttrs
-     * @param  array<string, mixed> $rawAttrs
-     * @param  int                  $providerId OIDC provider ID (0 = unknown / not tracked)
+     * @param  string  $email
+     * @param  string  $userName
+     * @param  string  $firstName
+     * @param  string  $lastName
+     * @param  mixed[] $flattenedAttrs
+     * @param  mixed[] $rawAttrs
+     * @param  int     $providerId OIDC provider ID (0 = unknown / not tracked)
      */
     public function createCustomer(
         string $email,
@@ -252,12 +256,13 @@ class CustomerUserCreator
             if ($oidcGroups !== []) {
                 $resolvedGroupId = $this->getCustomerGroupFromOidcGroups($oidcGroups, $providerId);
                 if ($resolvedGroupId === null) {
-                    $this->oauthUtility->customlog(
-                        'CustomerUserCreator: creation denied – OIDC group not mapped'
+                    $groupList = implode(', ', $oidcGroups);
+                    $msg = OAuthMessages::parse(
+                        'CUSTOMER_GROUP_MAPPING_NO_MATCH',
+                        ['groups' => $groupList !== '' ? $groupList : '(none)']
                     );
-                    throw new \Magento\Framework\Exception\LocalizedException(
-                        __('Customer creation denied: OIDC group not mapped.')
-                    );
+                    $this->oauthUtility->customlog($msg);
+                    throw new \Magento\Framework\Exception\LocalizedException(__($msg));
                 }
                 $customer->setGroupId($resolvedGroupId);
                 $this->oauthUtility->customlog(
@@ -374,8 +379,8 @@ class CustomerUserCreator
     /**
      * Extract OIDC group claims from user attributes.
      *
-     * @param  array<string, mixed> $flattenedAttrs Flattened OIDC attributes
-     * @param  array<string, mixed> $rawAttrs       Raw OIDC attributes
+     * @param  mixed[] $flattenedAttrs Flattened OIDC attributes
+     * @param  mixed[] $rawAttrs       Raw OIDC attributes
      * @return string[]
      */
     private function extractOidcGroups(array $flattenedAttrs, array $rawAttrs): array
@@ -396,9 +401,9 @@ class CustomerUserCreator
      * and the customer already exists.
      *
      * @param  CustomerInterface $customer       Existing Magento customer
-     * @param  array<string, mixed> $flattenedAttrs Flattened OIDC attributes
-     * @param  array<string, mixed> $rawAttrs       Raw OIDC attributes
-     * @param  int                  $providerId     OIDC provider ID (0 = unknown)
+     * @param  mixed[]           $flattenedAttrs Flattened OIDC attributes
+     * @param  mixed[]           $rawAttrs       Raw OIDC attributes
+     * @param  int               $providerId     OIDC provider ID (0 = unknown)
      * @return bool true if group was changed and saved
      */
     public function updateCustomerGroupFromOidc(
@@ -475,7 +480,7 @@ class CustomerUserCreator
 
         try {
             $address = $this->addressFactory->create();
-            $address->setCustomerId($customer->getId())
+            $address->setCustomerId((int)$customer->getId())
                 ->setFirstname($firstName)
                 ->setLastname($lastName)
                 ->setStreet([$street])

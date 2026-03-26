@@ -23,8 +23,8 @@ class SessionActions extends Column
      * @param ContextInterface   $context
      * @param UiComponentFactory $uiComponentFactory
      * @param UrlInterface       $urlBuilder
-     * @param array<string, mixed> $components
-     * @param array<string, mixed> $data
+     * @param mixed[]            $components
+     * @param mixed[]            $data
      */
     public function __construct(
         ContextInterface $context,
@@ -40,7 +40,7 @@ class SessionActions extends Column
     /**
      * Add Delete URL to each grid row.
      *
-     * @param  array<string, mixed> $dataSource
+     * @param  mixed[] $dataSource
      * @return array<string, mixed>
      */
     public function prepareDataSource(array $dataSource): array

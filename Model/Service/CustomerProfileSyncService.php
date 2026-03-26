@@ -61,11 +61,11 @@ class CustomerProfileSyncService
      * attribute type with `sync_on_sso = 0`, that attribute is skipped.  When no
      * normalized row exists (legacy mode) the attribute is always synced.
      *
-     * @param CustomerInterface    $customer   Loaded customer entity
-     * @param array<string, mixed> $flat       Flattened OIDC attributes
-     * @param array<string, mixed> $raw        Raw (nested) OIDC attributes
-     * @param array<string, mixed> $attrKeys   Provider-specific attribute mapping keys
-     * @param int                  $providerId Provider ID for per-attribute sync flag (0 = legacy)
+     * @param CustomerInterface $customer   Loaded customer entity
+     * @param mixed[]           $flat       Flattened OIDC attributes
+     * @param mixed[]           $raw        Raw (nested) OIDC attributes
+     * @param mixed[]           $attrKeys   Provider-specific attribute mapping keys
+     * @param int               $providerId Provider ID for per-attribute sync flag (0 = legacy)
      */
     public function syncProfile(
         CustomerInterface $customer,
@@ -146,11 +146,11 @@ class CustomerProfileSyncService
      * Strategy: find existing default address of the given type and update it.
      * If none exists, create a new one and mark it as default.
      *
-     * @param CustomerInterface    $customer
-     * @param array<string, mixed> $flat
-     * @param array<string, mixed> $raw
-     * @param array<string, mixed> $addrKeys  ['phone','street','zip','city','state','country']
-     * @param string               $type      'billing'
+     * @param CustomerInterface $customer
+     * @param mixed[]           $flat
+     * @param mixed[]           $raw
+     * @param mixed[]           $addrKeys  ['phone','street','zip','city','state','country']
+     * @param string            $type      'billing'
      */
     public function syncAddress(
         CustomerInterface $customer,
@@ -235,7 +235,7 @@ class CustomerProfileSyncService
         } else {
             // Create new default address
             $address = $this->addressFactory->create();
-            $address->setCustomerId($customer->getId())
+            $address->setCustomerId((int)$customer->getId())
                 ->setFirstname($customer->getFirstname())
                 ->setLastname($customer->getLastname())
                 ->setStreet([$street])
@@ -265,8 +265,8 @@ class CustomerProfileSyncService
      * Rule: if a normalized mapping row exists for $attributeType and its
      * `sync_on_sso` flag is 0 → skip.  If no row exists → sync (legacy behaviour).
      *
-     * @param  array<string, array{attribute_name: string, sync_on_sso: int}> $attrMap
-     * @param  string $attributeType  e.g. 'firstname', 'dob', 'billing_city'
+     * @param  mixed[] $attrMap        Normalized attribute map
+     * @param  string  $attributeType  e.g. 'firstname', 'dob', 'billing_city'
      */
     private function shouldSync(array $attrMap, string $attributeType): bool
     {
@@ -279,9 +279,9 @@ class CustomerProfileSyncService
     /**
      * Extract a value from flattened or raw OIDC attributes.
      *
-     * @param string|null          $key  Attribute key to look up
-     * @param array<string, mixed> $flat Flattened OIDC attributes
-     * @param array<string, mixed> $raw  Raw (nested) OIDC attributes
+     * @param string|null $key  Attribute key to look up
+     * @param mixed[]     $flat Flattened OIDC attributes
+     * @param mixed[]     $raw  Raw (nested) OIDC attributes
      */
     private function extract(?string $key, array $flat, array $raw): ?string
     {
@@ -306,7 +306,10 @@ class CustomerProfileSyncService
         foreach ($formats as $fmt) {
             $dt = \DateTime::createFromFormat($fmt, $dob);
             if ($dt !== false) {
-                return $dt->format('Y-m-d');
+                $errors = \DateTime::getLastErrors();
+                if ($errors === false || ($errors['warning_count'] === 0 && $errors['error_count'] === 0)) {
+                    return $dt->format('Y-m-d');
+                }
             }
         }
         // Fallback: let PHP try

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace M2Oidc\OAuth\Helper\OAuth;
 
 use M2Oidc\OAuth\Helper\OAuth\SAML2Utilities;

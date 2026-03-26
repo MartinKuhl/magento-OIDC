@@ -122,7 +122,7 @@ class Postlogout extends BaseAction implements HttpGetActionInterface
     private function resolveAdminLoginUrl(): string
     {
         try {
-            $frontName = rtrim($this->frontNameResolver->getFrontName(true), '/');
+            $frontName = rtrim((string)$this->frontNameResolver->getFrontName(true), '/');
             $baseUrl   = rtrim($this->backendUrl->getBaseUrl(), '/');
             $adminUrl  = $baseUrl . '/' . $frontName . '/';
 

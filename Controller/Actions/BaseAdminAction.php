@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace M2Oidc\OAuth\Controller\Actions;
 
 use M2Oidc\OAuth\Helper\Exception\RequiredFieldsException;
@@ -74,7 +76,7 @@ abstract class BaseAdminAction extends \Magento\Backend\App\Action
      *
      * Checks for the presence of an `option` key in the request data.
      *
-     * @param  array<string, mixed> $params Request parameters
+     * @param  mixed[] $params Request parameters
      * @return bool
      */
     protected function isFormOptionBeingSaved(array $params)
@@ -89,7 +91,7 @@ abstract class BaseAdminAction extends \Magento\Backend\App\Action
      * required keys paired with the source array. Throws {@see RequiredFieldsException}
      * when a required value is missing or blank.
      *
-     * @param array<int|string, mixed> $array Required keys or legacy associative mapping
+     * @param mixed[] $array Required keys or legacy associative mapping
      *
      * @throws RequiredFieldsException
      *
@@ -109,7 +111,7 @@ abstract class BaseAdminAction extends \Magento\Backend\App\Action
     /**
      * Validate support query specific fields and translate the exception type.
      *
-     * @param array<int|string, mixed> $array Required fields mapping
+     * @param mixed[] $array Required fields mapping
      *
      * @throws SupportQueryRequiredFieldsException
      */
