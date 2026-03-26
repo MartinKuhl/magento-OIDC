@@ -226,7 +226,7 @@ class BackChannelLogout extends BaseAction implements HttpPostActionInterface, C
      * exact `issuer` match is found.
      *
      * @param  string $issuer Token `iss` claim value
-     * @return array|null Provider data array or null if not found
+     * @return array<string, mixed>|null Provider data array or null if not found
      */
     private function resolveProvider(string $issuer): ?array
     {
@@ -310,13 +310,12 @@ class BackChannelLogout extends BaseAction implements HttpPostActionInterface, C
      *   - admin: admin_user_session.status (1 = active, 0 = logged out)
      *   - customer: customer_log.last_logout_at (NULL or older than last_login_at = online)
      *
-     * @param array $entry Session entry from OidcSessionRegistry::resolve()
+     * @param array<string, mixed> $entry Session entry from OidcSessionRegistry::resolve()
      */
     private function clearOnlineStatus(array $entry): void
     {
         $userType  = (string) ($entry['user_type']      ?? '');
         $userId    = (int)    ($entry['user_id']         ?? 0);
-        $sessionId = (string) ($entry['php_session_id'] ?? '');
 
         try {
             $conn = $this->resourceConnection->getConnection();

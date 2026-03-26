@@ -31,12 +31,12 @@ use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
 class CheckAttributeMappingAction extends BaseAction
 {
     /**
-     * @var array|null Raw userinfo response from provider
+     * @var array<string, mixed>|null Raw userinfo response from provider
      */
     private $userInfoResponse;
 
     /**
-     * @var array|null Flattened userinfo attributes
+     * @var array<string, mixed>|null Flattened userinfo attributes
      */
     private $flattenedUserInfoResponse;
 
@@ -76,7 +76,7 @@ class CheckAttributeMappingAction extends BaseAction
     private $groupName;
 
     /**
-     * @var array|null Decoded access_control_rules from the provider row (FEAT-04)
+     * @var array<int, mixed>|null Decoded access_control_rules from the provider row (FEAT-04)
      */
     private ?array $accessControlRules = null;
 
@@ -258,7 +258,7 @@ class CheckAttributeMappingAction extends BaseAction
         $this->oauthUtility->customlog($logMsg);
 
         // FEAT-04: Claims-based access control — evaluate per-provider rules before routing
-        if ($this->accessControlRules !== null && is_array($flattenedAttrs)) {
+        if ($this->accessControlRules !== null) {
             $denialMessage = $this->evaluateAccessControlRules($flattenedAttrs);
             if ($denialMessage !== null) {
                 $this->oauthUtility->customlog(
@@ -445,8 +445,8 @@ class CheckAttributeMappingAction extends BaseAction
      * Maps OAuth attributes to Magento customer fields based on
      * the configuration set in the admin panel.
      *
-     * @param  array  $attrs          Raw OAuth response attributes
-     * @param  array  $flattenedAttrs Flattened attribute array
+     * @param  array<string, mixed>  $attrs          Raw OAuth response attributes
+     * @param  array<string, mixed>  $flattenedAttrs Flattened attribute array
      * @param  string $userEmail      User email from OAuth response
      * @throws MissingAttributesException
      */
@@ -474,14 +474,26 @@ class CheckAttributeMappingAction extends BaseAction
 
         $this->oauthUtility->customlog("Attribute mapping completed, proceeding to user processing");
 
+        // Dispatch oidc_after_attribute_mapping so third-party observers can mutate
+        // the resolved attributes before user creation / profile sync.
+        // mapped_attrs is a writable DataObject: observers may call setData() to alter values.
+        $mappedAttrsObject = new \Magento\Framework\DataObject($flattenedAttrs);
+        $this->_eventManager->dispatch('oidc_after_attribute_mapping', [
+            'provider_id'  => $this->providerId,
+            'mapped_attrs' => $mappedAttrsObject,
+            'raw_claims'   => new \Magento\Framework\DataObject($attrs),
+        ]);
+        // Allow observers to have mutated the attrs
+        $flattenedAttrs = $mappedAttrsObject->getData();
+
         return $this->processResult($attrs, $flattenedAttrs, $userEmail);
     }
 
     /**
      * Process the result - either show test screen or login/create user
      *
-     * @param  array  $attrs          Raw attributes
-     * @param  array  $flattenedattrs Flattened attributes
+     * @param  array<string, mixed>  $attrs          Raw attributes
+     * @param  array<string, mixed>  $flattenedattrs Flattened attributes
      * @param  string $email          User email
      */
     private function processResult(
@@ -506,7 +518,7 @@ class CheckAttributeMappingAction extends BaseAction
      *
      * Falls back to email prefix if not provided
      *
-     * @param array $attrs Attribute array
+     * @param array<string, mixed> $attrs Attribute array
      */
     private function processFirstName(array &$attrs): void
     {
@@ -522,7 +534,7 @@ class CheckAttributeMappingAction extends BaseAction
      *
      * Falls back to email domain if not provided
      *
-     * @param array $attrs Attribute array
+     * @param array<string, mixed> $attrs Attribute array
      */
     private function processLastName(array &$attrs): void
     {
@@ -542,7 +554,7 @@ class CheckAttributeMappingAction extends BaseAction
      *
      * Falls back to email if not provided
      *
-     * @param array $attrs Attribute array
+     * @param array<string, mixed> $attrs Attribute array
      */
     private function processUserName(array &$attrs): void
     {
@@ -557,16 +569,47 @@ class CheckAttributeMappingAction extends BaseAction
      *
      * Falls back to userEmail if not provided
      *
-     * @param array $attrs Attribute array
+     * @param array<string, mixed> $attrs Attribute array
      */
     private function processEmail(array &$attrs): void
     {
-        if (!isset($attrs[$this->emailAttribute])) {
-            $attrs[$this->emailAttribute] = $this->userEmail;
+        if (isset($attrs[$this->emailAttribute])) {
+            return;
+        }
+
+        // Check for case-mismatch: is the claim present under a different casing?
+        $lowerConfigured = strtolower($this->emailAttribute);
+        $caseMatchKey    = null;
+        foreach (array_keys($attrs) as $key) {
+            if (strtolower((string) $key) === $lowerConfigured) {
+                $caseMatchKey = (string) $key;
+                break;
+            }
+        }
+
+        if ($caseMatchKey !== null) {
+            // The claim exists but under a different case — log a specific actionable message
             $this->oauthUtility->customlog(
-                "Email attribute not mapped, using userEmail: " . ($this->userEmail ?? '')
+                OAuthMessages::parse(
+                    'EMAIL_CLAIM_WRONG_CASE',
+                    ['actual_claim' => $caseMatchKey, 'configured_claim' => $this->emailAttribute]
+                )
+            );
+        } else {
+            // The claim is genuinely absent — list received claims so the admin can identify the right name
+            $receivedClaims = implode(', ', array_keys($attrs));
+            $this->oauthUtility->customlog(
+                OAuthMessages::parse(
+                    'EMAIL_CLAIM_NOT_FOUND_WITH_CONTEXT',
+                    ['received_claims' => $receivedClaims, 'configured_attribute' => $this->emailAttribute]
+                )
             );
         }
+
+        $attrs[$this->emailAttribute] = $this->userEmail;
+        $this->oauthUtility->customlog(
+            "Email attribute not mapped, using userEmail: " . ($this->userEmail ?? '')
+        );
     }
 
     /**
@@ -574,7 +617,7 @@ class CheckAttributeMappingAction extends BaseAction
      *
      * Defaults to empty array if not provided
      *
-     * @param array $attrs Attribute array
+     * @param array<string, mixed> $attrs Attribute array
      */
     private function processGroupName(array &$attrs): void
     {
@@ -618,7 +661,7 @@ class CheckAttributeMappingAction extends BaseAction
     /**
      * Set user info response
      *
-     * @param  array $userInfoResponse
+     * @param  array<string, mixed> $userInfoResponse
      * @return $this
      */
     public function setUserInfoResponse($userInfoResponse): static
@@ -630,7 +673,7 @@ class CheckAttributeMappingAction extends BaseAction
     /**
      * Set flattened user info response
      *
-     * @param  array $flattenedUserInfoResponse
+     * @param  array<string, mixed> $flattenedUserInfoResponse
      * @return $this
      */
     public function setFlattenedUserInfoResponse($flattenedUserInfoResponse): static
@@ -674,7 +717,7 @@ class CheckAttributeMappingAction extends BaseAction
      *   email_attribute, username_attribute, firstname_attribute,
      *   lastname_attribute, group_attribute
      *
-     * @param  array $clientDetails Provider row data array
+     * @param  array<string, mixed> $clientDetails Provider row data array
      * @return $this
      */
     public function setClientDetails(array $clientDetails): static
@@ -740,8 +783,8 @@ class CheckAttributeMappingAction extends BaseAction
      *
      * Array-valued claims (e.g. groups) are joined with commas for string comparison.
      *
-     * @param  array       $claims Flattened OIDC claims from the IdP response
-     * @return string|null         Denial message if access is denied, null if granted
+     * @param  array<string, mixed> $claims Flattened OIDC claims from the IdP response
+     * @return string|null                  Denial message if access is denied, null if granted
      */
     private function evaluateAccessControlRules(array $claims): ?string
     {
@@ -849,8 +892,8 @@ class CheckAttributeMappingAction extends BaseAction
      * profile data is up-to-date by the time the admin logs in.
      *
      * @param string $email Admin email (lookup key)
-     * @param array  $flat  Flattened OIDC attributes
-     * @param array  $raw   Raw (nested) OIDC attributes
+     * @param array<string, mixed>  $flat  Flattened OIDC attributes
+     * @param array<string, mixed>  $raw   Raw (nested) OIDC attributes
      */
     private function syncAdminProfileIfEnabled(string $email, array $flat, array $raw): void
     {
@@ -866,7 +909,8 @@ class CheckAttributeMappingAction extends BaseAction
                 $this->firstName,
                 $this->lastName,
                 $this->usernameAttribute,
-                $this->emailAttribute
+                $this->emailAttribute,
+                $this->providerId
             );
         } catch (\Exception $e) {
             $this->oauthUtility->customlog(
@@ -879,8 +923,8 @@ class CheckAttributeMappingAction extends BaseAction
      * Re-evaluate and update admin role from OIDC group claims when sync_admin_role_on_sso is enabled.
      *
      * @param string $email Admin email
-     * @param array  $flat  Flattened OIDC attributes
-     * @param array  $raw   Raw (nested) OIDC attributes
+     * @param array<string, mixed>  $flat  Flattened OIDC attributes
+     * @param array<string, mixed>  $raw   Raw (nested) OIDC attributes
      */
     private function syncAdminRoleIfEnabled(string $email, array $flat, array $raw): void
     {

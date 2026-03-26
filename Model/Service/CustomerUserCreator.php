@@ -7,6 +7,7 @@ namespace M2Oidc\OAuth\Model\Service;
 use M2Oidc\OAuth\Helper\OAuthConstants;
 use M2Oidc\OAuth\Helper\OAuthUtility;
 use M2Oidc\OAuth\Model\Attribute\AttributeMapperInterface;
+use M2Oidc\OAuth\Model\Attribute\MapperPool;
 use M2Oidc\OAuth\Model\Provider\MappingRepository;
 use Magento\Customer\Model\CustomerFactory;
 use Magento\Customer\Api\Data\AddressInterfaceFactory;
@@ -78,11 +79,14 @@ class CustomerUserCreator
     /** @var MappingRepository */
     private readonly MappingRepository $mappingRepository;
 
-    /** @var AttributeMapperInterface */
+    /** @var AttributeMapperInterface Default customer attribute mapper (fallback) */
     private readonly AttributeMapperInterface $attributeMapper;
 
     /** @var OidcAuthenticationService */
     private readonly OidcAuthenticationService $oidcAuthenticationService;
+
+    /** @var MapperPool|null Per-provider mapper registry (null in unit-test context without DI) */
+    private readonly ?MapperPool $mapperPool;
 
     /**
      * Initialize customer user creator service.
@@ -98,6 +102,7 @@ class CustomerUserCreator
      * @param MappingRepository                                 $mappingRepository
      * @param AttributeMapperInterface                          $attributeMapper
      * @param OidcAuthenticationService                         $oidcAuthenticationService
+     * @param MapperPool|null                                   $mapperPool
      */
     public function __construct(
         CustomerFactory $customerFactory,
@@ -110,7 +115,8 @@ class CustomerUserCreator
         UserProviderResource $userProviderResource,
         MappingRepository $mappingRepository,
         AttributeMapperInterface $attributeMapper,
-        OidcAuthenticationService $oidcAuthenticationService
+        OidcAuthenticationService $oidcAuthenticationService,
+        ?MapperPool $mapperPool = null
     ) {
         $this->customerFactory = $customerFactory;
         $this->addressFactory = $addressFactory;
@@ -123,6 +129,25 @@ class CustomerUserCreator
         $this->mappingRepository = $mappingRepository;
         $this->attributeMapper = $attributeMapper;
         $this->oidcAuthenticationService = $oidcAuthenticationService;
+        $this->mapperPool = $mapperPool;
+    }
+
+    /**
+     * Resolve the attribute mapper for the given provider.
+     *
+     * Uses the MapperPool when available (prefers provider-specific override),
+     * then falls back to the directly-injected default mapper.
+     */
+    private function resolveMapper(int $providerId): AttributeMapperInterface
+    {
+        if ($this->mapperPool instanceof \M2Oidc\OAuth\Model\Attribute\MapperPool && $providerId > 0) {
+            try {
+                return $this->mapperPool->getMapper($providerId, 'customer');
+            } catch (\InvalidArgumentException) {
+                // No mapper registered for this provider — fall through to default
+            }
+        }
+        return $this->attributeMapper;
     }
 
     /**
@@ -166,9 +191,9 @@ class CustomerUserCreator
      * @param  string $userName
      * @param  string $firstName
      * @param  string $lastName
-     * @param  array  $flattenedAttrs
-     * @param  array  $rawAttrs
-     * @param  int    $providerId OIDC provider ID (0 = unknown / not tracked)
+     * @param  array<string, mixed> $flattenedAttrs
+     * @param  array<string, mixed> $rawAttrs
+     * @param  int                  $providerId OIDC provider ID (0 = unknown / not tracked)
      */
     public function createCustomer(
         string $email,
@@ -212,8 +237,8 @@ class CustomerUserCreator
                 ->setFirstname($firstName)
                 ->setLastname($lastName);
 
-            // Map customer attributes via strategy (Phase 3.2)
-            $mapped = $this->attributeMapper->map($flattenedAttrs, $this->buildMappingConfig($rawAttrs));
+            // Map customer attributes via strategy (Phase 3.2); use per-provider mapper if registered
+            $mapped = $this->resolveMapper($providerId)->map($flattenedAttrs, $this->buildMappingConfig($rawAttrs));
 
             if (isset($mapped['dob'])) {
                 $customer->setDob($mapped['dob']);
@@ -349,8 +374,8 @@ class CustomerUserCreator
     /**
      * Extract OIDC group claims from user attributes.
      *
-     * @param  array $flattenedAttrs Flattened OIDC attributes
-     * @param  array $rawAttrs       Raw OIDC attributes
+     * @param  array<string, mixed> $flattenedAttrs Flattened OIDC attributes
+     * @param  array<string, mixed> $rawAttrs       Raw OIDC attributes
      * @return string[]
      */
     private function extractOidcGroups(array $flattenedAttrs, array $rawAttrs): array
@@ -371,9 +396,9 @@ class CustomerUserCreator
      * and the customer already exists.
      *
      * @param  CustomerInterface $customer       Existing Magento customer
-     * @param  array             $flattenedAttrs Flattened OIDC attributes
-     * @param  array             $rawAttrs       Raw OIDC attributes
-     * @param  int               $providerId     OIDC provider ID (0 = unknown)
+     * @param  array<string, mixed> $flattenedAttrs Flattened OIDC attributes
+     * @param  array<string, mixed> $rawAttrs       Raw OIDC attributes
+     * @param  int                  $providerId     OIDC provider ID (0 = unknown)
      * @return bool true if group was changed and saved
      */
     public function updateCustomerGroupFromOidc(

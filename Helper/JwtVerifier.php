@@ -54,7 +54,7 @@ class JwtVerifier
      * @param  string|null $issuer        Expected issuer (iss claim), null to skip
      * @param  string|null $audience      Expected audience (aud claim), null to skip
      * @param  string|null $expectedNonce Expected nonce claim value (H-01), null to skip
-     * @return array|null Decoded payload array, or null on failure
+     * @return array<string, mixed>|null Decoded payload array, or null on failure
      */
     public function verifyAndDecode(
         string $idToken,
@@ -232,7 +232,7 @@ class JwtVerifier
      *
      * @internal For debug and test use only — never call from production auth code.
      * @param  string $idToken The raw JWT string
-     * @return array|null Decoded payload array, or null on failure
+     * @return array<string, mixed>|null Decoded payload array, or null on failure
      */
     public function decodeWithoutVerification(string $idToken): ?array
     {
@@ -249,7 +249,7 @@ class JwtVerifier
      * Fetch and parse JWKS from the given URL.
      *
      * @param  string $jwksUrl
-     * @return array|null The JWKS keys array, or null on failure
+     * @return array<int, mixed>|null The JWKS keys array, or null on failure
      */
     private function fetchJwks(string $jwksUrl): ?array
     {
@@ -297,7 +297,7 @@ class JwtVerifier
     /**
      * Find the matching RSA public key from JWKS and convert to PEM.
      *
-     * @param  array       $keys The JWKS keys array
+     * @param  array<int, mixed>  $keys The JWKS keys array
      * @param  string|null $kid  Key ID from the JWT header
      * @param  string      $alg  Algorithm from the JWT header
      * @return string|null PEM-encoded public key, or null if not found

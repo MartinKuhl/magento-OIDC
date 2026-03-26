@@ -53,9 +53,10 @@ class OidcProviders implements ResolverInterface
      * @param  Field       $field
      * @param  mixed       $context
      * @param  ResolveInfo $info
-     * @param  array|null  $value
-     * @param  array|null  $args
+     * @param  array<array-key, mixed>|null  $value
+     * @param  array<array-key, mixed>|null  $args
      * @throws GraphQlInputException When an invalid login_type is supplied
+     * @return list<array<string, int|string|null>>
      */
     #[\Override]
     public function resolve(

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace M2Oidc\OAuth\Helper;
 
 use Magento\Framework\App\CacheInterface;
+use M2Oidc\OAuth\Model\Cache\AtomicCacheInterface;
 
 /**
  * Security helper for OIDC authentication flows.
@@ -49,8 +50,16 @@ class OAuthSecurityHelper
     /** TTL for PKCE verifier cache entries: 10 minutes, matching STATE_TTL. */
     private const PKCE_VERIFIER_TTL = 600;
 
-    /** @var CacheInterface */
+    /** @var CacheInterface Used for write (save) operations */
     private readonly CacheInterface $cache;
+
+    /**
+     * Atomic read-and-delete for one-time-use cache tokens.
+     * Eliminates the TOCTOU window between load() and remove().
+     *
+     * @var AtomicCacheInterface
+     */
+    private readonly AtomicCacheInterface $atomicCache;
 
     /** @var OAuthUtility */
     private readonly OAuthUtility $oauthUtility;
@@ -58,15 +67,18 @@ class OAuthSecurityHelper
     /**
      * Initialize OAuth security helper.
      *
-     * @param CacheInterface $cache
-     * @param OAuthUtility   $oauthUtility
+     * @param CacheInterface      $cache
+     * @param OAuthUtility        $oauthUtility
+     * @param AtomicCacheInterface $atomicCache
      */
     public function __construct(
         CacheInterface $cache,
-        OAuthUtility $oauthUtility
+        OAuthUtility $oauthUtility,
+        AtomicCacheInterface $atomicCache
     ) {
-        $this->cache = $cache;
+        $this->cache       = $cache;
         $this->oauthUtility = $oauthUtility;
+        $this->atomicCache  = $atomicCache;
     }
 
     /**
@@ -100,14 +112,12 @@ class OAuthSecurityHelper
         }
 
         $cacheKey = self::NONCE_CACHE_PREFIX . $nonce;
-        $email = $this->cache->load($cacheKey);
+        $email    = $this->atomicCache->getAndDelete($cacheKey);
 
-        if (empty($email)) {
+        if (in_array($email, [null, '', '0'], true)) {
             return null;
         }
 
-        // One-time use: delete immediately
-        $this->cache->remove($cacheKey);
         return $email;
     }
 
@@ -157,14 +167,11 @@ class OAuthSecurityHelper
         }
 
         $cacheKey = self::CUSTOMER_NONCE_CACHE_PREFIX . $nonce;
-        $data = $this->cache->load($cacheKey);
+        $data     = $this->atomicCache->getAndDelete($cacheKey);
 
-        if (empty($data)) {
+        if (in_array($data, [null, '', '0'], true)) {
             return null;
         }
-
-        // One-time use: delete immediately
-        $this->cache->remove($cacheKey);
 
         try {
             $decoded = json_decode(
@@ -235,15 +242,9 @@ class OAuthSecurityHelper
         }
 
         $cacheKey = self::STATE_CACHE_PREFIX . hash('sha256', $sessionId . $stateToken);
-        $value = $this->cache->load($cacheKey);
+        $value    = $this->atomicCache->getAndDelete($cacheKey);
 
-        if (empty($value)) {
-            return false;
-        }
-
-        // One-time use: delete immediately
-        $this->cache->remove($cacheKey);
-        return true;
+        return !in_array($value, [null, '', '0'], true);
     }
 
     /**
@@ -290,8 +291,8 @@ class OAuthSecurityHelper
      * backward-compat with state tokens encoded before this sprint.
      *
      * @param  string $encoded The encoded state string
-     * @return array|null Associative array with keys: relayState, sessionId, appName,
-     *                    loginType, stateToken, providerId; or null on failure
+     * @return array<string, mixed>|null Associative array with keys: relayState, sessionId, appName,
+     *                                   loginType, stateToken, providerId; or null on failure
      */
     public function decodeRelayState(string $encoded): ?array
     {
@@ -451,15 +452,9 @@ class OAuthSecurityHelper
         }
 
         $cacheKey = self::PKCE_VERIFIER_CACHE_PREFIX . $nonce;
-        $verifier = $this->cache->load($cacheKey);
+        $verifier = $this->atomicCache->getAndDelete($cacheKey);
 
-        if (empty($verifier)) {
-            return null;
-        }
-
-        // One-time use: delete immediately
-        $this->cache->remove($cacheKey);
-        return $verifier;
+        return in_array($verifier, [null, '', '0'], true) ? null : $verifier;
     }
 
     // -------------------------------------------------------------------------
@@ -521,15 +516,9 @@ class OAuthSecurityHelper
         }
 
         $cacheKey = self::OIDC_AUTH_TOKEN_PREFIX . hash('sha256', $token);
-        $stored   = $this->cache->load($cacheKey);
+        $stored   = $this->atomicCache->getAndDelete($cacheKey);
 
-        if (empty($stored) || $stored !== $email) {
-            return false;
-        }
-
-        // One-time use: delete immediately
-        $this->cache->remove($cacheKey);
-        return true;
+        return !in_array($stored, [null, '', '0'], true) && $stored === $email;
     }
 
     // -------------------------------------------------------------------------
@@ -569,14 +558,8 @@ class OAuthSecurityHelper
         }
 
         $cacheKey = self::OIDC_NONCE_CACHE_PREFIX . hash('sha256', $stateToken);
-        $nonce    = $this->cache->load($cacheKey);
+        $nonce    = $this->atomicCache->getAndDelete($cacheKey);
 
-        if (empty($nonce)) {
-            return null;
-        }
-
-        // One-time use: delete immediately
-        $this->cache->remove($cacheKey);
-        return $nonce;
+        return in_array($nonce, [null, '', '0'], true) ? null : $nonce;
     }
 }

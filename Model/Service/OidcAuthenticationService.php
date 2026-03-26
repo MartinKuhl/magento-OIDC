@@ -66,11 +66,11 @@ class OidcAuthenticationService
      *           and ShowTestResults controllers. It is not part of the stable module API and
      *           may be made private in a future major version once those callers are refactored.
      *
-     * @param  string       $keyPrefix Current key prefix for recursion
-     * @param  array|object $arr       The nested data structure
-     * @param  array        $result    Accumulator for flattened key-value pairs
-     * @param  int          $depth     Current recursion depth
-     * @return array Flattened associative array
+     * @param  string                  $keyPrefix Current key prefix for recursion
+     * @param  array<mixed>|object     $arr       The nested data structure
+     * @param  array<string, mixed>    $result    Accumulator for flattened key-value pairs
+     * @param  int                     $depth     Current recursion depth
+     * @return array<string, mixed> Flattened associative array
      */
     public function flattenAttributes(string $keyPrefix, $arr, array &$result, int $depth = 0): array
     {
@@ -140,8 +140,8 @@ class OidcAuthenticationService
     /**
      * Extract email from OAuth response using configured attribute and recursive fallback.
      *
-     * @param  array        $flattenedResponse Flattened attributes
-     * @param  array|object $rawResponse       Raw OAuth response for recursive search
+     * @param  array<string, mixed> $flattenedResponse Flattened attributes
+     * @param  array<string, mixed>|object $rawResponse Raw OAuth response for recursive search
      * @return string Email address or empty string if not found
      */
     public function extractEmail(array $flattenedResponse, $rawResponse): string
@@ -178,7 +178,7 @@ class OidcAuthenticationService
     /**
      * Extract login type from user info response.
      *
-     * @param  array|object $userInfoResponse
+     * @param  array<string, mixed>|object $userInfoResponse
      * @return string Login type constant
      */
     public function extractLoginType($userInfoResponse): string
@@ -250,7 +250,7 @@ class OidcAuthenticationService
      * Called from ShowTestResults so users see extracted role names regardless of
      * whether the group attribute mapping has been configured yet.
      *
-     * @param array $attrs Attribute array (modified in-place)
+     * @param array<string, mixed> $attrs Attribute array (modified in-place)
      */
     public function normalizeZitadelRoleClaimsForDisplay(array &$attrs): void
     {
@@ -319,7 +319,7 @@ class OidcAuthenticationService
      *
      * No-op when the key already exists or no matching subkeys are found.
      *
-     * @param  array  $flattenedAttrs Flattened OIDC attributes (modified in-place)
+     * @param  array<string, mixed> $flattenedAttrs Flattened OIDC attributes (modified in-place)
      * @param  string $groupAttribute Configured group attribute key
      */
     public function reconstructNestedGroupClaim(array &$flattenedAttrs, string $groupAttribute): void

@@ -7,7 +7,9 @@ namespace M2Oidc\OAuth\Test\Integration;
 use Magento\Framework\App\CacheInterface;
 use M2Oidc\OAuth\Helper\OAuthSecurityHelper;
 use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Model\Cache\AtomicCacheInterface;
 use M2Oidc\OAuth\Model\Security\OidcRateLimiter;
+use M2Oidc\OAuth\Model\Security\RateLimiterStrategy\FixedWindowStrategy;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -57,7 +59,8 @@ class SecurityPluginsTest extends TestCase
                 return true;
             });
 
-        $this->rateLimiter = new OidcRateLimiter($this->cache);
+        $strategy = new FixedWindowStrategy($this->cache);
+        $this->rateLimiter = new OidcRateLimiter($strategy);
 
         $oauthUtility = $this->createMock(OAuthUtility::class);
         $oauthUtility->method('customlog');
@@ -68,7 +71,16 @@ class SecurityPluginsTest extends TestCase
                 return is_string($decoded) ? $decoded : '';
             });
 
-        $this->securityHelper = new OAuthSecurityHelper($this->cache, $oauthUtility);
+        $atomicCache = $this->createMock(AtomicCacheInterface::class);
+        $atomicCache->method('getAndDelete')->willReturnCallback(function (string $key): ?string {
+            $value = $this->cacheStore[$key] ?? false;
+            if ($value === false) {
+                return null;
+            }
+            unset($this->cacheStore[$key]);
+            return (string) $value;
+        });
+        $this->securityHelper = new OAuthSecurityHelper($this->cache, $oauthUtility, $atomicCache);
     }
 
     // ---------------------------------------------------------------- OidcRateLimiter

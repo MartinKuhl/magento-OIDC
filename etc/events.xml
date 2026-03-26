@@ -31,4 +31,13 @@
     <event name="oidc_admin_user_after_create">
         <!-- No built-in observers; dispatched so third-party modules can react. -->
     </event>
+
+    <!-- Fired after all OIDC claims have been mapped to Magento attributes.
+         Transport keys: provider_id (int), mapped_attrs (DataObject — writable),
+         raw_claims (DataObject — read-only snapshot of the raw OIDC response).
+         Observers may call mapped_attrs->setData() to alter attribute values
+         before user creation / profile sync. -->
+    <event name="oidc_after_attribute_mapping">
+        <!-- No built-in observers; dispatched so third-party modules can alter mapped attributes. -->
+    </event>
 </config>

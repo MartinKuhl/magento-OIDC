@@ -68,7 +68,7 @@ class UserProvisioningService
      * @param  string      $username
      * @param  string|null $firstName
      * @param  string|null $lastName
-     * @param  array       $oidcGroups
+     * @param  array<int|string, mixed> $oidcGroups
      * @param  int         $providerId
      */
     public function provisionAdmin(
@@ -129,8 +129,8 @@ class UserProvisioningService
      * @param  string $username
      * @param  string $firstName
      * @param  string $lastName
-     * @param  array  $flattenedAttrs  Flattened OIDC claims
-     * @param  array  $rawAttrs        Raw (nested) OIDC response
+     * @param  array<string, mixed> $flattenedAttrs  Flattened OIDC claims
+     * @param  array<string, mixed> $rawAttrs        Raw (nested) OIDC response
      * @param  int    $providerId
      */
     public function provisionCustomer(

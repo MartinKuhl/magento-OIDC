@@ -252,42 +252,90 @@ class OidcCredentialAdapterTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // Serialization
+    // Serialization (__serialize / __unserialize — PHP 8 API)
     // -------------------------------------------------------------------------
 
-    public function testSleepOnlySerializesUserAndHasAvailableResources(): void
+    public function testSerializeStoresOnlyScalarUserIdAndResourceFlag(): void
     {
-        $properties = $this->adapter->__sleep();
+        $data = $this->adapter->__serialize();
 
-        $this->assertSame(['user', 'hasAvailableResources'], $properties);
+        $this->assertCount(2, $data, '__serialize() must return exactly 2 keys (userId, hasAvailableResources)');
+        $this->assertArrayHasKey('userId', $data);
+        $this->assertArrayHasKey('hasAvailableResources', $data);
+        // No user loaded yet — userId must be null
+        $this->assertNull($data['userId']);
+        $this->assertFalse($data['hasAvailableResources']);
     }
 
-    public function testWakeupDoesNotCallObjectManager(): void
+    public function testSerializeStoresIntUserIdAfterAuthenticate(): void
     {
-        // __wakeup() is intentionally empty; dependencies are restored lazily.
-        // We verify it runs without error and leaves DI properties null.
+        $user = $this->makeActiveUserMock(42);
+        $this->singleUserCollection($user);
+        $this->adapter->authenticate('admin@example.com', OidcCredentialAdapter::OIDC_TOKEN_MARKER);
+
+        $data = $this->adapter->__serialize();
+
+        $this->assertSame(42, $data['userId']);
+        $this->assertFalse($data['hasAvailableResources']);
+    }
+
+    public function testUnserializeCallsRestoreDependenciesEagerly(): void
+    {
         $adapter = $this->getMockBuilder(OidcCredentialAdapter::class)
             ->disableOriginalConstructor()
             ->onlyMethods(['restoreDependencies'])
             ->getMock();
 
-        // __wakeup() must NOT call restoreDependencies eagerly
-        $adapter->expects($this->never())->method('restoreDependencies');
+        $adapter->expects($this->once())->method('restoreDependencies');
 
-        $adapter->__wakeup();
+        $adapter->__unserialize(['userId' => null, 'hasAvailableResources' => false]);
+    }
+
+    public function testUnserializeRestoresHasAvailableResources(): void
+    {
+        $adapter = $this->getMockBuilder(OidcCredentialAdapter::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['restoreDependencies'])
+            ->getMock();
+        $adapter->method('restoreDependencies');
+
+        $adapter->__unserialize(['userId' => null, 'hasAvailableResources' => true]);
+
+        $this->assertTrue($adapter->hasAvailableResources());
+    }
+
+    public function testUnserializeLoadsUserByIdWhenUserIdPresent(): void
+    {
+        $adapter = $this->getMockBuilder(OidcCredentialAdapter::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['restoreDependencies'])
+            ->getMock();
+
+        // Inject mocks directly so restoreDependencies() is bypassed.
+        // Reflect on the concrete class (not the mock sub-class) to access private properties.
+        $refl = new \ReflectionClass(OidcCredentialAdapter::class);
+        foreach (['userFactory', 'userResource'] as $prop) {
+            $p = $refl->getProperty($prop);
+            $p->setAccessible(true);
+            $p->setValue($adapter, $this->{$prop});
+        }
+        $adapter->method('restoreDependencies')->willReturnCallback(function () {
+        });
+
+        $freshUser = $this->makeActiveUserMock(7);
+        $this->userFactory->method('create')->willReturn($freshUser);
+        $this->userResource->expects($this->once())->method('load')->with($freshUser, 7);
+
+        $adapter->__unserialize(['userId' => 7, 'hasAvailableResources' => false]);
     }
 
     public function testRestoreDependenciesSkipsWhenUserFactoryAlreadySet(): void
     {
-        // The real adapter was constructed with dependencies — restoreDependencies()
-        // should be a no-op (guard: if userFactory !== null, return early).
-        // We verify by checking that our already-constructed adapter can still
-        // call authenticate() without hitting ObjectManager.
+        // The adapter was constructed with full DI — restoreDependencies() returns early.
+        // Verify by checking authenticate() works without hitting ObjectManager.
         $user = $this->makeActiveUserMock();
         $this->singleUserCollection($user);
 
-        // If ObjectManager were called it would fail since we're in unit test context.
-        // The test passes if no error is thrown.
         $result = $this->adapter->authenticate('admin@example.com', OidcCredentialAdapter::OIDC_TOKEN_MARKER);
         $this->assertTrue($result);
     }

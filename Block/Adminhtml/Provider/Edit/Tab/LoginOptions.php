@@ -48,7 +48,7 @@ class LoginOptions extends Template implements TabInterface
      * @param Registry             $registry
      * @param CollectionFactory    $providerCollectionFactory
      * @param UserProviderResource $userProviderResource
-     * @param array                $data
+     * @param array<string, mixed> $data
      */
     public function __construct(
         Context $context,

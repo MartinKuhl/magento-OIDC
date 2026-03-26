@@ -28,12 +28,12 @@ use Magento\Customer\Api\Data\CustomerInterface;
 class ProcessUserAction
 {
     /**
-     * @var array|null
+     * @var array<string, mixed>|null
      */
     private $attrs;
 
     /**
-     * @var array|null
+     * @var array<string, mixed>|null
      */
     private $flattenedattrs;
 
@@ -389,7 +389,7 @@ class ProcessUserAction
     /**
      * Set raw attribute array received from OIDC provider.
      *
-     * @param  array $attrs
+     * @param  array<string, mixed> $attrs
      * @return $this
      */
     public function setAttrs($attrs): static
@@ -401,7 +401,7 @@ class ProcessUserAction
     /**
      * Set flattened attribute map (simple key => value mapping).
      *
-     * @param  array $flattenedattrs
+     * @param  array<string, mixed> $flattenedattrs
      * @return $this
      */
     public function setFlattenedAttrs($flattenedattrs): static
@@ -470,7 +470,8 @@ class ProcessUserAction
                 $customer,
                 $this->flattenedattrs ?? [],
                 $this->attrs ?? [],
-                $attrKeys
+                $attrKeys,
+                $this->providerId
             );
         } catch (\Exception $e) {
             $this->oauthUtility->customlog('ProcessUserAction: profile sync failed: ' . $e->getMessage());

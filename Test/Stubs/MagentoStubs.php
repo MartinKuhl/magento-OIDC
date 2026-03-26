@@ -135,6 +135,75 @@ namespace Magento\Framework\Event {
     {
         public function dispatch($eventName, array $data = []);
     }
+
+    /**
+     * Minimal stub for Magento\Framework\Event data class.
+     *
+     * Provides dynamic getters used in observer tests (getObject, getCustomer, etc.).
+     * Uses __call so that any get<X>() call returns null by default; individual test
+     * methods override specific values via constructor injection.
+     */
+    class Event
+    {
+        /** @var array<string, mixed> */
+        private array $data;
+
+        public function __construct(array $data = [])
+        {
+            $this->data = $data;
+        }
+
+        /** @return mixed */
+        public function getData(string $key = '')
+        {
+            return $key === '' ? $this->data : ($this->data[$key] ?? null);
+        }
+
+        /** @return mixed */
+        public function getObject()
+        {
+            return $this->data['object'] ?? null;
+        }
+
+        /** @return mixed */
+        public function getCustomer()
+        {
+            return $this->data['customer'] ?? null;
+        }
+
+        /** @return mixed */
+        public function __call(string $name, array $args)
+        {
+            if (str_starts_with($name, 'get')) {
+                $key = lcfirst(substr($name, 3));
+                return $this->data[$key] ?? null;
+            }
+            return null;
+        }
+    }
+
+    interface ObserverInterface
+    {
+        public function execute(\Magento\Framework\Event\Observer $observer): void;
+    }
+
+    /**
+     * Minimal stub for Magento\Framework\Event\Observer.
+     */
+    class Observer
+    {
+        private ?Event $event;
+
+        public function __construct(?Event $event = null)
+        {
+            $this->event = $event;
+        }
+
+        public function getEvent(): Event
+        {
+            return $this->event ?? new Event();
+        }
+    }
 }
 
 namespace Magento\Framework\App {
@@ -464,6 +533,23 @@ namespace Magento\User\Model\ResourceModel\User {
         public function getFirstItem()
         {
             return null;
+        }
+    }
+}
+
+
+namespace Magento\Customer\Model {
+    class Customer
+    {
+        /** @return mixed */
+        public function getId()
+        {
+            return null;
+        }
+
+        public function getEmail(): string
+        {
+            return '';
         }
     }
 }

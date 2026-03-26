@@ -39,7 +39,7 @@ class SessionDataProvider extends AbstractDataProvider
     /** @var ScopeConfigInterface */
     private readonly ScopeConfigInterface $scopeConfig;
 
-    /** @var array|null Cached query result */
+    /** @var array<string, mixed>|null Cached query result */
     private ?array $loadedData = null;
 
     /** @var int Current page (1-based) */
@@ -57,8 +57,8 @@ class SessionDataProvider extends AbstractDataProvider
      * @param string               $requestFieldName
      * @param ResourceConnection   $resource
      * @param ScopeConfigInterface $scopeConfig
-     * @param array                $meta
-     * @param array                $data
+     * @param array<string, mixed> $meta
+     * @param array<string, mixed> $data
      */
     public function __construct(
         string $name,
@@ -76,6 +76,8 @@ class SessionDataProvider extends AbstractDataProvider
 
     /**
      * @inheritDoc
+     *
+     * @return array<string, mixed>
      */
     public function getData(): array
     {

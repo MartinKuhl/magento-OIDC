@@ -19,8 +19,8 @@ class PkceStatus extends Column
      *
      * @param ContextInterface   $context
      * @param UiComponentFactory $uiComponentFactory
-     * @param array              $components
-     * @param array              $data
+     * @param array<string, mixed> $components
+     * @param array<string, mixed> $data
      */
     // phpcs:ignore Generic.CodeAnalysis.UselessOverridingMethod
     public function __construct(
@@ -34,6 +34,9 @@ class PkceStatus extends Column
 
     /**
      * @inheritDoc
+     *
+     * @param  array<string, mixed> $dataSource
+     * @return array<string, mixed>
      */
     public function prepareDataSource(array $dataSource): array
     {

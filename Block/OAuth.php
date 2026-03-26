@@ -41,7 +41,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
      * @param Session $customerSession
      * @param Escaper $escaper
      * @param \Magento\Framework\Data\Form\FormKey $formKey
-     * @param array $data
+     * @param array<string, mixed> $data
      */
     public function __construct(
         \Magento\Framework\View\Element\Template\Context $context,
@@ -73,9 +73,9 @@ class OAuth extends \Magento\Framework\View\Element\Template
     /**
      * Escape HTML to prevent XSS
      *
-     * @param array|string $data Data to escape
-     * @param array|string|null $allowedTags Allowed HTML tags
-     * @return array|string
+     * @param array<array-key, mixed>|string $data Data to escape
+     * @param array<array-key, mixed>|string|null $allowedTags Allowed HTML tags
+     * @return array<int|string, mixed>|string
      * @psalm-suppress ImplementedReturnTypeMismatch Parent only declares string, but Escaper supports array
      */
     #[\Override]
@@ -182,6 +182,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * Get the OAuth grant type from configuration
+     *
+     * @return string
      */
     public function getGrantType()
     {
@@ -209,6 +211,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * Get date of birth attribute mapping
+     *
+     * @return string
      */
     public function getDobMapping()
     {
@@ -218,6 +222,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * Get phone number attribute mapping
+     *
+     * @return string
      */
     public function getPhoneMapping()
     {
@@ -227,6 +233,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * Get street address attribute mapping
+     *
+     * @return string
      */
     public function getStreetMapping()
     {
@@ -236,6 +244,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * Get zip code attribute mapping
+     *
+     * @return string
      */
     public function getZipMapping()
     {
@@ -245,6 +255,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * Get city attribute mapping
+     *
+     * @return string
      */
     public function getCityMapping()
     {
@@ -254,6 +266,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * Get state/region attribute mapping
+     *
+     * @return string
      */
     public function getStateMapping()
     {
@@ -263,6 +277,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * Get country attribute mapping
+     *
+     * @return string
      */
     public function getCountryMapping()
     {
@@ -272,6 +288,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * Get gender attribute mapping
+     *
+     * @return string
      */
     public function getGenderMapping()
     {
@@ -344,6 +362,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * This function fetches the OAuth App name saved by the admin
+     *
+     * @return string|null
      */
     public function getAppName()
     {
@@ -352,6 +372,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * This function fetches the Client ID saved by the admin
+     *
+     * @return string|null
      */
     public function getClientID()
     {
@@ -370,6 +392,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * This function fetches the Client secret saved by the admin
+     *
+     * @return string|null
      */
     public function getClientSecret()
     {
@@ -378,6 +402,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * This function fetches the Scope saved by the admin
+     *
+     * @return string|null
      */
     public function getScope()
     {
@@ -386,6 +412,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * This function fetches the Authorize URL saved by the admin
+     *
+     * @return string|null
      */
     public function getAuthorizeURL()
     {
@@ -394,6 +422,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * This function fetches the AccessToken URL saved by the admin
+     *
+     * @return string|null
      */
     public function getAccessTokenURL()
     {
@@ -402,6 +432,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * This function fetches the GetUserInfo URL saved by the admin
+     *
+     * @return string|null
      */
     public function getUserInfoURL()
     {
@@ -675,6 +707,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * Fetch the setting saved by the admin which decides if the account should be mapped to username or email.
+     *
+     * @return string|null
      */
     public function getAccountMatcher()
     {
@@ -683,6 +717,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * Fetch the setting saved by the admin which doesn't allow roles to be assigned to unlisted users.
+     *
+     * @return string
      */
     public function getDisallowUnlistedUserRole()
     {
@@ -692,6 +728,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * Fetch the setting which decides what attribute should be mapped to the user's userName.
+     *
+     * @return string
      */
     public function getUserNameMapping()
     {
@@ -713,7 +751,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     /**
      * Get admin role mappings (OIDC group -> Magento role)
      *
-     * @return array Array of mappings with 'group' and 'role' keys
+     * @return array<int|string, mixed> Array of mappings with 'group' and 'role' keys
      */
     public function getAdminRoleMappings(): array
     {
@@ -755,6 +793,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
      * This fetches the setting saved by the admin which decides what
      * attribute in the SAML response should be mapped to the Magento
      * user's Email.
+     *
+     * @return string
      */
     public function getUserEmailMapping()
     {
@@ -766,6 +806,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
      * This fetches the setting saved by the admin which decides what
      * attribute in the SAML response should be mapped to the Magento
      * user's firstName.
+     *
+     * @return string
      */
     public function getFirstNameMapping()
     {
@@ -775,6 +817,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * Fetch the setting which decides what attribute should be mapped to the user's lastName
+     *
+     * @return string
      */
     public function getLastNameMapping()
     {
@@ -789,7 +833,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
      * Each element is a plain data array (same shape as getClientDetailsByAppName()).
      *
      * @param  string $loginType 'customer' | 'admin' | 'both'
-     * @return array  Array of provider data arrays, may be empty
+     * @return array<int, array<string, mixed>> Array of provider data arrays, may be empty
      */
     public function getActiveProviders(string $loginType = 'customer'): array
     {
@@ -820,6 +864,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * Get all admin roles set by the admin on his site.
+     *
+     * @return array<int, mixed>
      */
     public function getAllRoles(): array
     {
@@ -832,6 +878,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * Get all customer groups set by the admin on his site.
+     *
+     * @return array<int, mixed>
      */
     public function getAllGroups(): array
     {
@@ -840,6 +888,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * Get the default role to be set for the user if it doesn't match any of the role/group mappings
+     *
+     * @return string|null
      */
     public function getDefaultRole()
     {
@@ -857,6 +907,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * Fetch/Create the text of the button to be shown for SP initiated login from the admin / customer login pages.
+     *
+     * @return string
      */
     public function getSSOButtonText()
     {
@@ -883,6 +935,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * Check if log printing is on or off
+     *
+     * @return string|null
      */
     public function isDebugLogEnable()
     {
@@ -891,6 +945,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * Fetch the X509 cert saved by the admin for the IDP in the plugin settings.
+     *
+     * @return string|null
      */
     public function getX509Cert()
     {

@@ -49,7 +49,7 @@ class Debug extends Template
      * @param DirectoryList                                   $directoryList
      * @param \Magento\Framework\Filesystem\Driver\File|null  $fileDriver
      * @param \Magento\Framework\HTTP\Client\Curl|null        $curlClient
-     * @param array                                           $data
+     * @param array<string, mixed>                            $data
      */
     public function __construct(
         Context $context,
@@ -158,7 +158,7 @@ class Debug extends Template
     /**
      * Get Last OAuth Response from Session
      *
-     * @return array|null
+     * @return array<string, mixed>|null
      */
     public function getLastOAuthResponse()
     {
@@ -179,6 +179,8 @@ class Debug extends Template
 
     /**
      * Get Recent Log Entries
+     *
+     * @return array<int, string>
      */
     public function getRecentLogEntries(): array
     {
@@ -237,6 +239,7 @@ class Debug extends Template
      * Test URL connectivity
      *
      * @param  string $url
+     * @return array<string, mixed>
      */
     protected function testUrl($url): array
     {
@@ -323,6 +326,8 @@ class Debug extends Template
 
     /**
      * Get System Information
+     *
+     * @return array<string, string>
      */
     public function getSystemInfo(): array
     {

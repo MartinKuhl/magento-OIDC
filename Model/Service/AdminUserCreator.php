@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace M2Oidc\OAuth\Model\Service;
 
 use M2Oidc\OAuth\Helper\OAuthConstants;
+use M2Oidc\OAuth\Helper\OAuthMessages;
 use M2Oidc\OAuth\Helper\OAuthUtility;
 use M2Oidc\OAuth\Model\Attribute\AttributeMapperInterface;
+use M2Oidc\OAuth\Model\Attribute\MapperPool;
 use M2Oidc\OAuth\Model\Provider\MappingRepository;
 use M2Oidc\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
 use Magento\User\Model\UserFactory;
@@ -39,8 +41,11 @@ class AdminUserCreator
     /** @var MappingRepository */
     private readonly MappingRepository $mappingRepository;
 
-    /** @var AttributeMapperInterface */
+    /** @var AttributeMapperInterface Default admin attribute mapper (fallback when no pool or no override) */
     private readonly AttributeMapperInterface $adminAttributeMapper;
+
+    /** @var MapperPool|null Per-provider mapper registry (null in unit-test context without DI) */
+    private readonly ?MapperPool $mapperPool;
 
     /**
      * Initialize admin user creator.
@@ -53,6 +58,7 @@ class AdminUserCreator
      * @param UserProviderResource                   $userProviderResource
      * @param MappingRepository                      $mappingRepository
      * @param AttributeMapperInterface               $adminAttributeMapper
+     * @param MapperPool|null                        $mapperPool
      */
     public function __construct(
         UserFactory $userFactory,
@@ -62,7 +68,8 @@ class AdminUserCreator
         UserCollectionFactory $userCollectionFactory,
         UserProviderResource $userProviderResource,
         MappingRepository $mappingRepository,
-        AttributeMapperInterface $adminAttributeMapper
+        AttributeMapperInterface $adminAttributeMapper,
+        ?MapperPool $mapperPool = null
     ) {
         $this->userFactory = $userFactory;
         $this->oauthUtility = $oauthUtility;
@@ -72,6 +79,25 @@ class AdminUserCreator
         $this->userProviderResource = $userProviderResource;
         $this->mappingRepository = $mappingRepository;
         $this->adminAttributeMapper = $adminAttributeMapper;
+        $this->mapperPool = $mapperPool;
+    }
+
+    /**
+     * Resolve the attribute mapper for the given provider.
+     *
+     * Uses the MapperPool when available (prefers provider-specific override),
+     * then falls back to the directly-injected default mapper.
+     */
+    private function resolveMapper(int $providerId): AttributeMapperInterface
+    {
+        if ($this->mapperPool instanceof \M2Oidc\OAuth\Model\Attribute\MapperPool && $providerId > 0) {
+            try {
+                return $this->mapperPool->getMapper($providerId, 'admin');
+            } catch (\InvalidArgumentException) {
+                // No mapper registered for this provider — fall through to default
+            }
+        }
+        return $this->adminAttributeMapper;
     }
 
     /**
@@ -81,8 +107,8 @@ class AdminUserCreator
      * @param  mixed       $userName
      * @param  string|null $firstName
      * @param  string|null $lastName
-     * @param  array       $userGroups
-     * @param  int         $providerId OIDC provider ID (0 = unknown / not tracked)
+     * @param  array<int|string, mixed> $userGroups
+     * @param  int                     $providerId OIDC provider ID (0 = unknown / not tracked)
      * @return \Magento\User\Model\User|null
      */
     public function createAdminUser(string $email, $userName, $firstName, $lastName, array $userGroups, int $providerId = 0) // phpcs:ignore Generic.Files.LineLength.TooLong
@@ -92,8 +118,8 @@ class AdminUserCreator
         // Guard against IdPs returning preferred_username as an array
         $userName = is_array($userName) ? implode(' ', $userName) : (string) $userName;
 
-        // Apply name fallbacks via strategy (Phase 3.2)
-        $nameMapped = $this->adminAttributeMapper->map(
+        // Apply name fallbacks via strategy (Phase 3.2); use per-provider mapper if registered
+        $nameMapped = $this->resolveMapper($providerId)->map(
             ['firstname' => $firstName, 'lastname' => $lastName],
             ['_email' => $email]
         );
@@ -186,7 +212,7 @@ class AdminUserCreator
      * Falls back to the legacy JSON column when the new table has no data for this provider
      * (e.g. before the migration patch runs or on providers saved through older admin UI).
      *
-     * @param  array $userGroups Groups from OIDC response
+     * @param  array<int|string, mixed> $userGroups Groups from OIDC response
      * @param  int   $providerId OIDC provider ID (used for new table lookup)
      * @return int|null Admin role ID or null if denied
      */
@@ -244,9 +270,9 @@ class AdminUserCreator
             return (int) $defaultRole;
         }
 
+        $groupList = $userGroups !== [] ? implode(', ', $userGroups) : '(none)';
         $this->oauthUtility->customlog(
-            "AdminUserCreator: No role mapping found and no default role configured. "
-            . "Denying admin creation."
+            OAuthMessages::parse('ADMIN_ROLE_MAPPING_NO_MATCH', ['groups' => $groupList])
         );
         return null;
     }
@@ -313,7 +339,6 @@ class AdminUserCreator
      * Load an admin User model by email (or username), or return null if not found.
      *
      * @param  string $email
-     * @return \Magento\User\Model\User|null
      */
     public function getAdminUserByEmail(string $email): ?\Magento\User\Model\User
     {

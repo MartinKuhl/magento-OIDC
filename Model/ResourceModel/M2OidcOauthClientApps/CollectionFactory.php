@@ -21,7 +21,7 @@ class CollectionFactory
     /**
      * Create collection instance
      *
-     * @param  array $data
+     * @param  array<string, mixed> $data
      */
     public function create(array $data = []) : Collection
     {

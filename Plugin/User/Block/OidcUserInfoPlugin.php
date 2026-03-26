@@ -60,9 +60,6 @@ class OidcUserInfoPlugin
         $result = $proceed();
 
         $form = $subject->getForm();
-        if (!$form) {
-            return $result;
-        }
 
         // Guard: field already added (e.g. multiple render passes)
         if ($form->getElement('oidc_provider_info')) {

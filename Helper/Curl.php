@@ -37,7 +37,7 @@ class Curl
     /**
      * Send an access token request to the OAuth provider.
      *
-     * @param  array  $postData     Token request body parameters
+     * @param  array<string, mixed>  $postData     Token request body parameters
      * @param  string $url          Token endpoint URL
      * @param  string $clientID     OAuth client ID
      * @param  string $clientSecret OAuth client secret
@@ -81,7 +81,7 @@ class Curl
      * Send a user info request to the OAuth provider.
      *
      * @param  string $url     User info endpoint URL
-     * @param  array  $headers HTTP headers (including Authorization)
+     * @param  array<int, string>  $headers HTTP headers (including Authorization)
      * @return string JSON response
      */
     public function sendUserInfoRequest(string $url, $headers): string
@@ -93,8 +93,8 @@ class Curl
      * Internal HTTP request method.
      *
      * @param  string $url      Request URL
-     * @param  array  $jsonData Request body data
-     * @param  array  $headers  HTTP headers
+     * @param  array<string, mixed>  $jsonData Request body data
+     * @param  array<int, string>  $headers  HTTP headers
      * @return string Response body
      */
     private function callAPI(string $url, $jsonData = [], $headers = ["Content-Type: application/json"]): string

@@ -128,10 +128,10 @@ class JwtVerifierTest extends TestCase
     /**
      * Build and sign a JWT with the test private key.
      *
-     * @param array       $payload   Claims to encode
-     * @param string|null $kid       Key ID for the header (null = omit)
-     * @param string      $alg       JWT algorithm header value
-     * @param mixed       $privateKey Override key (null = use self::$privateKey)
+     * @param array<string, mixed> $payload   Claims to encode
+     * @param string|null          $kid       Key ID for the header (null = omit)
+     * @param string               $alg       JWT algorithm header value
+     * @param mixed                $privateKey Override key (null = use self::$privateKey)
      */
     private function buildJwt(
         array $payload,
@@ -424,17 +424,29 @@ class JwtVerifierTest extends TestCase
             'e'   => self::base64UrlEncode($wrongDetails['rsa']['e']),
         ]]]);
 
-        // cache->load: first call (initial lookup) = wrong key, second call (after clear) = correct key
-        $this->cache->expects($this->exactly(2))
-            ->method('load')
-            ->willReturnOnConsecutiveCalls($wrongJwks, self::buildJwks(self::$kid));
+        // cache->load returns different values based on key type and call order:
+        //   - JWKS key, first load  → wrongJwks (stale cache hit)
+        //   - fail key             → false (circuit breaker: not open)
+        //   - JWKS key, second load → correct JWKS (after cache invalidation)
+        $jwksCacheKey = 'm2oidc_jwks_' . hash('sha256', 'https://idp.example.com/.well-known/jwks.json');
+        $jwksCallCount = 0;
+        $correctJwks   = self::buildJwks(self::$kid);
+        $this->cache->method('load')
+            ->willReturnCallback(
+                function (string $key) use ($wrongJwks, $correctJwks, &$jwksCallCount) {
+                    if (str_starts_with($key, 'm2oidc_jwks_fail_')) {
+                        return false; // Circuit breaker not open
+                    }
+                    $jwksCallCount++;
+                    return $jwksCallCount === 1 ? $wrongJwks : $correctJwks;
+                }
+            );
 
         // cache->remove must be called once to invalidate the stale entry
         $this->cache->expects($this->once())->method('remove');
 
-        // The re-fetch hits the curl factory (cache miss on second load triggers HTTP fetch)
-        // Actually: after remove(), load() is called again which returns the correct JWKS
-        // so fetchJwks() returns from cache on second load. No curl needed.
+        // fetchJwks() re-checks the cache after remove(); the second load returns the correct
+        // JWKS so no curl network call is needed.
 
         $result = $this->verifier->verifyAndDecode(
             $token,

@@ -17,7 +17,7 @@ use M2Oidc\OAuth\Helper\OAuthConstants;
 class ProcessResponseAction extends BaseAction
 {
     /**
-     * @var array|object|null Raw userinfo response (array or stdClass)
+     * @var array<string, mixed>|object|null Raw userinfo response (array or stdClass)
      */
     private $userInfoResponse;
 
@@ -66,6 +66,7 @@ class ProcessResponseAction extends BaseAction
         $userInfoResponse = $this->userInfoResponse;
 
         // flatten the nested OAuth response
+        /** @var array<string, mixed> $flattenedUserInfoResponse */
         $flattenedUserInfoResponse = [];
         $flattenedUserInfoResponse = $this->getflattenedArray("", $userInfoResponse, $flattenedUserInfoResponse);
 
@@ -165,8 +166,9 @@ class ProcessResponseAction extends BaseAction
      *
      * @param  string       $keyprefix
      * @param  mixed        $arr
-     * @param  array        $flattenedattributesarray
+     * @param  array<string, mixed> $flattenedattributesarray
      * @param  int          $depth
+     * @return array<string, mixed>
      */
     private function getflattenedArray(
         ?string $keyprefix,
@@ -181,11 +183,11 @@ class ProcessResponseAction extends BaseAction
         foreach ($arr as $key => $resource) {
             if (is_array($resource) || is_object($resource)) {
                 $newPrefix = (in_array($keyprefix, [null, '', '0'], true))
-                    ? $key : $keyprefix . "." . $key;
+                    ? (string) $key : $keyprefix . "." . $key;
                 $this->getflattenedArray($newPrefix, $resource, $flattenedattributesarray, $depth + 1);
             } else {
                 $newKey = (in_array($keyprefix, [null, '', '0'], true))
-                    ? $key : $keyprefix . "." . $key;
+                    ? (string) $key : $keyprefix . "." . $key;
                 $flattenedattributesarray[$newKey] = $resource;
             }
         }
@@ -216,7 +218,7 @@ class ProcessResponseAction extends BaseAction
     /**
      * Setter for the UserInfo Parameter.
      *
-     * @param array|object|null $userInfoResponse
+     * @param array<string, mixed>|object|null $userInfoResponse
      */
     public function setUserInfoResponse($userInfoResponse): static
     {

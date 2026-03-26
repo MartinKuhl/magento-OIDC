@@ -44,8 +44,8 @@ abstract class BaseAction extends \Magento\Framework\App\Action\Action
      * 1. checkIfRequiredFieldsEmpty(['key1' => $params, ...]) — legacy associative style
      * 2. checkIfRequiredFieldsEmpty(['key1', 'key2'], $params) — key list + params array
      *
-     * @param array      $array  Required keys (or legacy associative array)
-     * @param array|null $params Source data array (for the two-parameter form)
+     * @param array<int|string, mixed> $array  Required keys (or legacy associative array)
+     * @param array<string, mixed>|null $params Source data array (for the two-parameter form)
      *
      * @throws RequiredFieldsException
      *
@@ -83,7 +83,7 @@ abstract class BaseAction extends \Magento\Framework\App\Action\Action
      * @param string $oauthRequest Full authorize URL or query string
      * @param string $authorizeUrl Base authorize URL to prepend
      * @param string $relayState   Optional relay state to include
-     * @param array  $params       Additional parameters (unused)
+     * @param array<string, mixed>  $params       Additional parameters (unused)
      */
     protected function sendHTTPRedirectRequest(
         $oauthRequest,

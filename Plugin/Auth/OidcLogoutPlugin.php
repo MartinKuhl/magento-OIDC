@@ -287,7 +287,7 @@ class OidcLogoutPlugin
      * of post_logout_redirect_uri, so this method returns the static admin base
      * URL when $isForwardAuth is true (no dynamic tokens, safe to register).
      *
-     * @param array|null $provider       Provider data array or null
+     * @param array<string, mixed>|null $provider Provider data array or null
      * @param bool       $isForwardAuth  True when the endpoint is Authelia-style
      */
     private function resolvePostLogoutRedirectUri(?array $provider, bool $isForwardAuth = false): string

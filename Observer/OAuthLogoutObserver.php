@@ -269,7 +269,7 @@ class OAuthLogoutObserver implements ObserverInterface
      *  2) Unified callback URL (standard OIDC) — allows one registered URI for both flows
      *  3) Customer login page URL (Authelia forward-auth only, used in ?rd= parameter)
      *
-     * @param array|null $provider
+     * @param array<string, mixed>|null $provider
      * @param bool       $isForwardAuth  True when the endpoint is Authelia-style
      */
     private function resolvePostLogoutRedirectUri(?array $provider, bool $isForwardAuth = false): string

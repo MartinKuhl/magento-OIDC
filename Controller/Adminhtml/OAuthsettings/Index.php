@@ -212,7 +212,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
      * Saves directly to the specific provider's row in m2oidc_oauth_client_apps
      * identified by provider_id in $params.
      *
-     * @param array $params
+     * @param array<string, mixed> $params
      */
     private function processValuesAndSaveData(array $params): void
     {

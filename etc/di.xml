@@ -33,21 +33,62 @@
         </arguments>
     </type>
 
-    <!-- AdminUserCreator Dependencies (Phase 4: MappingRepository; Phase 3.2: AdminAttributeMapper) -->
+    <!-- MapperPool: default admin + customer mapper registrations.
+         Third-party modules may inject per-provider overrides via:
+           <item name="{providerId}_admin"    xsi:type="object">Vendor\MyAdminMapper</item>
+           <item name="{providerId}_customer" xsi:type="object">Vendor\MyCustomerMapper</item>
+         Or replace the type-level defaults:
+           <item name="default_admin"         xsi:type="object">Vendor\MyAdminMapper</item> -->
+    <type name="M2Oidc\OAuth\Model\Attribute\MapperPool">
+        <arguments>
+            <argument name="mappers" xsi:type="array">
+                <item name="default_admin"    xsi:type="object">M2Oidc\OAuth\Model\Attribute\AdminAttributeMapper</item>
+                <item name="default_customer" xsi:type="object">M2Oidc\OAuth\Model\Attribute\CustomerAttributeMapper</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- AdminUserCreator Dependencies (Phase 4: MappingRepository; Phase 3.2: AdminAttributeMapper via MapperPool) -->
     <type name="M2Oidc\OAuth\Model\Service\AdminUserCreator">
         <arguments>
             <argument name="mappingRepository" xsi:type="object">M2Oidc\OAuth\Model\Provider\MappingRepository</argument>
             <argument name="adminAttributeMapper" xsi:type="object">M2Oidc\OAuth\Model\Attribute\AdminAttributeMapper</argument>
+            <argument name="mapperPool" xsi:type="object">M2Oidc\OAuth\Model\Attribute\MapperPool</argument>
         </arguments>
     </type>
 
-    <!-- CustomerUserCreator Dependencies (Phase 4: MappingRepository; Phase 3.2: CustomerAttributeMapper) -->
+    <!-- CustomerUserCreator Dependencies (Phase 4: MappingRepository; Phase 3.2: CustomerAttributeMapper via MapperPool) -->
     <type name="M2Oidc\OAuth\Model\Service\CustomerUserCreator">
         <arguments>
             <argument name="mappingRepository" xsi:type="object">M2Oidc\OAuth\Model\Provider\MappingRepository</argument>
             <argument name="attributeMapper" xsi:type="object">M2Oidc\OAuth\Model\Attribute\CustomerAttributeMapper</argument>
+            <argument name="mapperPool" xsi:type="object">M2Oidc\OAuth\Model\Attribute\MapperPool</argument>
         </arguments>
     </type>
+
+    <!-- OidcRateLimiter: default strategy is FixedWindowStrategy (file/Redis/Memcached safe).
+         To enable the sliding-window strategy on Redis, inject OidcSlidingWindowRateLimiter
+         (defined below) wherever OidcRateLimiter is used. -->
+    <type name="M2Oidc\OAuth\Model\Security\OidcRateLimiter">
+        <arguments>
+            <argument name="strategy" xsi:type="object">M2Oidc\OAuth\Model\Security\RateLimiterStrategy\FixedWindowStrategy</argument>
+        </arguments>
+    </type>
+
+    <!-- Virtual type: sliding-window rate limiter for Redis deployments.
+         Inject this instead of OidcRateLimiter in controllers that benefit from true sliding windows. -->
+    <virtualType name="OidcSlidingWindowRateLimiter" type="M2Oidc\OAuth\Model\Security\OidcRateLimiter">
+        <arguments>
+            <argument name="strategy" xsi:type="object">M2Oidc\OAuth\Model\Security\RateLimiterStrategy\SlidingWindowStrategy</argument>
+        </arguments>
+    </virtualType>
+
+    <!-- AtomicCacheInterface: default preference is FileAtomicCache (load+remove, safe for single-server).
+         For Redis stores, switch to RedisAtomicCache (Lua GETDEL) by overriding this preference:
+         <preference for="M2Oidc\OAuth\Model\Cache\AtomicCacheInterface"
+                     type="M2Oidc\OAuth\Model\Cache\RedisAtomicCache"/> -->
+    <preference for="M2Oidc\OAuth\Model\Cache\AtomicCacheInterface"
+                type="M2Oidc\OAuth\Model\Cache\FileAtomicCache"/>
 
     <!-- Provider Save controller Dependencies (Phase 4: dual-write to normalized tables) -->
     <type name="M2Oidc\OAuth\Controller\Adminhtml\Provider\Save">

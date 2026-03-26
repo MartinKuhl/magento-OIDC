@@ -28,15 +28,12 @@ class AccessControlRulesTest extends TestCase
      * independent specification/contract test.
      *
      * @param  array<int,array<string,string>> $rules
-     * @return \Closure(array): ?string
+     * @return \Closure(array<string,mixed>): ?string
      */
     private function buildEvaluator(array $rules): \Closure
     {
         return static function (array $claims) use ($rules): ?string {
             foreach ($rules as $rule) {
-                if (!is_array($rule)) {
-                    continue;
-                }
                 $claim    = (string) ($rule['claim']        ?? '');
                 $operator = (string) ($rule['operator']     ?? 'eq');
                 $expected = (string) ($rule['value']        ?? '');

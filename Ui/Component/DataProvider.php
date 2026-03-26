@@ -18,6 +18,8 @@ class DataProvider extends BaseDataProvider
 {
     /**
      * @inheritDoc
+     *
+     * @return array<string, mixed>
      */
     protected function searchResultToOutput(SearchResultInterface $searchResult): array
     {

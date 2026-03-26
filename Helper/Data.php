@@ -22,7 +22,8 @@ use Magento\User\Model\UserFactory;
 use M2Oidc\OAuth\Model\M2oidcOauthClientAppsFactory;
 use M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps as AppResource;
 use M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps\CollectionFactory as ClientCollectionFactory;
-use Psr\Log\LoggerInterface;
+use M2Oidc\OAuth\Model\ResourceModel\OidcProviderRepository;
+
 
 /**
  * Helper class for reading/writing OAuth configuration data,
@@ -72,8 +73,8 @@ class Data extends AbstractHelper
     /** @var Escaper */
     private readonly Escaper $escaper;
 
-    /** @var LoggerInterface */
-    private readonly LoggerInterface $logger;
+    /** @var OidcProviderRepository */
+    private readonly OidcProviderRepository $providerRepository;
 
     /**
      * Initialize Data helper.
@@ -93,7 +94,7 @@ class Data extends AbstractHelper
      * @param CustomerResource $customerResource
      * @param EncryptorInterface $encryptor
      * @param Escaper $escaper
-     * @param LoggerInterface $logger
+     * @param OidcProviderRepository $providerRepository
      */
     public function __construct(
         Context $context,
@@ -111,7 +112,7 @@ class Data extends AbstractHelper
         CustomerResource $customerResource,
         EncryptorInterface $encryptor,
         Escaper $escaper,
-        LoggerInterface $logger
+        OidcProviderRepository $providerRepository
     ) {
         parent::__construct($context);
         $this->adminFactory             = $adminFactory;
@@ -128,186 +129,95 @@ class Data extends AbstractHelper
         $this->customerResource         = $customerResource;
         $this->encryptor                = $encryptor;
         $this->escaper                  = $escaper;
-        $this->logger                   = $logger;
+        $this->providerRepository       = $providerRepository;
     }
 
     /**
      * Get all entries from the OAuthClientApp table.
+     *
+     * Delegates to OidcProviderRepository.
      */
     public function getOAuthClientApps(): \M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps\Collection
     {
-        return $this->clientCollectionFactory->create();
+        return $this->providerRepository->getOAuthClientApps();
     }
 
     /**
      * Get client details by app name using collection filtering.
      *
+     * Delegates to OidcProviderRepository.
+     *
      * @param  string $appName
-     * @return array|null Client details array or null if not found
+     * @return array<string, mixed>|null Client details array or null if not found
      */
     public function getClientDetailsByAppName(string $appName): ?array
     {
-        $collection = $this->getOAuthClientApps();
-        $collection->addFieldToFilter('app_name', $appName);
-        $data = $collection->getSize() > 0 ? $collection->getFirstItem()->getData() : null;
-
-        if ($data !== null && isset($data['client_secret']) && !empty($data['client_secret'])
-            && preg_match('/^\d+:\d+:/', (string) $data['client_secret'])) {
-            $data['client_secret'] = $this->encryptor->decrypt($data['client_secret']);
-        }
-
-        return $data;
+        return $this->providerRepository->getClientDetailsByAppName($appName);
     }
 
     /**
      * Get client details by numeric provider ID (row `id`).
      *
+     * Delegates to OidcProviderRepository.
+     *
      * @param  int $providerId Row `id` of the provider record (must be > 0)
-     * @return array|null Client details array or null if not found
+     * @return array<string, mixed>|null Client details array or null if not found
      */
     public function getClientDetailsById(int $providerId): ?array
     {
-        if ($providerId <= 0) {
-            return null;
-        }
-        $collection = $this->getOAuthClientApps();
-        $collection->addFieldToFilter('id', ['eq' => $providerId]);
-        $data = $collection->getSize() > 0 ? $collection->getFirstItem()->getData() : null;
-
-        if ($data !== null && isset($data['client_secret']) && !empty($data['client_secret'])
-            && preg_match('/^\d+:\d+:/', (string) $data['client_secret'])) {
-            $data['client_secret'] = $this->encryptor->decrypt($data['client_secret']);
-        }
-
-        return $data;
+        return $this->providerRepository->getClientDetailsById($providerId);
     }
 
     /**
      * Persist the last test run result for a provider – lookup by app_name.
+     *
+     * Delegates to OidcProviderRepository.
      *
      * @param string $appName Provider app_name
      * @param string $status  'success', 'failed', or 'unsuccessful'
      */
     public function saveTestStatus(string $appName, string $status): void
     {
-        $allowed = ['success', 'failed', 'unsuccessful'];
-        if (!in_array($status, $allowed, true)) {
-            $this->logger->warning('saveTestStatus: invalid status value "' . $status . '"');
-            return;
-        }
-
-        $collection = $this->clientCollectionFactory->create();
-        $collection->addFieldToFilter('app_name', $appName);
-        $model = $collection->getFirstItem();
-
-        if (!$model->getId()) {
-            $this->logger->warning('saveTestStatus: no provider found for app_name "' . $appName . '"');
-            return;
-        }
-
-        try {
-            $model->setData('last_test_status', $status);
-            $model->setData('last_test_at', date('Y-m-d H:i:s'));
-            /** @psalm-suppress ArgumentTypeCoercion */ // @phpstan-ignore-next-line
-            $this->appResource->save($model);
-        } catch (\Exception $e) {
-            $this->logger->error('saveTestStatus failed: ' . $e->getMessage(), ['exception' => $e]);
-        }
+        $this->providerRepository->saveTestStatus($appName, $status);
     }
 
     /**
      * Persist the last test run result for a provider – lookup by primary key.
+     *
+     * Delegates to OidcProviderRepository.
      *
      * @param int    $providerId Row `id` of the provider record (must be > 0)
      * @param string $status     'success', 'failed', or 'unsuccessful'
      */
     public function saveTestStatusById(int $providerId, string $status): void
     {
-        $allowed = ['success', 'failed', 'unsuccessful'];
-        if ($providerId <= 0 || !in_array($status, $allowed, true)) {
-            $this->logger->warning(
-                'saveTestStatusById: invalid arguments – providerId=' . $providerId . ', status=' . $status
-            );
-            return;
-        }
-
-        $model = $this->clientAppsFactory->create();
-        $this->appResource->load($model, $providerId);
-
-        if (!$model->getId()) {
-            $this->logger->warning('saveTestStatusById: no provider found for id=' . $providerId);
-            return;
-        }
-
-        try {
-            $model->setData('last_test_status', $status);
-            $model->setData('last_test_at', date('Y-m-d H:i:s'));
-            $this->appResource->save($model);
-        } catch (\Exception $e) {
-            $this->logger->error('saveTestStatusById failed: ' . $e->getMessage(), ['exception' => $e]);
-        }
+        $this->providerRepository->saveTestStatusById($providerId, $status);
     }
 
     /**
      * Save received OIDC claims to the provider record.
+     *
+     * Delegates to OidcProviderRepository.
      *
      * @param int      $providerId Provider row ID
      * @param string[] $claimKeys  Array of claim key names
      */
     public function saveReceivedOidcClaims(int $providerId, array $claimKeys): void
     {
-        if ($providerId <= 0) {
-            return;
-        }
-
-        $model = $this->clientAppsFactory->create();
-        $this->appResource->load($model, $providerId);
-
-        if (!$model->getId()) {
-            $this->logger->warning(
-                'saveReceivedOidcClaims: no provider found for id=' . $providerId
-            );
-            return;
-        }
-
-        try {
-            $model->setData('received_oidc_claims', json_encode($claimKeys));
-            $this->appResource->save($model);
-        } catch (\Exception $e) {
-            $this->logger->error(
-                'saveReceivedOidcClaims failed: ' . $e->getMessage(),
-                ['exception' => $e]
-            );
-        }
+        $this->providerRepository->saveReceivedOidcClaims($providerId, $claimKeys);
     }
 
     /**
      * Return all active provider records for a given login type, ordered by sort_order.
      *
+     * Delegates to OidcProviderRepository.
+     *
      * @param  string $loginType 'customer', 'admin', or 'both'
-     * @return array  Array of provider data arrays (may be empty)
+     * @return array<int, array<string, mixed>> Array of provider data arrays (may be empty)
      */
     public function getAllActiveProviders(string $loginType = 'customer'): array
     {
-        $collection = $this->getOAuthClientApps();
-        $collection->addFieldToFilter('is_active', ['eq' => 1]);
-        $collection->addFieldToFilter(
-            'login_type',
-            ['in' => [$loginType, 'both']]
-        );
-        $collection->setOrder('sort_order', 'ASC');
-
-        $results = [];
-        foreach ($collection as $item) {
-            $data = $item->getData();
-            if (isset($data['client_secret']) && !empty($data['client_secret'])
-                && preg_match('/^\d+:\d+:/', (string) $data['client_secret'])) {
-                $data['client_secret'] = $this->encryptor->decrypt($data['client_secret']);
-            }
-            $results[] = $data;
-        }
-
-        return $results;
+        return $this->providerRepository->getAllActiveProviders($loginType);
     }
 
     /**
@@ -441,7 +351,7 @@ class Data extends AbstractHelper
      * Get a URL based on the given path and parameters.
      *
      * @param string $url
-     * @param array  $params
+     * @param array<string, mixed>  $params
      */
     public function getUrl(string $url, array $params = []): string
     {
@@ -452,7 +362,7 @@ class Data extends AbstractHelper
      * Get a frontend URL for the given path and parameters.
      *
      * @param string $url
-     * @param array  $params
+     * @param array<string, mixed>  $params
      */
     public function getFrontendUrl(string $url, array $params = []): string
     {
@@ -571,7 +481,7 @@ class Data extends AbstractHelper
      * Get the admin URL for the site based on the path passed.
      *
      * @param  string $url
-     * @param  array  $params
+     * @param  array<string, mixed>  $params
      */
     public function getAdminUrl(string $url, array $params = []): string
     {
@@ -582,7 +492,7 @@ class Data extends AbstractHelper
      * Get the admin secure URL for the site based on the path passed.
      *
      * @param  string $url
-     * @param  array  $params
+     * @param  array<string, mixed>  $params
      */
     public function getAdminSecureUrl(string $url, array $params = []): string
     {

@@ -46,10 +46,11 @@ class OidcLoginUrl implements ResolverInterface
      * @param  Field       $field
      * @param  mixed       $context
      * @param  ResolveInfo $info
-     * @param  array|null  $value
-     * @param  array|null  $args
+     * @param  array<array-key, mixed>|null  $value
+     * @param  array<array-key, mixed>|null  $args
      * @throws GraphQlInputException       When provider_id is provided but non-positive
      * @throws GraphQlNoSuchEntityException When the requested provider does not exist
+     * @return array<string, mixed>
      */
     #[\Override]
     public function resolve(

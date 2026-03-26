@@ -61,6 +61,8 @@ class AccessTokenRequest
 
     /**
      * Build the access token request as an associative array.
+     *
+     * @return array<string, string>
      */
     private function generateRequest(): array
     {
@@ -87,6 +89,8 @@ class AccessTokenRequest
 
     /**
      * This function is used to build our AccessToken request
+     *
+     * @return array<string, string>
      */
     public function build(): array
     {

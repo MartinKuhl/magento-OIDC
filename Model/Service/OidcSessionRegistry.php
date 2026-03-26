@@ -77,7 +77,7 @@ class OidcSessionRegistry
         $existing = $this->loadEntries($key);
         // Replace any stale entry with the same PHP session ID (re-login case)
         $existing = array_values(
-            array_filter($existing, static fn($e) => $e['php_session_id'] !== $phpSessionId)
+            array_filter($existing, static fn(array $e): bool => $e['php_session_id'] !== $phpSessionId)
         );
         $existing[] = [
             'php_session_id' => $phpSessionId,
@@ -97,7 +97,7 @@ class OidcSessionRegistry
      *
      * @param  string $sub OIDC subject identifier
      * @param  string $sid OIDC session ID (may be empty for sub-only lookup)
-     * @return array[]|null List of session entry arrays, or null if not found
+     * @return array<int, array<string, mixed>>|null List of session entry arrays, or null if not found
      */
     public function resolve(string $sub, string $sid = ''): ?array
     {
@@ -125,12 +125,12 @@ class OidcSessionRegistry
      * written by older versions of this class do not cause errors.
      *
      * @param  string $key Cache key
-     * @return array[] List of session entry arrays (may be empty)
+     * @return array<int, array<string, mixed>> List of session entry arrays (may be empty)
      */
     private function loadEntries(string $key): array
     {
         $raw = $this->cache->load($key);
-        if ($raw === false) {
+        if ($raw === '') {
             return [];
         }
         $decoded = json_decode((string) $raw, true);
@@ -143,7 +143,7 @@ class OidcSessionRegistry
         }
         // New format: list of entry objects
         return array_values(
-            array_filter($decoded, static fn($e) => is_array($e) && isset($e['php_session_id']))
+            array_filter($decoded, static fn($e): bool => is_array($e) && isset($e['php_session_id']))
         );
     }
 

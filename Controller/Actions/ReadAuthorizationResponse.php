@@ -266,11 +266,10 @@ class ReadAuthorizationResponse extends BaseAction
             $redirectURL = $this->oauthUtility->getCallBackUrl();
 
             // PKCE (RFC 7636 §4.5): retrieve verifier from cache via cookie nonce (one-time use).
-            // Two admin paths exist:
-            //   (a) Admin SSO button → frontend SendAuthorizationRequest → verifier in CACHE + cookie
-            //   (b) Admin backend login page → adminhtml SendAuthorizationRequest → verifier in DB
-            // Customer flow always uses cache + cookie.
-            // The cookie's presence/absence routes correctly: adminhtml never sets oidc_pkce_nonce.
+            // Three paths:
+            //   (a) Customer flow / admin SSO button → frontend SendAuthorizationRequest → oidc_pkce_nonce cookie
+            //   (b) Admin backend login → adminhtml SendAuthorizationRequest (F2) → oidc_admin_pkce_nonce cookie
+            //   (c) Legacy DB fallback — pkce_code_verifier column (pre-F2; kept for safety)
             $pkceNonce    = (string) $this->cookieManager->getCookie('oidc_pkce_nonce', '');
             $codeVerifier = ($pkceNonce !== '')
                 ? $this->securityHelper->consumePkceVerifier($pkceNonce)
@@ -284,20 +283,31 @@ class ReadAuthorizationResponse extends BaseAction
                 );
             }
 
+            // Path (b): admin nonce cookie set by adminhtml SendAuthorizationRequest (F2)
+            if ($codeVerifier === null) {
+                $adminPkceNonce = (string) $this->cookieManager->getCookie('oidc_admin_pkce_nonce', '');
+                if ($adminPkceNonce !== '') {
+                    $codeVerifier = $this->securityHelper->consumePkceVerifier($adminPkceNonce);
+                    $this->cookieManager->deleteCookie(
+                        'oidc_admin_pkce_nonce',
+                        $this->cookieMetadataFactory->createCookieMetadata()->setPath('/m2oidc/')
+                    );
+                }
+            }
+
             if ($codeVerifier !== null) {
                 $this->oauthUtility->customlog(
                     "ReadAuthResponse: PKCE code_verifier loaded from cache — including in token request"
                 );
             } elseif (!empty($clientDetails['pkce_code_verifier'])) {
-                // Fallback: adminhtml SendAuthorizationRequest stores verifier in DB.
-                // Read and immediately clear (one-time use).
+                // Path (c): legacy DB fallback — read and immediately clear (one-time use).
                 $codeVerifier = (string) $clientDetails['pkce_code_verifier'];
                 $this->oauthUtility->saveProviderData(
                     (int) $clientDetails['id'],
                     ['pkce_code_verifier' => null]
                 );
                 $this->oauthUtility->customlog(
-                    "ReadAuthResponse: PKCE code_verifier loaded from DB (admin flow) — including in token request"
+                    "ReadAuthResponse: PKCE code_verifier loaded from DB (legacy fallback) — including in token request"
                 );
             } else {
                 $this->oauthUtility->customlog(
@@ -629,12 +639,12 @@ class ReadAuthorizationResponse extends BaseAction
      * verification failure, or null when no JWKS endpoint is configured.
      *
      * @param  string      $idToken        Raw JWT id_token from the token endpoint
-     * @param  array       $clientDetails  Provider configuration row
+     * @param  array<string, mixed> $clientDetails  Provider configuration row
      * @param  string      $clientID       OAuth client identifier
      * @param  string      $relayState     Relay state URL for test-mode error redirect
      * @param  string      $loginType      Login type (admin|customer) for error routing
      * @param  string|null $expectedNonce  H-01: OIDC nonce to validate, null to skip
-     * @return array|\Magento\Framework\App\ResponseInterface
+     * @return array<string, mixed>|\Magento\Framework\App\ResponseInterface
      */
     private function resolveUserInfoFromIdToken(
         string $idToken,

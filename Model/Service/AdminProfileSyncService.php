@@ -9,10 +9,15 @@ use Magento\User\Model\ResourceModel\User as UserResource;
 use Magento\Authorization\Model\ResourceModel\Role\CollectionFactory as RoleCollectionFactory;
 use Magento\Authorization\Model\Acl\Role\User as RoleUser;
 use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Model\Provider\MappingRepository;
 
 /**
  * Syncs existing admin user profile and role from OIDC claims
  * on every SSO login when the corresponding per-provider flag is enabled.
+ *
+ * Per-attribute sync control: when a normalized attribute mapping row exists for the
+ * provider and its `sync_on_sso` flag is 0, that attribute is skipped regardless of
+ * the coarse global `sync_admin_profile_on_sso` switch.
  *
  * Designed to be injected into CheckAttributeMappingAction via DI.
  */
@@ -21,18 +26,20 @@ class AdminProfileSyncService
     /**
      * Constructor.
      *
-     * @param UserFactory                  $userFactory
-     * @param UserResource                 $userResource
-     * @param RoleCollectionFactory        $roleCollectionFactory
-     * @param OAuthUtility                 $oauthUtility
-     * @param OidcAuthenticationService    $oidcAuthenticationService
+     * @param UserFactory               $userFactory
+     * @param UserResource              $userResource
+     * @param RoleCollectionFactory     $roleCollectionFactory
+     * @param OAuthUtility              $oauthUtility
+     * @param OidcAuthenticationService $oidcAuthenticationService
+     * @param MappingRepository         $mappingRepository
      */
     public function __construct(
         private readonly UserFactory $userFactory,
         private readonly UserResource $userResource,
         private readonly RoleCollectionFactory $roleCollectionFactory,
         private readonly OAuthUtility $oauthUtility,
-        private readonly OidcAuthenticationService $oidcAuthenticationService
+        private readonly OidcAuthenticationService $oidcAuthenticationService,
+        private readonly MappingRepository $mappingRepository
     ) {
     }
 
@@ -43,13 +50,19 @@ class AdminProfileSyncService
     /**
      * Update admin firstname, lastname, username and email from OIDC claims.
      *
+     * When $providerId > 0 and a normalized attribute mapping row exists for a given
+     * attribute type, the row's `sync_on_sso` flag is consulted.  When `sync_on_sso = 0`
+     * the attribute is skipped.  When no normalized row exists (legacy mode) the attribute
+     * is always synced (the coarse global flag still guards the call-site).
+     *
      * @param string $email          Admin email (lookup key)
-     * @param array  $flattenedAttrs Flattened OIDC attributes
-     * @param array  $rawAttrs       Raw (nested) OIDC attributes
+     * @param array<string, mixed>  $flattenedAttrs Flattened OIDC attributes
+     * @param array<string, mixed>  $rawAttrs       Raw (nested) OIDC attributes
      * @param string $firstNameKey   OIDC claim key for firstname
      * @param string $lastNameKey    OIDC claim key for lastname
      * @param string $usernameKey    OIDC claim key for username
      * @param string $emailKey       OIDC claim key for email (empty = skip email sync)
+     * @param int    $providerId     Provider ID for per-attribute sync flag lookup (0 = legacy)
      */
     public function syncProfile(
         string $email,
@@ -58,48 +71,60 @@ class AdminProfileSyncService
         string $firstNameKey,
         string $lastNameKey,
         string $usernameKey,
-        string $emailKey = ''
+        string $emailKey = '',
+        int $providerId = 0
     ): void {
         $user = $this->loadAdminByEmail($email);
         if (!$user instanceof \Magento\User\Model\User) {
             return;
         }
 
+        // Load normalized attribute map once; used to check per-attribute sync_on_sso flags.
+        $attrMap = $providerId > 0 ? $this->mappingRepository->getFullAttributeMap($providerId) : [];
+
         $changed = false;
 
-        $fn = $this->extract($firstNameKey, $flattenedAttrs, $rawAttrs);
-        if ($fn !== null && $user->getFirstName() !== $fn) {
-            $user->setFirstName($fn);
-            $changed = true;
-        }
-
-        $ln = $this->extract($lastNameKey, $flattenedAttrs, $rawAttrs);
-        if ($ln !== null && $user->getLastName() !== $ln) {
-            $user->setLastName($ln);
-            $changed = true;
-        }
-
-        $un = $this->extract($usernameKey, $flattenedAttrs, $rawAttrs);
-        if ($un !== null && $user->getUserName() !== $un) {
-            // Ensure no other admin uses this username
-            $existing = $this->userFactory->create();
-            $this->userResource->load($existing, $un, 'username');
-            if (!$existing->getId() || (int) $existing->getId() === (int) $user->getId()) {
-                $user->setUserName($un);
+        if ($this->shouldSync($attrMap, 'firstname')) {
+            $fn = $this->extract($firstNameKey, $flattenedAttrs, $rawAttrs);
+            if ($fn !== null && $user->getFirstName() !== $fn) {
+                $user->setFirstName($fn);
                 $changed = true;
-            } else {
-                $this->oauthUtility->customlog(
-                    'AdminProfileSync: username "' . $un
-                    . '" already taken by admin #' . $existing->getId()
-                    . ' — skipping username update'
-                );
             }
         }
 
-        $newEmail = $this->extract($emailKey, $flattenedAttrs, $rawAttrs);
-        if ($newEmail !== null && $user->getEmail() !== $newEmail) {
-            $user->setEmail($newEmail);
-            $changed = true;
+        if ($this->shouldSync($attrMap, 'lastname')) {
+            $ln = $this->extract($lastNameKey, $flattenedAttrs, $rawAttrs);
+            if ($ln !== null && $user->getLastName() !== $ln) {
+                $user->setLastName($ln);
+                $changed = true;
+            }
+        }
+
+        if ($this->shouldSync($attrMap, 'username')) {
+            $un = $this->extract($usernameKey, $flattenedAttrs, $rawAttrs);
+            if ($un !== null && $user->getUserName() !== $un) {
+                // Ensure no other admin uses this username
+                $existing = $this->userFactory->create();
+                $this->userResource->load($existing, $un, 'username');
+                if (!$existing->getId() || (int) $existing->getId() === (int) $user->getId()) {
+                    $user->setUserName($un);
+                    $changed = true;
+                } else {
+                    $this->oauthUtility->customlog(
+                        'AdminProfileSync: username "' . $un
+                        . '" already taken by admin #' . $existing->getId()
+                        . ' — skipping username update'
+                    );
+                }
+            }
+        }
+
+        if ($this->shouldSync($attrMap, 'email')) {
+            $newEmail = $this->extract($emailKey, $flattenedAttrs, $rawAttrs);
+            if ($newEmail !== null && $user->getEmail() !== $newEmail) {
+                $user->setEmail($newEmail);
+                $changed = true;
+            }
         }
 
         if ($changed) {
@@ -124,10 +149,10 @@ class AdminProfileSyncService
      * assign first matching role.
      *
      * @param string $email          Admin email
-     * @param array  $flattenedAttrs Flattened OIDC attributes
-     * @param array  $rawAttrs       Raw (nested) OIDC attributes
+     * @param array<string, mixed>  $flattenedAttrs Flattened OIDC attributes
+     * @param array<string, mixed>  $rawAttrs       Raw (nested) OIDC attributes
      * @param string $groupAttribute OIDC claim key for groups
-     * @param array  $roleMappings   [['group' => 'idp-group', 'role' => 'magento-role-id'], ...]
+     * @param array<int, mixed>  $roleMappings   [['group' => 'idp-group', 'role' => 'magento-role-id'], ...]
      * @param string $defaultRole    Fallback role name if no mapping matches
      */
     public function syncRole(
@@ -194,6 +219,24 @@ class AdminProfileSyncService
     //  Private helpers
     // ──────────────────────────────────────────────
     /**
+     * Decide whether an attribute type should be synced.
+     *
+     * Rule: if a normalized mapping row exists for $attributeType and its
+     * `sync_on_sso` flag is 0 → skip.  If no row exists → sync (legacy behaviour).
+     *
+     * @param  array<string, array{attribute_name: string, sync_on_sso: int}> $attrMap
+     * @param  string $attributeType  e.g. 'firstname', 'lastname', 'email'
+     */
+    private function shouldSync(array $attrMap, string $attributeType): bool
+    {
+        if (isset($attrMap[$attributeType])) {
+            return (bool) $attrMap[$attributeType]['sync_on_sso'];
+        }
+        // No normalized row → fall through to legacy sync
+        return true;
+    }
+
+    /**
      * Load admin user by email. Returns null if not found.
      *
      * @param string $email Admin email address
@@ -209,8 +252,8 @@ class AdminProfileSyncService
      * Extract a single value from flattened or raw attributes.
      *
      * @param string $key  Attribute key to look up
-     * @param array  $flat Flattened OIDC attributes
-     * @param array  $raw  Raw (nested) OIDC attributes
+     * @param array<string, mixed>  $flat Flattened OIDC attributes
+     * @param array<string, mixed>  $raw  Raw (nested) OIDC attributes
      */
     private function extract(string $key, array $flat, array $raw): ?string
     {
@@ -228,8 +271,8 @@ class AdminProfileSyncService
      * Extract groups array from OIDC claims.
      *
      * @param string $key  Attribute key for groups claim
-     * @param array  $flat Flattened OIDC attributes
-     * @param array  $raw  Raw (nested) OIDC attributes
+     * @param array<string, mixed>  $flat Flattened OIDC attributes
+     * @param array<string, mixed>  $raw  Raw (nested) OIDC attributes
      * @return string[]
      */
     private function extractGroups(string $key, array $flat, array $raw): array
@@ -255,7 +298,7 @@ class AdminProfileSyncService
             ->setPageSize(1);
 
         $role = $roles->getFirstItem();
-        if (!$role || !$role->getId()) {
+        if (!$role->getId()) {
             $this->oauthUtility->customlog(
                 'AdminProfileSync: default role "' . $roleName . '" not found'
             );

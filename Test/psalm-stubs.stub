@@ -9,6 +9,17 @@
 
 // phpcs:ignoreFile
 
+namespace Magento\Framework\App {
+    /**
+     * Augment RequestInterface with getClientIp() which is defined on the concrete
+     * HTTP Request class but missing from the interface declaration.
+     */
+    interface RequestInterface
+    {
+        public function getClientIp(bool $checkProxy = true): string;
+    }
+}
+
 namespace Magento\User\Model {
     class UserFactory
     {

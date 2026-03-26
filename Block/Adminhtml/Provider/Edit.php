@@ -35,7 +35,7 @@ class Edit extends Container
      * @param Registry              $registry
      * @param FormKey               $formKey
      * @param StoreManagerInterface $storeManager
-     * @param array                 $data
+     * @param array<string, mixed>  $data
      */
     public function __construct(
         Context $context,

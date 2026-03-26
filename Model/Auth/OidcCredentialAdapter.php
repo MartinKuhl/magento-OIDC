@@ -87,24 +87,21 @@ class OidcCredentialAdapter implements StorageInterface
     /**
      * Restore DI dependencies after session deserialization.
      *
-     * __sleep() only persists 'user' and 'hasAvailableResources'.
-     * After __wakeup(), all injected dependencies are null.
-     * ObjectManager is intentionally used here because DI containers
-     * are unavailable during PHP's native deserialization lifecycle —
-     * this is the established Magento pattern for serializable auth adapters
-     * (see Magento\Backend\Model\Auth\Session). Do NOT replace with
-     * constructor injection; the object may be reconstructed without
-     * calling __construct().
+     * Called from __unserialize() where no DI container is available.
+     * ObjectManager is the only viable approach here: PHP's native deserialization
+     * lifecycle runs outside any DI scope and there is no way to inject a factory
+     * into __unserialize(). This is the established Magento pattern for
+     * session-stored objects (see Magento\Backend\Model\Auth\Session).
      *
      * @internal
      */
     protected function restoreDependencies(): void
     {
-        /** @psalm-suppress RedundantConditionGivenDocblockType */
-        if ($this->userFactory instanceof \Magento\User\Model\UserFactory) {
+        if ($this->userFactory instanceof UserFactory) {
             return;
         }
 
+        // phpcs:ignore Magento2.Security.InsecureFunction.FoundWithAlternative
         $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
         $this->userFactory           = $objectManager->get(UserFactory::class);
         $this->eventManager          = $objectManager->get(ManagerInterface::class);
@@ -314,36 +311,48 @@ class OidcCredentialAdapter implements StorageInterface
     }
 
     /**
-     * Control serialization to prevent closure serialization errors.
+     * PHP 8 serialization — stores only scalar identifiers, no complex objects.
      *
-     * DI-injected dependencies contain closures and cannot be serialized.
-     * Only essential state (user + hasAvailableResources) is persisted.
-     * Dependencies are restored lazily via restoreDependencies().
+     * DI-injected dependencies contain closures and resource handles that cannot
+     * be serialized. Only the user ID (int|null) and the hasAvailableResources flag
+     * are persisted. The User object is reconstructed from the DB on __unserialize().
      *
-     * @return array Properties to serialize
+     * @return array{userId: int|null, hasAvailableResources: bool}
      */
-    public function __sleep(): array
+    public function __serialize(): array
     {
-        return ['user', 'hasAvailableResources'];
+        $userId = $this->user?->getId();
+        return [
+            'userId'                => $userId !== null ? (int) $userId : null,
+            'hasAvailableResources' => $this->hasAvailableResources,
+        ];
     }
 
     /**
-     * Handle deserialization – dependencies remain null until restoreDependencies() is called.
+     * PHP 8 deserialization — restores state from scalar identifiers.
      *
-     * Intentionally empty: dependencies are restored lazily by restoreDependencies().
+     * Calls restoreDependencies() eagerly so that all injected services are
+     * available before the User model is reloaded from the database.
+     *
+     * @param array{userId: int|null, hasAvailableResources: bool} $data
      */
-    // phpcs:ignore Magento2.CodeAnalysis.EmptyBlock.DetectedFunction
-    public function __wakeup(): void
+    public function __unserialize(array $data): void
     {
-        // Dependencies will be restored lazily by restoreDependencies()
-        // when any method requiring them is called.
+        $this->hasAvailableResources = (bool) $data['hasAvailableResources'];
+        $this->restoreDependencies();
+
+        $userId = isset($data['userId']) ? $data['userId'] : null;
+        if ($userId !== null && $this->userFactory instanceof \Magento\User\Model\UserFactory && $this->userResource instanceof \Magento\User\Model\ResourceModel\User) {
+            $this->user = $this->userFactory->create();
+            $this->userResource->load($this->user, $userId);
+        }
     }
 
     /**
      * Magic method to proxy unknown method calls to the User object
      *
-     * @param  string $method
-     * @param  array  $args
+     * @param  string              $method
+     * @param  array<int, mixed>   $args
      * @throws \BadMethodCallException
      */
     public function __call(string $method, array $args): mixed

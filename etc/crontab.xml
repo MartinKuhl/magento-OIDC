@@ -6,5 +6,13 @@
         <job name="m2oidc_log_rotation" instance="M2Oidc\OAuth\Cron\LogCleanup" method="execute">
             <schedule>0 3 * * *</schedule>
         </job>
+
+        <!-- Re-fetch OIDC discovery documents every 6 hours so endpoints stay up-to-date
+             without requiring a manual provider save.  Only changed fields are written to DB. -->
+        <job name="m2oidc_refresh_oidc_discovery"
+             instance="M2Oidc\OAuth\Cron\RefreshOidcDiscovery"
+             method="execute">
+            <schedule>0 */6 * * *</schedule>
+        </job>
     </group>
 </config>

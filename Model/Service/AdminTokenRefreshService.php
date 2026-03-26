@@ -178,7 +178,7 @@ class AdminTokenRefreshService
     /**
      * Send the RFC 6749 §6 refresh token grant request.
      *
-     * @param  array  $provider     Provider data row
+     * @param  array<string, mixed> $provider     Provider data row
      * @param  string $refreshToken Plain-text refresh token
      * @return string|null          New access token or null on failure
      */

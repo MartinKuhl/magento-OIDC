@@ -17,6 +17,10 @@ class ActiveStatus extends Column
     /**
      * @inheritDoc
      */
+    /**
+     * @param array<string, mixed> $components
+     * @param array<string, mixed> $data
+     */
     // phpcs:ignore Generic.CodeAnalysis.UselessOverridingMethod
     public function __construct(
         ContextInterface $context,
@@ -29,6 +33,9 @@ class ActiveStatus extends Column
 
     /**
      * @inheritDoc
+     *
+     * @param  array<string, mixed> $dataSource
+     * @return array<string, mixed>
      */
     public function prepareDataSource(array $dataSource): array
     {

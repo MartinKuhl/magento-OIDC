@@ -17,6 +17,9 @@ class OnlineStatus extends Column
 {
     /**
      * @inheritDoc
+     *
+     * @param  array<string, mixed> $dataSource
+     * @return array<string, mixed>
      */
     public function prepareDataSource(array $dataSource): array
     {

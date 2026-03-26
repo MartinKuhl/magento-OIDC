@@ -11,10 +11,15 @@ use Magento\Customer\Api\AddressRepositoryInterface;
 use Magento\Directory\Model\ResourceModel\Country\CollectionFactory as CountryCollectionFactory;
 use M2Oidc\OAuth\Helper\OAuthConstants;
 use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Model\Provider\MappingRepository;
 
 /**
  * Syncs existing customer profile, address and group data from OIDC claims
  * on every SSO login when the corresponding per-provider flag is enabled.
+ *
+ * Per-attribute sync control: when a normalized attribute mapping row exists for the
+ * provider and its `sync_on_sso` flag is 0, that attribute is skipped regardless of
+ * the coarse global `sync_customer_profile_on_sso` switch.
  *
  * Designed to be injected into ProcessUserAction via DI.
  */
@@ -29,6 +34,7 @@ class CustomerProfileSyncService
      * @param CountryCollectionFactory                                 $countryCollectionFactory
      * @param \Magento\Customer\Api\Data\RegionInterfaceFactory        $regionFactory
      * @param OAuthUtility                                             $oauthUtility
+     * @param MappingRepository                                        $mappingRepository
      */
     public function __construct(
         private readonly CustomerRepositoryInterface $customerRepository,
@@ -36,7 +42,8 @@ class CustomerProfileSyncService
         private readonly AddressRepositoryInterface $addressRepository,
         private readonly CountryCollectionFactory $countryCollectionFactory,
         private readonly \Magento\Customer\Api\Data\RegionInterfaceFactory $regionFactory,
-        private readonly OAuthUtility $oauthUtility
+        private readonly OAuthUtility $oauthUtility,
+        private readonly MappingRepository $mappingRepository
     ) {
     }
 
@@ -50,58 +57,75 @@ class CustomerProfileSyncService
      * Only fields that actually changed are written; if nothing changed
      * no save() call is made (performance).
      *
-     * @param CustomerInterface $customer  Loaded customer entity
-     * @param array             $flat      Flattened OIDC attributes
-     * @param array             $raw       Raw (nested) OIDC attributes
-     * @param array             $attrKeys  Provider-specific attribute mapping keys
+     * When $providerId > 0 and a normalized attribute mapping row exists for a given
+     * attribute type with `sync_on_sso = 0`, that attribute is skipped.  When no
+     * normalized row exists (legacy mode) the attribute is always synced.
+     *
+     * @param CustomerInterface    $customer   Loaded customer entity
+     * @param array<string, mixed> $flat       Flattened OIDC attributes
+     * @param array<string, mixed> $raw        Raw (nested) OIDC attributes
+     * @param array<string, mixed> $attrKeys   Provider-specific attribute mapping keys
+     * @param int                  $providerId Provider ID for per-attribute sync flag (0 = legacy)
      */
     public function syncProfile(
         CustomerInterface $customer,
         array $flat,
         array $raw,
-        array $attrKeys
+        array $attrKeys,
+        int $providerId = 0
     ): void {
         $changed = false;
+        $attrMap = $providerId > 0 ? $this->mappingRepository->getFullAttributeMap($providerId) : [];
 
         // Firstname
-        $fn = $this->extract($attrKeys['firstname'] ?? null, $flat, $raw);
-        if ($fn !== null && $customer->getFirstname() !== $fn) {
-            $customer->setFirstname($fn);
-            $changed = true;
+        if ($this->shouldSync($attrMap, 'firstname')) {
+            $fn = $this->extract($attrKeys['firstname'] ?? null, $flat, $raw);
+            if ($fn !== null && $customer->getFirstname() !== $fn) {
+                $customer->setFirstname($fn);
+                $changed = true;
+            }
         }
 
         // Lastname
-        $ln = $this->extract($attrKeys['lastname'] ?? null, $flat, $raw);
-        if ($ln !== null && $customer->getLastname() !== $ln) {
-            $customer->setLastname($ln);
-            $changed = true;
+        if ($this->shouldSync($attrMap, 'lastname')) {
+            $ln = $this->extract($attrKeys['lastname'] ?? null, $flat, $raw);
+            if ($ln !== null && $customer->getLastname() !== $ln) {
+                $customer->setLastname($ln);
+                $changed = true;
+            }
         }
 
         // Date of Birth
-        $dob = $this->extract($attrKeys['dob'] ?? null, $flat, $raw);
-        if ($dob !== null) {
-            $formatted = $this->formatDob($dob);
-            if ($formatted !== null && $customer->getDob() !== $formatted) {
-                $customer->setDob($formatted);
-                $changed = true;
+        if ($this->shouldSync($attrMap, 'dob')) {
+            $dob = $this->extract($attrKeys['dob'] ?? null, $flat, $raw);
+            if ($dob !== null) {
+                $formatted = $this->formatDob($dob);
+                if ($formatted !== null && $customer->getDob() !== $formatted) {
+                    $customer->setDob($formatted);
+                    $changed = true;
+                }
             }
         }
 
         // Gender
-        $gender = $this->extract($attrKeys['gender'] ?? null, $flat, $raw);
-        if ($gender !== null) {
-            $genderId = $this->mapGender($gender);
-            if ($genderId !== null && (int) $customer->getGender() !== $genderId) {
-                $customer->setGender($genderId);
-                $changed = true;
+        if ($this->shouldSync($attrMap, 'gender')) {
+            $gender = $this->extract($attrKeys['gender'] ?? null, $flat, $raw);
+            if ($gender !== null) {
+                $genderId = $this->mapGender($gender);
+                if ($genderId !== null && (int) $customer->getGender() !== $genderId) {
+                    $customer->setGender($genderId);
+                    $changed = true;
+                }
             }
         }
 
         // Email
-        $email = $this->extract($attrKeys['email'] ?? null, $flat, $raw);
-        if ($email !== null && $customer->getEmail() !== $email) {
-            $customer->setEmail($email);
-            $changed = true;
+        if ($this->shouldSync($attrMap, 'email')) {
+            $email = $this->extract($attrKeys['email'] ?? null, $flat, $raw);
+            if ($email !== null && $customer->getEmail() !== $email) {
+                $customer->setEmail($email);
+                $changed = true;
+            }
         }
 
         if ($changed) {
@@ -122,11 +146,11 @@ class CustomerProfileSyncService
      * Strategy: find existing default address of the given type and update it.
      * If none exists, create a new one and mark it as default.
      *
-     * @param CustomerInterface $customer
-     * @param array             $flat
-     * @param array             $raw
-     * @param array             $addrKeys  ['phone','street','zip','city','state','country']
-     * @param string            $type      'billing'
+     * @param CustomerInterface    $customer
+     * @param array<string, mixed> $flat
+     * @param array<string, mixed> $raw
+     * @param array<string, mixed> $addrKeys  ['phone','street','zip','city','state','country']
+     * @param string               $type      'billing'
      */
     public function syncAddress(
         CustomerInterface $customer,
@@ -236,11 +260,28 @@ class CustomerProfileSyncService
     //  Private helpers
     // ──────────────────────────────────────────────
     /**
+     * Decide whether an attribute type should be synced.
+     *
+     * Rule: if a normalized mapping row exists for $attributeType and its
+     * `sync_on_sso` flag is 0 → skip.  If no row exists → sync (legacy behaviour).
+     *
+     * @param  array<string, array{attribute_name: string, sync_on_sso: int}> $attrMap
+     * @param  string $attributeType  e.g. 'firstname', 'dob', 'billing_city'
+     */
+    private function shouldSync(array $attrMap, string $attributeType): bool
+    {
+        if (isset($attrMap[$attributeType])) {
+            return (bool) $attrMap[$attributeType]['sync_on_sso'];
+        }
+        return true;
+    }
+
+    /**
      * Extract a value from flattened or raw OIDC attributes.
      *
-     * @param string|null $key  Attribute key to look up
-     * @param array       $flat Flattened OIDC attributes
-     * @param array       $raw  Raw (nested) OIDC attributes
+     * @param string|null          $key  Attribute key to look up
+     * @param array<string, mixed> $flat Flattened OIDC attributes
+     * @param array<string, mixed> $raw  Raw (nested) OIDC attributes
      */
     private function extract(?string $key, array $flat, array $raw): ?string
     {
@@ -312,7 +353,7 @@ class CustomerProfileSyncService
             );
 
             $item = $collection->getFirstItem();
-            if ($item && $item->getCountryId()) {
+            if ($item->getCountryId()) {
                 return $item->getCountryId();
             }
         } catch (\Exception $e) {

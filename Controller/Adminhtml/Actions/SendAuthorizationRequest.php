@@ -6,6 +6,8 @@ use M2Oidc\OAuth\Helper\OAuth\AuthorizationRequest;
 use M2Oidc\OAuth\Helper\OAuthConstants;
 use M2Oidc\OAuth\Helper\OAuthSecurityHelper;
 use M2Oidc\OAuth\Controller\Actions\BaseAction;
+use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
+use Magento\Framework\Stdlib\CookieManagerInterface;
 
 /**
  * Admin: Send authorization request to the configured OIDC provider.
@@ -29,6 +31,12 @@ class SendAuthorizationRequest extends BaseAction
     /** @var \Magento\Framework\Session\SessionManagerInterface */
     private readonly \Magento\Framework\Session\SessionManagerInterface $sessionManager;
 
+    /** @var CookieManagerInterface */
+    private readonly CookieManagerInterface $cookieManager;
+
+    /** @var CookieMetadataFactory */
+    private readonly CookieMetadataFactory $cookieMetadataFactory;
+
     /**
      * Initialize admin send authorization request action.
      *
@@ -36,17 +44,23 @@ class SendAuthorizationRequest extends BaseAction
      * @param \M2Oidc\OAuth\Helper\OAuthUtility                  $oauthUtility
      * @param OAuthSecurityHelper                                $securityHelper
      * @param \Magento\Framework\Session\SessionManagerInterface $sessionManager
+     * @param CookieManagerInterface                             $cookieManager
+     * @param CookieMetadataFactory                              $cookieMetadataFactory
      */
     public function __construct(
         \Magento\Backend\App\Action\Context $context,
         \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility,
         OAuthSecurityHelper $securityHelper,
-        \Magento\Framework\Session\SessionManagerInterface $sessionManager
+        \Magento\Framework\Session\SessionManagerInterface $sessionManager,
+        CookieManagerInterface $cookieManager,
+        CookieMetadataFactory $cookieMetadataFactory
     ) {
         parent::__construct($context, $oauthUtility);
         $this->urlBuilder = $context->getUrl();
         $this->securityHelper = $securityHelper;
         $this->sessionManager = $sessionManager;
+        $this->cookieManager = $cookieManager;
+        $this->cookieMetadataFactory = $cookieMetadataFactory;
     }
 
     /**
@@ -137,14 +151,19 @@ class SendAuthorizationRequest extends BaseAction
             $codeChallenge       = $this->securityHelper->computeCodeChallenge($codeVerifier, $pkceFlow);
             $codeChallengeMethod = $pkceFlow;
 
-            // Persist verifier in provider row (survives admin→frontend session switch)
-            $this->oauthUtility->saveProviderData(
-                (int) $clientDetails['id'],
-                ['pkce_code_verifier' => $codeVerifier]
-            );
+            // Store verifier in cache and pass nonce via cookie (mirrors customer flow — F2).
+            // A cookie bridges the adminhtml→frontend area switch that happens when the IdP
+            // redirects back to ReadAuthorizationResponse (frontend area).
+            $pkceNonce = $this->securityHelper->storePkceVerifier($codeVerifier, (int) $clientDetails['id']);
+            $metadata  = $this->cookieMetadataFactory
+                ->createPublicCookieMetadata()
+                ->setPath('/m2oidc/')
+                ->setHttpOnly(true)
+                ->setDuration(600);
+            $this->cookieManager->setPublicCookie('oidc_admin_pkce_nonce', $pkceNonce, $metadata);
             $this->oauthUtility->customlog(
                 "SendAuthorizationRequest (admin): PKCE {$pkceFlow} enabled"
-                . " — challenge generated, verifier persisted to DB"
+                . " — challenge generated, verifier stored in cache (nonce cookie set)"
             );
         }
 

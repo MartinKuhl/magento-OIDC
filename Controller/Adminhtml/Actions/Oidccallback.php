@@ -142,7 +142,7 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
     public function execute()
     {
         // Rate-limit: block IPs that exceed MAX_ATTEMPTS within the fixed window
-        $clientIp = (string) $this->request->getClientIp();
+        $clientIp = $this->request->getClientIp();
         if (!$this->rateLimiter->isAllowed($clientIp)) {
             $this->oauthUtility->customlog(
                 "OIDC Admin Callback: Rate limit exceeded for IP: " . $clientIp

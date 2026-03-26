@@ -6,6 +6,7 @@ namespace M2Oidc\OAuth\Cron;
 
 use M2Oidc\OAuth\Helper\OAuthConstants;
 use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Logger\OidcLogger;
 
 /**
  * Daily cron job that cleans up the OIDC debug log file.
@@ -23,9 +24,12 @@ class LogCleanup
 {
     /**
      * @param OAuthUtility $oauthUtility
+     * @param OidcLogger   $oidcLogger
      */
-    public function __construct(private readonly OAuthUtility $oauthUtility)
-    {
+    public function __construct(
+        private readonly OAuthUtility $oauthUtility,
+        private readonly OidcLogger $oidcLogger
+    ) {
     }
 
     /**
@@ -35,7 +39,7 @@ class LogCleanup
     {
         $logFileTime  = $this->oauthUtility->getStoreConfig(OAuthConstants::LOG_FILE_TIME);
         $isLogEnabled = $this->oauthUtility->getStoreConfig(OAuthConstants::ENABLE_DEBUG_LOG);
-        $logFileExists = (bool) $this->oauthUtility->isCustomLogExist();
+        $logFileExists = (bool) $this->oidcLogger->isCustomLogExist();
 
         $currentTime = time();
 
@@ -48,7 +52,7 @@ class LogCleanup
         if ($cleanupNeeded) {
             $this->oauthUtility->setStoreConfig(OAuthConstants::ENABLE_DEBUG_LOG, 0);
             $this->oauthUtility->setStoreConfig(OAuthConstants::LOG_FILE_TIME, null);
-            $this->oauthUtility->deleteCustomLogFile();
+            $this->oidcLogger->deleteCustomLogFile();
         }
     }
 }

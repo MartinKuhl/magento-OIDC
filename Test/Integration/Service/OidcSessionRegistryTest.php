@@ -14,7 +14,8 @@ use M2Oidc\OAuth\Model\Service\OidcSessionRegistry;
  * cache layer.  A mock CacheInterface is used so no real cache backend
  * is needed.
  *
- * Storage format: JSON {"php_session_id":..., "sub":..., "sid":...}
+ * Storage format: JSON array of session entry objects, each with keys:
+ *   php_session_id, user_type, user_id, sub, sid
  */
 class OidcSessionRegistryTest extends TestCase
 {
@@ -37,15 +38,21 @@ class OidcSessionRegistryTest extends TestCase
         $sub          = 'user-sub-123';
         $sid          = 'sess-id-abc';
         $phpSessionId = 'php-session-xyz';
-        $expectedKey  = 'oidc_sess_' . sha1($sub . '|' . $sid);
-        $expectedJson = json_encode(['php_session_id' => $phpSessionId, 'sub' => $sub, 'sid' => $sid]);
+        $expectedKey  = 'oidc_sess_' . hash('sha256', $sub . '|' . $sid);
+        $expectedJson = json_encode([[
+            'php_session_id' => $phpSessionId,
+            'user_type'      => 'customer',
+            'user_id'        => 42,
+            'sub'            => $sub,
+            'sid'            => $sid,
+        ]]);
 
         $this->cache
             ->expects($this->once())
             ->method('save')
             ->with($expectedJson, $expectedKey, $this->anything(), 3600);
 
-        $this->registry->register($sub, $sid, $phpSessionId, 3600);
+        $this->registry->register($sub, $sid, $phpSessionId, 'customer', 42, 3600);
 
         // Simulate a cache hit — return the stored JSON
         $this->cache
@@ -54,7 +61,8 @@ class OidcSessionRegistryTest extends TestCase
             ->willReturn($expectedJson);
 
         $resolved = $this->registry->resolve($sub, $sid);
-        $this->assertSame($phpSessionId, $resolved);
+        $this->assertNotNull($resolved);
+        $this->assertSame($phpSessionId, $resolved[0]['php_session_id']);
     }
 
     public function testResolveReturnNullOnCacheMiss(): void
@@ -71,7 +79,7 @@ class OidcSessionRegistryTest extends TestCase
     {
         $sub = 'user-sub-456';
         $sid = 'sess-id-def';
-        $key = 'oidc_sess_' . sha1($sub . '|' . $sid);
+        $key = 'oidc_sess_' . hash('sha256', $sub . '|' . $sid);
 
         $this->cache
             ->expects($this->once())
@@ -103,8 +111,8 @@ class OidcSessionRegistryTest extends TestCase
             return true;
         });
 
-        (new OidcSessionRegistry($cache1))->register($sub, $sid, 'session-php-aaa', 600);
-        (new OidcSessionRegistry($cache2))->register($sub, $sid, 'session-php-bbb', 600);
+        (new OidcSessionRegistry($cache1))->register($sub, $sid, 'session-php-aaa', 'customer', 1, 600);
+        (new OidcSessionRegistry($cache2))->register($sub, $sid, 'session-php-bbb', 'customer', 2, 600);
 
         $this->assertSame(
             $capturedKey1,
@@ -126,7 +134,7 @@ class OidcSessionRegistryTest extends TestCase
             });
 
         // Call without explicit TTL — the registry uses its default (86400 s)
-        $this->registry->register('sub', 'sid', 'php-session-id');
+        $this->registry->register('sub', 'sid', 'php-session-id', 'customer', 1);
 
         $this->assertSame(86400, $ttlUsed, 'Default TTL must be 86400 seconds.');
     }
@@ -136,13 +144,13 @@ class OidcSessionRegistryTest extends TestCase
     public function testRegisterSkipsWhenSubIsEmpty(): void
     {
         $this->cache->expects($this->never())->method('save');
-        $this->registry->register('', 'sid', 'php-session-id');
+        $this->registry->register('', 'sid', 'php-session-id', 'customer', 1);
     }
 
     public function testRegisterSkipsWhenPhpSessionIdIsEmpty(): void
     {
         $this->cache->expects($this->never())->method('save');
-        $this->registry->register('sub-abc', 'sid', '');
+        $this->registry->register('sub-abc', 'sid', '', 'customer', 1);
     }
 
     // ----------------------------------------------------------------- JSON payload
@@ -158,13 +166,16 @@ class OidcSessionRegistryTest extends TestCase
                 return true;
             });
 
-        $this->registry->register('my-sub', 'my-sid', 'php-sess-abc', 600);
+        $this->registry->register('my-sub', 'my-sid', 'php-sess-abc', 'admin', 7, 600);
 
         $this->assertNotNull($storedValue);
         $payload = json_decode((string) $storedValue, true);
         $this->assertIsArray($payload);
-        $this->assertSame('php-sess-abc', $payload['php_session_id']);
-        $this->assertSame('my-sub', $payload['sub']);
-        $this->assertSame('my-sid', $payload['sid']);
+        $this->assertIsArray($payload[0]);
+        $this->assertSame('php-sess-abc', $payload[0]['php_session_id']);
+        $this->assertSame('my-sub', $payload[0]['sub']);
+        $this->assertSame('my-sid', $payload[0]['sid']);
+        $this->assertSame('admin', $payload[0]['user_type']);
+        $this->assertSame(7, $payload[0]['user_id']);
     }
 }

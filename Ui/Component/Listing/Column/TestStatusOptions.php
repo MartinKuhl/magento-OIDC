@@ -13,6 +13,8 @@ class TestStatusOptions implements OptionSourceInterface
 {
     /**
      * @inheritDoc
+     *
+     * @return array<int, array<string, mixed>>
      */
     public function toOptionArray(): array
     {

@@ -7,6 +7,7 @@ namespace M2Oidc\OAuth\Test\Unit\Helper;
 use Magento\Framework\App\CacheInterface;
 use M2Oidc\OAuth\Helper\OAuthSecurityHelper;
 use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Model\Cache\AtomicCacheInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -26,6 +27,9 @@ class OAuthSecurityHelperTest extends TestCase
     /** @var OAuthUtility&MockObject */
     private OAuthUtility $oauthUtility;
 
+    /** @var AtomicCacheInterface&MockObject */
+    private AtomicCacheInterface $atomicCache;
+
     /** @var OAuthSecurityHelper */
     private OAuthSecurityHelper $helper;
 
@@ -33,10 +37,12 @@ class OAuthSecurityHelperTest extends TestCase
     {
         $this->cache        = $this->createMock(CacheInterface::class);
         $this->oauthUtility = $this->createMock(OAuthUtility::class);
+        $this->atomicCache  = $this->createMock(AtomicCacheInterface::class);
 
         $this->helper = new OAuthSecurityHelper(
             $this->cache,
-            $this->oauthUtility
+            $this->oauthUtility,
+            $this->atomicCache
         );
     }
 
@@ -66,9 +72,9 @@ class OAuthSecurityHelperTest extends TestCase
     public function testRedeemAdminLoginNonceReturnNullWhenCacheMissed(): void
     {
         $nonce = str_repeat('a', 32); // valid format
-        $this->cache->expects($this->once())
-            ->method('load')
-            ->willReturn(false);
+        $this->atomicCache->expects($this->once())
+            ->method('getAndDelete')
+            ->willReturn(null);
         $this->assertNull($this->helper->redeemAdminLoginNonce($nonce));
     }
 
@@ -77,12 +83,9 @@ class OAuthSecurityHelperTest extends TestCase
         $nonce = str_repeat('b', 32);
         $email = 'admin@example.com';
 
-        $this->cache->expects($this->once())
-            ->method('load')
+        $this->atomicCache->expects($this->once())
+            ->method('getAndDelete')
             ->willReturn($email);
-
-        $this->cache->expects($this->once())
-            ->method('remove');
 
         $result = $this->helper->redeemAdminLoginNonce($nonce);
         $this->assertSame($email, $result);
@@ -101,15 +104,16 @@ class OAuthSecurityHelperTest extends TestCase
     public function testRedeemCustomerLoginNonceReturnNullOnCacheMiss(): void
     {
         $nonce = str_repeat('c', 32);
-        $this->cache->method('load')->willReturn(false);
+        $this->atomicCache->method('getAndDelete')->willReturn(null);
         $this->assertNull($this->helper->redeemCustomerLoginNonce($nonce));
     }
 
     public function testRedeemCustomerLoginNonceReturnNullOnInvalidJson(): void
     {
         $nonce = str_repeat('d', 32);
-        $this->cache->method('load')->willReturn('not-json');
-        $this->cache->expects($this->once())->method('remove');
+        // atomicCache returns invalid JSON — the method deletes-on-read atomically, then
+        // returns null because JSON decoding fails (no separate remove() call needed).
+        $this->atomicCache->method('getAndDelete')->willReturn('not-json');
         $this->assertNull($this->helper->redeemCustomerLoginNonce($nonce));
     }
 
@@ -118,8 +122,9 @@ class OAuthSecurityHelperTest extends TestCase
         $nonce = str_repeat('e', 32);
         $payload = json_encode(['email' => 'user@example.com', 'relayState' => '/dashboard']);
 
-        $this->cache->method('load')->willReturn($payload);
-        $this->cache->expects($this->once())->method('remove');
+        $this->atomicCache->expects($this->once())
+            ->method('getAndDelete')
+            ->willReturn($payload);
 
         $result = $this->helper->redeemCustomerLoginNonce($nonce);
 
@@ -146,7 +151,7 @@ class OAuthSecurityHelperTest extends TestCase
 
     public function testValidateStateTokenReturnsFalseOnCacheMiss(): void
     {
-        $this->cache->method('load')->willReturn(false);
+        $this->atomicCache->method('getAndDelete')->willReturn(null);
         $this->assertFalse(
             $this->helper->validateStateToken('session123', str_repeat('f', 32))
         );
@@ -154,8 +159,9 @@ class OAuthSecurityHelperTest extends TestCase
 
     public function testValidateStateTokenReturnsTrueAndDeletesToken(): void
     {
-        $this->cache->method('load')->willReturn('1');
-        $this->cache->expects($this->once())->method('remove');
+        $this->atomicCache->expects($this->once())
+            ->method('getAndDelete')
+            ->willReturn('1');
 
         $this->assertTrue(
             $this->helper->validateStateToken('session123', str_repeat('a', 32))

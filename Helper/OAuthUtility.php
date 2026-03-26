@@ -1,15 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace M2Oidc\OAuth\Helper;
 
 use Magento\Customer\Model\CustomerFactory;
 use Magento\Customer\Model\Session;
 use Magento\Framework\App\Cache\Frontend\Pool;
 use Magento\Framework\App\Cache\TypeListInterface;
-use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\Config\Storage\WriterInterface;
 use Magento\Framework\Filesystem\Driver\File;
-use Magento\Framework\App\Filesystem\DirectoryList;
 use Magento\Framework\Url;
 use Magento\Framework\UrlInterface;
 use Magento\Framework\View\Asset\Repository;
@@ -19,6 +19,10 @@ use Magento\Framework\Stdlib\DateTime\DateTime;
 
 use M2Oidc\OAuth\Helper\OAuthConstants;
 use M2Oidc\OAuth\Helper\Data;
+use M2Oidc\OAuth\Logger\OidcLogger;
+use M2Oidc\OAuth\Model\Config\OidcConfigReader;
+use M2Oidc\OAuth\Model\Provider\ProviderResolver;
+use M2Oidc\OAuth\Model\ResourceModel\OidcProviderRepository;
 
 /**
  * This class contains some common Utility functions
@@ -52,17 +56,20 @@ class OAuthUtility extends Data
     /** @var \Magento\Framework\App\Config\ReinitableConfigInterface */
     protected \Magento\Framework\App\Config\ReinitableConfigInterface $reinitableConfig;
 
-    /** @var \M2Oidc\OAuth\Logger\Logger */
-    private readonly \M2Oidc\OAuth\Logger\Logger $moduleLogger;
-
     /** @var \Magento\Framework\App\ProductMetadataInterface */
     protected \Magento\Framework\App\ProductMetadataInterface $productMetadata;
 
     /** @var \Magento\Framework\Stdlib\DateTime\DateTime */
     protected \Magento\Framework\Stdlib\DateTime\DateTime $dateTime;
 
-    /** @var \Magento\Framework\App\Filesystem\DirectoryList */
-    protected \Magento\Framework\App\Filesystem\DirectoryList $directoryList;
+    /** @var OidcLogger */
+    public readonly OidcLogger $oidcLogger;
+
+    /** @var ProviderResolver */
+    public readonly ProviderResolver $providerResolver;
+
+    /** @var OidcConfigReader */
+    public readonly OidcConfigReader $configReader;
 
     /**
      * Initialize OAuthUtility helper.
@@ -82,7 +89,6 @@ class OAuthUtility extends Data
      * @param TypeListInterface $cacheTypeList
      * @param Pool $cacheFrontendPool
      * @param \Psr\Log\LoggerInterface $logger
-     * @param \M2Oidc\OAuth\Logger\Logger $moduleLogger
      * @param File $fileSystem
      * @param \Magento\Framework\App\ProductMetadataInterface $productMetadata
      * @param \M2Oidc\OAuth\Model\M2oidcOauthClientAppsFactory $m2oidcOauthClientAppsFactory
@@ -91,9 +97,12 @@ class OAuthUtility extends Data
      * @param \Magento\User\Model\ResourceModel\User $userResource
      * @param \Magento\Customer\Model\ResourceModel\Customer $customerResource
      * @param DateTime $dateTime
-     * @param DirectoryList $directoryList
      * @param \Magento\Framework\Encryption\EncryptorInterface $encryptor
      * @param \Magento\Framework\Escaper $escaper
+     * @param OidcLogger $oidcLogger
+     * @param ProviderResolver $providerResolver
+     * @param OidcConfigReader $configReader
+     * @param OidcProviderRepository $providerRepository
      */
     public function __construct(
         Context $context,
@@ -111,7 +120,6 @@ class OAuthUtility extends Data
         TypeListInterface $cacheTypeList,
         Pool $cacheFrontendPool,
         \Psr\Log\LoggerInterface $logger,
-        \M2Oidc\OAuth\Logger\Logger $moduleLogger,
         File $fileSystem,
         \Magento\Framework\App\ProductMetadataInterface $productMetadata,
         \M2Oidc\OAuth\Model\M2oidcOauthClientAppsFactory $m2oidcOauthClientAppsFactory,
@@ -120,9 +128,12 @@ class OAuthUtility extends Data
         \Magento\User\Model\ResourceModel\User $userResource,
         \Magento\Customer\Model\ResourceModel\Customer $customerResource,
         DateTime $dateTime,
-        DirectoryList $directoryList,
         \Magento\Framework\Encryption\EncryptorInterface $encryptor,
-        \Magento\Framework\Escaper $escaper
+        \Magento\Framework\Escaper $escaper,
+        OidcLogger $oidcLogger,
+        ProviderResolver $providerResolver,
+        OidcConfigReader $configReader,
+        OidcProviderRepository $providerRepository
     ) {
         parent::__construct(
             $context,
@@ -140,7 +151,7 @@ class OAuthUtility extends Data
             $customerResource,
             $encryptor,
             $escaper,
-            $logger
+            $providerRepository
         );
 
         $this->adminSession = $adminSession;
@@ -151,191 +162,141 @@ class OAuthUtility extends Data
         $this->fileSystem = $fileSystem;
         $this->logger = $logger;
         $this->reinitableConfig = $reinitableConfig;
-        $this->moduleLogger = $moduleLogger;
         $this->productMetadata = $productMetadata;
         $this->dateTime = $dateTime;
-        $this->directoryList = $directoryList;
+        $this->oidcLogger = $oidcLogger;
+        $this->providerResolver = $providerResolver;
+        $this->configReader = $configReader;
     }
 
     // =========================================================================
-    // MP-05: Provider-aware config resolution
+    // Delegation: Logging — delegates to OidcLogger
     // =========================================================================
 
     /**
-     * Maps OAuthConstants config keys to m2oidc_oauth_client_apps column names.
+     * Write a plain-text message to the custom OIDC log.
      *
-     * Keys listed here are provider-specific and will be read from the app table.
-     * Keys NOT listed here are global and always read from core_config_data
-     * (e.g. ENABLE_DEBUG_LOG, IS_TEST, LOG_FILE_TIME).
+     * Delegates to OidcLogger::customlog().
+     *
+     * @param string $txt Human-readable log message
      */
-    private const CONFIG_TO_COLUMN = [
-        // App / Endpoints
-        'appName'                       => 'app_name',
-        'clientID'                      => 'clientID',
-        'clientSecret'                  => 'client_secret',
-        'scope'                         => 'scope',
-        'authorizeURL'                  => 'authorize_endpoint',
-        'accessTokenURL'                => 'access_token_endpoint',
-        'getUserInfoURL'                => 'user_info_endpoint',
-        'oauthLogoutURL'                => 'endsession_endpoint',
-        'endpoint_url'                  => 'well_known_config_url',
-        'jwks_url'                      => 'jwks_endpoint',
-        'samlIssuer'                    => 'issuer',
-
-        // Send flags
-        'header'                        => 'values_in_header',
-        'body'                          => 'values_in_body',
-
-        // Visibility / behaviour flags
-        'showadminlink'                 => 'show_admin_link',
-        'showcustomerlink'              => 'show_customer_link',
-        'autoCreateAdmin'               => 'm2oidc_auto_create_admin',
-        'autoCreateCustomer'            => 'm2oidc_auto_create_customer',
-        'enableLoginRedirect'           => 'autoredirect',
-        'buttonText'                    => 'button_label',
-        'disableNonOidcAdminLogin'      => 'm2oidc_disable_non_oidc_admin_login',
-        'disableNonOidcCustomerLogin'   => 'm2oidc_disable_non_oidc_customer_login',
-
-        // Attribute mappings
-        'amEmail'                       => 'email_attribute',
-        'amUsername'                    => 'username_attribute',
-        'amFirstName'                   => 'firstname_attribute',
-        'amLastName'                    => 'lastname_attribute',
-        'group'                         => 'group_attribute',
-        'defaultRole'                   => 'default_role',
-        'amDob'                         => 'dob_attribute',
-        'amGender'                      => 'gender_attribute',
-        'amPhone'                       => 'billing_phone_attribute',
-        'amStreet'                      => 'billing_address_attribute',
-        'amZip'                         => 'billing_zip_attribute',
-        'amCity'                        => 'billing_city_attribute',
-        'amState'                       => 'billing_state_attribute',
-        'amCountry'                     => 'billing_country_attribute',
-
-        // Role / group mapping
-        'adminRoleMapping'              => 'oauth_admin_role_mapping',
-        'amAccountMatcher'              => 'm2oidc_create_user_in_magento_by_using',
-        'unlistedRole'                  => 'roles_mapped',
-        'createUserIfRoleNotMapped'     => 'm2oidc_dont_create_user_if_role_not_mapped',
-
-        // Customer Group mapping
-        'customerGroupMapping'           => 'oauth_customer_group_mapping',
-        'defaultCustomerGroup'           => 'default_group',
-        'createCustomerIfGroupNotMapped' => 'm2oidc_dont_create_customer_if_group_not_mapped',
-        'updateFrontendGroupsOnSso'      => 'update_frontend_groups_on_sso',
-
-        // IdP-Initiated SSO (OIDC Third-Party Initiated Login §4)
-        'idpInitiatedEnabled'            => 'idp_initiated_enabled',
-
-        // Profile / address / role sync flags
-        'sync_customer_profile_on_sso'   => 'sync_customer_profile_on_sso',
-        'sync_customer_address_on_sso'   => 'sync_customer_address_on_sso',
-        'sync_customer_group_on_sso'     => 'sync_customer_group_on_sso',
-        'sync_admin_profile_on_sso'      => 'sync_admin_profile_on_sso',
-        'sync_admin_role_on_sso'         => 'sync_admin_role_on_sso',
-
-        // Claim value encoding
-        'claimEncoding'                  => 'claim_encoding',
-    ];
+    public function customlog(string $txt): void
+    {
+        $this->oidcLogger->customlog($txt);
+    }
 
     /**
-     * Active provider ID for the current request.
-     * Set via setActiveProviderId() in the controller/action execute() method.
+     * Write a structured JSON log entry with context fields.
      *
-     * @var int|null
+     * Delegates to OidcLogger::customlogContext().
+     *
+     * @param string               $event   Short dot-notation event name
+     * @param array<string, mixed> $context Additional key-value context
      */
-    private ?int $activeProviderId = null;
+    public function customlogContext(string $event, array $context = []): void
+    {
+        $this->oidcLogger->customlogContext($event, $context);
+    }
 
     /**
-     * Cached provider row — invalidated when activeProviderId changes.
-     * Ensures at most one DB query per request.
+     * Log a debug message, optionally with an object/array.
      *
-     * @var array<string,mixed>|null
+     * Delegates to OidcLogger::logDebug().
+     *
+     * @param string|object $msg Debug message
+     * @param mixed|null    $obj Optional object to dump
      */
-    private ?array $activeProviderCache = null;
+    public function logDebug(string|object $msg = "", $obj = null): void
+    {
+        $this->oidcLogger->logDebug($msg, $obj);
+    }
+
+    /**
+     * Check if debug logging is enabled.
+     *
+     * Delegates to OidcLogger::isLogEnable().
+     */
+    public function isLogEnable(): bool
+    {
+        return $this->oidcLogger->isLogEnable();
+    }
+
+    /**
+     * Check whether the custom OIDC log file exists.
+     *
+     * Delegates to OidcLogger::isCustomLogExist().
+     *
+     * @psalm-return 0|1
+     */
+    public function isCustomLogExist(): int
+    {
+        return $this->oidcLogger->isCustomLogExist();
+    }
+
+    /**
+     * Delete the custom OAuth log file.
+     *
+     * Delegates to OidcLogger::deleteCustomLogFile().
+     */
+    public function deleteCustomLogFile(): void
+    {
+        $this->oidcLogger->deleteCustomLogFile();
+    }
+
+    // =========================================================================
+    // Delegation: Provider resolution — delegates to ProviderResolver
+    // =========================================================================
 
     /**
      * Set the active provider context for this request.
      *
-     * Must be called once per request (e.g. in execute()) before any
-     * getStoreConfig() call that reads provider-specific values.
-     * All subsequent getStoreConfig() calls resolve from the correct
-     * provider row automatically.
+     * Delegates to ProviderResolver::setActiveProviderId().
      *
      * @param int $providerId Row `id` from m2oidc_oauth_client_apps (> 0)
      */
     public function setActiveProviderId(int $providerId): void
     {
-        if ($this->activeProviderId !== $providerId) {
-            $this->activeProviderId = $providerId;
-            $this->activeProviderCache = null;
-        }
+        $this->providerResolver->setActiveProviderId($providerId);
     }
 
     /**
      * Return the currently active provider ID (or null if not set).
+     *
+     * Delegates to ProviderResolver::getActiveProviderId().
      */
     public function getActiveProviderId(): ?int
     {
-        return $this->activeProviderId;
+        return $this->providerResolver->getActiveProviderId();
     }
 
     /**
-     * Lazy-load and cache the active provider row.
+     * Lazy-load and return the active provider row.
      *
-     * Resolution order:
-     *  1. Explicit provider_id set via setActiveProviderId()
-     *  2. First active provider in the table (single-provider / legacy fallback)
+     * Delegates to ProviderResolver::resolveActiveProvider().
      *
      * @return array<string,mixed> Provider data array or empty array if none found
      */
-    private function resolveActiveProvider(): array
+    public function resolveActiveProvider(): array
     {
-        if ($this->activeProviderCache !== null) {
-            return $this->activeProviderCache;
-        }
-
-        if ($this->activeProviderId !== null && $this->activeProviderId > 0) {
-            $this->activeProviderCache = $this->getClientDetailsById($this->activeProviderId) ?: [];
-            return $this->activeProviderCache;
-        }
-
-        // Fallback: first active provider (covers single-provider installations)
-        $providers = $this->getAllActiveProviders();
-        $this->activeProviderCache = $providers === [] ? [] : reset($providers);
-        return $this->activeProviderCache;
+        return $this->providerResolver->resolveActiveProvider();
     }
 
+    // =========================================================================
+    // MP-05: Provider-aware config resolution — delegates to OidcConfigReader
+    // =========================================================================
     /**
      * Read a config value — provider-specific keys from the app table, global keys from core_config_data.
      *
-     * Provider-specific keys are read EXCLUSIVELY from the
+     * Delegates to OidcConfigReader. Provider-specific keys are read EXCLUSIVELY from the
      * m2oidc_oauth_client_apps table. No fallback to core_config_data.
      * Returns null if the column is empty or the provider is not found.
      *
      * @param string $config OAuthConstants key (e.g. OAuthConstants::MAP_EMAIL)
-     * @return mixed
      */
     #[\Override]
-    public function getStoreConfig(string $config)
+    public function getStoreConfig(string $config): mixed
     {
-        if (isset(self::CONFIG_TO_COLUMN[$config])) {
-            $provider = $this->resolveActiveProvider();
-            $column   = self::CONFIG_TO_COLUMN[$config];
-
-            if ($provider !== [] && array_key_exists($column, $provider)) {
-                $value = $provider[$column];
-                if ($value !== null && $value !== '') {
-                    return $value;
-                }
-            }
-
-            // No fallback — provider-specific values live exclusively in the app table
-            return null;
-        }
-
-        // Global key — always read from core_config_data
-        return parent::getStoreConfig($config);
+        return $this->configReader->getStoreConfig($config);
     }
 
     /**
@@ -346,103 +307,6 @@ class OAuthUtility extends Data
     public function getHiddenPhone($phone): string
     {
         return 'xxxxxxx' . substr($phone, strlen($phone) - 3);
-    }
-
-    // CUSTOM LOG FILE OPERATION
-
-    /**
-     * Sensitive field names whose values must be masked before logging (FEAT-05).
-     */
-    private const SENSITIVE_LOG_KEYS = [
-        'client_secret', 'access_token', 'id_token', 'refresh_token', 'password', 'token',
-    ];
-
-    /**
-     * Write a plain-text message to the custom OIDC log as a JSON entry (FEAT-05).
-     *
-     * Log format:
-     *   {"ts":"2026-01-01T12:00:00+00:00","level":"debug","message":"..."}
-     *
-     * @param string $txt Human-readable log message
-     */
-    public function customlog(string $txt): void
-    {
-        if ($this->isLogEnable()) {
-            $entry = json_encode([
-                'ts'      => (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM),
-                'level'   => 'debug',
-                'message' => $txt,
-            ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-            $this->moduleLogger->debug($entry !== false ? $entry : $txt);
-        }
-    }
-
-    /**
-     * Write a structured JSON log entry with additional context fields (FEAT-05).
-     *
-     * Sensitive context keys are automatically masked with "***".
-     *
-     * @param string $event   Short dot-notation event name (e.g. "oidc.login.success")
-     * @param array  $context Additional key-value context to include in the log entry
-     */
-    public function customlogContext(string $event, array $context = []): void
-    {
-        if (!$this->isLogEnable()) {
-            return;
-        }
-
-        // Mask sensitive values before logging
-        foreach (self::SENSITIVE_LOG_KEYS as $key) {
-            if (isset($context[$key])) {
-                $context[$key] = '***';
-            }
-        }
-
-        $payload = array_merge(
-            [
-                'ts'    => (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM),
-                'level' => 'info',
-                'event' => $event,
-            ],
-            $context
-        );
-
-        $entry = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-        $this->moduleLogger->debug($entry !== false ? $entry : $event);
-    }
-
-    /**
-     * This function check whether any custom log file exist or not.
-     *
-     * @psalm-return 0|1
-     */
-    public function isCustomLogExist(): int
-    {
-        try {
-            $logPath = $this->directoryList->getPath(DirectoryList::VAR_DIR)
-                . '/log/M2Oidc.log';
-            if ($this->fileSystem->isExists($logPath)) {
-                return 1;
-            }
-        } catch (\Exception $e) {
-            $this->logger->debug('Path error while checking log file: ' . $e->getMessage());
-        }
-        return 0;
-    }
-
-    /**
-     * Delete the custom OAuth log file if it exists.
-     */
-    public function deleteCustomLogFile(): void
-    {
-        try {
-            $logPath = $this->directoryList->getPath(DirectoryList::VAR_DIR) . '/log/M2Oidc.log';
-            if ($this->fileSystem->isExists($logPath)) {
-                $this->fileSystem->deleteFile($logPath);
-            }
-        } catch (\Exception $e) {
-            $this->logger->debug('Path error while deleting log file: ' . $e->getMessage());
-        }
     }
 
     /**
@@ -581,31 +445,15 @@ class OAuthUtility extends Data
     /**
      * Return all active providers for the given login type.
      *
+     * Delegates to ProviderResolver.
+     *
      * @param  string $loginType 'customer' | 'admin' | 'both'
      * @return array<int, array<string, mixed>>
      */
     #[\Override]
     public function getAllActiveProviders(string $loginType = 'customer'): array
     {
-        $collection = $this->getOAuthClientApps();
-        $collection->addFieldToFilter('is_active', ['eq' => 1]);
-        $providers = [];
-
-        foreach ($collection as $item) {
-            $data = $item->getData();
-            $providerLoginType = $data['login_type'] ?? 'both';
-
-            if (in_array($providerLoginType, [$loginType, 'both', ''], true)
-            ) {
-                $providers[] = $data;
-            }
-        }
-
-        usort($providers, function (array $a, array $b): int {
-            return ((int) ($a['sort_order'] ?? 0)) <=> ((int) ($b['sort_order'] ?? 0));
-        });
-
-        return $providers;
+        return $this->providerResolver->getAllActiveProviders($loginType);
     }
 
     /**
@@ -659,10 +507,6 @@ class OAuthUtility extends Data
 
     /**
      * Get SP-initiated SSO login URL (single-provider shortcut).
-     *
-     * Delegates to getSPInitiatedUrlForProvider() using the first active
-     * customer provider. Provided for backwards-compatibility with templates
-     * and GraphQL resolvers that do not pass a provider ID.
      *
      * @param string|null $relayState Optional post-login redirect target
      * @param string|null $appName    Optional provider app name to select
@@ -779,41 +623,15 @@ class OAuthUtility extends Data
     }
 
     /**
-     * Check if debug logging is enabled.
-     */
-    public function isLogEnable(): bool
-    {
-        return (bool) $this->getStoreConfig(OAuthConstants::ENABLE_DEBUG_LOG);
-    }
-
-    /**
-     * Common log method accessible from all classes.
-     *
-     * @param string|object $msg Debug message to log
-     * @param mixed|null    $obj Optional object to dump
-     */
-    public function logDebug(string|object $msg = "", $obj = null): void
-    {
-        if (is_object($msg)) {
-            $this->customlog(json_encode($msg, JSON_UNESCAPED_SLASHES) ?: '');
-        } else {
-            $this->customlog($msg);
-        }
-
-        if ($obj !== null) {
-            $this->customlog(json_encode($obj, JSON_UNESCAPED_SLASHES) ?: '');
-        }
-    }
-
-    /**
      * Get client details — reads all values from the active provider row.
      *
-     * All values come from the provider table via getStoreConfig() (which
-     * resolves provider-specific keys from m2oidc_oauth_client_apps).
+     * All values come from the provider table via resolveActiveProvider().
+     *
+     * @return array<int, mixed>
      */
     public function getClientDetails(): array
     {
-        $provider = $this->resolveActiveProvider();
+        $provider = $this->providerResolver->resolveActiveProvider();
 
         return [
             $provider['app_name'] ?? null,
@@ -905,6 +723,7 @@ class OAuthUtility extends Data
      * Parse a URL and return components in a safe manner.
      *
      * @param  string $url
+     * @return array<string, mixed>
      */
     public function parseUrlComponents(string $url): array
     {
@@ -944,7 +763,7 @@ class OAuthUtility extends Data
     public function saveTestStatus(string $appName, string $status): void
     {
         if ($appName === '') {
-            $this->customlog('saveTestStatus: skipped — empty app_name');
+            $this->oidcLogger->customlog('saveTestStatus: skipped — empty app_name');
             return;
         }
 
@@ -953,7 +772,7 @@ class OAuthUtility extends Data
         $tableName  = $this->appResource->getMainTable();
 
         if ($connection === false) {
-            $this->customlog('saveTestStatus: failed — could not obtain database connection');
+            $this->oidcLogger->customlog('saveTestStatus: failed — could not obtain database connection');
             return;
         }
 
@@ -964,18 +783,15 @@ class OAuthUtility extends Data
                 ['app_name = ?' => $appName]
             );
             if ($affected === 0) {
-                $this->customlog('saveTestStatus: provider not found for app_name: ' . $appName);
+                $this->oidcLogger->customlog('saveTestStatus: provider not found for app_name: ' . $appName);
             }
         } catch (\Exception $e) {
-            $this->customlog('saveTestStatus: failed — ' . $e->getMessage());
+            $this->oidcLogger->customlog('saveTestStatus: failed — ' . $e->getMessage());
         }
     }
 
     /**
      * Persist the OIDC test result to the provider record by numeric ID (preferred).
-     *
-     * This is the redirect-safe variant: the provider_id is passed through the
-     * OAuth state parameter and survives the redirect back from the IdP.
      *
      * @param int    $providerId Row `id` from m2oidc_oauth_client_apps
      * @param string $status     'success', 'failed', or 'unsuccessful'
@@ -984,7 +800,7 @@ class OAuthUtility extends Data
     public function saveTestStatusById(int $providerId, string $status): void
     {
         if ($providerId <= 0) {
-            $this->customlog('saveTestStatusById: skipped — invalid provider ID');
+            $this->oidcLogger->customlog('saveTestStatusById: skipped — invalid provider ID');
             return;
         }
 
@@ -993,7 +809,7 @@ class OAuthUtility extends Data
         $tableName  = $this->appResource->getMainTable();
 
         if ($connection === false) {
-            $this->customlog('saveTestStatusById: failed — could not obtain database connection');
+            $this->oidcLogger->customlog('saveTestStatusById: failed — could not obtain database connection');
             return;
         }
 
@@ -1004,15 +820,12 @@ class OAuthUtility extends Data
                 ['id = ?' => $providerId]
             );
         } catch (\Exception $e) {
-            $this->customlog('saveTestStatusById: failed — ' . $e->getMessage());
+            $this->oidcLogger->customlog('saveTestStatusById: failed — ' . $e->getMessage());
         }
     }
 
     /**
      * Persist received OIDC claim keys to the provider record.
-     *
-     * Stored as JSON array in the `received_oidc_claims` column so the
-     * admin UI can offer a dropdown for attribute mapping.
      *
      * @param int      $providerId Row `id` from m2oidc_oauth_client_apps
      * @param string[] $claimKeys  Flat list of claim key names
@@ -1030,7 +843,7 @@ class OAuthUtility extends Data
         $tableName  = $this->appResource->getMainTable();
 
         if ($connection === false) {
-            $this->customlog('saveReceivedOidcClaims: failed — could not obtain database connection');
+            $this->oidcLogger->customlog('saveReceivedOidcClaims: failed — could not obtain database connection');
             return;
         }
 
@@ -1041,7 +854,7 @@ class OAuthUtility extends Data
                 ['id = ?' => $providerId]
             );
         } catch (\Exception $e) {
-            $this->customlog('saveReceivedOidcClaims: failed — ' . $e->getMessage());
+            $this->oidcLogger->customlog('saveReceivedOidcClaims: failed — ' . $e->getMessage());
         }
     }
 
@@ -1059,8 +872,8 @@ class OAuthUtility extends Data
     /**
      * Update specific fields on a provider row (e.g. PKCE code_verifier).
      *
-     * @param int   $providerId Row `id` from m2oidc_oauth_client_apps
-     * @param array $data       Column => value pairs to update
+     * @param int                  $providerId Row `id` from m2oidc_oauth_client_apps
+     * @param array<string, mixed> $data       Column => value pairs to update
      */
     public function saveProviderData(int $providerId, array $data): void
     {
@@ -1072,14 +885,14 @@ class OAuthUtility extends Data
         $tableName  = $this->appResource->getMainTable();
 
         if ($connection === false) {
-            $this->customlog('saveProviderData: failed — could not obtain database connection');
+            $this->oidcLogger->customlog('saveProviderData: failed — could not obtain database connection');
             return;
         }
 
         try {
             $connection->update($tableName, $data, ['id = ?' => $providerId]);
         } catch (\Exception $e) {
-            $this->customlog('saveProviderData: failed — ' . $e->getMessage());
+            $this->oidcLogger->customlog('saveProviderData: failed — ' . $e->getMessage());
         }
     }
 }

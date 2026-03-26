@@ -23,8 +23,7 @@ class TestResults
      *
      * @param \Exception|null $exception    Exception to display on failure
      * @param bool            $hasException Whether an exception occurred
-     * @param array           $data         Test result data to render
-     * @psalm-param array{mail?: mixed|string, userinfo?: array|mixed, debug?: array} $data
+     * @param array<string, mixed> $data Test result data to render
      */
     public function output(\Exception|null $exception = null, bool $hasException = false, array $data = []): string
     {

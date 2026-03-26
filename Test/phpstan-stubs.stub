@@ -70,6 +70,42 @@ interface ResponseInterface
 {
 }
 
+interface CacheInterface
+{
+    /**
+     * Load data from cache by id.
+     * Returns false if no cache entry exists.
+     *
+     * @param  string $identifier
+     * @return string|false
+     */
+    public function load($identifier): string|false;
+
+    /**
+     * Save data.
+     *
+     * @param string               $data
+     * @param string               $identifier
+     * @param array<int|string, mixed> $tags
+     * @param int|null                 $lifeTime
+     */
+    public function save($data, $identifier, array $tags = [], $lifeTime = null): bool;
+
+    /**
+     * Remove cached data by identifier.
+     *
+     * @param string $identifier
+     */
+    public function remove($identifier): bool;
+
+    /**
+     * Clean cached data by specific tag.
+     *
+     * @param array<string, mixed> $tags
+     */
+    public function clean(array $tags = []): bool;
+}
+
 namespace Magento\Framework\App\Response\Http;
 
 class FileFactory
