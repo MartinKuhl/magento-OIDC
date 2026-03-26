@@ -100,7 +100,7 @@ Fix all the mentioned issue and warnings. Use sub-agents where applicable. DO no
 - 
 
 ### LATER - more complex ###:
--
+- what is missing to use this plugin in a production environment? What would be needed to make it production ready?
 
 Nächster Schritt (nach Stabilisierung):
 PHPStan: Level 4
