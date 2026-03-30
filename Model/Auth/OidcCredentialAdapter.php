@@ -26,14 +26,6 @@ use M2Oidc\OAuth\Helper\OAuthSecurityHelper;
 
 class OidcCredentialAdapter implements StorageInterface
 {
-    /**
-     * @deprecated 3.0.0 Use OAuthSecurityHelper::createOidcAuthToken() instead. Will be removed in v4.0.0.
-     *             Value 'OIDC_VERIFIED_USER' is actively rejected inside authenticate() — it can never
-     *             be used to log in. Kept only so external code referencing this constant gets a
-     *             deprecation warning from static analysis tools rather than a fatal error at runtime.
-     */
-    public const OIDC_TOKEN_MARKER = 'OIDC_VERIFIED_USER';
-
     /** @var UserFactory|null */
     private ?UserFactory $userFactory = null;
 

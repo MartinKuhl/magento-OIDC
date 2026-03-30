@@ -66,9 +66,12 @@
         </arguments>
     </type>
 
-    <!-- OidcRateLimiter: default strategy is FixedWindowStrategy (file/Redis/Memcached safe).
-         To enable the sliding-window strategy on Redis, inject OidcSlidingWindowRateLimiter
-         (defined below) wherever OidcRateLimiter is used. -->
+    <!-- OidcRateLimiter: default strategy is FixedWindowStrategy (safe for all cache backends).
+         On multi-server deployments FixedWindowStrategy is already HA-correct as long as
+         Magento's cache backend is shared (Redis/Memcached) — it uses CacheInterface, not
+         local files.  To enable burst-tolerant true sliding-window rate limiting on Redis,
+         inject OidcSlidingWindowRateLimiter (virtual type defined below) in the controllers
+         that construct OidcRateLimiter. -->
     <type name="M2Oidc\OAuth\Model\Security\OidcRateLimiter">
         <arguments>
             <argument name="strategy" xsi:type="object">M2Oidc\OAuth\Model\Security\RateLimiterStrategy\FixedWindowStrategy</argument>
@@ -83,12 +86,20 @@
         </arguments>
     </virtualType>
 
-    <!-- AtomicCacheInterface: default preference is FileAtomicCache (load+remove, safe for single-server).
-         For Redis stores, switch to RedisAtomicCache (Lua GETDEL) by overriding this preference:
-         <preference for="M2Oidc\OAuth\Model\Cache\AtomicCacheInterface"
-                     type="M2Oidc\OAuth\Model\Cache\RedisAtomicCache"/> -->
+    <!-- AtomicCacheInterface: RedisAtomicCache is the default.
+         When Magento's cache backend is Redis (Cm_Cache_Backend_Redis), it executes a
+         Lua GETDEL script for true atomic read-and-delete — eliminating the TOCTOU window
+         on state tokens, nonces, and PKCE verifiers across all web nodes.
+         When Redis is not the active cache backend, it transparently falls back to the old
+         sequential load+remove behaviour (identical to the former FileAtomicCache default).
+         Production deployments must configure Magento's cache backend to use Redis so that
+         tokens stored on one node are readable on all other nodes:
+           'cache' => ['frontend' => ['default' => ['backend' => 'Cm_Cache_Backend_Redis', ...]]]
+         Session storage should also use Redis so OIDC session data (oidc_id_token, etc.)
+         is shared across nodes:
+           'session' => ['save' => 'redis', 'redis' => [...]] -->
     <preference for="M2Oidc\OAuth\Model\Cache\AtomicCacheInterface"
-                type="M2Oidc\OAuth\Model\Cache\FileAtomicCache"/>
+                type="M2Oidc\OAuth\Model\Cache\RedisAtomicCache"/>
 
     <!-- Provider Save controller Dependencies (Phase 4: dual-write to normalized tables) -->
     <type name="M2Oidc\OAuth\Controller\Adminhtml\Provider\Save">

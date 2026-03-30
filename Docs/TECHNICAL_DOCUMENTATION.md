@@ -36,11 +36,11 @@ This Magento 2 module adds **OAuth 2.0 / OpenID Connect** single sign-on for bot
 - **RP-Initiated Logout**: on admin logout, the `OidcLogoutPlugin` captures session tokens before destruction, calls the IdP's `end_session_endpoint`, and optionally revokes the access token via RFC 7009. Supports both standard OIDC and Authelia Forward-Auth logout modes. When the IdP only allows registering a single Post Logout Redirect URI, both admin and customer flows are routed through a unified callback (`m2oidc/actions/postlogout`) that uses a context-prefix in the `state` parameter to determine the final redirect destination.
 - **Back-Channel Logout**: `POST /m2oidc/actions/backchannellogout` accepts a signed JWT logout token from the IdP and destroys the matching PHP session via `OidcSessionRegistry`. The `aud` claim is supported in both string and array formats per the OIDC spec.
 - **Hybrid flow nonce validation (M-06)**: `ReadAuthorizationResponse` validates the nonce in the `id_token` from the token endpoint even when user data is sourced from the userinfo endpoint, preventing replay attacks in hybrid flows.
-- **Debug log cleanup**: a dedicated cron job (`Cron/LogCleanup.php`, registered as `m2oidc_log_rotation`, scheduled `0 3 * * *`) deletes `var/log/M2Oidc.log` and disables debug logging when the log exceeds 7 days or when debug logging has been disabled in the admin UI. `Cron/LogRotation.php` is a `@deprecated 3.0.8` backward-compatibility wrapper that extends `LogCleanup`.
+- **Debug log cleanup**: a dedicated cron job (`Cron/LogCleanup.php`, registered as `m2oidc_log_rotation`, scheduled `0 3 * * *`) deletes `var/log/M2Oidc.log` and disables debug logging when the log exceeds 7 days or when debug logging has been disabled in the admin UI.
 - **OIDC discovery auto-refresh**: `Cron/RefreshOidcDiscovery.php` (registered as `m2oidc_refresh_oidc_discovery`, schedule `0 */6 * * *`) re-fetches `.well-known/openid-configuration` for every active provider every 6 hours and dirty-checks before writing, keeping endpoints up-to-date without requiring a manual provider save.
 - **Structured logging service**: `Logger/OidcLogger.php` is the dedicated logging service extracted from `OAuthUtility`. Supports dual format: legacy Monolog envelope (default) and true JSON Lines (`{"ts":"...","level":"debug","message":"..."}`) controlled by `oidc/logging/json_lines` config. Automatically masks sensitive fields.
 - **Extracted services (god-class split)**: `OAuthUtility` is now a thin facade. `Logger/OidcLogger` handles all log output, `Model/Provider/ProviderResolver` handles per-request provider context and resolution, `Model/Config/OidcConfigReader` maps 80+ config keys to `m2oidc_oauth_client_apps` columns. `Helper/Data` delegates all DB operations to `Model/ResourceModel/OidcProviderRepository`.
-- **Atomic token consumption**: `Model/Cache/AtomicCacheInterface` (`getAndDelete()`) eliminates the TOCTOU race condition in one-time token consumption (nonces, state tokens, PKCE verifiers, ephemeral auth tokens). Default implementation: `FileAtomicCache` (load + remove; safe for single-server). Redis deployments can switch to `RedisAtomicCache` (Lua `GETDEL`) via DI preference override.
+- **Atomic token consumption**: `Model/Cache/AtomicCacheInterface` (`getAndDelete()`) eliminates the TOCTOU race condition in one-time token consumption (nonces, state tokens, PKCE verifiers, ephemeral auth tokens). Default implementation: `RedisAtomicCache` — uses Lua `GETDEL` for true atomicity when Magento's cache backend is `Cm_Cache_Backend_Redis`; transparently falls back to sequential load + remove when Redis is not the active backend, providing identical single-server safety to the former `FileAtomicCache` default. **Production/HA deployments must configure Magento's cache and session backends to use Redis** so that tokens and session data are shared across all web nodes; see Section 5 (High Availability deployment).
 - **Per-provider attribute mapper overrides**: `Model/Attribute/MapperPool` is a DI-registered registry that resolves the correct `AttributeMapperInterface` for a given provider and type. Third-party modules inject per-provider overrides via `{providerId}_{type}` keys in `etc/di.xml`. Both `AdminUserCreator` and `CustomerUserCreator` resolve mappers through the pool before falling back to the default.
 - **Per-attribute sync control**: `AdminProfileSyncService` and `CustomerProfileSyncService` respect per-attribute `sync_on_sso` flags stored in `m2oidc_oauth_attribute_mappings`. A `shouldSync()` guard skips individual attributes where the normalized mapping row exists but `sync_on_sso = 0`, while legacy mode (no normalized row) always syncs.
 - **Attribute mapping hook**: fires `oidc_after_attribute_mapping` event after all OIDC claims have been mapped; transport keys: `provider_id` (int), `mapped_attrs` (DataObject — writable), `raw_claims` (DataObject — read-only snapshot). Observers may mutate `mapped_attrs` before user creation or profile sync.
@@ -444,7 +444,7 @@ Implements `Magento\Backend\Model\Auth\Credential\StorageInterface`. This is the
 
 | Method | Signature | Returns | Description |
 |---|---|---|---|
-| `authenticate` | `($username, $password)` | `bool` | Validates the single-use ephemeral OIDC auth token (300 s cache TTL; generated by `OAuthSecurityHelper::createOidcAuthToken()`). Loads the admin user by email, checks active status and role assignment. Fires `admin_user_authenticate_before` and `admin_user_authenticate_after` events with `oidc_auth => true`. Note: `OIDC_TOKEN_MARKER` (`OIDC_VERIFIED_USER`) is deprecated and actively rejected — never use it to authenticate. |
+| `authenticate` | `($username, $password)` | `bool` | Validates the single-use ephemeral OIDC auth token (300 s cache TTL; generated by `OAuthSecurityHelper::createOidcAuthToken()`). Loads the admin user by email, checks active status and role assignment. Fires `admin_user_authenticate_before` and `admin_user_authenticate_after` events with `oidc_auth => true`. |
 | `login` | `($username, $password)` | `$this` | Calls `authenticate()`, then records the login and reloads the user. |
 | `reload` | `()` | `$this` | Reloads the user model from the database. |
 
@@ -454,15 +454,9 @@ Single-method interface for atomic read-and-delete operations on the cache layer
 
 | Method | Signature | Returns | Description |
 |---|---|---|---|
-| `getAndDelete` | `(string $key): ?string` | `string\|null` | Returns the cached value for `$key` and removes it in the same logical operation. Returns `null` if the key does not exist or has expired. Default implementation: `FileAtomicCache` (load + remove; safe for single-server). Override DI preference with `RedisAtomicCache` for true atomic `GETDEL` on Redis. |
+| `getAndDelete` | `(string $key): ?string` | `string\|null` | Returns the cached value for `$key` and removes it in the same logical operation. Returns `null` if the key does not exist or has expired. Default implementation: `RedisAtomicCache` — Lua `GETDEL` when Magento's cache backend is Redis (true atomicity, HA-safe); sequential load + remove fallback otherwise (safe for single-server). |
 
-**DI preference** (default):
-```xml
-<preference for="M2Oidc\OAuth\Model\Cache\AtomicCacheInterface"
-            type="M2Oidc\OAuth\Model\Cache\FileAtomicCache"/>
-```
-
-Override for Redis deployments:
+**DI preference** (default — `RedisAtomicCache` with transparent fallback):
 ```xml
 <preference for="M2Oidc\OAuth\Model\Cache\AtomicCacheInterface"
             type="M2Oidc\OAuth\Model\Cache\RedisAtomicCache"/>
@@ -688,6 +682,60 @@ public function aroundExecute($subject, callable $proceed, \Magento\Framework\Ev
     return $proceed($observer);
 }
 ```
+
+---
+
+### Pattern 8: High Availability / Multi-Server Deployment
+
+For production deployments running multiple web nodes (load-balanced), two backend systems must be shared across all nodes so that OIDC state is consistent regardless of which node handles a request.
+
+#### Cache backend — Redis (required for atomic token operations)
+
+Configure Magento's default cache to use Redis in `app/etc/env.php`:
+
+```php
+'cache' => [
+    'frontend' => [
+        'default' => [
+            'backend' => 'Cm_Cache_Backend_Redis',
+            'backend_options' => [
+                'server'   => '127.0.0.1',
+                'port'     => '6379',
+                'database' => '0',
+            ],
+        ],
+    ],
+],
+```
+
+`RedisAtomicCache` (the default `AtomicCacheInterface` implementation) detects `Cm_Cache_Backend_Redis` via reflection and switches to a Lua `GETDEL` script for true atomic read-and-delete. This eliminates the TOCTOU window on state tokens, nonces, PKCE verifiers, and ephemeral auth tokens across all web nodes.
+
+> When Redis is **not** the active backend, `RedisAtomicCache` falls back transparently to sequential load + remove — identical behaviour to the former `FileAtomicCache`. No configuration override is needed for single-server deployments.
+
+#### Session backend — Redis (required for shared session data)
+
+OIDC session keys (`oidc_id_token`, `oidc_access_token`, `oidc_provider_id`, nonce cookies, etc.) are stored in the PHP session. For multi-node setups, sessions must be shared:
+
+```php
+'session' => [
+    'save'  => 'redis',
+    'redis' => [
+        'host'     => '127.0.0.1',
+        'port'     => '6379',
+        'database' => '2',
+    ],
+],
+```
+
+#### Rate limiter — already HA-safe
+
+`FixedWindowStrategy` (the default `OidcRateLimiter`) uses `CacheInterface` — i.e., Magento's shared cache backend. Once you configure the cache backend to Redis, rate limiting is automatically shared across all nodes. No DI change is needed for the rate limiter in most HA setups.
+
+To use true sliding-window semantics (Redis Lua ZADD/ZCOUNT), inject the `OidcSlidingWindowRateLimiter` virtual type in the controller(s) where burst tolerance is desired.
+
+#### HTTP Timeout — per provider
+
+If your IdP responds slowly (e.g., across cloud regions), set the **HTTP Timeout** field in the provider's OAuth Settings tab to a value that accounts for latency without hanging PHP-FPM workers. The default is 30 seconds; a per-provider `http_timeout` column in `m2oidc_oauth_client_apps` controls this value for both token-endpoint requests (`Curl::callAPI`) and JWKS fetches (`JwtVerifier::fetchJwks`).
 
 ---
 
@@ -1164,6 +1212,7 @@ Key columns:
 | `is_active`, `login_type`, `sort_order` | Multi-provider: activation, scope ('customer'/'admin'/'both'), display order |
 | `idp_initiated_enabled` | Smallint (default 0); enables IdP-Initiated SSO for this provider (Login Options tab) |
 | `jwks_cache_ttl` | Int, nullable, default 86400. Per-provider JWKS public-key cache lifetime in seconds. Read by `JwtVerifier` via `OAuthConstants::JWKS_CACHE_TTL`; falls back to 86400 when null. Run `bin/magento setup:upgrade` after adding this column via schema migration. |
+| `http_timeout` | Smallint, not null, default 30. Per-provider HTTP connect/read timeout in seconds for token endpoint and JWKS fetch calls. Read by `Curl::callAPI()` and `JwtVerifier::fetchJwks()` via `OAuthConstants::HTTP_TIMEOUT`. Configurable in the **OAuth Settings** tab of the provider edit form (min 5, max 300). A single retry on empty response fires after a 500 ms backoff; HTTP 4xx/5xx errors are not retried. |
 | `claim_encoding` | Varchar; `'none'` (default) or `'base64'`. Set to `'base64'` for Zitadel providers that Base64-encode their claim values; `OidcAuthenticationService::flattenAttributes()` decodes, UTF-8-validates, and rejects decoded strings containing C0/C1 control characters before use. |
 | `public_client` | Smallint 0\|1 (default 0). When enabled, `AccessTokenRequest` omits `client_secret` from the token exchange — required for RFC 6749 §2.1 public clients (e.g., Zitadel PKCE apps without a client secret). |
 | `display_name`, `button_label`, `button_color` | Multi-provider UI customization |

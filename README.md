@@ -188,6 +188,7 @@ Replace `your-magento-site.com` with your actual domain. The protocol **must be 
 | JWKS Endpoint | (Optional) JWT verification keys URL | `https://auth.example.com/api/oidc/jwks` |
 | Logout URL | (Optional) IdP logout URL | `https://auth.example.com/api/oidc/logout` |
 | Claim Encoding | Set to `base64` for providers that Base64-encode claim values (e.g. Zitadel) | `none` (default), `base64` |
+| HTTP Timeout (seconds) | Per-provider connect/read timeout for token endpoint and JWKS calls. A single retry fires after 500 ms on empty response. Min 5, Max 300. | `30` (default) |
 | Public Client | Enable for providers that use PKCE without a client secret (RFC 6749 §2.1) | `No` (default) |
 
 **Tip**: Most OIDC providers support auto-discovery via `.well-known/openid-configuration`. Check your IdP's documentation.
@@ -493,6 +494,44 @@ $customerLoginUrl = $oauthHelper->getSPInitiatedUrl();
 5. **Contact support**:
    - GitHub Issues: (repository URL)
    - Commercial Support: M2Oidc support portal
+
+---
+
+## High Availability / Multi-Server Deployments
+
+When running Magento on multiple web nodes behind a load balancer, OIDC state (tokens, nonces, PKCE verifiers) must be shared across all nodes.
+
+### Required: Redis Cache Backend
+
+Configure Magento's cache backend to use Redis (`app/etc/env.php`):
+
+```php
+'cache' => [
+    'frontend' => [
+        'default' => [
+            'backend' => 'Cm_Cache_Backend_Redis',
+            'backend_options' => ['server' => '127.0.0.1', 'port' => '6379', 'database' => '0'],
+        ],
+    ],
+],
+```
+
+The module's `RedisAtomicCache` (default `AtomicCacheInterface` implementation) auto-detects the Redis backend and switches to a Lua `GETDEL` script for **true atomic** read-and-delete of one-time tokens across all nodes. On single-server or non-Redis setups it transparently falls back to sequential load + remove — **no configuration change required**.
+
+### Required: Redis Session Backend
+
+OIDC session data (id_token, access_token, provider_id) must also be shared:
+
+```php
+'session' => [
+    'save'  => 'redis',
+    'redis' => ['host' => '127.0.0.1', 'port' => '6379', 'database' => '2'],
+],
+```
+
+### Rate Limiter
+
+The default `FixedWindowStrategy` reads from Magento's shared cache — it becomes HA-safe automatically once the Redis cache backend is configured. No DI change needed.
 
 ---
 

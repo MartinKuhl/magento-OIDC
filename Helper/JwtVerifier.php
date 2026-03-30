@@ -266,7 +266,8 @@ class JwtVerifier
         $curl->setConfig(
             [
             'header' => false,
-            'CURLOPT_TIMEOUT' => 30,
+            'CURLOPT_TIMEOUT' => (int) ($this->oauthUtility->getStoreConfig(OAuthConstants::HTTP_TIMEOUT)
+                                  ?: OAuthConstants::HTTP_TIMEOUT_DEFAULT),
             'CURLOPT_FOLLOWLOCATION' => true,
             'CURLOPT_RETURNTRANSFER' => true,
             'CURLOPT_SSL_VERIFYPEER' => true,

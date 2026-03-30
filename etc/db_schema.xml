@@ -85,6 +85,11 @@
       <column xsi:type="int" name="jwks_cache_ttl" nullable="true" default="86400"
               comment="JWKS public-key cache lifetime in seconds (default 86400)" />
 
+      <!-- Per-provider HTTP connect/read timeout in seconds. Reduce for faster failure detection
+           on slow IdPs. Min 5 s recommended; 0 falls back to the 30 s default. -->
+      <column xsi:type="smallint" name="http_timeout" nullable="false" default="30"
+              comment="Per-provider HTTP timeout in seconds (default: 30)" />
+
       <constraint xsi:type="primary" referenceId="PRIMARY">
          <column name="id" />
       </constraint>

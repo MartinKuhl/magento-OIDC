@@ -56,7 +56,7 @@ class OidcCredentialAdapterTest extends TestCase
         $this->securityHelper->method('validateAndConsumeOidcAuthToken')
             ->willReturnCallback(
                 static fn(string $username, string $password): bool
-                    => $password === OidcCredentialAdapter::OIDC_TOKEN_MARKER
+                    => $password === 'OIDC_VERIFIED_USER'
             );
 
         $this->oauthUtility->method('customlog');
@@ -133,7 +133,7 @@ class OidcCredentialAdapterTest extends TestCase
         $user = $this->makeActiveUserMock();
         $this->singleUserCollection($user);
 
-        $result = $this->adapter->authenticate('admin@example.com', OidcCredentialAdapter::OIDC_TOKEN_MARKER);
+        $result = $this->adapter->authenticate('admin@example.com', 'OIDC_VERIFIED_USER');
 
         $this->assertTrue($result);
     }
@@ -150,7 +150,7 @@ class OidcCredentialAdapterTest extends TestCase
                 $calls[] = ['event' => $event, 'data' => $data];
             });
 
-        $this->adapter->authenticate('admin@example.com', OidcCredentialAdapter::OIDC_TOKEN_MARKER);
+        $this->adapter->authenticate('admin@example.com', 'OIDC_VERIFIED_USER');
 
         $this->assertSame('admin_user_authenticate_before', $calls[0]['event']);
         $this->assertArrayHasKey('oidc_auth', $calls[0]['data']);
@@ -175,7 +175,7 @@ class OidcCredentialAdapterTest extends TestCase
 
         $this->expectException(AuthenticationException::class);
 
-        $this->adapter->authenticate('nobody@example.com', OidcCredentialAdapter::OIDC_TOKEN_MARKER);
+        $this->adapter->authenticate('nobody@example.com', 'OIDC_VERIFIED_USER');
     }
 
     public function testAuthenticateThrowsForInactiveUser(): void
@@ -192,7 +192,7 @@ class OidcCredentialAdapterTest extends TestCase
         $this->expectException(AuthenticationException::class);
         $this->expectExceptionMessageMatches('/inactive/i');
 
-        $this->adapter->authenticate('inactive@example.com', OidcCredentialAdapter::OIDC_TOKEN_MARKER);
+        $this->adapter->authenticate('inactive@example.com', 'OIDC_VERIFIED_USER');
     }
 
     public function testAuthenticateThrowsForUserWithNoRole(): void
@@ -210,7 +210,7 @@ class OidcCredentialAdapterTest extends TestCase
         $this->expectException(AuthenticationException::class);
         $this->expectExceptionMessageMatches('/role/i');
 
-        $this->adapter->authenticate('norole@example.com', OidcCredentialAdapter::OIDC_TOKEN_MARKER);
+        $this->adapter->authenticate('norole@example.com', 'OIDC_VERIFIED_USER');
     }
 
     // -------------------------------------------------------------------------
@@ -230,7 +230,7 @@ class OidcCredentialAdapterTest extends TestCase
         $this->userFactory->method('create')->willReturn($reloadedUser);
         $this->userResource->method('load');
 
-        $result = $this->adapter->login('admin@example.com', OidcCredentialAdapter::OIDC_TOKEN_MARKER);
+        $result = $this->adapter->login('admin@example.com', 'OIDC_VERIFIED_USER');
 
         $this->assertSame($this->adapter, $result, 'login() should return $this');
     }
@@ -271,7 +271,7 @@ class OidcCredentialAdapterTest extends TestCase
     {
         $user = $this->makeActiveUserMock(42);
         $this->singleUserCollection($user);
-        $this->adapter->authenticate('admin@example.com', OidcCredentialAdapter::OIDC_TOKEN_MARKER);
+        $this->adapter->authenticate('admin@example.com', 'OIDC_VERIFIED_USER');
 
         $data = $this->adapter->__serialize();
 
@@ -336,7 +336,7 @@ class OidcCredentialAdapterTest extends TestCase
         $user = $this->makeActiveUserMock();
         $this->singleUserCollection($user);
 
-        $result = $this->adapter->authenticate('admin@example.com', OidcCredentialAdapter::OIDC_TOKEN_MARKER);
+        $result = $this->adapter->authenticate('admin@example.com', 'OIDC_VERIFIED_USER');
         $this->assertTrue($result);
     }
 
@@ -349,7 +349,7 @@ class OidcCredentialAdapterTest extends TestCase
         $user = $this->makeActiveUserMock(7);
         $this->singleUserCollection($user);
 
-        $this->adapter->authenticate('admin@example.com', OidcCredentialAdapter::OIDC_TOKEN_MARKER);
+        $this->adapter->authenticate('admin@example.com', 'OIDC_VERIFIED_USER');
 
         // Calling getUsername() should be proxied to the user mock
         $username = $this->adapter->__call('getUsername', []);
@@ -379,7 +379,7 @@ class OidcCredentialAdapterTest extends TestCase
         $user = $this->makeActiveUserMock();
         $this->singleUserCollection($user);
 
-        $this->adapter->authenticate('admin@example.com', OidcCredentialAdapter::OIDC_TOKEN_MARKER);
+        $this->adapter->authenticate('admin@example.com', 'OIDC_VERIFIED_USER');
 
         $this->assertTrue($this->adapter->getIsActive());
     }
@@ -394,7 +394,7 @@ class OidcCredentialAdapterTest extends TestCase
         $user = $this->makeActiveUserMock(99);
         $this->singleUserCollection($user);
 
-        $this->adapter->authenticate('admin@example.com', OidcCredentialAdapter::OIDC_TOKEN_MARKER);
+        $this->adapter->authenticate('admin@example.com', 'OIDC_VERIFIED_USER');
 
         $this->assertSame(99, $this->adapter->getId());
     }

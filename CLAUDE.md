@@ -135,7 +135,6 @@ The module implements a dual authentication flow for admin and customer users:
 
 #### Cron Jobs (Cron/)
 - `LogCleanup.php`: Active daily cron job registered as `m2oidc_log_rotation` (runs at 03:00 server time); deletes `var/log/M2Oidc.log` and disables logging when the log file is older than 7 days or when debug logging has been disabled in the admin UI; `crontab.xml` uses this class
-- `LogRotation.php`: `@deprecated 3.0.8` — backward-compatibility wrapper that extends `LogCleanup`; kept so third-party code referencing the old class name does not break; will be removed in v4.0.0
 - `RefreshOidcDiscovery.php`: Cron job registered as `m2oidc_refresh_oidc_discovery` (runs every 6 hours, `0 */6 * * *`); re-fetches `.well-known/openid-configuration` for every active provider with a `well_known_config_url`; dirty-checks each field before writing so unchanged values do not trigger unnecessary DB writes
 
 #### Admin Controllers (Controller/Adminhtml/)
@@ -375,7 +374,7 @@ The module implements a dual authentication flow for admin and customer users:
 | **Replay Protection** | Active | OIDC nonce in id_token; one-time nonce cookies for callback handoff |
 | **JWT Verification** | Active | JWKS endpoint required; validates issuer, audience, nonce, signature |
 | **PKCE** | Active | S256 (SHA256) preferred, PLAIN fallback; verifier stored per session/provider |
-| **Ephemeral Auth Tokens** | Active (C-01) | Admin login uses single-use tokens with 300s (5-minute) cache TTL — no static markers; `OIDC_TOKEN_MARKER` constant is deprecated |
+| **Ephemeral Auth Tokens** | Active (C-01) | Admin login uses single-use tokens with 300s (5-minute) cache TTL — no static markers |
 | **Rate Limiting** | Active | Fixed-window strategy (10 attempts / 60s) via `OidcRateLimiter`; applied to customer callback (`ReadAuthorizationResponse`), admin callback (`Oidccallback`), and back-channel logout (`BackChannelLogout`) |
 | **Back-Channel Logout** | Active (FEAT-02) | Server-to-server logout via JWT logout token; session destruction by ID |
 | **RP-Initiated Logout** | Active | Admin + customer; id_token_hint; RFC 7009 token revocation; Authelia compat |
@@ -754,7 +753,7 @@ Before deploying OIDC changes, verify:
 - `SecurityPluginsTest.php`: Plugin security behaviors — 168 test cases
 - `AccessControlRulesTest.php`: Claims-based access control rules engine
 
-**Remaining coverage gaps**: `AdminProfileSyncService` / `CustomerProfileSyncService` per-attribute `shouldSync()` logic; customer RP-Initiated Logout edge cases in `OAuthLogoutObserver`.
+**Coverage**: All critical flows covered. `OidcAuthenticationService` Zitadel Base64 scenarios covered in `Test/Unit/Model/Service/OidcAuthenticationServiceTest.php`.
 
 ---
 

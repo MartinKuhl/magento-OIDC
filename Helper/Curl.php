@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace M2Oidc\OAuth\Helper;
 
 use Magento\Framework\HTTP\Adapter\CurlFactory;
+use M2Oidc\OAuth\Helper\OAuthConstants;
 
 /**
  * HTTP client helper for OAuth/OIDC API requestsfinal .
@@ -106,7 +107,8 @@ class Curl
             'CURLOPT_ENCODING' => "",
             'CURLOPT_RETURNTRANSFER' => true,
             'CURLOPT_AUTOREFERER' => true,
-            'CURLOPT_TIMEOUT' => 30,
+            'CURLOPT_TIMEOUT' => (int) ($this->oauthUtility->getStoreConfig(OAuthConstants::HTTP_TIMEOUT)
+                                  ?: OAuthConstants::HTTP_TIMEOUT_DEFAULT),
             'CURLOPT_MAXREDIRS' => 10,
             'CURLOPT_SSL_VERIFYPEER' => true,
             'CURLOPT_SSL_VERIFYHOST' => 2,
@@ -118,8 +120,20 @@ class Curl
 
         $method = $data === '' ? 'GET' : 'POST';
         $curl->setConfig($options);
-        $curl->write($method, $url, '1.1', $headers, $data);
-        $content = $curl->read();
+
+        // Single retry on empty response (transient connection / timeout error).
+        // Does not retry HTTP 4xx/5xx — those are real IdP errors.
+        $content  = '';
+        $attempts = 0;
+        do {
+            if ($attempts > 0) {
+                usleep(500_000); // 500 ms backoff before retry
+            }
+            $curl->write($method, $url, '1.1', $headers, $data);
+            $content = $curl->read();
+            $attempts++;
+        } while ($content === '' && $attempts < 2);
+
         $httpCode = $curl->getInfo(CURLINFO_HTTP_CODE);
         $curl->close();
 

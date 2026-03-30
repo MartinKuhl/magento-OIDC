@@ -78,7 +78,7 @@ class OidcAuthenticationService
             === OAuthConstants::CLAIM_ENCODING_BASE64;
 
         foreach ($arr as $key => $resource) {
-            $resolvedKey = $decodeBase64 ? $this->tryBase64Decode((string) $key) : (string) $key;
+            $resolvedKey = ($decodeBase64 && $keyPrefix === '') ? $this->tryBase64Decode((string) $key) : (string) $key;
             if (is_array($resource) || is_object($resource)) {
                 $newPrefix = $keyPrefix === '' || $keyPrefix === '0'
                     ? $resolvedKey

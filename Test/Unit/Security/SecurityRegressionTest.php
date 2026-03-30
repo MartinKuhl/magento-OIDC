@@ -207,11 +207,11 @@ class SecurityRegressionTest extends TestCase
         $markerPos = strpos($content, 'isOidcAuthToken');
 
         $this->assertNotFalse($resetPos, 'SEC-06: isOidcAuth reset not found in beforeLogin()');
-        $this->assertNotFalse($markerPos, 'SEC-06: OIDC_TOKEN_MARKER check not found');
+        $this->assertNotFalse($markerPos, 'SEC-06: isOidcAuthToken check not found');
         $this->assertLessThan(
             $markerPos,
             $resetPos,
-            'SEC-06: isOidcAuth must be reset BEFORE the OIDC_TOKEN_MARKER check'
+            'SEC-06: isOidcAuth must be reset BEFORE the isOidcAuthToken check'
         );
     }
 

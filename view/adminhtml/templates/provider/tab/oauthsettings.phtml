@@ -362,6 +362,30 @@ $isPublicClient = (bool)(int) $val('public_client', 0);
                     </small>
                 </td>
             </tr>
+            <tr>
+                <td>
+                    <label for="http_timeout">
+                        <strong><?= $escaper->escapeHtml(__('HTTP Timeout (seconds)')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <input type="number"
+                           id="http_timeout"
+                           name="http_timeout"
+                           class="admin__control-text"
+                           min="5"
+                           max="300"
+                           value="<?= $escaper->escapeHtmlAttr($val('http_timeout', '30')) ?>"
+                           style="width:100px;">
+                    <small class="admin__field-note">
+                        <?= $escaper->escapeHtml(__(
+                            'Maximum seconds to wait for a response from the IdP token endpoint and JWKS endpoint.'
+                            . ' Default: 30. Min: 5, Max: 300.'
+                            . ' Reduce for faster failure detection on slow or unreachable providers.'
+                        )) ?>
+                    </small>
+                </td>
+            </tr>
         </tbody>
     </table>
 </div>

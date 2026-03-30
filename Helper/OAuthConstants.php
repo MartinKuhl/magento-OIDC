@@ -50,6 +50,9 @@ class OAuthConstants
     public const string JWKS_URL = 'jwks_url';
     /** Per-provider JWKS public-key cache TTL in seconds. Default 86400 (24 h). */
     public const string JWKS_CACHE_TTL = 'jwks_cache_ttl';
+    /** Per-provider HTTP connect/read timeout in seconds. */
+    public const string HTTP_TIMEOUT         = 'http_timeout';
+    public const int    HTTP_TIMEOUT_DEFAULT = 30;
     public const string ISSUER = 'samlIssuer';
     public const string DB_FIRSTNAME = 'firstname';
     public const string USER_NAME = 'username';

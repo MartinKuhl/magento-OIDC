@@ -369,6 +369,19 @@ class CustomerProfileSyncServiceTest extends TestCase
         $this->service->syncProfile($customer, ['given_name' => 'NewFirst'], [], ['firstname' => 'given_name'], 2);
     }
 
+    public function testSyncProfileSkipsLastnameWhenSyncOnSsoIsZero(): void
+    {
+        $customer = $this->makeCustomerMock(lastname: 'OldLast');
+        $this->mappingRepository->method('getFullAttributeMap')->with(7)->willReturn([
+            'lastname' => ['sync_on_sso' => 0],
+        ]);
+
+        $customer->expects($this->never())->method('setLastname');
+        $this->customerRepository->expects($this->never())->method('save');
+
+        $this->service->syncProfile($customer, ['family_name' => 'NewLast'], [], ['lastname' => 'family_name'], 7);
+    }
+
     public function testSyncProfileSkipsDobWhenSyncOnSsoIsZero(): void
     {
         $customer = $this->makeCustomerMock(dob: '');

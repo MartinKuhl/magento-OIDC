@@ -92,6 +92,9 @@ class OidcConfigReader
 
         // Claim value encoding
         'claimEncoding'                  => 'claim_encoding',
+
+        // HTTP request timeout
+        'http_timeout'                   => 'http_timeout',
     ];
 
     /**

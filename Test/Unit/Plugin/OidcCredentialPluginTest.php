@@ -49,7 +49,7 @@ class OidcCredentialPluginTest extends TestCase
         $this->oauthUtility->method('customlog');
         $this->securityHelper->method('isOidcAuthToken')
             ->willReturnCallback(
-                static fn(string $p): bool => $p === OidcCredentialAdapter::OIDC_TOKEN_MARKER
+                static fn(string $p): bool => $p === 'OIDC_VERIFIED_USER'
             );
         $this->auth = $this->createMock(Auth::class);
 
@@ -89,7 +89,7 @@ class OidcCredentialPluginTest extends TestCase
         $this->plugin->beforeLogin(
             $this->auth,
             'admin@example.com',
-            OidcCredentialAdapter::OIDC_TOKEN_MARKER
+            'OIDC_VERIFIED_USER'
         );
 
         // aroundGetCredentialStorage must now return the OIDC adapter directly
@@ -109,7 +109,7 @@ class OidcCredentialPluginTest extends TestCase
         $this->plugin->beforeLogin(
             $this->auth,
             'admin@example.com',
-            OidcCredentialAdapter::OIDC_TOKEN_MARKER
+            'OIDC_VERIFIED_USER'
         );
 
         // Second login: normal — must reset the flag
@@ -141,7 +141,7 @@ class OidcCredentialPluginTest extends TestCase
         $this->plugin->beforeLogin(
             $this->auth,
             'admin@example.com',
-            OidcCredentialAdapter::OIDC_TOKEN_MARKER
+            'OIDC_VERIFIED_USER'
         );
 
         // afterLogin should clear the flag
