@@ -35,11 +35,8 @@ class RedisAtomicCache implements AtomicCacheInterface
         "if v then redis.call('DEL', KEYS[1]) end " .
         "return v";
 
-    /** @var CacheInterface Non-atomic fallback */
+    /** @var CacheInterface Non-atomic fallback (also used to derive the cache frontend) */
     private readonly CacheInterface $cache;
-
-    /** @var \Magento\Framework\Cache\FrontendInterface */
-    private readonly \Magento\Framework\Cache\FrontendInterface $cacheFrontend;
 
     /**
      * Key prefix applied by Cm_Cache_Backend_Redis.
@@ -51,18 +48,16 @@ class RedisAtomicCache implements AtomicCacheInterface
     private readonly string $keyPrefix;
 
     /**
-     * @param CacheInterface                                    $cache           Fallback
-     * @param \Magento\Framework\Cache\FrontendInterface        $cacheFrontend   Cache frontend for backend access
-     * @param string                                            $keyPrefix       Redis key prefix (default "zc:")
+     * @param CacheInterface $cache      Fallback for non-Redis environments; also used to reach the
+     *                                   cache frontend via getFrontend() when the backend is Redis.
+     * @param string         $keyPrefix  Redis key prefix (default "zc:")
      */
     public function __construct(
         CacheInterface $cache,
-        \Magento\Framework\Cache\FrontendInterface $cacheFrontend,
         string $keyPrefix = 'zc:'
     ) {
-        $this->cache          = $cache;
-        $this->cacheFrontend  = $cacheFrontend;
-        $this->keyPrefix      = $keyPrefix;
+        $this->cache     = $cache;
+        $this->keyPrefix = $keyPrefix;
     }
 
     /**
@@ -107,7 +102,11 @@ class RedisAtomicCache implements AtomicCacheInterface
     private function tryGetRedisClient(): ?\Credis_Client
     {
         try {
-            $backend = $this->cacheFrontend->getBackend();
+            // Magento\Framework\App\CacheInterface exposes getFrontend() which gives
+            // access to the configured backend.
+            /** @var \Magento\Framework\Cache\FrontendInterface $frontend */
+            $frontend = $this->cache->getFrontend();
+            $backend  = $frontend->getBackend();
             if (!($backend instanceof \Cm_Cache_Backend_Redis)) {
                 return null;
             }
