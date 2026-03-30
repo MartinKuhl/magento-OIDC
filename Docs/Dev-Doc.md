@@ -87,8 +87,7 @@ Fix all the mentioned issue and warnings. Use sub-agents where applicable. DO no
 ##############################################
 
 ### ToDo ###
-- WHY? - Cannot delete the last OIDC provider. At least one provider must remain configured.
-- add log entries when OIDC provider gets imported or exportet via UI or CLI
+- 
 
 ### FIX ###
 - [2026-03-26T18:44:26.196402+00:00] m2oidc_oauth.DEBUG: {"ts":"2026-03-26T18:44:26+00:00","level":"debug","message":"OidcIdentityFieldPlugin: afterSetForm called for Magento\\User\\Block\\User\\Edit\\Tab\\Main\\Interceptor"} [] []

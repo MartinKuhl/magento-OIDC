@@ -119,11 +119,18 @@ class ExportOidcConfig extends Command
         $outputFile = $input->getOption('output');
         $noEncrypt  = (bool) $input->getOption('no-encrypt');
 
+        $this->oauthUtility->customlog(
+            "Export started"
+            . ($providerId !== null ? " for provider ID {$providerId}" : " for all providers")
+            . ($noEncrypt ? " with --no-encrypt (PLAIN TEXT!)" : "")
+        );
+
         // Load providers
         if ($providerId !== null) {
             $pid      = (int) $providerId;
             $provider = $this->oauthUtility->getClientDetailsById($pid);
             if ($provider === null) {
+                $this->oauthUtility->customlog("Export ERROR: Provider ID {$pid} not found");
                 $output->writeln("<error>Provider ID {$pid} not found.</error>");
                 return Command::FAILURE;
             }
@@ -155,6 +162,8 @@ class ExportOidcConfig extends Command
         foreach ($providers as $provider) {
             $row = $this->sanitizeProviderForExport($provider, $noEncrypt);
             $pid = (int) ($provider['id'] ?? 0);
+            $appName = $provider['app_name'] ?? 'unknown';
+            $this->oauthUtility->customlog("Export: provider '{$appName}' (ID: {$pid})");
             if ($pid > 0) {
                 $row['attribute_mappings'] = $this->mappingRepository->getFullAttributeMap($pid);
                 $row['role_mappings']      = [
@@ -176,17 +185,22 @@ class ExportOidcConfig extends Command
         if ($outputFile !== null && $outputFile !== '') {
             // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
             if (file_put_contents($outputFile, $json) === false) {
+                $this->oauthUtility->customlog("Export ERROR: Could not write to file '{$outputFile}'");
                 $output->writeln("<error>Could not write to file: {$outputFile}</error>");
                 return Command::FAILURE;
             }
+            $count = count($exportData['providers']);
+            $this->oauthUtility->customlog("Export complete: {$count} provider(s) written to '{$outputFile}'");
             $output->writeln(
                 sprintf(
                     '<info>Exported %d provider(s) to %s</info>',
-                    count($exportData['providers']),
+                    $count,
                     $outputFile
                 )
             );
         } else {
+            $count = count($exportData['providers']);
+            $this->oauthUtility->customlog("Export complete: {$count} provider(s) sent to stdout");
             $output->write($json);
         }
 

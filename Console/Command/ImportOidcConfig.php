@@ -158,6 +158,13 @@ class ImportOidcConfig extends Command
             $output->writeln('<comment>[DRY RUN] No changes will be persisted.</comment>');
         }
 
+        $this->oauthUtility->customlog(
+            "Import started"
+            . ($dryRun ? " (DRY RUN)" : "")
+            . " from '{$inputFile}'"
+            . ($overwrite ? " with --overwrite" : "")
+        );
+
         $inserted = 0;
         $updated  = 0;
         $skipped  = 0;
@@ -185,6 +192,7 @@ class ImportOidcConfig extends Command
             $existing = $this->oauthUtility->getClientDetailsByAppName((string) $provider['app_name']);
 
             if ($existing !== null && !$overwrite) {
+                $this->oauthUtility->customlog("Import: SKIP provider '{$label}' — already exists");
                 $output->writeln("<comment>  [{$label}] SKIP — already exists (use --overwrite to update).</comment>");
                 $skipped++;
                 continue;
@@ -227,6 +235,11 @@ class ImportOidcConfig extends Command
             }
 
             $action = ($existing !== null) ? 'UPDATE' : 'INSERT';
+            if ($action === 'INSERT') {
+                $this->oauthUtility->customlog("Import: INSERT provider '{$label}'");
+            } elseif ($action === 'UPDATE') {
+                $this->oauthUtility->customlog("Import: UPDATE provider '{$label}'");
+            }
             $output->writeln("<info>  [{$label}] {$action}" . ($dryRun ? ' (dry run)' : '') . '</info>');
 
             if (!$dryRun) {
@@ -238,6 +251,7 @@ class ImportOidcConfig extends Command
                         $inserted++;
                     }
                 } catch (\Exception $e) {
+                    $this->oauthUtility->customlog("Import ERROR for '{$label}': " . $e->getMessage());
                     $output->writeln("<error>  [{$label}] Save failed: " . $e->getMessage() . '</error>');
                     $errors++;
                 }
@@ -259,6 +273,10 @@ class ImportOidcConfig extends Command
             $skipped,
             $errors
         ));
+
+        $this->oauthUtility->customlog(
+            "Import complete: {$inserted} inserted, {$updated} updated, {$skipped} skipped, {$errors} error(s)"
+        );
 
         return $errors > 0 ? Command::FAILURE : Command::SUCCESS;
     }
