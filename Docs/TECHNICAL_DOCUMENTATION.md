@@ -815,7 +815,7 @@ Access control rules are evaluated in `CheckAttributeMappingAction` before any u
 
 If your IdP's logout path happens to match the Authelia heuristic but expects standard OIDC parameters, the redirect will be malformed. Verify by checking the debug log for `mode=forward-auth(rd)` vs `mode=oidc-rp-logout`.
 
-### 25. Single Post Logout Redirect URI — use the unified callback
+### 18. Single Post Logout Redirect URI — use the unified callback
 
 Some OIDC providers only allow registering **one** Post Logout Redirect URI per client. Since admin logout and customer logout historically used different destination URLs (`/admin/` vs `/customer/account/login/`), both flows would break if only one was registered.
 
@@ -831,51 +831,51 @@ The context is carried in the OIDC `state` parameter that the IdP echoes back ve
 
 **Authelia is unaffected**: Authelia uses `?rd=<url>` and never calls this callback endpoint — it redirects directly to the URL in `rd`. No configuration change is needed for Authelia setups.
 
-### 26. Zitadel sends claims Base64-encoded — set `claim_encoding = base64`
+### 19. Zitadel sends claims Base64-encoded — set `claim_encoding = base64`
 
 By default Zitadel encodes custom metadata claim values as Base64 strings. If you see garbled or unreadable attribute values in the Test Configuration view, set **Claim Encoding** to `base64` in the OAuth Settings tab for the Zitadel provider. `OidcAuthenticationService::flattenAttributes()` will then attempt to Base64-decode each string value and validate UTF-8 before including it in the flattened attribute map. If decoding fails or the result is not valid UTF-8, the original (encoded) value is used instead.
 
-### 27. Zitadel roles arrive as nested objects — not a flat group array
+### 20. Zitadel roles arrive as nested objects — not a flat group array
 
 Zitadel sends role claims in the format `{"role_name": {"orgId": "..."}}` rather than a simple `["role1", "role2"]` array. `OidcAuthenticationService::normalizeGroups()` detects this structure and extracts the top-level keys (`role_name`) as the effective group names, which are then matched against `m2oidc_oauth_role_mappings`. Configure your role mappings using the role **name** (the object key), not the nested `orgId` value.
 
-### 28. Public clients must have `public_client = 1` set — not just an empty secret
+### 21. Public clients must have `public_client = 1` set — not just an empty secret
 
 If your Zitadel application is a PKCE app without a client secret (RFC 6749 §2.1), leave **Client Secret** blank **and** enable the **Public Client** toggle. Without the toggle, `AccessTokenRequest` will still include an empty `client_secret` parameter in the POST body, which some IdPs (including Zitadel) reject as an invalid client assertion. The toggle instructs the module to omit the parameter entirely.
 
-### 29. JWKS fetch failures trigger a circuit-breaker
+### 22. JWKS fetch failures trigger a circuit-breaker
 
 `JwtVerifier` opens a 60-second circuit-breaker (`m2oidc_jwks_fail_*` cache key) after a failed JWKS re-fetch. While the breaker is open, signature verification returns `null` immediately rather than hammering the IdP endpoint on every auth attempt. The breaker expires automatically after 60 s. If JWKS failures persist longer, check IdP reachability and network connectivity from Magento. Check `var/log/M2Oidc.log` for `JWKS circuit-breaker open` log entries.
 
-### 30. Admin callback is now rate-limited
+### 23. Admin callback is now rate-limited
 
 The admin callback controller (`Controller/Adminhtml/Actions/Oidccallback.php`) applies the same IP-based rate limit (10 attempts / 60 s) as the frontend callback. Requests exceeding the limit are redirected to the admin login page with an error message (not a bare HTTP 429). All three OIDC entry points are now protected: `ReadAuthorizationResponse`, `BackChannelLogout`, and `Oidccallback`. If a legitimate admin triggers the rate limit (e.g., multiple rapid test logins), they must wait 60 s for the window to reset.
 
-### 18. Multi-website customer login uses website context validation (SEC-08)
+### 24. Multi-website customer login uses website context validation (SEC-08)
 
 `CustomerOidcCallback` checks that the authenticated customer belongs to the current Magento website. A customer created on website A cannot log in via OIDC on website B. This prevents cross-site session injection in multi-website setups. If a customer reports SSO working in one store but not another, verify their customer account's website assignment in **Customers > All Customers**.
 
-### 19. Lockout-prevention guard silently reverts invalid settings
+### 25. Lockout-prevention guard silently reverts invalid settings
 
 If you enable "Disable non-OIDC admin login" on a provider where no admin has yet authenticated via OIDC, the `Provider/Save.php` controller automatically resets the setting to `0` before saving. A warning message is displayed but no exception is thrown. The same applies to the customer restriction. Check the save response for warnings if the setting doesn't appear to stick.
 
-### 20. Billing address requires all four fields
+### 26. Billing address requires all four fields
 
 `CustomerUserCreator` only creates a billing address when all four required fields are mapped AND return non-empty values from the OIDC token: `billing_address_attribute` (street), `billing_zip_attribute`, `billing_city_attribute`, `billing_country_attribute`. If any of these is blank (either not mapped or the claim is missing), the entire address object is skipped. This is intentional — a partial address would fail Magento's address validation at checkout.
 
-### 21. Required attribute fields block provider save
+### 27. Required attribute fields block provider save
 
 Provider save validates that `email_attribute`, `username_attribute`, `firstname_attribute`, and `lastname_attribute` are all non-empty strings. A save attempt with any missing field returns an error and redirects back to the edit form without persisting any changes. This prevents a provider configuration that would silently fail during the OIDC login flow.
 
-### 22. Auto-discovery overwrites manually entered endpoints
+### 28. Auto-discovery overwrites manually entered endpoints
 
 When a `well_known_config_url` is configured, every provider save fetches the discovery document and overwrites all endpoint fields (authorize, token, userinfo, JWKS, logout, revocation, issuer) with the discovered values. If you need to override a specific endpoint (e.g., a custom revocation URL), remove or clear the `well_known_config_url` first to prevent it from being overwritten on the next save.
 
-### 23. `configureSSOSession()` is no longer called from `SendAuthorizationRequest`
+### 29. `configureSSOSession()` is no longer called from `SendAuthorizationRequest`
 
 An earlier version called `SessionHelper::configureSSOSession()` at the start of the authorization request to set `SameSite=None` on session cookies. This was removed because it conflicted with `session_regenerate_id()` in the callback handlers, causing session data loss. `SameSite=None` is now applied exclusively at response time via `SessionCookieObserver` for `/m2oidc/` routes. Do not re-add a `configureSSOSession()` call to `SendAuthorizationRequest`.
 
-### 24. Test mode is detected from the relay state URL, not `core_config_data`
+### 30. Test mode is detected from the relay state URL, not `core_config_data`
 
 Previously, a test-mode run would write an `IS_TEST` flag to `core_config_data` and read it back in the callback. This was replaced: test mode is now detected by checking whether the relay state URL matches the `TEST_RELAYSTATE` constant. The IS_TEST flag is no longer written to or read from the database, which prevents the flag from leaking if the IdP never completes the callback (e.g., the user closes the browser mid-flow).
 
@@ -1307,3 +1307,111 @@ Admin PKCE code verifier is now stored exclusively in shared cache (Redis/file) 
 - `CUSTOMER_GROUP_MAPPING_NO_MATCH` — lists the OIDC groups that failed to map, tells admin where to configure
 - `MISSING_ATTRIBUTES_DETAIL` — lists received claims and missing attribute names so admins can fix mapping
 - `AdminUserCreator` no-role path now uses `ADMIN_ROLE_MAPPING_NO_MATCH` with the actual group list
+
+---
+
+### Remaining Items — not yet implemented
+
+The following are genuine gaps in the current implementation, ordered roughly by impact.
+
+#### Claims Transformation DSL
+
+**Problem**: Attribute mappings are strictly 1:1 (OIDC claim key → Magento field). There is no built-in way to transform values — e.g., concatenate `given_name` + `family_name` into `firstname`, split a single `name` claim, prefix a username, or conditionally map a field based on another claim's value.
+
+**Current workaround**: Configure transformations at the IdP level before claims leave the IdP, or write a Magento observer on `oidc_after_attribute_mapping` that mutates the `mapped_attrs` DataObject.
+
+**Future approach**: A small expression language (or a predefined set of transform functions — `concat`, `split`, `prefix`, `regex_replace`) defined per attribute row in `m2oidc_oauth_attribute_mappings`. The `CustomerAttributeMapper` and `AdminAttributeMapper` would apply transforms after claim extraction and before Magento field assignment.
+
+---
+
+#### OIDC Front-Channel Logout
+
+**Problem**: `BackChannelLogout` handles server-to-server logout (the IdP POSTs a JWT to Magento). Front-channel logout — where the IdP embeds an `<iframe>` pointing to each SP's logout URL in the user's browser — is not implemented. Some IdPs (Microsoft ENTRA, some Keycloak configurations) use front-channel-only logout.
+
+**Scope**: Add a `GET /m2oidc/actions/frontchannellogout?sid=<sid>` endpoint that looks up the PHP session via `OidcSessionRegistry`, destroys it, and returns a transparent `1x1` response. Register it with the IdP as the front-channel logout URI.
+
+**Effort**: Low (single controller, reuses `OidcSessionRegistry` and `BackChannelLogout` session-destruction logic).
+
+---
+
+#### Token Introspection (RFC 7662)
+
+**Problem**: The module trusts the access token's local expiry timestamp (stored in session) and relies on the refresh flow to detect revocation. If the IdP revokes a token between refresh cycles, Magento continues to treat the session as valid until the next refresh attempt (up to 60 seconds before expiry).
+
+**Scope**: Add optional RFC 7662 introspection calls in `TokenRefreshService::refreshIfNeeded()` — if an `introspection_endpoint` is configured on the provider, call it before deciding whether to refresh. If the response is `{"active": false}`, destroy the session immediately.
+
+**Trade-off**: One extra HTTP round-trip per refresh cycle. Gate behind a per-provider `use_token_introspection` toggle.
+
+---
+
+#### Customer Account Self-Service: Link / Unlink IdP
+
+**Problem**: There is no UI for a logged-in customer to view or change which OIDC provider is bound to their account. The only way to re-bind is direct DB manipulation of `m2oidc_oauth_user_provider` or individual record deletion from the Sessions admin UI.
+
+**Scope**: A customer account section (e.g., under **My Account > Login & Security**) that shows the bound provider name and a button to unlink it. Unlinking deletes the row from `m2oidc_oauth_user_provider`, allowing the next OIDC login to claim a new binding.
+
+**Risk**: Any customer who unlinks can re-bind to a different IdP on next login. Gate the unlink action behind a re-authentication prompt or admin-only enablement toggle.
+
+---
+
+#### Per-Provider Log Isolation
+
+**Problem**: All providers write to a single `var/log/M2Oidc.log`. In a multi-provider setup (e.g., one provider for admins, one for B2B customers, one for B2C customers), it is difficult to isolate events for a specific provider without grepping on `provider_id`.
+
+**Scope**: Add an optional per-provider `log_file_suffix` column. When set, `OidcLogger` writes to `var/log/M2Oidc_<suffix>.log` for that provider. `LogCleanup` cron should be extended to rotate all matching files. The single shared log remains the default.
+
+---
+
+#### Config Import / Export — Normalized Table Support
+
+**Problem**: `Console/ExportOidcConfig.php` and `ImportOidcConfig.php` serialize the `m2oidc_oauth_client_apps` table. They do not include rows from the Phase 4 normalized tables (`m2oidc_oauth_attribute_mappings`, `m2oidc_oauth_role_mappings`). Migrating a fully configured provider across environments therefore requires additional manual DB export.
+
+**Scope**: Extend both CLI commands to JOIN and include the normalized mapping rows, keyed by `provider_id`. On import, re-insert them after resolving the new `provider_id` (which may differ between environments). This is a pure data-pipeline change with no auth-flow impact.
+
+---
+
+#### Headless / PWA Token-Based Flow
+
+**Problem**: The entire auth flow is redirect-based. A headless storefront (React, Vue, Next.js) using Magento's GraphQL API cannot follow server-side redirects. The GraphQL resolvers (`OidcLoginUrl`, `OidcProviders`) return the SSO URL, but the redirect and nonce-cookie handoff are browser-navigation steps that don't work cleanly in a PWA context.
+
+**Scope**: A stateless, cookie-free variant of the customer auth flow:
+1. Frontend fetches the SSO URL from GraphQL.
+2. Opens a popup window (or redirect) to the IdP.
+3. After IdP callback, the module issues a short-lived Magento customer token (via `CustomerTokenServiceInterface`) instead of setting a session cookie.
+4. Token returned as a query parameter to the popup's `postMessage` or redirect destination.
+
+**Complexity**: High. Requires careful CSRF handling without relying on the PHP session for state storage. Consider scoping to a new controller area (`headless`) with explicit CORS headers and a DI-toggleable flow.
+
+---
+
+#### OIDC Proof-of-Possession / DPoP (RFC 9449)
+
+**Problem**: Standard Bearer tokens (`Authorization: Bearer <token>`) are vulnerable if the token is intercepted. DPoP binds tokens to a client-held private key so a stolen token cannot be replayed from a different client.
+
+**Scope**: Add optional DPoP proof generation in `AccessTokenRequest` and `Curl::callAPI()`. `JwtVerifier` would also need to accept a `dpop_jkt` binding in the access token's confirmation claim. Gate behind a per-provider `dpop_enabled` toggle. This is an advanced hardening measure relevant mainly to deployments handling highly sensitive data.
+
+**Effort**: Medium-high. Requires asymmetric key generation/storage on the Magento side and IdP support (Keycloak 21+, Zitadel support is partial as of 2026).
+
+---
+
+#### Admin UI: Phase 4 Attribute Mapping Rows
+
+**Problem**: The Phase 4 normalized attribute mapping table (`m2oidc_oauth_attribute_mappings`) is read by the PHP layer but the provider edit form may still render legacy single-input fields for attribute mappings rather than dynamic, per-row UI with `sync_on_sso` toggles visible per attribute. Verify whether the current admin templates expose `sync_on_sso` for each attribute row — if they use legacy single inputs, the Phase 4 schema is being written but the per-attribute control isn't surfaced to admins.
+
+**Scope**: Provider edit form → Attribute Mapping tab: replace single `<input>` fields with a dynamic row component (similar to the existing role-mapping dynamic rows) that shows the claim key, the Magento field, and the `sync_on_sso` checkbox per attribute. Store changes to `m2oidc_oauth_attribute_mappings` on save.
+
+---
+
+#### Alerting / Health Monitoring Integration
+
+**Problem**: The `GET /m2oidc/health/check` endpoint tests IdP reachability and returns JSON, but there is no built-in mechanism to push alerts when it fails — e.g., if the IdP goes down between Magento cron runs. The `m2oidc_refresh_oidc_discovery` cron silently skips failed fetches without alerting.
+
+**Scope**: Add a configurable webhook URL (`health_alert_webhook`) per provider. When the health check or discovery refresh fails N consecutive times (configurable), POST a JSON payload to the webhook. This integrates with Slack, PagerDuty, or any HTTP-based alerting system without requiring a separate monitoring agent.
+
+**Effort**: Low. The HTTP client (`Curl`) is already available; the failure-counting logic mirrors the JWKS circuit-breaker pattern.
+
+---
+
+#### SAML 2.0 Support
+
+**Out of scope for this module** — SAML is a fundamentally different protocol and would require a separate module. If SAML support is needed, consider a dedicated `M2Oidc_Saml` module that reuses the JIT provisioning services (`AdminUserCreator`, `CustomerUserCreator`, `UserProvisioningService`) via DI injection but implements its own assertion parsing and session handling.
