@@ -53,6 +53,7 @@ class LogCleanup
             $this->oauthUtility->setStoreConfig(OAuthConstants::ENABLE_DEBUG_LOG, 0);
             $this->oauthUtility->setStoreConfig(OAuthConstants::LOG_FILE_TIME, null);
             $this->oidcLogger->deleteCustomLogFile();
+            $this->oidcLogger->deleteProviderLogFiles();
         }
     }
 }

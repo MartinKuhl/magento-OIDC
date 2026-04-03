@@ -8,14 +8,13 @@ use Magento\Framework\App\Action\HttpPostActionInterface;
 use Magento\Framework\App\CsrfAwareActionInterface;
 use Magento\Framework\App\Request\InvalidRequestException;
 use Magento\Framework\App\RequestInterface;
-use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\Controller\Result\JsonFactory;
 use Magento\Framework\Controller\ResultInterface;
-use Magento\Framework\Session\SessionManagerInterface;
 use M2Oidc\OAuth\Helper\JwtVerifier;
 use M2Oidc\OAuth\Helper\OAuthUtility;
 use M2Oidc\OAuth\Model\Security\OidcRateLimiter;
 use M2Oidc\OAuth\Model\Service\OidcSessionRegistry;
+use M2Oidc\OAuth\Model\Service\SessionDestructionService;
 
 /**
  * Back-channel (server-to-server) OIDC logout endpoint (FEAT-02).
@@ -55,8 +54,8 @@ class BackChannelLogout extends BaseAction implements HttpPostActionInterface, C
     /** @var OidcRateLimiter */
     private readonly OidcRateLimiter $rateLimiter;
 
-    /** @var ResourceConnection */
-    private readonly ResourceConnection $resourceConnection;
+    /** @var SessionDestructionService */
+    private readonly SessionDestructionService $sessionDestructionService;
 
     /**
      * Initialize back-channel logout controller.
@@ -67,7 +66,7 @@ class BackChannelLogout extends BaseAction implements HttpPostActionInterface, C
      * @param JwtVerifier                           $jwtVerifier
      * @param OidcSessionRegistry                   $sessionRegistry
      * @param OidcRateLimiter                       $rateLimiter
-     * @param ResourceConnection                    $resourceConnection
+     * @param SessionDestructionService             $sessionDestructionService
      */
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
@@ -76,13 +75,13 @@ class BackChannelLogout extends BaseAction implements HttpPostActionInterface, C
         JwtVerifier $jwtVerifier,
         OidcSessionRegistry $sessionRegistry,
         OidcRateLimiter $rateLimiter,
-        ResourceConnection $resourceConnection
+        SessionDestructionService $sessionDestructionService
     ) {
-        $this->jsonFactory          = $jsonFactory;
-        $this->jwtVerifier          = $jwtVerifier;
-        $this->sessionRegistry      = $sessionRegistry;
-        $this->rateLimiter          = $rateLimiter;
-        $this->resourceConnection   = $resourceConnection;
+        $this->jsonFactory               = $jsonFactory;
+        $this->jwtVerifier               = $jwtVerifier;
+        $this->sessionRegistry           = $sessionRegistry;
+        $this->rateLimiter               = $rateLimiter;
+        $this->sessionDestructionService = $sessionDestructionService;
         parent::__construct($context, $oauthUtility);
     }
 
@@ -172,8 +171,8 @@ class BackChannelLogout extends BaseAction implements HttpPostActionInterface, C
         foreach ($entries as $entry) {
             $phpSessionId = (string) ($entry['php_session_id'] ?? '');
             if ($phpSessionId !== '') {
-                $this->destroySession($phpSessionId);
-                $this->clearOnlineStatus($entry);
+                $this->sessionDestructionService->destroySession($phpSessionId);
+                $this->sessionDestructionService->clearOnlineStatus($entry);
             }
         }
         $this->sessionRegistry->revoke($sub, $sid);
@@ -254,94 +253,6 @@ class BackChannelLogout extends BaseAction implements HttpPostActionInterface, C
             }
         }
         return null;
-    }
-
-    /**
-     * Destroy a PHP session by its session ID.
-     *
-     * C-02: Back-channel logout requires destroying a session that belongs to a
-     * different browser request. PHP does not provide an API for this; switching
-     * session IDs via session_id() is the de-facto standard approach used by
-     * Symfony, Laravel, and other frameworks.
-     *
-     * Thread safety: PHP's file-based session handler holds an exclusive flock()
-     * for the duration of the session_start() call, so concurrent reads from the
-     * target session's owner request will block until we call session_destroy().
-     * The try-finally below ensures the original session ID is always restored even
-     * if an exception is thrown (e.g. by an observer on session_start).
-     *
-     * @param string $phpSessionId Target PHP session ID
-     */
-    private function destroySession(string $phpSessionId): void
-    {
-        if (!preg_match('/^[a-zA-Z0-9,-]+$/', $phpSessionId)) {
-            // Reject malformed session IDs to prevent path traversal in file-based handlers
-            $this->oauthUtility->customlog(
-                "BackChannelLogout: Rejected malformed session ID during destroy."
-            );
-            return;
-        }
-        // Use the session save handler to delete the session data file/record
-        // without disrupting the current request's session.
-        // phpcs:disable Magento2.Functions.DiscouragedFunction.Discouraged, Magento2.Security.Superglobal
-        $currentId = session_id();
-        session_commit();
-        session_id($phpSessionId);
-        try {
-            session_start(['read_and_close' => false]);
-            $_SESSION = [];
-            session_destroy();
-        } finally {
-            // C-02: Always restore original session ID, even if an exception is thrown
-            session_id($currentId !== false ? $currentId : '');
-            if ($currentId !== false && $currentId !== '') {
-                session_start(['read_and_close' => false]);
-            }
-        }
-        // phpcs:enable Magento2.Functions.DiscouragedFunction.Discouraged, Magento2.Security.Superglobal
-    }
-
-    /**
-     * Clear the "Online" status in core Magento tables after a back-channel session destroy.
-     *
-     * PHP session destruction removes the session data file/record but does not update
-     * the separate DB tables that `SessionDataProvider` uses for the is_online calculation:
-     *   - admin: admin_user_session.status (1 = active, 0 = logged out)
-     *   - customer: customer_log.last_logout_at (NULL or older than last_login_at = online)
-     *
-     * @param mixed[] $entry Session entry from OidcSessionRegistry::resolve()
-     */
-    private function clearOnlineStatus(array $entry): void
-    {
-        $userType  = (string) ($entry['user_type']      ?? '');
-        $userId    = (int)    ($entry['user_id']         ?? 0);
-
-        try {
-            $conn = $this->resourceConnection->getConnection();
-            if ($userType === 'admin' && $userId > 0) {
-                // admin_user_session.session_id is deprecated (VARCHAR(1), never populated
-                // by Magento core). Filter by user_id instead and mark all active sessions
-                // for this admin as logged out (status 0 = LOGGED_OUT).
-                $conn->update(
-                    $this->resourceConnection->getTableName('admin_user_session'),
-                    ['status' => 0],
-                    ['user_id = ?' => $userId, 'status = ?' => 1]
-                );
-            } elseif ($userType === 'customer' && $userId > 0) {
-                // Setting last_logout_at makes the is_online expression evaluate to 0.
-                $conn->update(
-                    $this->resourceConnection->getTableName('customer_log'),
-                    ['last_logout_at' => (new \DateTime())->format('Y-m-d H:i:s')],
-                    ['customer_id = ?' => $userId]
-                );
-            }
-        } catch (\Exception $e) {
-            // Non-fatal: the PHP session is already destroyed; the UI will eventually
-            // show the correct offline status on its own (session expiry / next page load).
-            $this->oauthUtility->customlog(
-                'BackChannelLogout: clearOnlineStatus failed (non-fatal): ' . $e->getMessage()
-            );
-        }
     }
 
     /**

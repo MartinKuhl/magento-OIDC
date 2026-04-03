@@ -169,6 +169,29 @@ $btnColor  = (string) $val('button_color', '#eb5202');
                     </small>
                 </td>
             </tr>
+            <tr>
+                <td>
+                    <label for="log_file_suffix">
+                        <strong><?= $escaper->escapeHtml(__('Log File Suffix')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <input type="text"
+                           id="log_file_suffix"
+                           name="log_file_suffix"
+                           class="admin__control-text"
+                           placeholder="e.g. b2b"
+                           pattern="[a-zA-Z0-9_-]*"
+                           value="<?= $escaper->escapeHtmlAttr((string) $val('log_file_suffix')) ?>"
+                           style="width:200px;">
+                    <small class="admin__field-note" style="margin-left:6px;">
+                        <?= $escaper->escapeHtml(__(
+                            'Optional. When set, this provider logs to var/log/M2Oidc_<suffix>.log'
+                            . ' instead of the shared M2Oidc.log. Letters, digits, hyphens and underscores only.'
+                        )) ?>
+                    </small>
+                </td>
+            </tr>
         </tbody>
     </table>
 </div>

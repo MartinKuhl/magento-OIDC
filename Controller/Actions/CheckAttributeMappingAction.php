@@ -95,6 +95,12 @@ class CheckAttributeMappingAction extends BaseAction
      */
     private int $providerId = 0;
 
+    /**
+     * @var bool Headless PWA mode flag (FEAT-09): when true, CustomerLoginAction redirects
+     *           to HeadlessOidcCallback which returns a customer token via postMessage.
+     */
+    private bool $headless = false;
+
     /** @var \M2Oidc\OAuth\Controller\Actions\ShowTestResults */
     private readonly \M2Oidc\OAuth\Controller\Actions\ShowTestResults $testAction;
 
@@ -377,7 +383,8 @@ class CheckAttributeMappingAction extends BaseAction
                         $adminFirstName,
                         $adminLastName,
                         $userGroups,
-                        $this->providerId
+                        $this->providerId,
+                        $flattenedAttrs
                     );
 
                     if ($adminUser && $adminUser->getId()) {
@@ -521,6 +528,7 @@ class CheckAttributeMappingAction extends BaseAction
             ->setUserEmail($email)
             ->setAutoCreateCustomer($this->providerAutoCreateCustomer)
             ->setProviderId($this->providerId)
+            ->setHeadless($this->headless)
             ->execute();
     }
 
@@ -716,6 +724,18 @@ class CheckAttributeMappingAction extends BaseAction
     public function setLoginType($loginType): static
     {
         $this->loginType = $loginType;
+        return $this;
+    }
+
+    /**
+     * Set the headless mode flag (FEAT-09).
+     *
+     * @param  bool $headless
+     * @return $this
+     */
+    public function setHeadless(bool $headless): static
+    {
+        $this->headless = $headless;
         return $this;
     }
 

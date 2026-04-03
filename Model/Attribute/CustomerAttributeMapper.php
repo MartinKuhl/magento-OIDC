@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace M2Oidc\OAuth\Model\Attribute;
 
 use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Model\Attribute\Transformer;
 use Magento\Directory\Model\ResourceModel\Country\CollectionFactory as CountryCollectionFactory;
 
 /**
@@ -22,6 +23,7 @@ use Magento\Directory\Model\ResourceModel\Country\CollectionFactory as CountryCo
  *   'billing_country' => OIDC claim name for country (name or ISO code)
  *   'billing_phone'   => OIDC claim name for telephone
  *   '_raw_attrs'      => (array) original nested OIDC response for dot-path lookups
+ *   '_transforms'     => (array) [attribute_type => ['function' => string|null, 'params' => string|null]]
  *
  * Returned keys (only present when resolved value is non-empty):
  *   'dob', 'gender', 'billing_street', 'billing_city',
@@ -32,10 +34,12 @@ class CustomerAttributeMapper implements AttributeMapperInterface
     /**
      * @param OAuthUtility             $oauthUtility
      * @param CountryCollectionFactory $countryCollectionFactory
+     * @param Transformer              $transformer
      */
     public function __construct(
         private readonly OAuthUtility $oauthUtility,
-        private readonly CountryCollectionFactory $countryCollectionFactory
+        private readonly CountryCollectionFactory $countryCollectionFactory,
+        private readonly Transformer $transformer
     ) {
     }
 
@@ -45,11 +49,13 @@ class CustomerAttributeMapper implements AttributeMapperInterface
     #[\Override]
     public function map(array $flattenedAttrs, array $mappingConfig): array
     {
-        $rawAttrs = (array) ($mappingConfig['_raw_attrs'] ?? []);
-        $result   = [];
+        $rawAttrs  = (array) ($mappingConfig['_raw_attrs'] ?? []);
+        $transforms = (array) ($mappingConfig['_transforms'] ?? []);
+        $result    = [];
 
         // --- Date of Birth ---
         $dob = $this->extractClaimValue((string) ($mappingConfig['dob'] ?? ''), $flattenedAttrs, $rawAttrs);
+        $dob = $this->applyTransform($dob, $flattenedAttrs, $transforms, 'dob');
         if (!in_array($dob, [null, '', '0'], true)) {
             $formatted = $this->formatDateOfBirth($dob);
             if ($formatted !== null) {
@@ -63,6 +69,7 @@ class CustomerAttributeMapper implements AttributeMapperInterface
             $flattenedAttrs,
             $rawAttrs
         );
+        $genderRaw = $this->applyTransform($genderRaw, $flattenedAttrs, $transforms, 'gender');
         if (!in_array($genderRaw, [null, '', '0'], true)) {
             $genderId = $this->mapGender($genderRaw);
             if ($genderId !== null) {
@@ -76,6 +83,7 @@ class CustomerAttributeMapper implements AttributeMapperInterface
             $flattenedAttrs,
             $rawAttrs
         );
+        $street = $this->applyTransform($street, $flattenedAttrs, $transforms, 'billing_address');
         if (!in_array($street, [null, '', '0'], true)) {
             $result['billing_street'] = $street;
         }
@@ -86,6 +94,7 @@ class CustomerAttributeMapper implements AttributeMapperInterface
             $flattenedAttrs,
             $rawAttrs
         );
+        $city = $this->applyTransform($city, $flattenedAttrs, $transforms, 'billing_city');
         if (!in_array($city, [null, '', '0'], true)) {
             $result['billing_city'] = $city;
         }
@@ -96,6 +105,7 @@ class CustomerAttributeMapper implements AttributeMapperInterface
             $flattenedAttrs,
             $rawAttrs
         );
+        $zip = $this->applyTransform($zip, $flattenedAttrs, $transforms, 'billing_zip');
         if (!in_array($zip, [null, '', '0'], true)) {
             $result['billing_postcode'] = $zip;
         }
@@ -106,6 +116,7 @@ class CustomerAttributeMapper implements AttributeMapperInterface
             $flattenedAttrs,
             $rawAttrs
         );
+        $country = $this->applyTransform($country, $flattenedAttrs, $transforms, 'billing_country');
         if (!in_array($country, [null, '', '0'], true)) {
             $countryId = $this->resolveCountryId($country);
             if ($countryId !== null) {
@@ -119,11 +130,38 @@ class CustomerAttributeMapper implements AttributeMapperInterface
             $flattenedAttrs,
             $rawAttrs
         );
+        $phone = $this->applyTransform($phone, $flattenedAttrs, $transforms, 'billing_phone');
         if (!in_array($phone, [null, '', '0'], true)) {
             $result['billing_telephone'] = $phone;
         }
 
         return $result;
+    }
+
+    /**
+     * Apply a configured transform (if any) for a given attribute type.
+     *
+     * @param  string|null           $rawValue
+     * @param  array<string,mixed>   $flattenedAttrs  Full flattened claim set (for concat)
+     * @param  array<string,mixed>   $transforms      [attribute_type => ['function'=>..., 'params'=>...]]
+     * @param  string                $attributeType
+     */
+    private function applyTransform(
+        ?string $rawValue,
+        array $flattenedAttrs,
+        array $transforms,
+        string $attributeType
+    ): ?string {
+        if (!isset($transforms[$attributeType])) {
+            return $rawValue;
+        }
+        $t = $transforms[$attributeType];
+        return $this->transformer->apply(
+            $rawValue,
+            $flattenedAttrs,
+            $t['function'] ?? null,
+            $t['params'] ?? null
+        );
     }
 
     /**

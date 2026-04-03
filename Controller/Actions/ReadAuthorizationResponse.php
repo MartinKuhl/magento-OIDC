@@ -194,6 +194,7 @@ class ReadAuthorizationResponse extends BaseAction
                 $loginType = $stateData['loginType'];
                 $stateToken = $stateData['stateToken'];
                 $providerId = $stateData['providerId'] ?? 0;
+                $headless = (bool) ($stateData['headless'] ?? false);
                 $this->oauthUtility->setActiveProviderId($providerId);
             } else {
                 /** @psalm-suppress RedundantCast */
@@ -204,6 +205,7 @@ class ReadAuthorizationResponse extends BaseAction
                 $loginType = isset($parts[3]) ? $parts[3] : OAuthConstants::LOGIN_TYPE_CUSTOMER;
                 $stateToken = isset($parts[4]) ? $parts[4] : '';
                 $providerId = 0;
+                $headless = false; // legacy format does not support headless
             }
 
             // Validate CSRF state token
@@ -566,6 +568,7 @@ class ReadAuthorizationResponse extends BaseAction
                     ->setFlattenedUserInfoResponse($flattenedResponse)
                     ->setUserEmail($userEmail)
                     ->setLoginType($loginType)
+                    ->setHeadless($headless)
                     ->execute();
             } else {
                 $this->oauthUtility->customlog("ERROR: Invalid token response - no access_token or id_token");

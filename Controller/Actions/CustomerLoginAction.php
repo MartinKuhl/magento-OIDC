@@ -26,6 +26,11 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
      */
     private $relayState;
 
+    /**
+     * @var bool Headless PWA mode flag (FEAT-09)
+     */
+    private bool $headless = false;
+
     /** @var \M2Oidc\OAuth\Helper\OAuthSecurityHelper */
     private readonly \M2Oidc\OAuth\Helper\OAuthSecurityHelper $securityHelper;
 
@@ -97,11 +102,17 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
                 . 'customer/account';
         }
 
-        // Create nonce with email + relayState
+        // Create nonce with email + relayState (+ headless flag for FEAT-09)
         $nonce = $this->securityHelper->createCustomerLoginNonce(
             $this->user->getEmail(),
-            $this->relayState
+            $this->relayState,
+            $this->headless
         );
+
+        // Choose nonce cookie name based on flow type
+        $nonceCookieName = $this->headless
+            ? 'oidc_headless_nonce'
+            : 'oidc_customer_nonce';
 
         // Set nonce as HttpOnly cookie (120s TTL matches cache)
         try {
@@ -113,7 +124,7 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
                 ->setSecure(true)
                 ->setSameSite('Lax');
             $this->cookieManager->setPublicCookie(
-                'oidc_customer_nonce',
+                $nonceCookieName,
                 $nonce,
                 $cookieMetadata
             );
@@ -129,9 +140,11 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
                 ->setPath('customer/account/login');
         }
 
-        // Redirect to customer callback endpoint
-        $callbackUrl = $this->oauthUtility->getBaseUrl()
-            . 'm2oidc/actions/CustomerOidcCallback';
+        // Redirect to appropriate callback endpoint
+        $callbackPath = $this->headless
+            ? 'm2oidc/actions/HeadlessOidcCallback'
+            : 'm2oidc/actions/CustomerOidcCallback';
+        $callbackUrl = $this->oauthUtility->getBaseUrl() . $callbackPath;
         $this->oauthUtility->customlog(
             "CustomerLoginAction: Redirecting to callback: "
             . $callbackUrl
@@ -162,6 +175,17 @@ class CustomerLoginAction extends BaseAction implements HttpPostActionInterface
     {
         $this->oauthUtility->customlog("CustomerLoginAction: setRelayState");
         $this->relayState = $relayState;
+        return $this;
+    }
+
+    /**
+     * Setter for the headless PWA mode flag (FEAT-09).
+     *
+     * @param  bool $headless
+     */
+    public function setHeadless(bool $headless): static
+    {
+        $this->headless = $headless;
         return $this;
     }
 }

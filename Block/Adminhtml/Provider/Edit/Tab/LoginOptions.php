@@ -279,4 +279,16 @@ class LoginOptions extends Template implements TabInterface
     {
         return $this->providerVal('idp_initiated_enabled');
     }
+
+    // ── Headless / PWA mode (FEAT-09) ────────────────────────
+    /**
+     * Return whether Headless / PWA mode is enabled for this provider.
+     *
+     * When enabled, the OIDC flow returns a customer token via postMessage
+     * instead of creating a session cookie.
+     */
+    public function getHeadlessMode(): bool
+    {
+        return $this->providerVal('headless_mode');
+    }
 }

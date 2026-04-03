@@ -164,6 +164,7 @@ class ProcessUserActionIdpBindingTest extends TestCase
         $redirectResult = $this->createMock(Redirect::class);
         $this->customerLoginAction->method('setUser')->willReturnSelf();
         $this->customerLoginAction->method('setRelayState')->willReturnSelf();
+        $this->customerLoginAction->method('setHeadless')->willReturnSelf();
         $this->customerLoginAction->method('execute')->willReturn($redirectResult);
 
         $action = $this->buildActionWithAttrs();
@@ -219,6 +220,7 @@ class ProcessUserActionIdpBindingTest extends TestCase
         $redirectResult = $this->createMock(Redirect::class);
         $this->customerLoginAction->method('setUser')->willReturnSelf();
         $this->customerLoginAction->method('setRelayState')->willReturnSelf();
+        $this->customerLoginAction->method('setHeadless')->willReturnSelf();
         $this->customerLoginAction->method('execute')->willReturn($redirectResult);
 
         $action = $this->buildActionWithAttrs();

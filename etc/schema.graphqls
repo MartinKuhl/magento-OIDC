@@ -28,6 +28,7 @@
 type Query {
     oidcLoginUrl(
         provider_id: Int @doc(description: "Numeric provider ID. When omitted the first active customer provider is used.")
+        headless: Boolean @doc(description: "When true and the provider has headless_mode=1, appends ?headless=1 to the URL for the PWA token flow.")
     ): OidcLoginUrlOutput
         @resolver(class: "M2Oidc\\OAuth\\Model\\Resolver\\OidcLoginUrl")
         @doc(description: "Returns the SP-initiated login URL for the requested OIDC provider.")

@@ -18,6 +18,7 @@ use M2Oidc\OAuth\Helper\OAuthConstants;
 use M2Oidc\OAuth\Helper\OAuthUtility;
 use M2Oidc\OAuth\Model\Attribute\AttributeMapperInterface;
 use M2Oidc\OAuth\Model\Attribute\CustomerAttributeMapper;
+use M2Oidc\OAuth\Model\Attribute\Transformer;
 use M2Oidc\OAuth\Model\Provider\MappingRepository;
 use M2Oidc\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
 use M2Oidc\OAuth\Model\Service\CustomerUserCreator;
@@ -339,7 +340,8 @@ class CustomerUserCreatorAddressTest extends TestCase
     {
         return new CustomerAttributeMapper(
             $this->oauthUtility,
-            $this->createMock(\Magento\Directory\Model\ResourceModel\Country\CollectionFactory::class)
+            $this->createMock(\Magento\Directory\Model\ResourceModel\Country\CollectionFactory::class),
+            $this->createMock(Transformer::class)
         );
     }
 

@@ -31,8 +31,11 @@ class OidcSessionRegistry
     /** Default TTL: 24 h, matching a typical access token lifetime. */
     private const int DEFAULT_TTL = 86400;
 
-    /** Prefix for cache keys to avoid collisions. */
+    /** Prefix for primary cache keys (sub + sid). */
     private const string KEY_PREFIX = 'oidc_sess_';
+
+    /** Prefix for secondary sid-only index keys (used by front-channel logout). */
+    private const string SID_KEY_PREFIX = 'oidc_sess_sid_';
 
     /** @var CacheInterface */
     private readonly CacheInterface $cache;
@@ -86,7 +89,14 @@ class OidcSessionRegistry
             'sub'            => $sub,
             'sid'            => $sid,
         ];
-        $this->cache->save((string) json_encode($existing), $key, [self::CACHE_TAG], $ttl);
+        $encoded = (string) json_encode($existing);
+        $this->cache->save($encoded, $key, [self::CACHE_TAG], $ttl);
+
+        // Secondary sid-only index: allows FrontChannelLogout to find sessions
+        // when only the sid is known (front-channel logout spec — no sub in request).
+        if ($sid !== '') {
+            $this->cache->save($encoded, $this->buildSidKey($sid), [self::CACHE_TAG], $ttl);
+        }
     }
 
     /**
@@ -107,6 +117,25 @@ class OidcSessionRegistry
     }
 
     /**
+     * Resolve sessions by sid only — used by front-channel logout.
+     *
+     * Front-channel logout requests contain only the sid (and optionally iss),
+     * never the sub. This method looks up the secondary sid-only index written
+     * by register() when a non-empty sid is present.
+     *
+     * @param  string $sid OIDC session ID
+     * @return array<int, array<string, mixed>>|null Session entries, or null if not found
+     */
+    public function resolveBySid(string $sid): ?array
+    {
+        if ($sid === '') {
+            return null;
+        }
+        $entries = $this->loadEntries($this->buildSidKey($sid));
+        return $entries !== [] ? $entries : null;
+    }
+
+    /**
      * Remove the cached session mapping after the sessions have been destroyed.
      *
      * @param string $sub OIDC subject identifier
@@ -115,6 +144,23 @@ class OidcSessionRegistry
     public function revoke(string $sub, string $sid = ''): void
     {
         $this->cache->remove($this->buildKey($sub, $sid));
+        if ($sid !== '') {
+            $this->cache->remove($this->buildSidKey($sid));
+        }
+    }
+
+    /**
+     * Remove the secondary sid-only index entry.
+     *
+     * Called by FrontChannelLogout after sessions are destroyed.
+     *
+     * @param string $sid OIDC session ID
+     */
+    public function revokeBySid(string $sid): void
+    {
+        if ($sid !== '') {
+            $this->cache->remove($this->buildSidKey($sid));
+        }
     }
 
     /**
@@ -157,5 +203,16 @@ class OidcSessionRegistry
     private function buildKey(string $sub, string $sid): string
     {
         return self::KEY_PREFIX . hash('sha256', $sub . '|' . $sid);
+    }
+
+    /**
+     * Build a secondary cache key for a sid-only lookup (front-channel logout).
+     *
+     * @param  string $sid
+     * @return string Cache key, e.g. "oidc_sess_sid_<64-char hash>"
+     */
+    private function buildSidKey(string $sid): string
+    {
+        return self::SID_KEY_PREFIX . hash('sha256', $sid);
     }
 }

@@ -125,7 +125,7 @@ define(['domReady!'], function () {
 
             // Target the containers used by attrsettings.phtml for dynamic rows.
             var containers = form.querySelectorAll(
-                '#m2oidc-role-mapping-container, #m2oidc-cgm-mapping-container'
+                '#m2oidc-role-mapping-container, #m2oidc-cgm-mapping-container, #m2oidc-attr-mapping-container'
             );
             for (var c = 0; c < containers.length; c++) {
                 observer.observe(containers[c], { childList: true, subtree: true });

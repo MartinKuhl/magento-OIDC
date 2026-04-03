@@ -90,16 +90,13 @@ Fix all the mentioned issue and warnings. Use sub-agents where applicable. DO no
 - 
 
 ### FIX ###
-- [2026-03-26T18:44:26.196402+00:00] m2oidc_oauth.DEBUG: {"ts":"2026-03-26T18:44:26+00:00","level":"debug","message":"OidcIdentityFieldPlugin: afterSetForm called for Magento\\User\\Block\\User\\Edit\\Tab\\Main\\Interceptor"} [] []
---> passiert wenn Admin gelöscht wird mit non-OIDS user
-
-
+- 
 
 ### TESTING ###
 - 
 
 ### LATER - more complex ###:
-- what is missing to use this plugin in a production environment? What would be needed to make it production ready?
+-
 
 Nächster Schritt (nach Stabilisierung):
 PHPStan: Level 4

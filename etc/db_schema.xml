@@ -90,6 +90,12 @@
       <column xsi:type="smallint" name="http_timeout" nullable="false" default="30"
               comment="Per-provider HTTP timeout in seconds (default: 30)" />
 
+      <column xsi:type="varchar" name="log_file_suffix" length="64" nullable="true"
+              comment="Optional log file suffix. When set, this provider logs to var/log/M2Oidc_&lt;suffix&gt;.log instead of the shared M2Oidc.log. Use only letters, digits, and underscores." />
+
+      <column xsi:type="smallint" name="headless_mode" padding="1" unsigned="true" nullable="false" default="0"
+              comment="Enable Headless / PWA mode. When 1, the OIDC flow returns a customer token via postMessage instead of a session cookie." />
+
       <constraint xsi:type="primary" referenceId="PRIMARY">
          <column name="id" />
       </constraint>
@@ -121,6 +127,10 @@
               comment="OIDC claim key configured by the admin"/>
       <column xsi:type="smallint" name="sync_on_sso" padding="1" unsigned="true" nullable="false"
               default="0" comment="1 = re-sync this attribute from OIDC on every SSO login"/>
+      <column xsi:type="varchar" name="transform_function" length="32" nullable="true"
+              comment="Optional transform function: concat | split | prefix | regex_replace (NULL = passthrough)"/>
+      <column xsi:type="varchar" name="transform_params" length="255" nullable="true"
+              comment="JSON-encoded parameters for the transform function (NULL when transform_function is NULL)"/>
       <constraint xsi:type="primary" referenceId="PRIMARY">
          <column name="id"/>
       </constraint>

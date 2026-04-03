@@ -6,7 +6,7 @@ namespace M2Oidc\OAuth\Test\Unit\Controller;
 
 use Magento\Framework\App\Action\Context;
 use Magento\Framework\App\Request\Http as HttpRequest;
-use Magento\Framework\App\ResourceConnection;
+use M2Oidc\OAuth\Model\Service\SessionDestructionService;
 use Magento\Framework\Controller\Result\Json;
 use Magento\Framework\Controller\Result\JsonFactory;
 use M2Oidc\OAuth\Controller\Actions\BackChannelLogout;
@@ -48,8 +48,8 @@ class BackChannelLogoutTest extends TestCase
     /** @var OidcRateLimiter&MockObject */
     private OidcRateLimiter $rateLimiter;
 
-    /** @var ResourceConnection&MockObject */
-    private ResourceConnection $resourceConnection;
+    /** @var SessionDestructionService&MockObject */
+    private SessionDestructionService $sessionDestructionService;
 
     /** @var HttpRequest&MockObject */
     private HttpRequest $request;
@@ -61,7 +61,7 @@ class BackChannelLogoutTest extends TestCase
         $this->jwtVerifier       = $this->createMock(JwtVerifier::class);
         $this->sessionRegistry   = $this->createMock(OidcSessionRegistry::class);
         $this->rateLimiter       = $this->createMock(OidcRateLimiter::class);
-        $this->resourceConnection = $this->createMock(ResourceConnection::class);
+        $this->sessionDestructionService = $this->createMock(SessionDestructionService::class);
         $this->request           = $this->createMock(HttpRequest::class);
 
         // Build a minimal Context mock that provides a request and redirect factory
@@ -97,7 +97,7 @@ class BackChannelLogoutTest extends TestCase
             $this->jwtVerifier,
             $this->sessionRegistry,
             $this->rateLimiter,
-            $this->resourceConnection
+            $this->sessionDestructionService
         );
     }
 
@@ -162,10 +162,8 @@ class BackChannelLogoutTest extends TestCase
         $this->sessionRegistry->method('resolve')->willReturn([$entry]);
         $this->sessionRegistry->expects($this->once())->method('revoke');
 
-        $dbConn = $this->createMock(\Magento\Framework\DB\Adapter\AdapterInterface::class);
-        $dbConn->method('update')->willReturn(0);
-        $this->resourceConnection->method('getConnection')->willReturn($dbConn);
-        $this->resourceConnection->method('getTableName')->willReturnArgument(0);
+        $this->sessionDestructionService->expects($this->once())->method('destroySession');
+        $this->sessionDestructionService->expects($this->once())->method('clearOnlineStatus');
 
         // A successful response does NOT call setHttpResponseCode (defaults to 200)
         $jsonResult = $this->createMock(Json::class);

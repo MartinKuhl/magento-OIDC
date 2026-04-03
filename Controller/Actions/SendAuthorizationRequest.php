@@ -142,13 +142,27 @@ class SendAuthorizationRequest extends BaseAction
             "SendAuthorizationRequest: login_type_raw=[" . ($params['login_type'] ?? 'NULL')
             . "] loginType_resolved=[" . $loginType . "]"
         );
+        // FEAT-09: headless=1 in request params enables the PWA token flow.
+        // Guard: only allowed when the provider has headless_mode=1 AND login_type is customer.
+        $headless = false;
+        if (isset($params['headless']) && $params['headless'] == '1'
+            && $loginType === OAuthConstants::LOGIN_TYPE_CUSTOMER
+        ) {
+            $providerRow = $earlyProviderDetails
+                ?? ($providerId > 0 ? $this->oauthUtility->getClientDetailsById($providerId) : null);
+            if ($providerRow !== null && !empty($providerRow['headless_mode'])) {
+                $headless = true;
+            }
+        }
+
         $relayState = $this->securityHelper->encodeRelayState(
             $relayState,
             $currentSessionId,
             $app_name,
             $loginType,
             $stateToken,
-            $providerId > 0 ? $providerId : null
+            $providerId > 0 ? $providerId : null,
+            $headless
         );
         $this->oauthUtility->customlog("SendAuthorizationRequest: Combined relayState: " . $relayState);
 

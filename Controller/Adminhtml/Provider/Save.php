@@ -143,6 +143,9 @@ class Save extends Action implements HttpPostActionInterface
             $model->setData('sort_order', max(0, (int) ($data['sort_order'] ?? 0)));
             $model->setData('button_label', $this->sanitizeString($data['button_label'] ?? ''));
             $model->setData('button_color', $this->validateHexColor($data['button_color'] ?? ''));
+            // Per-provider log file suffix: restrict to safe characters to prevent path traversal
+            $rawSuffix = (string) ($data['log_file_suffix'] ?? '');
+            $model->setData('log_file_suffix', preg_replace('/[^a-zA-Z0-9_-]/', '', $rawSuffix) ?: null);
 
             // Core endpoint and OAuth fields
             foreach ([
@@ -393,6 +396,28 @@ class Save extends Action implements HttpPostActionInterface
                     RoleMappingResource::TYPE_CUSTOMER_GROUP,
                     $cgMappingsNormalized
                 );
+
+                // Phase 4: Save attribute sync settings from the dynamic rows UI
+                $rawAttrMappings = $data['attr_mappings'] ?? [];
+                if (is_array($rawAttrMappings)) {
+                    $attrRows = [];
+                    foreach ($rawAttrMappings as $attrRow) {
+                        $type = trim((string) ($attrRow['attribute_type'] ?? ''));
+                        $name = trim((string) ($attrRow['attribute_name'] ?? ''));
+                        if ($type !== '' && $name !== '') {
+                            $rawFn = trim((string) ($attrRow['transform_function'] ?? ''));
+                            $rawPr = trim((string) ($attrRow['transform_params']   ?? ''));
+                            $attrRows[] = [
+                                'attribute_type'     => $type,
+                                'attribute_name'     => $name,
+                                'sync_on_sso'        => (int) ($attrRow['sync_on_sso'] ?? 0),
+                                'transform_function' => $rawFn !== '' ? $rawFn : null,
+                                'transform_params'   => $rawPr !== '' ? $rawPr : null,
+                            ];
+                        }
+                    }
+                    $this->mappingRepository->replaceAttributeMappings($savedId, $attrRows);
+                }
             }
 
             if ($discoverySucceeded) {

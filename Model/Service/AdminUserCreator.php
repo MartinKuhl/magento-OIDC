@@ -112,19 +112,38 @@ class AdminUserCreator
      * @param  string|null $lastName
      * @param  mixed[]     $userGroups
      * @param  int         $providerId OIDC provider ID (0 = unknown / not tracked)
+     * @param  mixed[]     $rawClaims  Full flattened OIDC claim set (for concat transforms)
      * @return \Magento\User\Model\User|null
      */
-    public function createAdminUser(string $email, $userName, $firstName, $lastName, array $userGroups, int $providerId = 0) // phpcs:ignore Generic.Files.LineLength.TooLong
+    public function createAdminUser(string $email, $userName, $firstName, $lastName, array $userGroups, int $providerId = 0, array $rawClaims = []) // phpcs:ignore Generic.Files.LineLength.TooLong
     {
         $this->oauthUtility->customlog("AdminUserCreator: Starting creation for " . $email);
 
         // Guard against IdPs returning preferred_username as an array
         $userName = is_array($userName) ? implode(' ', $userName) : (string) $userName;
 
+        // Build per-attribute transform config from MappingRepository (providerId > 0 only)
+        $transforms = [];
+        if ($providerId > 0) {
+            $attrMap = $this->mappingRepository->getFullAttributeMap($providerId);
+            foreach (['firstname', 'lastname'] as $type) {
+                if (!empty($attrMap[$type]['transform_function'])) {
+                    $transforms[$type] = [
+                        'function' => $attrMap[$type]['transform_function'],
+                        'params'   => $attrMap[$type]['transform_params'] ?? null,
+                    ];
+                }
+            }
+        }
+
         // Apply name fallbacks via strategy (Phase 3.2); use per-provider mapper if registered
         $nameMapped = $this->resolveMapper($providerId)->map(
             ['firstname' => $firstName, 'lastname' => $lastName],
-            ['_email' => $email]
+            [
+                '_email'      => $email,
+                '_raw_claims' => $rawClaims !== [] ? $rawClaims : ['firstname' => $firstName, 'lastname' => $lastName],
+                '_transforms' => $transforms,
+            ]
         );
         $firstName = (string) ($nameMapped['firstname'] ?? $firstName);
         $lastName  = (string) ($nameMapped['lastname']  ?? $lastName);

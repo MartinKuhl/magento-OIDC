@@ -25,7 +25,7 @@ class MappingRepository
     /** @var RoleMappingResource */
     private readonly RoleMappingResource $roleResource;
 
-    /** @var array<int, array<string, array{attribute_name: string, sync_on_sso: int}>> */
+    /** @var array<int, array<string, array{attribute_name: string, sync_on_sso: int, transform_function?: string|null, transform_params?: string|null}>> */
     private array $attrCache = [];
 
     /** @var array<int, array<string, array<int, array{oidc_group: string, magento_role_id: string}>>> */
@@ -84,6 +84,32 @@ class MappingRepository
     }
 
     /**
+     * Return the transform function for an attribute type, or null if none configured.
+     *
+     * @param  int    $providerId
+     * @param  string $attributeType
+     */
+    public function getTransformFunction(int $providerId, string $attributeType): ?string
+    {
+        $map = $this->getAttributeMap($providerId);
+        $fn = $map[$attributeType]['transform_function'] ?? null;
+        return ($fn !== null && $fn !== '') ? $fn : null;
+    }
+
+    /**
+     * Return the JSON-encoded transform params for an attribute type, or null if none.
+     *
+     * @param  int    $providerId
+     * @param  string $attributeType
+     */
+    public function getTransformParams(int $providerId, string $attributeType): ?string
+    {
+        $map = $this->getAttributeMap($providerId);
+        $p = $map[$attributeType]['transform_params'] ?? null;
+        return ($p !== null && $p !== '') ? $p : null;
+    }
+
+    /**
      * Return admin role mappings for a provider.
      *
      * @param  int $providerId
@@ -127,6 +153,21 @@ class MappingRepository
     }
 
     /**
+     * Replace all attribute mapping rows for a provider.
+     *
+     * Called by the admin save controller after the dynamic attribute-mapping rows UI
+     * is saved. Deletes all existing rows for the provider, then re-inserts from $rows.
+     *
+     * @param int          $providerId
+     * @param array<mixed> $rows  Mapping rows: attribute_type, attribute_name, sync_on_sso, transform_*.
+     */
+    public function replaceAttributeMappings(int $providerId, array $rows): void
+    {
+        $this->attrResource->replaceProviderMappings($providerId, $rows);
+        unset($this->attrCache[$providerId]);
+    }
+
+    /**
      * Delegate role/group mapping replace to the resource model.
      *
      * Invalidates the per-provider role cache for the given mapping type.
@@ -148,7 +189,8 @@ class MappingRepository
      * Used by CLI export to persist complete mapping state.
      *
      * @param  int $providerId
-     * @return array<string, array{attribute_name: string, sync_on_sso: int}>
+     * @return array<string, array{attribute_name: string, sync_on_sso: int, transform_function?: string|null,
+     *     transform_params?: string|null}>
      */
     public function getFullAttributeMap(int $providerId): array
     {
@@ -163,7 +205,8 @@ class MappingRepository
      * Load (and cache) all attribute mappings for a provider.
      *
      * @param  int $providerId
-     * @return array<string, array{attribute_name: string, sync_on_sso: int}>
+     * @return array<string, array{attribute_name: string, sync_on_sso: int, transform_function?: string|null,
+     *     transform_params?: string|null}>
      */
     private function getAttributeMap(int $providerId): array
     {

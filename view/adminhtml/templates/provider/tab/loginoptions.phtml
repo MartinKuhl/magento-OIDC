@@ -28,6 +28,7 @@ $syncCustomerGroup   = $block->getSyncCustomerGroupOnSso();
 $syncAdminProfile    = $block->getSyncAdminProfileOnSso();
 $syncAdminRole       = $block->getSyncAdminRoleOnSso();
 $idpInitiatedEnabled = $block->getIdpInitiatedEnabled();
+$headlessMode        = $block->getHeadlessMode();
 ?>
 <fieldset class="admin__fieldset" style="padding:0; border:0;">
 
@@ -362,6 +363,31 @@ $idpInitiatedEnabled = $block->getIdpInitiatedEnabled();
                         <?= $escaper->escapeHtml(__(
                             'When disabled (default), only SP-initiated login is allowed. '
                             . 'Enable only after verifying IdP-initiated flow works correctly in a test environment.'
+                        )) ?>
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td style="width:220px; vertical-align:top; padding-top:6px;">
+                    <label>
+                        <strong><?= $escaper->escapeHtml(__('Headless / PWA Mode')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <label style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                        <input type="hidden" name="headless_mode" value="0">
+                        <input type="checkbox"
+                               id="loginopt_headless_mode"
+                               name="headless_mode"
+                               value="1"
+                               <?= $headlessMode ? 'checked="checked"' : '' ?>>
+                        <?= $escaper->escapeHtml(__('Enable Headless / PWA Token Flow')) ?>
+                    </label>
+                    <p class="admin__field-note" style="color:#999; font-size:12px;">
+                        <?= $escaper->escapeHtml(__(
+                            'When enabled, the OIDC flow returns a short-lived customer token '
+                            . 'via window.postMessage instead of creating a session cookie. '
+                            . 'Use with the oidcLoginUrl(headless: true) GraphQL query in your PWA.'
                         )) ?>
                     </p>
                 </td>

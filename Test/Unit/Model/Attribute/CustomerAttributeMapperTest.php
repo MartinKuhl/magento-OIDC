@@ -9,6 +9,7 @@ use Magento\Directory\Model\ResourceModel\Country\Collection as CountryCollectio
 use Magento\Directory\Model\ResourceModel\Country\CollectionFactory as CountryCollectionFactory;
 use M2Oidc\OAuth\Helper\OAuthUtility;
 use M2Oidc\OAuth\Model\Attribute\CustomerAttributeMapper;
+use M2Oidc\OAuth\Model\Attribute\Transformer;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -25,6 +26,9 @@ class CustomerAttributeMapperTest extends TestCase
     /** @var CountryCollectionFactory&MockObject */
     private CountryCollectionFactory $countryCollectionFactory;
 
+    /** @var Transformer&MockObject */
+    private Transformer $transformer;
+
     /** @var CustomerAttributeMapper */
     private CustomerAttributeMapper $mapper;
 
@@ -35,9 +39,12 @@ class CustomerAttributeMapperTest extends TestCase
 
         $this->oauthUtility->method('customlog');
 
+        $this->transformer = $this->createMock(Transformer::class);
+
         $this->mapper = new CustomerAttributeMapper(
             $this->oauthUtility,
-            $this->countryCollectionFactory
+            $this->countryCollectionFactory,
+            $this->transformer
         );
     }
 

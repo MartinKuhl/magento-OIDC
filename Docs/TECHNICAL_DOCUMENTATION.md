@@ -1308,31 +1308,16 @@ Admin PKCE code verifier is now stored exclusively in shared cache (Redis/file) 
 - `MISSING_ATTRIBUTES_DETAIL` — lists received claims and missing attribute names so admins can fix mapping
 - `AdminUserCreator` no-role path now uses `ADMIN_ROLE_MAPPING_NO_MATCH` with the actual group list
 
+**Config Import / Export — Normalized Table Support** *(implemented)*
+- `Console/Command/ExportOidcConfig.php` includes `attribute_mappings` and `role_mappings` in the JSON payload via `MappingRepository::getFullAttributeMap()`, `getAdminRoleMappings()`, and `getCustomerGroupMappings()`.
+- `Console/Command/ImportOidcConfig.php` restores normalized rows via `persistProvider()` which calls `saveAttributeMapping()` per attribute type and `replaceRoleMappings()` per role/group mapping type.
+- Migrating a fully configured provider across environments (including Phase 4 normalized tables) is fully supported by `oidc:config:export` / `oidc:config:import`.
+
 ---
 
 ### Remaining Items — not yet implemented
 
 The following are genuine gaps in the current implementation, ordered roughly by impact.
-
-#### Claims Transformation DSL
-
-**Problem**: Attribute mappings are strictly 1:1 (OIDC claim key → Magento field). There is no built-in way to transform values — e.g., concatenate `given_name` + `family_name` into `firstname`, split a single `name` claim, prefix a username, or conditionally map a field based on another claim's value.
-
-**Current workaround**: Configure transformations at the IdP level before claims leave the IdP, or write a Magento observer on `oidc_after_attribute_mapping` that mutates the `mapped_attrs` DataObject.
-
-**Future approach**: A small expression language (or a predefined set of transform functions — `concat`, `split`, `prefix`, `regex_replace`) defined per attribute row in `m2oidc_oauth_attribute_mappings`. The `CustomerAttributeMapper` and `AdminAttributeMapper` would apply transforms after claim extraction and before Magento field assignment.
-
----
-
-#### OIDC Front-Channel Logout
-
-**Problem**: `BackChannelLogout` handles server-to-server logout (the IdP POSTs a JWT to Magento). Front-channel logout — where the IdP embeds an `<iframe>` pointing to each SP's logout URL in the user's browser — is not implemented. Some IdPs (Microsoft ENTRA, some Keycloak configurations) use front-channel-only logout.
-
-**Scope**: Add a `GET /m2oidc/actions/frontchannellogout?sid=<sid>` endpoint that looks up the PHP session via `OidcSessionRegistry`, destroys it, and returns a transparent `1x1` response. Register it with the IdP as the front-channel logout URI.
-
-**Effort**: Low (single controller, reuses `OidcSessionRegistry` and `BackChannelLogout` session-destruction logic).
-
----
 
 #### Token Introspection (RFC 7662)
 
@@ -1350,37 +1335,9 @@ The following are genuine gaps in the current implementation, ordered roughly by
 
 **Scope**: A customer account section (e.g., under **My Account > Login & Security**) that shows the bound provider name and a button to unlink it. Unlinking deletes the row from `m2oidc_oauth_user_provider`, allowing the next OIDC login to claim a new binding.
 
+**Note**: Admin-side unlink buttons (for both customer accounts and admin users) have been implemented — see `Controller/Adminhtml/Provider/UnlinkUser.php`. The remaining gap is customer self-service (frontend only).
+
 **Risk**: Any customer who unlinks can re-bind to a different IdP on next login. Gate the unlink action behind a re-authentication prompt or admin-only enablement toggle.
-
----
-
-#### Per-Provider Log Isolation
-
-**Problem**: All providers write to a single `var/log/M2Oidc.log`. In a multi-provider setup (e.g., one provider for admins, one for B2B customers, one for B2C customers), it is difficult to isolate events for a specific provider without grepping on `provider_id`.
-
-**Scope**: Add an optional per-provider `log_file_suffix` column. When set, `OidcLogger` writes to `var/log/M2Oidc_<suffix>.log` for that provider. `LogCleanup` cron should be extended to rotate all matching files. The single shared log remains the default.
-
----
-
-#### Config Import / Export — Normalized Table Support
-
-**Problem**: `Console/ExportOidcConfig.php` and `ImportOidcConfig.php` serialize the `m2oidc_oauth_client_apps` table. They do not include rows from the Phase 4 normalized tables (`m2oidc_oauth_attribute_mappings`, `m2oidc_oauth_role_mappings`). Migrating a fully configured provider across environments therefore requires additional manual DB export.
-
-**Scope**: Extend both CLI commands to JOIN and include the normalized mapping rows, keyed by `provider_id`. On import, re-insert them after resolving the new `provider_id` (which may differ between environments). This is a pure data-pipeline change with no auth-flow impact.
-
----
-
-#### Headless / PWA Token-Based Flow
-
-**Problem**: The entire auth flow is redirect-based. A headless storefront (React, Vue, Next.js) using Magento's GraphQL API cannot follow server-side redirects. The GraphQL resolvers (`OidcLoginUrl`, `OidcProviders`) return the SSO URL, but the redirect and nonce-cookie handoff are browser-navigation steps that don't work cleanly in a PWA context.
-
-**Scope**: A stateless, cookie-free variant of the customer auth flow:
-1. Frontend fetches the SSO URL from GraphQL.
-2. Opens a popup window (or redirect) to the IdP.
-3. After IdP callback, the module issues a short-lived Magento customer token (via `CustomerTokenServiceInterface`) instead of setting a session cookie.
-4. Token returned as a query parameter to the popup's `postMessage` or redirect destination.
-
-**Complexity**: High. Requires careful CSRF handling without relying on the PHP session for state storage. Consider scoping to a new controller area (`headless`) with explicit CORS headers and a DI-toggleable flow.
 
 ---
 
@@ -1391,14 +1348,6 @@ The following are genuine gaps in the current implementation, ordered roughly by
 **Scope**: Add optional DPoP proof generation in `AccessTokenRequest` and `Curl::callAPI()`. `JwtVerifier` would also need to accept a `dpop_jkt` binding in the access token's confirmation claim. Gate behind a per-provider `dpop_enabled` toggle. This is an advanced hardening measure relevant mainly to deployments handling highly sensitive data.
 
 **Effort**: Medium-high. Requires asymmetric key generation/storage on the Magento side and IdP support (Keycloak 21+, Zitadel support is partial as of 2026).
-
----
-
-#### Admin UI: Phase 4 Attribute Mapping Rows
-
-**Problem**: The Phase 4 normalized attribute mapping table (`m2oidc_oauth_attribute_mappings`) is read by the PHP layer but the provider edit form may still render legacy single-input fields for attribute mappings rather than dynamic, per-row UI with `sync_on_sso` toggles visible per attribute. Verify whether the current admin templates expose `sync_on_sso` for each attribute row — if they use legacy single inputs, the Phase 4 schema is being written but the per-attribute control isn't surfaced to admins.
-
-**Scope**: Provider edit form → Attribute Mapping tab: replace single `<input>` fields with a dynamic row component (similar to the existing role-mapping dynamic rows) that shows the claim key, the Magento field, and the `sync_on_sso` checkbox per attribute. Store changes to `m2oidc_oauth_attribute_mappings` on save.
 
 ---
 
@@ -1415,3 +1364,75 @@ The following are genuine gaps in the current implementation, ordered roughly by
 #### SAML 2.0 Support
 
 **Out of scope for this module** — SAML is a fundamentally different protocol and would require a separate module. If SAML support is needed, consider a dedicated `M2Oidc_Saml` module that reuses the JIT provisioning services (`AdminUserCreator`, `CustomerUserCreator`, `UserProvisioningService`) via DI injection but implements its own assertion parsing and session handling.
+
+---
+
+### Recently Completed Items
+
+The following items were previously listed as "not yet implemented" and have since been completed.
+
+#### OIDC Front-Channel Logout (FEAT-07)
+
+**Implemented in**: `Controller/Actions/FrontChannelLogout.php`, `Model/Service/SessionDestructionService.php`
+
+GET endpoint `https://<store>/m2oidc/actions/frontchannellogout?sid=<sid>`. IdP embeds it as an `<iframe>` after the user logs out. Looks up the PHP session via `OidcSessionRegistry::resolve()`, destroys matching sessions via `SessionDestructionService` (shared with `BackChannelLogout`), and returns a `1×1` transparent GIF. Rate-limited via `OidcRateLimiter`. Returns 400 when `sid` is absent or malformed.
+
+---
+
+#### Admin UI — Phase 4 Attribute Mapping Rows
+
+**Implemented in**: `view/adminhtml/templates/provider/tab/attrsettings.phtml`, `Block/Adminhtml/Provider/Edit/Tab/AttributeMapping.php`, `Controller/Adminhtml/Provider/Save.php`
+
+The Attribute Mapping tab on the provider edit form was converted from static single-input fields to a dynamic row component (matching the role-mapping rows). Each row shows: claim key (with datalist autocomplete from received claims), Magento attribute type (dropdown of all 13 normalized types), `sync_on_sso` checkbox, and Remove button. Rows are saved to `m2oidc_oauth_attribute_mappings` on form save. The dirty-field tracking JS was extended to cover the new container.
+
+---
+
+#### Claims Transformation DSL (FEAT-08)
+
+**Implemented in**: `Model/Attribute/Transformer.php`, `Model/Attribute/CustomerAttributeMapper.php`, `Model/Attribute/AdminAttributeMapper.php`, `Model/ResourceModel/OauthAttributeMapping.php`, `Model/Provider/MappingRepository.php`
+
+Predefined transform functions per attribute row in `m2oidc_oauth_attribute_mappings`. Four functions:
+- `concat` — joins multiple claim values (from `params.fields`) with a configurable delimiter
+- `split` — splits a claim value by delimiter and returns the part at a given index
+- `prefix` — prepends a literal string to the claim value
+- `regex_replace` — applies `preg_replace`; invalid patterns fall back to raw value with a WARNING log
+
+Transform function and params are stored as `transform_function` (varchar 32) and `transform_params` (varchar 255, JSON) columns in `m2oidc_oauth_attribute_mappings`. The admin UI Attribute Mapping rows include Transform and Params columns (built on the Phase 4 dynamic rows above).
+
+---
+
+#### Admin Unlink IdP Button (admin-side scope)
+
+**Implemented in**: `Controller/Adminhtml/Provider/UnlinkUser.php`, `Plugin/Customer/Block/OidcInfoPlugin.php`, `Plugin/User/Block/OidcUserInfoPlugin.php`
+
+Admin-side unlink button injected into:
+- Customer edit page (Personal Information table) — via `OidcInfoPlugin::afterToHtml()`
+- Admin user edit page (User Info tab) — via `OidcUserInfoPlugin::aroundGetFormHtml()`
+
+Both buttons POST to `Controller/Adminhtml/Provider/UnlinkUser` which calls `UserProviderResource::deleteMapping()`, logs the unlink action, and returns JSON. On success the button is replaced with "Not linked" text.
+
+---
+
+#### Per-Provider Log Isolation (FEAT-10)
+
+**Implemented in**: `Logger/OidcLogger.php`, `etc/db_schema.xml`
+
+Optional `log_file_suffix` (varchar 64, nullable) column on `m2oidc_oauth_client_apps`. When set, `OidcLogger` writes to `var/log/M2Oidc_<suffix>.log` for that provider. Handler instances are created on first use and cached in `OidcLogger::$extraHandlers`. The `LogCleanup` cron globs `M2Oidc_*.log` and applies the same age/disabled rotation logic. The shared `M2Oidc.log` remains the default.
+
+---
+
+#### Headless / PWA Token-Based Flow (FEAT-09)
+
+**Implemented in**: `Controller/Actions/HeadlessOidcCallback.php`, `Controller/Actions/CustomerLoginAction.php`, `Controller/Actions/ProcessUserAction.php`, `Controller/Actions/CheckAttributeMappingAction.php`, `Helper/OAuthSecurityHelper.php`, `Model/Resolver/OidcLoginUrl.php`, `etc/schema.graphqls`, `view/adminhtml/templates/provider/tab/loginoptions.phtml`, `Block/Adminhtml/Provider/Edit/Tab/LoginOptions.php`
+
+Per-provider `headless_mode` toggle (smallint, default 0). When enabled:
+
+1. PWA calls `oidcLoginUrl(provider_id: X, headless: true)` GraphQL → URL contains `?headless=1`.
+2. PWA opens the URL in a popup window.
+3. `SendAuthorizationRequest` detects `?headless=1` + `headless_mode=1` + `login_type=customer` → encodes `h:1` in relay state JSON.
+4. `ReadAuthorizationResponse` extracts `headless` flag, passes it via `setHeadless()` down the action chain.
+5. `CustomerLoginAction` creates a nonce tagged with `headless: true`, stores it in `oidc_headless_nonce` cookie, redirects to `HeadlessOidcCallback`.
+6. `HeadlessOidcCallback` redeems the nonce, verifies the headless flag, issues a Magento customer token via `Magento\Integration\Model\Oauth\TokenFactory`, and returns an HTML page that calls `window.opener.postMessage({status:"ok", token:"...", relayState:"..."}, origin)` then closes the popup.
+7. PWA receives the token, stores it in localStorage, uses it as `Authorization: Bearer <token>` for GraphQL requests.
+
+PKCE and state token validation are unchanged. Origin restriction enforced on `postMessage` target.

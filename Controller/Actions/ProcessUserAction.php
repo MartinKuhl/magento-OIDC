@@ -72,6 +72,11 @@ class ProcessUserAction
      */
     private int $providerId = 0;
 
+    /**
+     * @var bool Headless PWA mode flag (FEAT-09)
+     */
+    private bool $headless = false;
+
     /** @var \M2Oidc\OAuth\Controller\Actions\CustomerLoginAction */
     private readonly \M2Oidc\OAuth\Controller\Actions\CustomerLoginAction $customerLoginAction;
 
@@ -317,14 +322,23 @@ class ProcessUserAction
         if ($this->oauthUtility->getSessionData('guest_checkout')) {
             $this->oauthUtility->setSessionData('guest_checkout', null);
             $target = rtrim($this->oauthUtility->getBaseUrl(), '/') . '/checkout';
-            return $this->customerLoginAction->setUser($user)->setRelayState($target)->execute();
+            return $this->customerLoginAction->setUser($user)
+                ->setRelayState($target)
+                ->setHeadless($this->headless)
+                ->execute();
         }
 
         if (!empty($relayState)) {
-            return $this->customerLoginAction->setUser($user)->setRelayState($relayState)->execute();
+            return $this->customerLoginAction->setUser($user)
+                ->setRelayState($relayState)
+                ->setHeadless($this->headless)
+                ->execute();
         }
 
-        return $this->customerLoginAction->setUser($user)->setRelayState('/')->execute();
+        return $this->customerLoginAction->setUser($user)
+            ->setRelayState('/')
+            ->setHeadless($this->headless)
+            ->execute();
     }
 
     /**
@@ -444,6 +458,17 @@ class ProcessUserAction
     public function setProviderId(int $providerId): static
     {
         $this->providerId = $providerId;
+        return $this;
+    }
+
+    /**
+     * Set the headless PWA mode flag (FEAT-09).
+     *
+     * @param bool $headless When true, CustomerLoginAction redirects to HeadlessOidcCallback.
+     */
+    public function setHeadless(bool $headless): static
+    {
+        $this->headless = $headless;
         return $this;
     }
 

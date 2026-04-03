@@ -61,7 +61,8 @@ class OidcLoginUrl implements ResolverInterface
         ?array $args = null
     ): array {
         $args ??= [];
-        $providerId = isset($args['provider_id']) ? (int) $args['provider_id'] : null;
+        $providerId     = isset($args['provider_id']) ? (int) $args['provider_id'] : null;
+        $headlessArg    = isset($args['headless']) && (bool) $args['headless'];
 
         if ($providerId !== null && $providerId <= 0) {
             throw new GraphQlInputException(__('provider_id must be a positive integer.'));
@@ -95,6 +96,12 @@ class OidcLoginUrl implements ResolverInterface
         $label    = empty($provider['button_label'])
             ? null
             : (string) $provider['button_label'];
+
+        // FEAT-09: append ?headless=1 only when the caller requested it AND the provider
+        // has headless_mode=1. This prevents headless URLs leaking for standard providers.
+        if ($headlessArg && !empty($provider['headless_mode'])) {
+            $loginUrl .= (str_contains($loginUrl, '?') ? '&' : '?') . 'headless=1';
+        }
 
         return [
             'url'         => $loginUrl,

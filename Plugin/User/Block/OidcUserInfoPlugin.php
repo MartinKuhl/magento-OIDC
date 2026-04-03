@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace M2Oidc\OAuth\Plugin\User\Block;
 
 use Closure;
+use Magento\Backend\Model\UrlInterface as BackendUrl;
 use Magento\Framework\Escaper;
 use Magento\Framework\Registry;
 use Magento\User\Block\User\Edit\Tab\Main;
@@ -29,21 +30,27 @@ class OidcUserInfoPlugin
     /** @var Escaper */
     private readonly Escaper $escaper;
 
+    /** @var BackendUrl */
+    private readonly BackendUrl $backendUrl;
+
     /**
      * Constructor.
      *
      * @param UserProviderResource $userProviderResource
      * @param Registry             $registry
      * @param Escaper              $escaper
+     * @param BackendUrl           $backendUrl
      */
     public function __construct(
         UserProviderResource $userProviderResource,
         Registry $registry,
-        Escaper $escaper
+        Escaper $escaper,
+        BackendUrl $backendUrl
     ) {
         $this->userProviderResource = $userProviderResource;
         $this->registry = $registry;
         $this->escaper = $escaper;
+        $this->backendUrl = $backendUrl;
     }
 
     /**
@@ -96,6 +103,57 @@ class OidcUserInfoPlugin
                 ],
                 'expiration'
             );
+
+            if ($info && $userId > 0) {
+                $unlinkUrl  = $this->escaper->escapeUrl(
+                    $this->backendUrl->getUrl('m2oidc/provider/unlinkuser')
+                );
+                $confirmMsg = $this->escaper->escapeJs(
+                    (string) __(
+                        'Are you sure you want to unlink this admin user from their OIDC provider?'
+                        . ' They will be able to link to a different provider on next SSO login.'
+                    )
+                );
+                $unlinkHtml = '<button type="button"'
+                    . ' class="action-default m2oidc-unlink-btn"'
+                    . ' style="cursor:pointer;"'
+                    . ' data-unlink-url="' . $unlinkUrl . '"'
+                    . ' data-user-type="admin"'
+                    . ' data-user-id="' . $userId . '"'
+                    . ' data-confirm="' . $confirmMsg . '">'
+                    . $this->escaper->escapeHtmlAttr((string) __('Unlink IdP'))
+                    . '</button>'
+                    . '<script>'
+                    . '(function(){'
+                    . 'var btn=document.currentScript.previousElementSibling;'
+                    . 'btn.addEventListener("click",function(){'
+                    . 'if(!confirm(btn.dataset.confirm)){return;}'
+                    . 'var fd=new FormData();'
+                    . 'fd.append("user_type",btn.dataset.userType);'
+                    . 'fd.append("user_id",btn.dataset.userId);'
+                    . 'fd.append("form_key",window.FORM_KEY||"");'
+                    . 'fetch(btn.dataset.unlinkUrl,{method:"POST",body:fd,credentials:"same-origin"})'
+                    . '.then(function(r){return r.json();})'
+                    . '.then(function(d){'
+                    . 'if(d.success){var inf=btn.closest(".admin__field");'
+                    . 'if(inf){var txt=inf.querySelector(".admin__field-value");'
+                    . 'if(txt){txt.textContent="none";}}btn.remove();}'
+                    . 'else{alert(d.error||"Unlink failed");}'
+                    . '}).catch(function(){alert("Request failed");});'
+                    . '});'
+                    . '}());'
+                    . '</script>';
+
+                $fieldset->addField(
+                    'oidc_provider_unlink',
+                    'note',
+                    [
+                        'label' => '',
+                        'text'  => $unlinkHtml,
+                    ],
+                    'oidc_provider_info'
+                );
+            }
         }
 
         return $form->toHtml();

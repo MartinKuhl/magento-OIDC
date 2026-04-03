@@ -6,6 +6,7 @@ namespace M2Oidc\OAuth\Test\Unit\Model\Attribute;
 
 use M2Oidc\OAuth\Helper\OAuthUtility;
 use M2Oidc\OAuth\Model\Attribute\AdminAttributeMapper;
+use M2Oidc\OAuth\Model\Attribute\Transformer;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -19,6 +20,9 @@ class AdminAttributeMapperTest extends TestCase
     /** @var OAuthUtility&MockObject */
     private OAuthUtility $oauthUtility;
 
+    /** @var Transformer&MockObject */
+    private Transformer $transformer;
+
     /** @var AdminAttributeMapper */
     private AdminAttributeMapper $mapper;
 
@@ -27,7 +31,9 @@ class AdminAttributeMapperTest extends TestCase
         $this->oauthUtility = $this->createMock(OAuthUtility::class);
         $this->oauthUtility->method('customlog');
 
-        $this->mapper = new AdminAttributeMapper($this->oauthUtility);
+        $this->transformer = $this->createMock(Transformer::class);
+
+        $this->mapper = new AdminAttributeMapper($this->oauthUtility, $this->transformer);
     }
 
     // -------------------------------------------------------------------------

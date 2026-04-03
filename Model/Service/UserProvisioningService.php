@@ -70,6 +70,7 @@ class UserProvisioningService
      * @param  string|null $lastName
      * @param  mixed[]     $oidcGroups
      * @param  int         $providerId
+     * @param  mixed[]     $rawClaims  Full flattened OIDC claim set (forwarded to mapper for concat transforms)
      */
     public function provisionAdmin(
         string $email,
@@ -77,7 +78,8 @@ class UserProvisioningService
         ?string $firstName,
         ?string $lastName,
         array $oidcGroups,
-        int $providerId
+        int $providerId,
+        array $rawClaims = []
     ): ?\Magento\User\Model\User {
         $transport = new DataObject([
             'email'         => $email,
@@ -86,6 +88,7 @@ class UserProvisioningService
             'last_name'     => $lastName,
             'groups'        => $oidcGroups,
             'provider_id'   => $providerId,
+            'raw_claims'    => $rawClaims,
             'skip_creation' => false,
         ]);
 
@@ -105,7 +108,8 @@ class UserProvisioningService
             $transport->getData('first_name'),
             $transport->getData('last_name'),
             (array)  $transport->getData('groups'),
-            (int)    $transport->getData('provider_id')
+            (int)    $transport->getData('provider_id'),
+            (array)  ($transport->getData('raw_claims') ?? [])
         );
 
         $this->eventManager->dispatch('oidc_admin_user_after_create', [

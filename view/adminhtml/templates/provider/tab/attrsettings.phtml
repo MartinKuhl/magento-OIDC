@@ -10,6 +10,8 @@
 $data = $block->getProviderData();
 $roles = $block->getAllRoles();
 $oidcClaims = $block->getOidcClaims();
+$attrMappings     = $block->getAttributeMappings();       // Phase 4 normalized rows
+$attrTypeOptions  = $block->getAttributeTypeOptions();    // Returns array of value/label option pairs
 $val = static function (string $key, $default = '') use ($data) {
     return $data[$key] ?? $default;
 };
@@ -527,10 +529,162 @@ $customerGroupMappings = is_array($decodedCgm) ? $decodedCgm : [];
 </div>
 
 
+<!-- ── Phase 4: Attribute Sync Settings ──────────────────────────────────── -->
+<div class="admin__fieldset-wrapper" style="margin-top:24px;" id="m2oidc-attr-sync-section">
+    <div class="admin__fieldset-wrapper-title" style="margin-bottom:12px;">
+        <span class="admin__fieldset-wrapper-title-text"
+              style="font-size:15px; font-weight:700; color:#1a1a1a; letter-spacing:0.2px;">
+            <?= $escaper->escapeHtml(__('Attribute Sync Settings')) ?>
+        </span>
+        <p class="admin__field-note" style="font-style:italic; margin-top:8px;">
+            <?= $escaper->escapeHtml(
+                __('Per-attribute sync control. Each row maps a Magento attribute to the OIDC claim '
+                    . 'that provides its value and controls whether it is re-synced on every SSO login. '
+                    . 'Rows here are stored in the normalized mapping table and take precedence over the '
+                    . 'legacy single-field inputs above when claim keys overlap.')
+            ) ?>
+        </p>
+    </div>
+
+    <table class="admin__table-primary" style="width:100%; margin-top:16px;">
+        <thead>
+            <tr>
+                <th style="width:170px;"><?= $escaper->escapeHtml(__('Magento Attribute')) ?></th>
+                <th style="width:170px;"><?= $escaper->escapeHtml(__('Claim Key')) ?></th>
+                <th style="width:130px;"><?= $escaper->escapeHtml(__('Transform')) ?></th>
+                <th><?= $escaper->escapeHtml(__('Transform Params (JSON)')) ?></th>
+                <th style="width:80px; text-align:center;"><?= $escaper->escapeHtml(__('Sync on SSO')) ?></th>
+                <th style="width:40px;"></th>
+            </tr>
+        </thead>
+        <tbody id="m2oidc-attr-mapping-container">
+            <?php
+            // Render existing normalized rows, or a single blank placeholder row
+            $emptyRow   = ['attribute_type' => '', 'attribute_name' => '', 'sync_on_sso' => 0,
+                           'transform_function' => null, 'transform_params' => null];
+            $renderRows = !empty($attrMappings) ? $attrMappings : [$emptyRow];
+            foreach ($renderRows as $rowIdx => $attrRow):
+                $attrType      = (string) ($attrRow['attribute_type']    ?? '');
+                $attrName      = (string) ($attrRow['attribute_name']    ?? '');
+                $syncOnSso     = (int)    ($attrRow['sync_on_sso']       ?? 0);
+                $transformFn   = (string) ($attrRow['transform_function'] ?? '');
+                $transformPr   = (string) ($attrRow['transform_params']  ?? '');
+                ?>
+            <tr class="m2oidc-attr-row">
+                <td>
+                    <select name="attr_mappings[<?= (int) $rowIdx ?>][attribute_type]"
+                            class="admin__control-select m2oidc-attr-type-select"
+                            style="width:100%;">
+                        <option value=""><?= $escaper->escapeHtml(__('-- Select --')) ?></option>
+                        <?php foreach ($attrTypeOptions as $opt): ?>
+                        <option value="<?= $escaper->escapeHtmlAttr($opt['value']) ?>"
+                            <?= ($attrType === $opt['value']) ? 'selected="selected"' : '' ?>>
+                            <?= $escaper->escapeHtml($opt['label']) ?>
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+                </td>
+                <td>
+                    <input type="text"
+                           name="attr_mappings[<?= (int) $rowIdx ?>][attribute_name]"
+                           class="admin__control-text"
+                           list="oidc-claims-datalist"
+                           placeholder="<?= $escaper->escapeHtmlAttr(__('e.g. given_name')) ?>"
+                           value="<?= $escaper->escapeHtmlAttr($attrName) ?>"
+                           style="width:100%;">
+                </td>
+                <td>
+                    <select name="attr_mappings[<?= (int) $rowIdx ?>][transform_function]"
+                            class="admin__control-select m2oidc-attr-transform-select"
+                            style="width:100%;">
+                        <option value=""><?= $escaper->escapeHtml(__('— none —')) ?></option>
+                        <option value="concat"
+                            <?= ($transformFn === 'concat') ? 'selected="selected"' : '' ?>>
+                            <?= $escaper->escapeHtml(__('concat')) ?>
+                        </option>
+                        <option value="split"
+                            <?= ($transformFn === 'split') ? 'selected="selected"' : '' ?>>
+                            <?= $escaper->escapeHtml(__('split')) ?>
+                        </option>
+                        <option value="prefix"
+                            <?= ($transformFn === 'prefix') ? 'selected="selected"' : '' ?>>
+                            <?= $escaper->escapeHtml(__('prefix')) ?>
+                        </option>
+                        <option value="regex_replace"
+                            <?= ($transformFn === 'regex_replace') ? 'selected="selected"' : '' ?>>
+                            <?= $escaper->escapeHtml(__('regex_replace')) ?>
+                        </option>
+                    </select>
+                </td>
+                <td>
+                    <input type="text"
+                           name="attr_mappings[<?= (int) $rowIdx ?>][transform_params]"
+                           class="admin__control-text"
+                           placeholder='<?= $escaper->escapeHtmlAttr(__('e.g. {"fields":"given_name,family_name"}')) ?>'
+                           value="<?= $escaper->escapeHtmlAttr($transformPr) ?>"
+                           style="width:100%;">
+                </td>
+                <td style="text-align:center;">
+                    <input type="hidden"
+                           name="attr_mappings[<?= (int) $rowIdx ?>][sync_on_sso]"
+                           value="0">
+                    <input type="checkbox"
+                           name="attr_mappings[<?= (int) $rowIdx ?>][sync_on_sso]"
+                           value="1"
+                           <?= $syncOnSso ? 'checked="checked"' : '' ?>>
+                </td>
+                <td style="text-align:center;">
+                    <button type="button"
+                            class="action-delete m2oidc-remove-attr-row"
+                            title="<?= $escaper->escapeHtmlAttr(__('Remove')) ?>">
+                        &times;
+                    </button>
+                </td>
+            </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+
+    <div style="margin-top:10px;">
+        <button type="button" id="m2oidc-add-attr-row" class="action-default">
+            + <?= $escaper->escapeHtml(__('Add Attribute Row')) ?>
+        </button>
+    </div>
+</div>
+
 </fieldset>
 
 <script>
 (function () {
+    // Dynamic attribute mapping rows (Phase 4)
+    var attrContainer = document.getElementById('m2oidc-attr-mapping-container');
+    var addAttrBtn    = document.getElementById('m2oidc-add-attr-row');
+    if (addAttrBtn && attrContainer) {
+        var attrIndex = attrContainer.querySelectorAll('.m2oidc-attr-row').length;
+        addAttrBtn.addEventListener('click', function () {
+            var templateRow = attrContainer.querySelector('.m2oidc-attr-row');
+            if (!templateRow) { return; }
+            var clone = templateRow.cloneNode(true);
+            clone.querySelectorAll('input, select').forEach(function (el) {
+                el.name = el.name.replace(/\[\d+\]/, '[' + attrIndex + ']');
+                if (el.type === 'checkbox') {
+                    el.checked = false;
+                } else if (el.type !== 'hidden') {
+                    el.value = '';
+                    if (el.tagName === 'SELECT') { el.selectedIndex = 0; }
+                }
+            });
+            attrContainer.appendChild(clone);
+            attrIndex++;
+        });
+        attrContainer.addEventListener('click', function (e) {
+            if (e.target.classList.contains('m2oidc-remove-attr-row')) {
+                var rows = attrContainer.querySelectorAll('.m2oidc-attr-row');
+                if (rows.length > 1) { e.target.closest('.m2oidc-attr-row').remove(); }
+            }
+        });
+    }
+
     // Dynamic role mapping rows
     var roleContainer = document.getElementById('m2oidc-role-mappings');
     var addRoleBtn    = document.getElementById('m2oidc-add-mapping');

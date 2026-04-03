@@ -242,7 +242,10 @@ class CustomerUserCreator
                 ->setLastname($lastName);
 
             // Map customer attributes via strategy (Phase 3.2); use per-provider mapper if registered
-            $mapped = $this->resolveMapper($providerId)->map($flattenedAttrs, $this->buildMappingConfig($rawAttrs));
+            $mapped = $this->resolveMapper($providerId)->map(
+                $flattenedAttrs,
+                $this->buildMappingConfig($rawAttrs, $providerId)
+            );
 
             if (isset($mapped['dob'])) {
                 $customer->setDob($mapped['dob']);
@@ -506,12 +509,27 @@ class CustomerUserCreator
      *
      * Keys are attribute types; values are the OIDC claim names resolved from config.
      * The '_raw_attrs' key carries the original nested OIDC response for dot-path support.
+     * The '_transforms' key carries per-attribute-type transform config from MappingRepository.
      *
-     * @param  array<mixed> $rawAttrs Original nested OIDC response
+     * @param  array<mixed> $rawAttrs   Original nested OIDC response
+     * @param  int          $providerId Provider ID for transform lookup (0 = no transforms)
      * @return array<string,mixed>
      */
-    private function buildMappingConfig(array $rawAttrs = []): array
+    private function buildMappingConfig(array $rawAttrs = [], int $providerId = 0): array
     {
+        $transforms = [];
+        if ($providerId > 0) {
+            $attrMap = $this->mappingRepository->getFullAttributeMap($providerId);
+            foreach ($attrMap as $type => $row) {
+                if (!empty($row['transform_function'])) {
+                    $transforms[$type] = [
+                        'function' => $row['transform_function'],
+                        'params'   => $row['transform_params'] ?? null,
+                    ];
+                }
+            }
+        }
+
         return [
             'dob'             => $this->dobAttribute,
             'gender'          => $this->genderAttribute,
@@ -521,6 +539,7 @@ class CustomerUserCreator
             'billing_country' => $this->countryAttribute,
             'billing_phone'   => $this->phoneAttribute,
             '_raw_attrs'      => $rawAttrs,
+            '_transforms'     => $transforms,
         ];
     }
 }

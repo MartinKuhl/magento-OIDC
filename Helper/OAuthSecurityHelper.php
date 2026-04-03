@@ -128,20 +128,26 @@ class OAuthSecurityHelper
      * customer email and relay state in cache for session-safe
      * redirect handling.
      *
-     * @param string $email Customer email address
+     * FEAT-09: When $headless=true, the nonce payload includes 'headless: true' so that
+     * HeadlessOidcCallback knows to issue a token instead of a session cookie.
+     *
+     * @param string $email      Customer email address
      * @param string $relayState Target URL for post-login redirect
+     * @param bool   $headless   Headless PWA mode (FEAT-09)
      * @return string 32-character hex nonce
      */
     public function createCustomerLoginNonce(
         string $email,
-        string $relayState
+        string $relayState,
+        bool $headless = false
     ): string {
         $nonce = bin2hex(random_bytes(16));
         $cacheKey = self::CUSTOMER_NONCE_CACHE_PREFIX . $nonce;
-        $data = json_encode(
-            ['email' => $email, 'relayState' => $relayState],
-            JSON_THROW_ON_ERROR
-        );
+        $payload = ['email' => $email, 'relayState' => $relayState];
+        if ($headless) {
+            $payload['headless'] = true;
+        }
+        $data = json_encode($payload, JSON_THROW_ON_ERROR);
         $this->cache->save($data, $cacheKey, [], self::NONCE_TTL);
         return $nonce;
     }
@@ -154,9 +160,8 @@ class OAuthSecurityHelper
      * null if the nonce is invalid, expired, or already used.
      *
      * @param string $nonce The nonce to redeem
-     * @return array{email: string, relayState: string}|null
-     *         Array with email and relayState on success, null on
-     *         failure
+     * @return array{email: string, relayState: string, headless: bool}|null
+     *         Array with email, relayState, and headless flag on success, null on failure
      */
     public function redeemCustomerLoginNonce(string $nonce): ?array
     {
@@ -194,8 +199,9 @@ class OAuthSecurityHelper
         }
 
         return [
-            'email' => $decoded['email'],
-            'relayState' => $decoded['relayState']
+            'email'     => $decoded['email'],
+            'relayState' => $decoded['relayState'],
+            'headless'  => (bool) ($decoded['headless'] ?? false),
         ];
     }
 
@@ -254,12 +260,16 @@ class OAuthSecurityHelper
      * encoded payload gains a 'p' key (integer). Decoders that receive state without
      * 'p' default to 0 (let callers fall back to getFirstItem()).
      *
+     * Headless mode (FEAT-09): When $headless=true the payload gains an 'h' key (int 1).
+     * This signals HeadlessOidcCallback to issue a token instead of a session cookie.
+     *
      * @param  string   $relayState  The original relay state URL
      * @param  string   $sessionId   The current PHP session ID
      * @param  string   $appName     The OAuth app name
      * @param  string   $loginType   Login type (admin or customer)
      * @param  string   $stateToken  CSRF state token
      * @param  int|null $providerId  Provider row ID (null = omit, backward-compat)
+     * @param  bool     $headless    When true, encode headless=1 flag (FEAT-09)
      * @return string URL-safe base64-encoded JSON string
      */
     public function encodeRelayState(
@@ -268,7 +278,8 @@ class OAuthSecurityHelper
         string $appName,
         string $loginType,
         string $stateToken,
-        ?int $providerId = null
+        ?int $providerId = null,
+        bool $headless = false
     ): string {
         $data = [
             'r' => $relayState,
@@ -280,6 +291,9 @@ class OAuthSecurityHelper
         if ($providerId !== null && $providerId > 0) {
             $data['p'] = $providerId;
         }
+        if ($headless) {
+            $data['h'] = 1;
+        }
         $encoded = json_encode($data, JSON_THROW_ON_ERROR);
         return rtrim(strtr(base64_encode($encoded), '+/', '-_'), '=');
     }
@@ -290,9 +304,11 @@ class OAuthSecurityHelper
      * MP-02: Returns 'providerId' (int, 0 if absent) alongside existing keys for
      * backward-compat with state tokens encoded before this sprint.
      *
+     * FEAT-09: Returns 'headless' (bool, false if absent) for headless PWA flow.
+     *
      * @param  string $encoded The encoded state string
      * @return array<string, mixed>|null Associative array with keys: relayState, sessionId, appName,
-     *                                   loginType, stateToken, providerId; or null on failure
+     *                                   loginType, stateToken, providerId, headless; or null on failure
      */
     public function decodeRelayState(string $encoded): ?array
     {
@@ -313,6 +329,8 @@ class OAuthSecurityHelper
             'stateToken' => $data['t'],
             // MP-02: 0 = unknown/legacy (callers use getFirstItem() as fallback)
             'providerId' => isset($data['p']) ? (int) $data['p'] : 0,
+            // FEAT-09: headless PWA flow
+            'headless'   => !empty($data['h']),
         ];
     }
 

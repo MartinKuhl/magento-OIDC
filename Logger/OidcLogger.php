@@ -15,6 +15,12 @@ use Psr\Log\LoggerInterface;
  * Extracted from OAuthUtility to give a focused, injectable log API.
  * Writes structured JSON entries to var/log/M2Oidc.log via the module logger.
  *
+ * Per-provider log isolation: pass the provider's `log_file_suffix` value as
+ * the optional $logSuffix parameter on customlog() / customlogContext(). When
+ * set, the entry is written to var/log/M2Oidc_<suffix>.log instead of the
+ * shared log. The per-suffix Monolog loggers are created lazily and cached for
+ * the lifetime of the request.
+ *
  * Two output formats are supported, controlled by the `oidc/logging/json_lines`
  * store config flag (default 0 = legacy):
  *
@@ -42,6 +48,13 @@ class OidcLogger
     public const SENSITIVE_LOG_KEYS = [
         'client_secret', 'access_token', 'id_token', 'refresh_token', 'password', 'token',
     ];
+
+    /**
+     * Cache of per-suffix Monolog logger instances, keyed by sanitised suffix.
+     *
+     * @var array<string, \Monolog\Logger>
+     */
+    private array $suffixLoggers = [];
 
     /**
      * @param LoggerInterface      $psrLogger     PSR logger (wired to Magento\Framework\Logger\Monolog)
@@ -88,9 +101,11 @@ class OidcLogger
      * JSON Lines format (json_lines = 1):
      *   {"ts":"...","level":"debug","message":"...","context":{}}
      *
-     * @param string $txt Human-readable log message
+     * @param string $txt       Human-readable log message
+     * @param string $logSuffix Optional per-provider log file suffix (from provider's log_file_suffix column).
+     *                          When non-empty, writes to var/log/M2Oidc_<suffix>.log instead of the shared log.
      */
-    public function customlog(string $txt): void
+    public function customlog(string $txt, string $logSuffix = ''): void
     {
         if (!$this->isLogEnable()) {
             return;
@@ -106,8 +121,9 @@ class OidcLogger
             $payload['context'] = new \stdClass();
         }
 
-        $entry = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-        $this->moduleLogger->debug($entry !== false ? $entry : $txt);
+        $entry  = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        $logger = $this->resolveLogger($logSuffix);
+        $logger->debug($entry !== false ? $entry : $txt);
     }
 
     /**
@@ -121,10 +137,11 @@ class OidcLogger
      * JSON Lines format (json_lines = 1):
      *   {"ts":"...","level":"info","event":"...","context":{"key":"value",...}}
      *
-     * @param string  $event   Short dot-notation event name (e.g. "oidc.login.success")
-     * @param mixed[] $context Additional key-value context to include in the log entry
+     * @param string  $event     Short dot-notation event name (e.g. "oidc.login.success")
+     * @param mixed[] $context   Additional key-value context to include in the log entry
+     * @param string  $logSuffix Optional per-provider log file suffix (see customlog())
      */
-    public function customlogContext(string $event, array $context = []): void
+    public function customlogContext(string $event, array $context = [], string $logSuffix = ''): void
     {
         if (!$this->isLogEnable()) {
             return;
@@ -154,8 +171,9 @@ class OidcLogger
             );
         }
 
-        $entry = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-        $this->moduleLogger->debug($entry !== false ? $entry : $event);
+        $entry  = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        $logger = $this->resolveLogger($logSuffix);
+        $logger->debug($entry !== false ? $entry : $event);
     }
 
     /**
@@ -192,21 +210,88 @@ class OidcLogger
     }
 
     /**
+     * Delete all per-provider log files matching var/log/M2Oidc_*.log.
+     *
+     * Called by LogCleanup cron to rotate suffix-based log files with the same
+     * age/disabled criteria applied to the shared M2Oidc.log.
+     */
+    public function deleteProviderLogFiles(): void
+    {
+        try {
+            $logDir = $this->directoryList->getPath(DirectoryList::VAR_DIR) . '/log/';
+            $files = \Magento\Framework\Filesystem\Glob::glob($logDir . 'M2Oidc_*.log');
+            if (!is_array($files)) {
+                return;
+            }
+            foreach ($files as $file) {
+                try {
+                    if ($this->fileDriver->isExists($file)) {
+                        $this->fileDriver->deleteFile($file);
+                    }
+                } catch (\Exception $inner) {
+                    $this->psrLogger->debug('Could not delete provider log file: ' . $inner->getMessage());
+                }
+            }
+        } catch (\Exception $e) {
+            $this->psrLogger->debug('Path error while deleting provider log files: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Common log method accessible from all classes.
      *
-     * @param string|object $msg Debug message to log
-     * @param mixed|null    $obj Optional object to dump
+     * @param string|object $msg       Debug message to log
+     * @param mixed|null    $obj       Optional object to dump
+     * @param string        $logSuffix Optional per-provider log file suffix
      */
-    public function logDebug(string|object $msg = "", $obj = null): void
+    public function logDebug(string|object $msg = "", $obj = null, string $logSuffix = ''): void
     {
         if (is_object($msg)) {
-            $this->customlog(json_encode($msg, JSON_UNESCAPED_SLASHES) ?: '');
+            $this->customlog(json_encode($msg, JSON_UNESCAPED_SLASHES) ?: '', $logSuffix);
         } else {
-            $this->customlog($msg);
+            $this->customlog($msg, $logSuffix);
         }
 
         if ($obj !== null) {
-            $this->customlog(json_encode($obj, JSON_UNESCAPED_SLASHES) ?: '');
+            $this->customlog(json_encode($obj, JSON_UNESCAPED_SLASHES) ?: '', $logSuffix);
         }
+    }
+
+    /**
+     * Resolve the Monolog logger to write to.
+     *
+     * Returns the shared module logger when $logSuffix is empty.
+     * For a non-empty suffix, lazily creates (and caches) a StreamHandler-backed
+     * Monolog logger writing to var/log/M2Oidc_<suffix>.log.
+     *
+     * @param string $logSuffix Provider's log_file_suffix value (may be empty)
+     * @return \Monolog\Logger
+     */
+    private function resolveLogger(string $logSuffix): \Monolog\Logger
+    {
+        // Sanitise: allow only letters, digits, underscores, hyphens
+        $suffix = preg_replace('/[^a-zA-Z0-9_-]/', '', $logSuffix);
+
+        if ($suffix === null || $suffix === '') {
+            return $this->moduleLogger;
+        }
+
+        if (isset($this->suffixLoggers[$suffix])) {
+            return $this->suffixLoggers[$suffix];
+        }
+
+        try {
+            $logPath = $this->directoryList->getPath(DirectoryList::VAR_DIR)
+                . '/log/M2Oidc_' . $suffix . '.log';
+            $handler  = new \Monolog\Handler\StreamHandler($logPath, \Monolog\Level::Debug);
+            $logger   = new \Monolog\Logger('m2oidc_' . $suffix, [$handler]);
+            $this->suffixLoggers[$suffix] = $logger;
+        } catch (\Exception $e) {
+            // Fall back to the shared logger if the suffix file cannot be opened
+            $this->psrLogger->debug('Could not open provider log file, falling back: ' . $e->getMessage());
+            $this->suffixLoggers[$suffix] = $this->moduleLogger;
+        }
+
+        return $this->suffixLoggers[$suffix];
     }
 }
