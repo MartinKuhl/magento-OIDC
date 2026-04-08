@@ -76,42 +76,22 @@ class OidcInfoPlugin
 
         $unlinkHtml = '';
         if ($info) {
-            $unlinkUrl = $this->escaper->escapeUrl(
-                $this->backendUrl->getUrl('m2oidc/provider/unlinkuser')
-            );
-            $confirmMsg = $this->escaper->escapeJs(
-                (string) __(
+            $configJson = $this->escaper->escapeHtmlAttr((string) json_encode([
+                'unlinkUrl'      => $this->backendUrl->getUrl('m2oidc/provider/unlinkuser'),
+                'userType'       => 'customer',
+                'userId'         => $customerId,
+                'confirmMessage' => (string) __(
                     'Are you sure you want to unlink this customer from their OIDC provider?'
                     . ' They will be able to link to a different provider on next SSO login.'
-                )
-            );
+                ),
+                'valueSelector'  => 'tr .value',
+            ]));
             $unlinkHtml = '<button type="button"'
                 . ' class="action-default m2oidc-unlink-btn"'
                 . ' style="margin-left:10px; cursor:pointer;"'
-                . ' data-unlink-url="' . $unlinkUrl . '"'
-                . ' data-user-type="customer"'
-                . ' data-user-id="' . $customerId . '"'
-                . ' data-confirm="' . $confirmMsg . '">'
+                . ' data-m2oidc-config="' . $configJson . '">'
                 . $this->escaper->escapeHtmlAttr((string) __('Unlink IdP'))
-                . '</button>'
-                . '<script>'
-                . '(function(){'
-                . 'var btn=document.currentScript.previousElementSibling;'
-                . 'btn.addEventListener("click",function(){'
-                . 'if(!confirm(btn.dataset.confirm)){return;}'
-                . 'var fd=new FormData();'
-                . 'fd.append("user_type",btn.dataset.userType);'
-                . 'fd.append("user_id",btn.dataset.userId);'
-                . 'fd.append("form_key",window.FORM_KEY||"");'
-                . 'fetch(btn.dataset.unlinkUrl,{method:"POST",body:fd,credentials:"same-origin"})'
-                . '.then(function(r){return r.json();})'
-                . '.then(function(d){'
-                . 'if(d.success){btn.closest("tr").querySelector(".value").textContent="none";btn.remove();}'
-                . 'else{alert(d.error||"Unlink failed");}'
-                . '}).catch(function(){alert("Request failed");});'
-                . '});'
-                . '}());'
-                . '</script>';
+                . '</button>';
         }
 
         $label = __('OIDC Provider');

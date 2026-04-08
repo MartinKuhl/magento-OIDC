@@ -94,66 +94,35 @@ class OidcUserInfoPlugin
 
         $fieldset = $form->getElement('base_fieldset');
         if ($fieldset) {
+            $unlinkHtml = '';
+            if ($info && $userId > 0) {
+                $configJson = $this->escaper->escapeHtmlAttr((string) json_encode([
+                    'unlinkUrl'      => $this->backendUrl->getUrl('m2oidc/provider/unlinkuser'),
+                    'userType'       => 'admin',
+                    'userId'         => $userId,
+                    'confirmMessage' => (string) __(
+                        'Are you sure you want to unlink this admin user from their OIDC provider?'
+                        . ' They will be able to link to a different provider on next SSO login.'
+                    ),
+                    'valueSelector'  => '.admin__field-value',
+                ]));
+                $unlinkHtml = ' <button type="button"'
+                    . ' class="action-default m2oidc-unlink-btn"'
+                    . ' style="margin-left:10px; cursor:pointer;"'
+                    . ' data-m2oidc-config="' . $configJson . '">'
+                    . $this->escaper->escapeHtmlAttr((string) __('Unlink IdP'))
+                    . '</button>';
+            }
+
             $fieldset->addField(
                 'oidc_provider_info',
                 'note',
                 [
                     'label' => __('OIDC Provider'),
-                    'text'  => $providerText,
+                    'text'  => $providerText . $unlinkHtml,
                 ],
                 'expiration'
             );
-
-            if ($info && $userId > 0) {
-                $unlinkUrl  = $this->escaper->escapeUrl(
-                    $this->backendUrl->getUrl('m2oidc/provider/unlinkuser')
-                );
-                $confirmMsg = $this->escaper->escapeJs(
-                    (string) __(
-                        'Are you sure you want to unlink this admin user from their OIDC provider?'
-                        . ' They will be able to link to a different provider on next SSO login.'
-                    )
-                );
-                $unlinkHtml = '<button type="button"'
-                    . ' class="action-default m2oidc-unlink-btn"'
-                    . ' style="cursor:pointer;"'
-                    . ' data-unlink-url="' . $unlinkUrl . '"'
-                    . ' data-user-type="admin"'
-                    . ' data-user-id="' . $userId . '"'
-                    . ' data-confirm="' . $confirmMsg . '">'
-                    . $this->escaper->escapeHtmlAttr((string) __('Unlink IdP'))
-                    . '</button>'
-                    . '<script>'
-                    . '(function(){'
-                    . 'var btn=document.currentScript.previousElementSibling;'
-                    . 'btn.addEventListener("click",function(){'
-                    . 'if(!confirm(btn.dataset.confirm)){return;}'
-                    . 'var fd=new FormData();'
-                    . 'fd.append("user_type",btn.dataset.userType);'
-                    . 'fd.append("user_id",btn.dataset.userId);'
-                    . 'fd.append("form_key",window.FORM_KEY||"");'
-                    . 'fetch(btn.dataset.unlinkUrl,{method:"POST",body:fd,credentials:"same-origin"})'
-                    . '.then(function(r){return r.json();})'
-                    . '.then(function(d){'
-                    . 'if(d.success){var inf=btn.closest(".admin__field");'
-                    . 'if(inf){var txt=inf.querySelector(".admin__field-value");'
-                    . 'if(txt){txt.textContent="none";}}btn.remove();}'
-                    . 'else{alert(d.error||"Unlink failed");}'
-                    . '}).catch(function(){alert("Request failed");});'
-                    . '});'
-                    . '}());'
-                    . '</script>';
-
-                $fieldset->addField(
-                    'oidc_provider_unlink',
-                    'note',
-                    [
-                        'label' => '',
-                        'text'  => $unlinkHtml,
-                    ],
-                    'oidc_provider_info'
-                );
-            }
         }
 
         return $form->toHtml();
