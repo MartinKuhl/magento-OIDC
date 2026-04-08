@@ -202,6 +202,8 @@ class AdminUserCreator
         }
         $connection->beginTransaction();
         try {
+            // M-05: User must be saved first to get an ID before role can be assigned.
+            // Both saves are inside this transaction — rollback reverts both on failure.
             $this->userResource->save($user);
             $this->oauthUtility->customlog("AdminUserCreator: User saved with ID: " . $user->getId());
 

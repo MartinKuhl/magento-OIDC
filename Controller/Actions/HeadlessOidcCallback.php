@@ -12,6 +12,7 @@ use Magento\Framework\Controller\Result\RawFactory;
 use Magento\Integration\Model\Oauth\TokenFactory;
 use M2Oidc\OAuth\Helper\OAuthSecurityHelper;
 use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Model\Security\OidcRateLimiter;
 use Magento\Store\Model\StoreManagerInterface;
 use Magento\Customer\Model\CustomerFactory;
 
@@ -60,6 +61,9 @@ class HeadlessOidcCallback extends BaseAction
     /** @var \Magento\Framework\Escaper */
     private readonly \Magento\Framework\Escaper $escaper;
 
+    /** @var OidcRateLimiter */
+    private readonly OidcRateLimiter $rateLimiter;
+
     /**
      * @param Context                     $context
      * @param OAuthUtility                $oauthUtility
@@ -72,6 +76,7 @@ class HeadlessOidcCallback extends BaseAction
      * @param RawFactory                  $rawResultFactory
      * @param TokenFactory                $tokenFactory
      * @param \Magento\Framework\Escaper  $escaper
+     * @param OidcRateLimiter             $rateLimiter
      */
     public function __construct(
         Context                       $context,
@@ -84,7 +89,8 @@ class HeadlessOidcCallback extends BaseAction
         StoreManagerInterface         $storeManager,
         RawFactory                    $rawResultFactory,
         TokenFactory                  $tokenFactory,
-        \Magento\Framework\Escaper    $escaper
+        \Magento\Framework\Escaper    $escaper,
+        OidcRateLimiter               $rateLimiter
     ) {
         $this->cookieManager         = $cookieManager;
         $this->cookieMetadataFactory = $cookieMetadataFactory;
@@ -95,6 +101,7 @@ class HeadlessOidcCallback extends BaseAction
         $this->rawResultFactory      = $rawResultFactory;
         $this->tokenFactory          = $tokenFactory;
         $this->escaper               = $escaper;
+        $this->rateLimiter           = $rateLimiter;
         parent::__construct($context, $oauthUtility);
     }
 
@@ -105,6 +112,16 @@ class HeadlessOidcCallback extends BaseAction
     public function execute(): \Magento\Framework\Controller\ResultInterface
     {
         $this->oauthUtility->customlog("HeadlessOidcCallback: Starting headless token flow");
+
+        // H-03: Rate limiting — prevent nonce brute-force
+        $request = $this->getRequest();
+        $clientIp = ($request instanceof \Magento\Framework\App\Request\Http)
+            ? (string) $request->getClientIp()
+            : '';
+        if (!$this->rateLimiter->isAllowed($clientIp)) {
+            $this->oauthUtility->customlog("HeadlessOidcCallback: Rate limit exceeded for IP: " . $clientIp);
+            return $this->buildErrorPage('Too many requests. Please try again later.');
+        }
 
         // Read and delete nonce cookie
         $nonce = $this->cookieManager->getCookie('oidc_headless_nonce');
@@ -179,7 +196,13 @@ class HeadlessOidcCallback extends BaseAction
         );
 
         // Determine allowed postMessage origin from store base URL
+        // M-18: Warn if store base URL is not HTTPS (postMessage will fail cross-origin)
         $baseUrl = rtrim($this->oauthUtility->getBaseUrl(), '/');
+        if (!str_starts_with($baseUrl, 'https://')) {
+            $this->oauthUtility->customlog(
+                'HeadlessOidcCallback: WARNING — store base URL is not HTTPS: ' . $baseUrl
+            );
+        }
         // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
         $parsedOrigin = parse_url($baseUrl);
         $origin = ($parsedOrigin['scheme'] ?? 'https')

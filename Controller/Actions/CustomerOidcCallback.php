@@ -172,13 +172,14 @@ class CustomerOidcCallback extends BaseAction
             "CustomerOidcCallback: Email from nonce: " . $email
         );
 
-        // Load customer via repository (returns Data Interface)
+        // M-15: Load customer with website scope to prevent cross-site enumeration
+        $websiteId = (int) $this->storeManager->getStore()->getWebsiteId();
         try {
-            $customerData = $this->customerRepository->get($email);
+            $customerData = $this->customerRepository->get($email, $websiteId);
             $customerId = $customerData->getId();
         } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
             $this->oauthUtility->customlog(
-                "ERROR: Customer not found for email: " . $email
+                "ERROR: Customer not found for email (website " . $websiteId . ")"
             );
             $encodedError = base64_encode('Authentication failed. Please try again.');
             $loginUrl = $this->oauthUtility->getCustomerLoginUrl() . '?oidc_error=' . $encodedError;

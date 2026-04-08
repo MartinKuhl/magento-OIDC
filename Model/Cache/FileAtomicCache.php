@@ -14,6 +14,10 @@ use Magento\Framework\App\CacheInterface;
  * Use RedisAtomicCache for truly atomic behaviour on Redis-backed stores.
  *
  * This class is the default DI preference for AtomicCacheInterface.
+ *
+ * WARNING: This implementation is NOT truly atomic — load() and remove()
+ * are separate operations. Use RedisAtomicCache for production deployments
+ * where TOCTOU protection is required.
  */
 class FileAtomicCache implements AtomicCacheInterface
 {

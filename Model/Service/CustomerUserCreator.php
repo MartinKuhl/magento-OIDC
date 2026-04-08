@@ -310,7 +310,8 @@ class CustomerUserCreator
      *
      * @param  string[] $userGroups OIDC group claim values
      * @param  int      $providerId OIDC provider ID (0 = unknown)
-     * @return int|null  Magento group ID, or null to deny creation
+     * @return int|null  Magento group ID, or null when no mapping matches.
+     *                   Callers must decide whether to throw or use a default.
      */
     private function getCustomerGroupFromOidcGroups(array $userGroups, int $providerId = 0): ?int
     {

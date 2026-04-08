@@ -89,6 +89,7 @@ class OAuthSecurityHelper
      * @param  string $email The admin user's email
      * @return string The generated nonce (32-char hex)
      */
+    // TODO M-14: Include provider_id in nonce payload to cross-validate provider context on redemption
     public function createAdminLoginNonce(string $email): string
     {
         $nonce = bin2hex(random_bytes(16));
@@ -114,7 +115,7 @@ class OAuthSecurityHelper
         $cacheKey = self::NONCE_CACHE_PREFIX . $nonce;
         $email    = $this->atomicCache->getAndDelete($cacheKey);
 
-        if (in_array($email, [null, '', '0'], true)) {
+        if (in_array($email, [null, ''], true)) {
             return null;
         }
 
@@ -174,7 +175,7 @@ class OAuthSecurityHelper
         $cacheKey = self::CUSTOMER_NONCE_CACHE_PREFIX . $nonce;
         $data     = $this->atomicCache->getAndDelete($cacheKey);
 
-        if (in_array($data, [null, '', '0'], true)) {
+        if (in_array($data, [null, ''], true)) {
             return null;
         }
 
@@ -250,7 +251,7 @@ class OAuthSecurityHelper
         $cacheKey = self::STATE_CACHE_PREFIX . hash('sha256', $sessionId . $stateToken);
         $value    = $this->atomicCache->getAndDelete($cacheKey);
 
-        return !in_array($value, [null, '', '0'], true);
+        return !in_array($value, [null, ''], true);
     }
 
     /**
@@ -281,6 +282,10 @@ class OAuthSecurityHelper
         ?int $providerId = null,
         bool $headless = false
     ): string {
+        // M-20: Guard against excessively large relay states that could exceed URL limits
+        if (strlen($relayState) > 2048) {
+            $relayState = substr($relayState, 0, 2048);
+        }
         $data = [
             'r' => $relayState,
             's' => $sessionId,
@@ -472,7 +477,7 @@ class OAuthSecurityHelper
         $cacheKey = self::PKCE_VERIFIER_CACHE_PREFIX . $nonce;
         $verifier = $this->atomicCache->getAndDelete($cacheKey);
 
-        return in_array($verifier, [null, '', '0'], true) ? null : $verifier;
+        return in_array($verifier, [null, ''], true) ? null : $verifier;
     }
 
     // -------------------------------------------------------------------------
@@ -512,8 +517,11 @@ class OAuthSecurityHelper
      */
     public function isOidcAuthToken(string $password): bool
     {
-        // Must start with 'OIDC_' and be followed by exactly 64 lowercase hex chars
-        return (bool) preg_match('/^OIDC_[a-f0-9]{64}$/', $password);
+        if (strlen($password) !== 69) {
+            return false;
+        }
+        return str_starts_with($password, 'OIDC_')
+            && ctype_xdigit(substr($password, 5));
     }
 
     /**
@@ -536,7 +544,7 @@ class OAuthSecurityHelper
         $cacheKey = self::OIDC_AUTH_TOKEN_PREFIX . hash('sha256', $token);
         $stored   = $this->atomicCache->getAndDelete($cacheKey);
 
-        return !in_array($stored, [null, '', '0'], true) && $stored === $email;
+        return !in_array($stored, [null, ''], true) && hash_equals($stored, $email);
     }
 
     // -------------------------------------------------------------------------
@@ -578,6 +586,6 @@ class OAuthSecurityHelper
         $cacheKey = self::OIDC_NONCE_CACHE_PREFIX . hash('sha256', $stateToken);
         $nonce    = $this->atomicCache->getAndDelete($cacheKey);
 
-        return in_array($nonce, [null, '', '0'], true) ? null : $nonce;
+        return in_array($nonce, [null, ''], true) ? null : $nonce;
     }
 }

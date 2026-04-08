@@ -11,6 +11,7 @@ Check for:
 5. Edge cases: What inputs would break this?
 6. Unused sections: unused classes nad functions
 7. Code conventions: Are Magento best practise for coding used
+8. What can be future improvements to opitmize the plugin
 
 For each issue:
 - Severity: Critical / High / Medium / Low

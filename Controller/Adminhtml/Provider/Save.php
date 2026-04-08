@@ -7,6 +7,7 @@ namespace M2Oidc\OAuth\Controller\Adminhtml\Provider;
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpPostActionInterface;
+use Magento\Framework\App\CacheInterface;
 use Magento\Framework\App\Request\DataPersistorInterface;
 use Magento\Framework\Controller\Result\Redirect;
 use Magento\Framework\Encryption\EncryptorInterface;
@@ -50,6 +51,9 @@ class Save extends Action implements HttpPostActionInterface
     /** @var EncryptorInterface */
     private readonly EncryptorInterface $encryptor;
 
+    /** @var CacheInterface */
+    private readonly CacheInterface $cache;
+
     /**
      * Initialize provider save controller.
      *
@@ -61,6 +65,7 @@ class Save extends Action implements HttpPostActionInterface
      * @param Curl                          $curl
      * @param UserProviderResource          $userProviderResource
      * @param EncryptorInterface            $encryptor
+     * @param CacheInterface                $cache
      */
     public function __construct(
         Context $context,
@@ -70,7 +75,8 @@ class Save extends Action implements HttpPostActionInterface
         MappingRepository $mappingRepository,
         Curl $curl,
         UserProviderResource $userProviderResource,
-        EncryptorInterface $encryptor
+        EncryptorInterface $encryptor,
+        CacheInterface $cache
     ) {
         $this->clientAppsFactory    = $clientAppsFactory;
         $this->appResource          = $appResource;
@@ -78,6 +84,7 @@ class Save extends Action implements HttpPostActionInterface
         $this->mappingRepository    = $mappingRepository;
         $this->curl                 = $curl;
         $this->userProviderResource = $userProviderResource;
+        $this->cache                = $cache;
         $this->encryptor            = $encryptor;
         parent::__construct($context);
     }
@@ -336,6 +343,23 @@ class Save extends Action implements HttpPostActionInterface
             if ($discoveryUrl !== '') {
                 $discovered = $this->performDiscovery($discoveryUrl);
                 if ($discovered instanceof \stdClass) {
+                    // H-10: Validate discovered endpoints are HTTPS
+                    $epKeys = [
+                        'authorization_endpoint', 'token_endpoint', 'userinfo_endpoint',
+                        'jwks_uri', 'end_session_endpoint', 'revocation_endpoint',
+                    ];
+                    foreach ($epKeys as $epKey) {
+                        if (isset($discovered->$epKey) && is_string($discovered->$epKey)) {
+                            // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
+                            $epScheme = parse_url($discovered->$epKey, PHP_URL_SCHEME);
+                            if (strtolower((string) $epScheme) !== 'https') {
+                                $this->messageManager->addWarningMessage(
+                                    (string) __('Discovered %1 is not HTTPS and was skipped.', $epKey)
+                                );
+                                unset($discovered->$epKey);
+                            }
+                        }
+                    }
                     if (isset($discovered->authorization_endpoint)) {
                         $model->setData('authorize_endpoint', trim((string) $discovered->authorization_endpoint));
                     }
@@ -379,7 +403,16 @@ class Save extends Action implements HttpPostActionInterface
                 // Save still proceeds so the user does not lose other field values.
             }
 
+            // H-11: Capture old JWKS endpoint before save for cache invalidation
+            $oldJwksEndpoint = (string) ($model->getOrigData('jwks_endpoint') ?? '');
+
             $this->appResource->save($model);
+
+            // H-11: Invalidate stale JWKS cache when endpoint changes
+            $newJwksEndpoint = (string) ($model->getData('jwks_endpoint') ?? '');
+            if ($oldJwksEndpoint !== '' && $oldJwksEndpoint !== $newJwksEndpoint) {
+                $this->cache->remove('m2oidc_jwks_' . hash('sha256', $oldJwksEndpoint));
+            }
 
             // Phase 4 dual-write: mirror role/group mappings into normalized tables so
             // that service classes can read from the new schema while legacy columns

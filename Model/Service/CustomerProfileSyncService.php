@@ -25,6 +25,9 @@ use M2Oidc\OAuth\Model\Provider\MappingRepository;
  */
 class CustomerProfileSyncService
 {
+    /** @var array<string>|null Cached country codes for intl lookup */
+    private ?array $countryCodes = null;
+
     /**
      * Constructor.
      *
@@ -205,7 +208,7 @@ class CustomerProfileSyncService
                 $existingAddress->setCity($city);
                 $changed = true;
             }
-            if ($existingAddress->getPostcode() !== ($zip ?? '')) {
+            if ((string) $existingAddress->getPostcode() !== ($zip ?? '')) {
                 $existingAddress->setPostcode($zip ?? '');
                 $changed = true;
             }
@@ -222,6 +225,10 @@ class CustomerProfileSyncService
                     $this->regionFactory->create()
                         ->setRegion($state)
                 );
+                $changed = true;
+            } elseif ($existingAddress->getRegion() !== null) {
+                $existingAddress->setRegion();
+                $existingAddress->setRegionId(0);
                 $changed = true;
             }
 
@@ -242,7 +249,7 @@ class CustomerProfileSyncService
                 ->setCity($city)
                 ->setPostcode($zip ?? '')
                 ->setCountryId($countryId)
-                ->setTelephone($phone ?? '0000');
+                ->setTelephone($phone ?? '');
 
             if ($type === 'billing') {
                 $address->setIsDefaultBilling(true);
@@ -371,11 +378,15 @@ class CustomerProfileSyncService
         // brute-force) avoids deprecated ISO codes like "DD" that ICU/CLDR still maps to "Germany".
         if (extension_loaded('intl')) {
             $normalizedInput = strtolower(trim($country));
-            try {
-                $codes = $this->countryCollectionFactory->create()->getColumnValues('country_id');
-            } catch (\Exception $e) {
-                $codes = [];
+            if ($this->countryCodes === null) {
+                try {
+                    $this->countryCodes = $this->countryCollectionFactory->create()
+                        ->getColumnValues('country_id');
+                } catch (\Exception $e) {
+                    $this->countryCodes = [];
+                }
             }
+            $codes = $this->countryCodes;
             foreach ($codes as $code) {
                 $displayName = \Locale::getDisplayRegion('-' . $code, 'en_US');
                 if ($displayName && $displayName !== $code

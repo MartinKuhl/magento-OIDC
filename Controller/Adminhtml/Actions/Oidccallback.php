@@ -154,13 +154,6 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
 
         $nonce = $this->cookieManager->getCookie('oidc_admin_nonce');
 
-        // Delete the cookie immediately (one-time use)
-        if ($nonce !== null) {
-            $adminPath = '/' . $this->backendUrl->getAreaFrontName();
-            $cookieMeta = $this->cookieMetadataFactory->createCookieMetadata()->setPath($adminPath);
-            $this->cookieManager->deleteCookie('oidc_admin_nonce', $cookieMeta);
-        }
-
         $this->oauthUtility->customlog("OIDC Admin Callback: Starting authentication");
 
         if (empty($nonce)) {
@@ -177,6 +170,11 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
                 __('Authentication failed: Authentication token is invalid or has expired. Please try again.')
             );
         }
+
+        // H-05: Delete the cookie AFTER successful nonce redemption (not before)
+        $adminPath = '/' . $this->backendUrl->getAreaFrontName();
+        $cookieMeta = $this->cookieMetadataFactory->createCookieMetadata()->setPath($adminPath);
+        $this->cookieManager->deleteCookie('oidc_admin_nonce', $cookieMeta);
 
         $this->oauthUtility->customlog("Email resolved from nonce: " . $email);
 

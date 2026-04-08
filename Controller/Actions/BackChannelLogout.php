@@ -91,6 +91,9 @@ class BackChannelLogout extends BaseAction implements HttpPostActionInterface, C
     #[\Override]
     public function execute(): ResultInterface
     {
+        // Back-channel requests originate from the IdP server, not end-user browsers,
+        // so X-Forwarded-For spoofing is not a concern here. For public-facing OIDC
+        // endpoints, consider using REMOTE_ADDR with trusted proxy configuration.
         $request = $this->getRequest();
         $clientIp = ($request instanceof \Magento\Framework\App\Request\Http)
             ? (string) $request->getClientIp()
@@ -117,7 +120,10 @@ class BackChannelLogout extends BaseAction implements HttpPostActionInterface, C
 
         $issuer   = (string) ($claims['iss'] ?? '');
         $audRaw   = $claims['aud'] ?? '';
-        $audience = is_array($audRaw) ? ($audRaw[0] ?? '') : (string) $audRaw;
+        // H-08: Support multi-audience tokens per OIDC spec
+        $audiences = is_array($audRaw)
+            ? array_map(static fn($v): string => (string) $v, $audRaw)
+            : [(string) $audRaw];
 
         // Find the provider matching this issuer
         $provider = $this->resolveProvider($issuer);
@@ -130,7 +136,15 @@ class BackChannelLogout extends BaseAction implements HttpPostActionInterface, C
 
         // Verify JWT signature via the provider's JWKS endpoint
         $jwksEndpoint = (string) ($provider['jwks_endpoint'] ?? '');
-        $clientId     = (string) ($provider['clientID'] ?? $audience);
+        $clientId     = (string) ($provider['clientID'] ?? ($audiences[0] ?? ''));
+
+        // Validate audience contains our client ID
+        if (!in_array($clientId, $audiences, true)) {
+            $this->oauthUtility->customlog(
+                "BackChannelLogout: Audience mismatch — clientId={$clientId} not in aud"
+            );
+            return $this->jsonError('Audience mismatch.', 400);
+        }
         $verified     = $this->jwtVerifier->verifyAndDecode($logoutToken, $jwksEndpoint, $issuer, $clientId);
 
         if ($verified === null) {
@@ -144,8 +158,8 @@ class BackChannelLogout extends BaseAction implements HttpPostActionInterface, C
             return $this->jsonError('logout_token missing required events claim.', 400);
         }
 
-        $sub = (string) ($verified['sub'] ?? '');
-        $sid = (string) ($verified['sid'] ?? '');
+        $sub = trim((string) ($verified['sub'] ?? ''));
+        $sid = trim((string) ($verified['sid'] ?? ''));
 
         if ($sub === '' && $sid === '') {
             $this->oauthUtility->customlog('BackChannelLogout: Neither sub nor sid present in token.');
@@ -167,7 +181,9 @@ class BackChannelLogout extends BaseAction implements HttpPostActionInterface, C
             return $this->jsonOk('Session not found (already expired or logged out).');
         }
 
-        // Destroy every registered PHP session and clear the Online status in DB.
+        // L-09: Revoke registry entries first to prevent concurrent back-channel
+        // logouts from processing the same sessions, then destroy sessions.
+        $this->sessionRegistry->revoke($sub, $sid);
         foreach ($entries as $entry) {
             $phpSessionId = (string) ($entry['php_session_id'] ?? '');
             if ($phpSessionId !== '') {
@@ -175,7 +191,6 @@ class BackChannelLogout extends BaseAction implements HttpPostActionInterface, C
                 $this->sessionDestructionService->clearOnlineStatus($entry);
             }
         }
-        $this->sessionRegistry->revoke($sub, $sid);
 
         $this->oauthUtility->customlogContext('oidc.backchannel_logout', [
             'sub'    => $sub,

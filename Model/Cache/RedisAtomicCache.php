@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace M2Oidc\OAuth\Model\Cache;
 
 use Magento\Framework\App\CacheInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * Truly atomic getAndDelete implementation for Redis-backed Magento stores.
@@ -47,16 +48,22 @@ class RedisAtomicCache implements AtomicCacheInterface
      */
     private readonly string $keyPrefix;
 
+    /** @var LoggerInterface */
+    private readonly LoggerInterface $logger;
+
     /**
-     * @param CacheInterface $cache      Fallback for non-Redis environments; also used to reach the
-     *                                   cache frontend via getFrontend() when the backend is Redis.
-     * @param string         $keyPrefix  Redis key prefix (default "zc:")
+     * @param CacheInterface  $cache      Fallback for non-Redis environments; also used to reach the
+     *                                    cache frontend via getFrontend() when the backend is Redis.
+     * @param LoggerInterface $logger     PSR logger for fallback warnings
+     * @param string          $keyPrefix  Redis key prefix (default "zc:")
      */
     public function __construct(
         CacheInterface $cache,
+        LoggerInterface $logger,
         string $keyPrefix = 'zc:'
     ) {
         $this->cache     = $cache;
+        $this->logger    = $logger;
         $this->keyPrefix = $keyPrefix;
     }
 
@@ -83,7 +90,11 @@ class RedisAtomicCache implements AtomicCacheInterface
             }
         }
 
-        // Non-atomic fallback
+        // Non-atomic fallback — TOCTOU window exists; log critical warning
+        $this->logger->critical(
+            'M2Oidc: RedisAtomicCache falling back to non-atomic getAndDelete. '
+            . 'Token replay protection is degraded. Check Redis connectivity.'
+        );
         $value = $this->cache->load($identifier);
         if (in_array($value, [false, null, ''], true)) {
             return null;

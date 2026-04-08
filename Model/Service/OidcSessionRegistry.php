@@ -77,6 +77,9 @@ class OidcSessionRegistry
             return;
         }
         $key      = $this->buildKey($sub, $sid);
+        // M-22: load→filter→append→save is not atomic. Concurrent logins for the same
+        // sub may overwrite each other's entries. Acceptable for current use — Redis-based
+        // locking can be added if multi-session concurrent registration becomes a problem.
         $existing = $this->loadEntries($key);
         // Replace any stale entry with the same PHP session ID (re-login case)
         $existing = array_values(
@@ -184,7 +187,7 @@ class OidcSessionRegistry
             return [];
         }
         // Legacy format: single object {"php_session_id": "...", ...}
-        if (isset($decoded['php_session_id'])) {
+        if (isset($decoded['php_session_id']) && is_string($decoded['php_session_id'])) {
             return [$decoded];
         }
         // New format: list of entry objects

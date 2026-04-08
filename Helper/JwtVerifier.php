@@ -84,6 +84,11 @@ class JwtVerifier
         ];
 
         $alg = strtoupper((string) $header['alg']);
+        $weakAlgorithms = ['NONE', 'HS256', 'HS384', 'HS512'];
+        if (in_array($alg, $weakAlgorithms, true)) {
+            $this->oauthUtility->customlog("JwtVerifier: REJECTED weak/forbidden algorithm: " . $alg);
+            return null;
+        }
         if (!isset($algMap[$alg])) {
             $this->oauthUtility->customlog("JwtVerifier: Unsupported algorithm: " . $alg);
             return null;
@@ -276,7 +281,15 @@ class JwtVerifier
         );
         $curl->write('GET', $jwksUrl, '1.1', ['Accept: application/json']);
         $response = $curl->read();
+        $httpStatus = (int) $curl->getInfo(CURLINFO_HTTP_CODE);
         $curl->close();
+
+        if ($httpStatus !== 200) {
+            $this->oauthUtility->customlog(
+                "JwtVerifier: JWKS fetch returned HTTP " . $httpStatus . " from: " . $jwksUrl
+            );
+            return null;
+        }
 
         if (empty($response)) {
             $this->oauthUtility->customlog("JwtVerifier: Empty response from JWKS endpoint: " . $jwksUrl);
@@ -311,8 +324,8 @@ class JwtVerifier
                 continue;
             }
 
-            // Match by kid if provided
-            if ($kid !== null && isset($key['kid']) && $key['kid'] !== $kid) {
+            // Match by kid if provided — strict: reject keys without kid when token has one
+            if ($kid !== null && (!isset($key['kid']) || $key['kid'] !== $kid)) {
                 continue;
             }
 
@@ -418,6 +431,9 @@ class JwtVerifier
      */
     private function base64UrlDecode(string $input): string
     {
+        if ($input !== '' && !preg_match('/^[A-Za-z0-9_=-]+$/', $input)) {
+            return '';
+        }
         $remainder = strlen($input) % 4;
         if ($remainder !== 0) {
             $input .= str_repeat('=', 4 - $remainder);

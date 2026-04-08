@@ -89,7 +89,7 @@ class OidcLogger
      */
     public function isJsonLinesEnabled(): bool
     {
-        return (bool) $this->scopeConfig->getValue('oidc/logging/json_lines');
+        return (bool) $this->scopeConfig->getValue('m2oidc/logging/json_lines');
     }
 
     /**
@@ -278,6 +278,11 @@ class OidcLogger
 
         if (isset($this->suffixLoggers[$suffix])) {
             return $this->suffixLoggers[$suffix];
+        }
+
+        // M-12: Evict oldest entry when cache exceeds 20 loggers
+        if (count($this->suffixLoggers) >= 20) {
+            array_shift($this->suffixLoggers);
         }
 
         try {

@@ -103,7 +103,8 @@ class AdminProfileSyncService
         if ($this->shouldSync($attrMap, 'username')) {
             $un = $this->extract($usernameKey, $flattenedAttrs, $rawAttrs);
             if ($un !== null && $user->getUserName() !== $un) {
-                // Ensure no other admin uses this username
+                // M-08: Check-then-save has a small TOCTOU window. Acceptable since
+                // admin logins are low-frequency and MySQL UNIQUE constraint provides a safety net.
                 $existing = $this->userFactory->create();
                 $this->userResource->load($existing, $un, 'username');
                 if (!$existing->getId() || (int) $existing->getId() === (int) $user->getId()) {

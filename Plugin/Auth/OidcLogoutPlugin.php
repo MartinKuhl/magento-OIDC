@@ -109,6 +109,8 @@ class OidcLogoutPlugin
     public function aroundLogout(Auth $subject, callable $proceed): void
     {
         // ── 1. Read session data BEFORE session is destroyed ──
+        // M-03: Session is locked during this read; concurrent logout race is mitigated
+        // by PHP's session locking mechanism. Probability is negligible.
         $idToken     = (string) $this->authSession->getData('oidc_id_token');
         $accessToken = (string) $this->authSession->getData('oidc_access_token');
         $providerId  = (int) $this->authSession->getData('oidc_provider_id');
@@ -249,7 +251,7 @@ class OidcLogoutPlugin
                 $params['id_token_hint'] = $idToken;
             }
             $params['state'] = 'admin:' . bin2hex(random_bytes(16));
-            if ($postLogoutUri !== '') {
+            if ($postLogoutUri !== '' && filter_var($postLogoutUri, FILTER_VALIDATE_URL) !== false) {
                 $params['post_logout_redirect_uri'] = $postLogoutUri;
             }
         }

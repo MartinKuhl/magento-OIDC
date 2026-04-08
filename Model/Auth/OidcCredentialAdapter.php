@@ -229,8 +229,9 @@ class OidcCredentialAdapter implements StorageInterface
         }
 
         if ($this->authenticate($username, $password)) {
-            // phpcs:ignore Magento2.Security.InsecureFunction.Found
-            assert($this->user instanceof \Magento\User\Model\User);
+            if (!$this->user instanceof \Magento\User\Model\User) {
+                throw new \RuntimeException('OidcCredentialAdapter: User not loaded after authentication');
+            }
             $this->userResource->recordLogin($this->user);
             $this->log("Login recorded for user ID: " . $this->user->getId());
             $this->reload();
@@ -365,6 +366,9 @@ class OidcCredentialAdapter implements StorageInterface
         ) {
             $this->user = $this->userFactory->create();
             $this->userResource->load($this->user, $userId);
+            if (!$this->user->getId()) {
+                $this->user = null;
+            }
         }
     }
 

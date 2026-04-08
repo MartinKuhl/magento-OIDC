@@ -49,7 +49,7 @@ class SessionDestructionService
      */
     public function destroySession(string $phpSessionId): void
     {
-        if (!preg_match('/^[a-zA-Z0-9,-]+$/', $phpSessionId)) {
+        if (!preg_match('/^[a-zA-Z0-9_.,:-]+$/', $phpSessionId)) {
             // Reject malformed IDs to prevent path traversal in file-based handlers
             $this->oauthUtility->customlog(
                 'SessionDestructionService: Rejected malformed session ID during destroy.'

@@ -647,7 +647,7 @@ class OAuthUtility extends Data
             $provider['show_customer_link'] ?? null,
             $provider['email_attribute'] ?? OAuthConstants::DEFAULT_MAP_EMAIL,
             $provider['username_attribute'] ?? OAuthConstants::DEFAULT_MAP_USERN,
-            $provider['email_attribute'] ?? OAuthConstants::DEFAULT_MAP_EMAIL,
+            $provider['firstname_attribute'] ?? OAuthConstants::DEFAULT_MAP_FN,
         ];
     }
 

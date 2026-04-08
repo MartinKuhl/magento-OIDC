@@ -207,8 +207,7 @@ class OAuthLogoutObserver implements ObserverInterface
             // with its own redirect (to the homepage) after the observer returns.
             $this->_response->sendResponse();
 
-            // phpcs:ignore Magento2.Security.LanguageConstruct.ExitUsage
-            exit(0);
+            return;
         }
     }
 
@@ -276,7 +275,7 @@ class OAuthLogoutObserver implements ObserverInterface
     {
         // 1) Explicit value from provider DB row
         if ($provider !== null && !empty($provider['post_logout_url'])) {
-            return rtrim((string) $provider['post_logout_url'], '/') . '/';
+            return (string) $provider['post_logout_url'];
         }
 
         // Authelia uses ?rd=<url> — must be the customer login page, not the callback.

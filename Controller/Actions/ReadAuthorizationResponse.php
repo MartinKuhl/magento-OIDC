@@ -165,8 +165,11 @@ class ReadAuthorizationResponse extends BaseAction
                 );
 
                 if ($isTest && strpos((string) $relayState, 'showTestResults') !== false) {
-                    // Test mode: redirect to showTestResults with error (H-06: urlencode base64)
-                    $errorUrl = $relayState . (strpos((string) $relayState, '?') !== false ? '&' : '?')
+                    $safeRelay = $this->securityHelper->validateRedirectUrl(
+                        (string) $relayState,
+                        $this->url->getUrl('customer/account/login')
+                    );
+                    $errorUrl = $safeRelay . (strpos($safeRelay, '?') !== false ? '&' : '?')
                         . 'oidc_error=' . urlencode($encodedError);
                     return $this->_redirect($errorUrl);
                 }
@@ -195,6 +198,7 @@ class ReadAuthorizationResponse extends BaseAction
                 $stateToken = $stateData['stateToken'];
                 $providerId = $stateData['providerId'] ?? 0;
                 $headless = (bool) ($stateData['headless'] ?? false);
+                // M-24: headless flag is re-validated against provider config after lookup below
                 $this->oauthUtility->setActiveProviderId($providerId);
             } else {
                 /** @psalm-suppress RedundantCast */
@@ -256,6 +260,11 @@ class ReadAuthorizationResponse extends BaseAction
                     $loginUrl = $this->url->getUrl('customer/account/login', $query);
                 }
                 return $this->_redirect($loginUrl);
+            }
+
+            // M-24: Re-validate headless flag against provider config
+            if ($headless && empty($clientDetails['headless_mode'])) {
+                $headless = false;
             }
 
             // Build token request
@@ -471,7 +480,11 @@ class ReadAuthorizationResponse extends BaseAction
                     $encodedError = base64_encode('Invalid response from OAuth provider. Please try again.');
                     // Test mode: show error on showTestResults instead of admin login
                     if (strpos((string) $relayState, 'showTestResults') !== false) {
-                        $errorUrl = rtrim((string) $relayState, '/') . '?oidc_error=' . urlencode($encodedError);
+                        $safeRelay = $this->securityHelper->validateRedirectUrl(
+                            (string) $relayState,
+                            $this->url->getUrl('customer/account/login')
+                        );
+                        $errorUrl = rtrim($safeRelay, '/') . '?oidc_error=' . urlencode($encodedError);
                         return $this->_redirect($errorUrl);
                     }
                     $query = ['_query' => ['oidc_error' => $encodedError]];
@@ -495,7 +508,7 @@ class ReadAuthorizationResponse extends BaseAction
 
                 if ($isTest) {
                     // Extract test key from relayState (e.g. /key/abc123...)
-                    preg_match('/key\/([a-f0-9]{32,})/', (string) $relayState, $matches);
+                    preg_match('/key\/([a-f0-9]{32})/', (string) $relayState, $matches);
                     $testKey = $matches[1] ?? '';
                     $this->storeTestResultInSession($testKey, $userInfoResponseData);
 
@@ -575,7 +588,11 @@ class ReadAuthorizationResponse extends BaseAction
                 $encodedError = base64_encode('Invalid response from OAuth provider. Please try again.');
                 // Test mode: show error on showTestResults instead of admin login
                 if (strpos((string) $relayState, 'showTestResults') !== false) {
-                    $errorUrl = rtrim((string) $relayState, '/') . '?oidc_error=' . urlencode($encodedError);
+                    $safeRelay = $this->securityHelper->validateRedirectUrl(
+                        (string) $relayState,
+                        $this->url->getUrl('customer/account/login')
+                    );
+                    $errorUrl = rtrim($safeRelay, '/') . '?oidc_error=' . urlencode($encodedError);
                     return $this->_redirect($errorUrl);
                 }
                 $query = ['_query' => ['oidc_error' => $encodedError]];
@@ -675,7 +692,11 @@ class ReadAuthorizationResponse extends BaseAction
                     'ID token verification failed. Please contact the administrator.'
                 );
                 if (strpos($relayState, 'showTestResults') !== false) {
-                    $errorUrl = rtrim($relayState, '/') . '?oidc_error='
+                    $safeRelay = $this->securityHelper->validateRedirectUrl(
+                        $relayState,
+                        $this->url->getUrl('customer/account/login')
+                    );
+                    $errorUrl = rtrim($safeRelay, '/') . '?oidc_error='
                         . urlencode($encodedError);
                     return $this->_redirect($errorUrl);
                 }
@@ -699,7 +720,11 @@ class ReadAuthorizationResponse extends BaseAction
             . ' Please configure it in the OAuth settings.'
         );
         if (strpos($relayState, 'showTestResults') !== false) {
-            $errorUrl = rtrim($relayState, '/') . '?oidc_error='
+            $safeRelay = $this->securityHelper->validateRedirectUrl(
+                $relayState,
+                $this->url->getUrl('customer/account/login')
+            );
+            $errorUrl = rtrim($safeRelay, '/') . '?oidc_error='
                 . urlencode($encodedError);
             return $this->_redirect($errorUrl);
         }
