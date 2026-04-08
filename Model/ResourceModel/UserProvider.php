@@ -113,7 +113,7 @@ class UserProvider extends AbstractDb
             ->where('user_id = ?', $userId)
             ->limit(1);
         $result = $connection->fetchOne($select);
-        return $result !== '' ? (int) $result : null;
+        return $result !== false && $result !== '' ? (int) $result : null;
     }
 
     /**
