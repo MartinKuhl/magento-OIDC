@@ -47,19 +47,19 @@ class Debug extends Template
     /**
      * Initialize Debug block.
      *
-     * @param Context                                        $context
-     * @param OAuthUtility                                   $oauthUtility
-     * @param DirectoryList                                  $directoryList
-     * @param \Magento\Framework\Filesystem\Driver\File|null $fileDriver
-     * @param \Magento\Framework\HTTP\Client\Curl|null       $curlClient
-     * @param mixed[]                                        $data
+     * @param Context                                         $context
+     * @param OAuthUtility                                    $oauthUtility
+     * @param DirectoryList                                   $directoryList
+     * @param ?\Magento\Framework\Filesystem\Driver\File       $fileDriver
+     * @param ?\Magento\Framework\HTTP\Client\Curl             $curlClient
+     * @param mixed[]                                         $data
      */
     public function __construct(
         Context $context,
         OAuthUtility $oauthUtility,
         DirectoryList $directoryList,
-        \Magento\Framework\Filesystem\Driver\File $fileDriver = null,
-        \Magento\Framework\HTTP\Client\Curl $curlClient = null,
+        ?\Magento\Framework\Filesystem\Driver\File $fileDriver = null,
+        ?\Magento\Framework\HTTP\Client\Curl $curlClient = null,
         array $data = []
     ) {
         $this->oauthUtility = $oauthUtility;
