@@ -33,8 +33,9 @@ class OidcCspPolicyCollector implements PolicyCollectorInterface
      *  - connect-src : JS fetch/XHR to IdP (discovery, token endpoint, JWKS)
      *  - frame-src   : some IdP flows use iframes for silent refresh
      *  - img-src     : IdP may serve logos or user avatars
+     * @var mixed[]
      */
-    private const array DIRECTIVES = [
+    private const DIRECTIVES = [
         'form-action',
         'connect-src',
         'frame-src',

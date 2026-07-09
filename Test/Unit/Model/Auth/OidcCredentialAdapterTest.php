@@ -316,7 +316,6 @@ class OidcCredentialAdapterTest extends TestCase
         $refl = new \ReflectionClass(OidcCredentialAdapter::class);
         foreach (['userFactory', 'userResource'] as $prop) {
             $p = $refl->getProperty($prop);
-            $p->setAccessible(true);
             $p->setValue($adapter, $this->{$prop});
         }
         $adapter->method('restoreDependencies')->willReturnCallback(function () {

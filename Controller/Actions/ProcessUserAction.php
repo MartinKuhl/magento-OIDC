@@ -407,7 +407,6 @@ class ProcessUserAction
      * Set raw attribute array received from OIDC provider.
      *
      * @param  mixed $attrs
-     * @return $this
      */
     public function setAttrs($attrs): static
     {
@@ -419,7 +418,6 @@ class ProcessUserAction
      * Set flattened attribute map (simple key => value mapping).
      *
      * @param  mixed $flattenedattrs
-     * @return $this
      */
     public function setFlattenedAttrs($flattenedattrs): static
     {
@@ -431,7 +429,6 @@ class ProcessUserAction
      * Set the user's email address resolved from attributes.
      *
      * @param  string $userEmail
-     * @return $this
      */
     public function setUserEmail($userEmail): static
     {

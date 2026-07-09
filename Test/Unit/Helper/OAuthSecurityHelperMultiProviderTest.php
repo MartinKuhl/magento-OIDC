@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace M2Oidc\OAuth\Test\Unit\Helper;
 
-use Magento\Framework\App\CacheInterface;
 use M2Oidc\OAuth\Helper\OAuthSecurityHelper;
 use M2Oidc\OAuth\Helper\OAuthUtility;
 use M2Oidc\OAuth\Model\Cache\AtomicCacheInterface;
@@ -26,9 +25,6 @@ use PHPUnit\Framework\TestCase;
  */
 class OAuthSecurityHelperMultiProviderTest extends TestCase
 {
-    /** @var CacheInterface&MockObject */
-    private CacheInterface $cache;
-
     /** @var OAuthUtility&MockObject */
     private OAuthUtility $oauthUtility;
 
@@ -40,7 +36,6 @@ class OAuthSecurityHelperMultiProviderTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->cache        = $this->createMock(CacheInterface::class);
         $this->oauthUtility = $this->createMock(OAuthUtility::class);
         $this->atomicCache  = $this->createMock(AtomicCacheInterface::class);
 
@@ -49,7 +44,7 @@ class OAuthSecurityHelperMultiProviderTest extends TestCase
             ->method('decodeBase64')
             ->willReturnCallback(static fn (string $s): string => (string) base64_decode($s, true));
 
-        $this->helper = new OAuthSecurityHelper($this->cache, $this->oauthUtility, $this->atomicCache);
+        $this->helper = new OAuthSecurityHelper($this->oauthUtility, $this->atomicCache);
     }
 
     // -------------------------------------------------------------------------

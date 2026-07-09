@@ -47,12 +47,12 @@ class Debug extends Template
     /**
      * Initialize Debug block.
      *
-     * @param Context                                         $context
-     * @param OAuthUtility                                    $oauthUtility
-     * @param DirectoryList                                   $directoryList
-     * @param ?\Magento\Framework\Filesystem\Driver\File       $fileDriver
-     * @param ?\Magento\Framework\HTTP\Client\Curl             $curlClient
-     * @param mixed[]                                         $data
+     * @param Context                                    $context
+     * @param OAuthUtility                               $oauthUtility
+     * @param DirectoryList                              $directoryList
+     * @param ?\Magento\Framework\Filesystem\Driver\File $fileDriver
+     * @param ?\Magento\Framework\HTTP\Client\Curl       $curlClient
+     * @param mixed[]                                    $data
      */
     public function __construct(
         Context $context,

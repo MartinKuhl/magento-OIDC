@@ -28,7 +28,10 @@ use M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps as AppResource;
  */
 class Edit extends Action implements HttpGetActionInterface
 {
-    public const string ADMIN_RESOURCE = 'M2Oidc_OAuth::oauth_settings';
+    /**
+     * @var string
+     */
+    public const ADMIN_RESOURCE = 'M2Oidc_OAuth::oauth_settings';
 
     /** @var PageFactory */
     private readonly PageFactory $pageFactory;

@@ -266,7 +266,8 @@ class ShowTestResults extends Action
         ob_start();    // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
         /** @psalm-suppress UnresolvableInclude */
         include $this->templatePath; // phpcs:ignore Magento2.Security.IncludeFile.FoundIncludeFile
-        return (string) ob_get_clean();
+        $output = ob_get_clean();
+        return $output === false ? '' : $output;
     }
 
     /**

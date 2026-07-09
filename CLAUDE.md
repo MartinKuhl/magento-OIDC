@@ -171,7 +171,7 @@ The module implements a dual authentication flow for admin and customer users:
 
 #### Helpers (Helper/)
 - `OAuthUtility.php`: **Thin facade** — delegates logging to `OidcLogger` (public readonly `$oidcLogger`), provider resolution to `ProviderResolver` (public readonly `$providerResolver`), config reads to `OidcConfigReader` (public readonly `$configReader`), and DB ops to `OidcProviderRepository`. All public methods retained; behavior unchanged for callers.
-- `OAuthSecurityHelper.php`: Security primitives — PKCE generation/verification (S256/PLAIN), state token create/validate/consume (one-time use), relay state encode/decode (JSON+Base64 with legacy pipe-delimited fallback), OIDC nonce store/consume, **ephemeral admin login tokens** (C-01: `createOidcAuthToken()` / `validateAndConsumeOidcAuthToken()` with **300s (5-minute) cache TTL**), **customer login nonces** (`createCustomerLoginNonce()` / `redeemCustomerLoginNonce()`, **300s TTL**), redirect URL validation (same-origin check; also rejects null bytes and backslashes as bypass vectors). **All one-time token consumption now uses `AtomicCacheInterface::getAndDelete()`** — eliminates TOCTOU race between separate load+remove calls.
+- `OAuthSecurityHelper.php`: Security primitives — PKCE generation/verification (S256/PLAIN), state token create/validate/consume (one-time use), relay state encode/decode (JSON+Base64 with legacy pipe-delimited fallback), OIDC nonce store/consume, **ephemeral admin login tokens** (C-01: `createOidcAuthToken()` / `validateAndConsumeOidcAuthToken()` with **300s (5-minute) cache TTL**), **customer login nonces** (`createCustomerLoginNonce()` / `redeemCustomerLoginNonce()`, **300s TTL**), redirect URL validation (same-origin check; also rejects null bytes and backslashes as bypass vectors). **All one-time token storage/consumption now uses `AtomicCacheInterface::save()` / `getAndDelete()`** — eliminates TOCTOU race between separate load+remove calls.
 - `JwtVerifier.php`: Fetches JWKS (cached with configurable per-provider TTL via `jwks_cache_ttl` column, default 86400 s, read via `OAuthConstants::JWKS_CACHE_TTL`); verifies JWT signature; validates issuer/audience/nonce; logs WARNING when nonce validation is skipped (null `expectedNonce`); circuit-breaker: opens a 60 s `m2oidc_jwks_fail_*` cache flag after a failed JWKS re-fetch to prevent hammering an unavailable IdP
 - `Data.php`: Base config data access; all DB operations on `m2oidc_oauth_client_apps` delegated to `OidcProviderRepository`; ~100 lines of inline DB logic removed
 - `SessionHelper.php`: Cross-origin SSO cookie helpers (SameSite=None); `updateSessionCookies()` re-sets cookies for cross-origin flows
@@ -186,9 +186,10 @@ The module implements a dual authentication flow for admin and customer users:
 #### Models & Services
 
 **Atomic Cache (Model/Cache/):**
-- `AtomicCacheInterface.php`: `getAndDelete(string $key): ?string` — atomic read-and-delete; default preference is `FileAtomicCache`
+- `AtomicCacheInterface.php`: `save(string $identifier, string $value, int $ttl): void` / `getAndDelete(string $key): ?string` — atomic write and read-and-delete; default preference is `RedisAtomicCache`
 - `FileAtomicCache.php`: Sequential load+remove; safe for single-server deployments
-- `RedisAtomicCache.php`: Lua `GETDEL` for true atomicity; override DI preference for Redis installs
+- `RedisAtomicCache.php`: Opens its own dedicated Redis connection via `RedisConnectionFactory` (env.php `cache/frontend/default/backend_options`), independent of Magento's cache backend/frontend class; uses `GETDEL`/Lua for true atomicity, falls back to `FileAtomicCache`-style load+remove when that connection is unavailable
+- `RedisConnectionFactory.php`: Builds/memoizes a raw phpredis connection from Magento's cache config; returns `null` on failure
 
 **Config Reader (Model/Config/):**
 - `OidcConfigReader.php`: Maps 80+ `OAuthConstants` keys to `m2oidc_oauth_client_apps` column names; `getStoreConfig(string $key)` reads from active provider row (provider-specific) or `core_config_data` (global)
@@ -336,7 +337,7 @@ The module implements a dual authentication flow for admin and customer users:
 - **MapperPool** registered with `default_admin` / `default_customer` defaults; third-party modules add `{providerId}_{type}` overrides
 - **OidcRateLimiter** configured with `FixedWindowStrategy` by default
 - **OidcSlidingWindowRateLimiter** virtual type: same type as `OidcRateLimiter` but injected with `SlidingWindowStrategy` — use for Redis deployments
-- **AtomicCacheInterface** preference: `FileAtomicCache` by default; override with `RedisAtomicCache` for Redis
+- **AtomicCacheInterface** preference: `RedisAtomicCache` by default (falls back to `FileAtomicCache`-style behavior when its dedicated Redis connection is unavailable)
 - Plugins registered on:
   - `Magento\Backend\Model\Auth`: `AdminLoginRestrictionPlugin` (sortOrder 5), `OidcCredentialPlugin` (10), `OidcLogoutPlugin` (20)
   - `Magento\Captcha\Observer\CheckUserLoginBackendObserver`: `OidcCaptchaBypassPlugin` (10)

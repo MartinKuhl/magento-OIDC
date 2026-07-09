@@ -551,7 +551,7 @@ class OAuthUtility extends Data
         }
 
         foreach ($this->cacheFrontendPool as $cacheFrontend) {
-            $cacheFrontend->getBackend()->clean();
+            $cacheFrontend->getBackend()->clear();
         }
     }
 

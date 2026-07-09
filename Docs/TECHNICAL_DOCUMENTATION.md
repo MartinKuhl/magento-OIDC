@@ -40,7 +40,7 @@ This Magento 2 module adds **OAuth 2.0 / OpenID Connect** single sign-on for bot
 - **OIDC discovery auto-refresh**: `Cron/RefreshOidcDiscovery.php` (registered as `m2oidc_refresh_oidc_discovery`, schedule `0 */6 * * *`) re-fetches `.well-known/openid-configuration` for every active provider every 6 hours and dirty-checks before writing, keeping endpoints up-to-date without requiring a manual provider save.
 - **Structured logging service**: `Logger/OidcLogger.php` is the dedicated logging service extracted from `OAuthUtility`. Supports dual format: legacy Monolog envelope (default) and true JSON Lines (`{"ts":"...","level":"debug","message":"..."}`) controlled by `oidc/logging/json_lines` config. Automatically masks sensitive fields.
 - **Extracted services (god-class split)**: `OAuthUtility` is now a thin facade. `Logger/OidcLogger` handles all log output, `Model/Provider/ProviderResolver` handles per-request provider context and resolution, `Model/Config/OidcConfigReader` maps 80+ config keys to `m2oidc_oauth_client_apps` columns. `Helper/Data` delegates all DB operations to `Model/ResourceModel/OidcProviderRepository`.
-- **Atomic token consumption**: `Model/Cache/AtomicCacheInterface` (`getAndDelete()`) eliminates the TOCTOU race condition in one-time token consumption (nonces, state tokens, PKCE verifiers, ephemeral auth tokens). Default implementation: `RedisAtomicCache` — uses Lua `GETDEL` for true atomicity when Magento's cache backend is `Cm_Cache_Backend_Redis`; transparently falls back to sequential load + remove when Redis is not the active backend, providing identical single-server safety to the former `FileAtomicCache` default. **Production/HA deployments must configure Magento's cache and session backends to use Redis** so that tokens and session data are shared across all web nodes; see Section 5 (High Availability deployment).
+- **Atomic token consumption**: `Model/Cache/AtomicCacheInterface` (`save()` / `getAndDelete()`) eliminates the TOCTOU race condition in one-time token consumption (nonces, state tokens, PKCE verifiers, ephemeral auth tokens). Default implementation: `RedisAtomicCache` — opens its own dedicated Redis connection from `cache/frontend/default/backend_options` via `RedisConnectionFactory` (independent of whichever cache backend/frontend class Magento constructs internally) and uses `GETDEL`/Lua for true atomicity; transparently falls back to sequential load + remove when that connection is unavailable, providing identical single-server safety to the former `FileAtomicCache` default. **Production/HA deployments must configure Magento's cache and session backends to use Redis** so that tokens and session data are shared across all web nodes; see Section 5 (High Availability deployment).
 - **Per-provider attribute mapper overrides**: `Model/Attribute/MapperPool` is a DI-registered registry that resolves the correct `AttributeMapperInterface` for a given provider and type. Third-party modules inject per-provider overrides via `{providerId}_{type}` keys in `etc/di.xml`. Both `AdminUserCreator` and `CustomerUserCreator` resolve mappers through the pool before falling back to the default.
 - **Per-attribute sync control**: `AdminProfileSyncService` and `CustomerProfileSyncService` respect per-attribute `sync_on_sso` flags stored in `m2oidc_oauth_attribute_mappings`. A `shouldSync()` guard skips individual attributes where the normalized mapping row exists but `sync_on_sso = 0`, while legacy mode (no normalized row) always syncs.
 - **Attribute mapping hook**: fires `oidc_after_attribute_mapping` event after all OIDC claims have been mapped; transport keys: `provider_id` (int), `mapped_attrs` (DataObject — writable), `raw_claims` (DataObject — read-only snapshot). Observers may mutate `mapped_attrs` before user creation or profile sync.
@@ -450,11 +450,12 @@ Implements `Magento\Backend\Model\Auth\Credential\StorageInterface`. This is the
 
 ### `\M2Oidc\OAuth\Model\Cache\AtomicCacheInterface`
 
-Single-method interface for atomic read-and-delete operations on the cache layer. Eliminates the TOCTOU window inherent in a separate `load()` + `remove()` pattern for one-time tokens.
+Interface for atomic save and read-and-delete operations on the cache layer. Eliminates the TOCTOU window inherent in a separate `load()` + `remove()` pattern for one-time tokens. Writes and reads/deletes of a given token must go through the same implementation so they share the same storage.
 
 | Method | Signature | Returns | Description |
 |---|---|---|---|
-| `getAndDelete` | `(string $key): ?string` | `string\|null` | Returns the cached value for `$key` and removes it in the same logical operation. Returns `null` if the key does not exist or has expired. Default implementation: `RedisAtomicCache` — Lua `GETDEL` when Magento's cache backend is Redis (true atomicity, HA-safe); sequential load + remove fallback otherwise (safe for single-server). |
+| `save` | `(string $identifier, string $value, int $ttl): void` | `void` | Stores `$value` under `$identifier` with the given TTL (seconds). |
+| `getAndDelete` | `(string $key): ?string` | `string\|null` | Returns the cached value for `$key` and removes it in the same logical operation. Returns `null` if the key does not exist or has expired. Default implementation: `RedisAtomicCache` — opens its own dedicated Redis connection from `cache/frontend/default/backend_options` (see `RedisConnectionFactory`) and uses `GETDEL` (Redis ≥ 6.2) or an equivalent Lua script for true atomicity (HA-safe); falls back to sequential load + remove when that connection is unavailable (safe for single-server). |
 
 **DI preference** (default — `RedisAtomicCache` with transparent fallback):
 ```xml
@@ -697,7 +698,7 @@ Configure Magento's default cache to use Redis in `app/etc/env.php`:
 'cache' => [
     'frontend' => [
         'default' => [
-            'backend' => 'Cm_Cache_Backend_Redis',
+            'backend' => 'redis',
             'backend_options' => [
                 'server'   => '127.0.0.1',
                 'port'     => '6379',
@@ -708,9 +709,9 @@ Configure Magento's default cache to use Redis in `app/etc/env.php`:
 ],
 ```
 
-`RedisAtomicCache` (the default `AtomicCacheInterface` implementation) detects `Cm_Cache_Backend_Redis` via reflection and switches to a Lua `GETDEL` script for true atomic read-and-delete. This eliminates the TOCTOU window on state tokens, nonces, PKCE verifiers, and ephemeral auth tokens across all web nodes.
+`RedisAtomicCache` (the default `AtomicCacheInterface` implementation) opens its own dedicated Redis connection directly from `cache/frontend/default/backend_options` above (see `RedisConnectionFactory`) — independent of whichever cache backend/frontend class Magento constructs internally (legacy `Cm_Cache_Backend_Redis`, a Symfony-cache adapter, etc.) — and uses `GETDEL` (or an equivalent Lua script on Redis < 6.2) for true atomic read-and-delete. This eliminates the TOCTOU window on state tokens, nonces, PKCE verifiers, and ephemeral auth tokens across all web nodes.
 
-> When Redis is **not** the active backend, `RedisAtomicCache` falls back transparently to sequential load + remove — identical behaviour to the former `FileAtomicCache`. No configuration override is needed for single-server deployments.
+> When that dedicated Redis connection is **not** reachable (e.g. Redis down, or `backend_options` not configured), `RedisAtomicCache` falls back transparently to sequential load + remove — identical behaviour to the former `FileAtomicCache` — and logs a CRITICAL warning. No configuration override is needed for single-server deployments.
 
 #### Session backend — Redis (required for shared session data)
 
@@ -1008,9 +1009,10 @@ M2Oidc_OAuth/
 │   │   ├── CustomerAttributeMapper.php       # Maps OIDC claims → customer fields + address
 │   │   └── MapperPool.php                    # NEW: DI registry for per-provider mapper overrides ({providerId}_{type} keys)
 │   ├── Cache/
-│   │   ├── AtomicCacheInterface.php          # NEW: single-method getAndDelete() — atomic read-and-delete
+│   │   ├── AtomicCacheInterface.php          # NEW: save() / getAndDelete() — atomic write and read-and-delete
 │   │   ├── FileAtomicCache.php               # NEW: default impl (load+remove; single-server safe)
-│   │   └── RedisAtomicCache.php              # NEW: Lua GETDEL for true atomicity on Redis
+│   │   ├── RedisAtomicCache.php              # NEW: GETDEL/Lua for true atomicity via a dedicated Redis connection
+│   │   └── RedisConnectionFactory.php        # NEW: opens a raw Redis connection from env.php cache config
 │   ├── Config/
 │   │   └── OidcConfigReader.php              # NEW: extracted from OAuthUtility — 80+ config key→DB column mappings
 │   ├── Provider/

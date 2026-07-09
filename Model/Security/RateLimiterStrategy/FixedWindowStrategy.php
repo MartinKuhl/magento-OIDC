@@ -23,9 +23,18 @@ use Magento\Framework\App\CacheInterface;
  */
 class FixedWindowStrategy implements StrategyInterface
 {
-    private const string CACHE_PREFIX  = 'oidc_rate_limit_';
-    private const int MAX_ATTEMPTS  = 10;
-    private const int WINDOW_SECONDS = 60;
+    /**
+     * @var string
+     */
+    private const CACHE_PREFIX  = 'oidc_rate_limit_';
+    /**
+     * @var int
+     */
+    private const MAX_ATTEMPTS  = 10;
+    /**
+     * @var int
+     */
+    private const WINDOW_SECONDS = 60;
 
     /** @var CacheInterface */
     private readonly CacheInterface $cache;

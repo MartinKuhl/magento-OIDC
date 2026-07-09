@@ -17,7 +17,10 @@ use M2Oidc\OAuth\Helper\OAuthUtility;
  */
 class OidcAuthenticationService
 {
-    private const int MAX_RECURSION_DEPTH = 5;
+    /**
+     * @var int
+     */
+    private const MAX_RECURSION_DEPTH = 5;
 
     /** @var \M2Oidc\OAuth\Helper\OAuthUtility */
     private readonly \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility;

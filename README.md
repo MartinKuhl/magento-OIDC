@@ -509,14 +509,14 @@ Configure Magento's cache backend to use Redis (`app/etc/env.php`):
 'cache' => [
     'frontend' => [
         'default' => [
-            'backend' => 'Cm_Cache_Backend_Redis',
+            'backend' => 'redis',
             'backend_options' => ['server' => '127.0.0.1', 'port' => '6379', 'database' => '0'],
         ],
     ],
 ],
 ```
 
-The module's `RedisAtomicCache` (default `AtomicCacheInterface` implementation) auto-detects the Redis backend and switches to a Lua `GETDEL` script for **true atomic** read-and-delete of one-time tokens across all nodes. On single-server or non-Redis setups it transparently falls back to sequential load + remove — **no configuration change required**.
+The module's `RedisAtomicCache` (default `AtomicCacheInterface` implementation) opens its own dedicated Redis connection directly from `cache/frontend/default/backend_options` above — independent of whichever cache backend/frontend class Magento constructs internally — and uses `GETDEL` (or an equivalent Lua script) for **true atomic** read-and-delete of one-time tokens across all nodes. When that connection is unavailable it transparently falls back to sequential load + remove and logs a CRITICAL warning — **no configuration change required** for single-server/non-Redis setups.
 
 ### Required: Redis Session Backend
 

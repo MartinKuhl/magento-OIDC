@@ -36,6 +36,15 @@ class FileAtomicCache implements AtomicCacheInterface
      * @inheritDoc
      */
     #[\Override]
+    public function save(string $identifier, string $value, int $ttl): void
+    {
+        $this->cache->save($value, $identifier, [], $ttl);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    #[\Override]
     public function getAndDelete(string $identifier): ?string
     {
         $value = $this->cache->load($identifier);

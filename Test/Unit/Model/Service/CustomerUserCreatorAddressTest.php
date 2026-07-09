@@ -349,7 +349,6 @@ class CustomerUserCreatorAddressTest extends TestCase
     public function testMapGenderReturnsMaleForVariousInputs(string $input): void
     {
         $method = new \ReflectionMethod(CustomerAttributeMapper::class, 'mapGender');
-        $method->setAccessible(true);
 
         $this->assertSame(1, $method->invoke($this->makeMapper(), $input));
     }
@@ -369,7 +368,6 @@ class CustomerUserCreatorAddressTest extends TestCase
     public function testMapGenderReturnsFemaleForVariousInputs(string $input): void
     {
         $method = new \ReflectionMethod(CustomerAttributeMapper::class, 'mapGender');
-        $method->setAccessible(true);
 
         $this->assertSame(2, $method->invoke($this->makeMapper(), $input));
     }
@@ -388,7 +386,6 @@ class CustomerUserCreatorAddressTest extends TestCase
     public function testMapGenderReturnsNotSpecifiedForUnknownValue(): void
     {
         $method = new \ReflectionMethod(CustomerAttributeMapper::class, 'mapGender');
-        $method->setAccessible(true);
 
         $this->assertSame(3, $method->invoke($this->makeMapper(), 'other'));
     }
@@ -396,7 +393,6 @@ class CustomerUserCreatorAddressTest extends TestCase
     public function testMapGenderReturnsNullForEmptyString(): void
     {
         $method = new \ReflectionMethod(CustomerAttributeMapper::class, 'mapGender');
-        $method->setAccessible(true);
 
         $this->assertNull($method->invoke($this->makeMapper(), ''));
     }
@@ -409,7 +405,6 @@ class CustomerUserCreatorAddressTest extends TestCase
     public function testFormatDateOfBirthParsesCorrectly(string $input, string $expected): void
     {
         $method = new \ReflectionMethod(CustomerAttributeMapper::class, 'formatDateOfBirth');
-        $method->setAccessible(true);
 
         $this->assertSame($expected, $method->invoke($this->makeMapper(), $input));
     }
@@ -426,7 +421,6 @@ class CustomerUserCreatorAddressTest extends TestCase
     public function testFormatDateOfBirthReturnsNullForInvalidInput(): void
     {
         $method = new \ReflectionMethod(CustomerAttributeMapper::class, 'formatDateOfBirth');
-        $method->setAccessible(true);
 
         $this->assertNull($method->invoke($this->makeMapper(), 'not-a-date-xyzzy'));
     }

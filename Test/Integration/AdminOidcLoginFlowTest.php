@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace M2Oidc\OAuth\Test\Integration;
 
-use Magento\Framework\App\CacheInterface;
 use M2Oidc\OAuth\Helper\OAuthSecurityHelper;
 use M2Oidc\OAuth\Helper\OAuthUtility;
 use M2Oidc\OAuth\Model\Cache\AtomicCacheInterface;
@@ -21,9 +20,6 @@ class AdminOidcLoginFlowTest extends TestCase
     /** @var array<string,string|false> In-memory cache store */
     private array $cacheStore = [];
 
-    /** @var CacheInterface&\PHPUnit\Framework\MockObject\MockObject */
-    private CacheInterface $cache;
-
     /** @var OAuthUtility&\PHPUnit\Framework\MockObject\MockObject */
     private OAuthUtility $oauthUtility;
 
@@ -33,28 +29,6 @@ class AdminOidcLoginFlowTest extends TestCase
     protected function setUp(): void
     {
         $this->cacheStore = [];
-
-        $this->cache = $this->createMock(CacheInterface::class);
-
-        $this->cache
-            ->method('save')
-            ->willReturnCallback(function (string $value, string $key): bool {
-                $this->cacheStore[$key] = $value;
-                return true;
-            });
-
-        $this->cache
-            ->method('load')
-            ->willReturnCallback(function (string $key) {
-                return $this->cacheStore[$key] ?? false;
-            });
-
-        $this->cache
-            ->method('remove')
-            ->willReturnCallback(function (string $key): bool {
-                unset($this->cacheStore[$key]);
-                return true;
-            });
 
         $this->oauthUtility = $this->createMock(OAuthUtility::class);
 
@@ -69,6 +43,9 @@ class AdminOidcLoginFlowTest extends TestCase
             });
 
         $atomicCache = $this->createMock(AtomicCacheInterface::class);
+        $atomicCache->method('save')->willReturnCallback(function (string $key, string $value): void {
+            $this->cacheStore[$key] = $value;
+        });
         $atomicCache->method('getAndDelete')->willReturnCallback(function (string $key): ?string {
             $value = $this->cacheStore[$key] ?? false;
             if ($value === false) {
@@ -77,7 +54,7 @@ class AdminOidcLoginFlowTest extends TestCase
             unset($this->cacheStore[$key]);
             return (string) $value;
         });
-        $this->helper = new OAuthSecurityHelper($this->cache, $this->oauthUtility, $atomicCache);
+        $this->helper = new OAuthSecurityHelper($this->oauthUtility, $atomicCache);
     }
 
     // ---------------------------------------------------------------- admin nonce

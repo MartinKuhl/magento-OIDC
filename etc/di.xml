@@ -87,14 +87,20 @@
     </virtualType>
 
     <!-- AtomicCacheInterface: RedisAtomicCache is the default.
-         When Magento's cache backend is Redis (Cm_Cache_Backend_Redis), it executes a
-         Lua GETDEL script for true atomic read-and-delete — eliminating the TOCTOU window
-         on state tokens, nonces, and PKCE verifiers across all web nodes.
-         When Redis is not the active cache backend, it transparently falls back to the old
-         sequential load+remove behaviour (identical to the former FileAtomicCache default).
-         Production deployments must configure Magento's cache backend to use Redis so that
-         tokens stored on one node are readable on all other nodes:
-           'cache' => ['frontend' => ['default' => ['backend' => 'Cm_Cache_Backend_Redis', ...]]]
+         RedisAtomicCache opens its own dedicated Redis connection directly from
+         env.php's cache/frontend/default/backend_options (see RedisConnectionFactory),
+         independent of whichever cache backend/frontend class Magento constructs
+         internally (legacy Cm_Cache_Backend_Redis, a Symfony-cache adapter, etc.).
+         It uses GETDEL (or an equivalent Lua script on Redis < 6.2) for true atomic
+         read-and-delete — eliminating the TOCTOU window on state tokens, nonces, and
+         PKCE verifiers across all web nodes.
+         When the dedicated Redis connection is unavailable (e.g. Redis down, or
+         cache/frontend/default/backend_options is not configured for Redis), it
+         transparently falls back to sequential load+remove (identical to the
+         FileAtomicCache default) and logs a CRITICAL warning.
+         Production deployments must configure Magento's default cache frontend to use
+         Redis so that tokens stored on one node are readable on all other nodes:
+           'cache' => ['frontend' => ['default' => ['backend' => 'redis', 'backend_options' => [...]]]]
          Session storage should also use Redis so OIDC session data (oidc_id_token, etc.)
          is shared across nodes:
            'session' => ['save' => 'redis', 'redis' => [...]] -->
@@ -161,7 +167,6 @@
     <!-- OAuthSecurityHelper Configuration -->
     <type name="M2Oidc\OAuth\Helper\OAuthSecurityHelper">
         <arguments>
-            <argument name="cache" xsi:type="object">Magento\Framework\App\CacheInterface</argument>
             <argument name="oauthUtility" xsi:type="object">M2Oidc\OAuth\Helper\OAuthUtility</argument>
         </arguments>
     </type>

@@ -18,7 +18,10 @@ use Magento\Framework\Stdlib\CookieManagerInterface;
  */
 class AdminSetLogoutFlagObserver implements ObserverInterface
 {
-    private const string LOGOUT_COOKIE_NAME = 'oidc_admin_just_logged_out';
+    /**
+     * @var string
+     */
+    private const LOGOUT_COOKIE_NAME = 'oidc_admin_just_logged_out';
 
     /**
      * Constructor.

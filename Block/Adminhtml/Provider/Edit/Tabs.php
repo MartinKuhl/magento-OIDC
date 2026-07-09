@@ -28,8 +28,6 @@ class Tabs extends \Magento\Backend\Block\Widget\Tabs
 
     /**
      * Register the three inline tabs and their child-block content.
-     *
-     * @return $this
      */
     #[\Override]
     protected function _beforeToHtml(): self

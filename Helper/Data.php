@@ -529,7 +529,6 @@ class Data extends AbstractHelper
      */
     protected function sanitize($value): string
     {
-        $escaped = $this->escaper->escapeHtml((string) $value);
-        return is_array($escaped) ? implode('', $escaped) : (string) $escaped;
+        return $this->escaper->escapeHtml((string) $value);
     }
 }

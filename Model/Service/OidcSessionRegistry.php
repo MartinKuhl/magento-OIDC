@@ -28,14 +28,17 @@ class OidcSessionRegistry
     /** Cache tag used to flush all OIDC session registry entries at once. */
     public const CACHE_TAG = 'm2oidc_oidc_session';
 
-    /** Default TTL: 24 h, matching a typical access token lifetime. */
-    private const int DEFAULT_TTL = 86400;
+    /** Default TTL: 24 h, matching a typical access token lifetime.
+     * @var int */
+    private const DEFAULT_TTL = 86400;
 
-    /** Prefix for primary cache keys (sub + sid). */
-    private const string KEY_PREFIX = 'oidc_sess_';
+    /** Prefix for primary cache keys (sub + sid).
+     * @var string */
+    private const KEY_PREFIX = 'oidc_sess_';
 
-    /** Prefix for secondary sid-only index keys (used by front-channel logout). */
-    private const string SID_KEY_PREFIX = 'oidc_sess_sid_';
+    /** Prefix for secondary sid-only index keys (used by front-channel logout).
+     * @var string */
+    private const SID_KEY_PREFIX = 'oidc_sess_sid_';
 
     /** @var CacheInterface */
     private readonly CacheInterface $cache;

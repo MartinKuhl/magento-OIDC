@@ -122,8 +122,8 @@ abstract class AbstractOidcIntegrationTest extends TestCase
         // Skip gracefully when the OIDC provider does not support ROPC
         // (grant_type=password) — e.g. Dex, which is authorization-code only.
         $responseHeaders = function_exists('http_get_last_response_headers')
-            ? http_get_last_response_headers()
-            : ($http_response_header ?? []);
+            ? (http_get_last_response_headers() ?? [])
+            : $http_response_header;
         $statusLine = $responseHeaders[0] ?? 'HTTP/? 0 Unknown';
         if (!str_contains($statusLine, ' 200')) {
             $this->markTestSkipped(

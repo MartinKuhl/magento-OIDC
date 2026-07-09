@@ -72,6 +72,9 @@ class SecurityPluginsTest extends TestCase
             });
 
         $atomicCache = $this->createMock(AtomicCacheInterface::class);
+        $atomicCache->method('save')->willReturnCallback(function (string $key, string $value): void {
+            $this->cacheStore[$key] = $value;
+        });
         $atomicCache->method('getAndDelete')->willReturnCallback(function (string $key): ?string {
             $value = $this->cacheStore[$key] ?? false;
             if ($value === false) {
@@ -80,7 +83,7 @@ class SecurityPluginsTest extends TestCase
             unset($this->cacheStore[$key]);
             return (string) $value;
         });
-        $this->securityHelper = new OAuthSecurityHelper($this->cache, $oauthUtility, $atomicCache);
+        $this->securityHelper = new OAuthSecurityHelper($oauthUtility, $atomicCache);
     }
 
     // ---------------------------------------------------------------- OidcRateLimiter

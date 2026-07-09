@@ -9,123 +9,391 @@ namespace M2Oidc\OAuth\Helper;
  */
 class OAuthConstants
 {
-    public const string MODULE_DIR = 'M2Oidc_OAuth';
-    public const string MODULE_TITLE = 'Authelia OIDC';
+    /**
+     * @var string
+     */
+    public const MODULE_DIR = 'M2Oidc_OAuth';
+    /**
+     * @var string
+     */
+    public const MODULE_TITLE = 'Authelia OIDC';
 
     //ACL Settings
-    public const string MODULE_OAUTHSETTINGS = '::oauth_settings';
-    public const string MODULE_SIGNIN = '::signin_settings';
-    public const string MODULE_ATTR = '::attr_settings';
+    /**
+     * @var string
+     */
+    public const MODULE_OAUTHSETTINGS = '::oauth_settings';
+    /**
+     * @var string
+     */
+    public const MODULE_SIGNIN = '::signin_settings';
+    /**
+     * @var string
+     */
+    public const MODULE_ATTR = '::attr_settings';
 
-    public const string MODULE_IMAGES = '::images/';
-    public const string MODULE_CERTS = '::certs/';
-    public const string MODULE_CSS = '::css/';
-    public const string MODULE_JS = '::js/';
-    public const string MODULE_METADATA = '::metadata/metadata.xml';
-    public const string ISSUER_URL_PATH = '/';
+    /**
+     * @var string
+     */
+    public const MODULE_IMAGES = '::images/';
+    /**
+     * @var string
+     */
+    public const MODULE_CERTS = '::certs/';
+    /**
+     * @var string
+     */
+    public const MODULE_CSS = '::css/';
+    /**
+     * @var string
+     */
+    public const MODULE_JS = '::js/';
+    /**
+     * @var string
+     */
+    public const MODULE_METADATA = '::metadata/metadata.xml';
+    /**
+     * @var string
+     */
+    public const ISSUER_URL_PATH = '/';
 
     // request option parameter values
-    public const string TEST_CONFIG_OPT = 'm2oidc_test';
+    /**
+     * @var string
+     */
+    public const TEST_CONFIG_OPT = 'm2oidc_test';
 
     //database keys
+    /**
+     * @var string
+     */
+    public const APP_NAME = 'appName';
+    /**
+     * @var string
+     */
+    public const CLIENT_ID = 'clientID';
+    /**
+     * @var string
+     */
+    public const CLIENT_SECRET = 'clientSecret';
+    /**
+     * @var string
+     */
+    public const SCOPE = 'scope';
+    /**
+     * @var string
+     */
+    public const AUTHORIZE_URL = 'authorizeURL';
+    /**
+     * @var string
+     */
+    public const ACCESSTOKEN_URL = 'accessTokenURL';
+    /**
+     * @var string
+     */
+    public const GETUSERINFO_URL = 'getUserInfoURL';
+    /**
+     * @var string
+     */
+    public const OAUTH_LOGOUT_URL = 'oauthLogoutURL';
 
-    public const string APP_NAME = 'appName';
-    public const string CLIENT_ID = 'clientID';
-    public const string CLIENT_SECRET = 'clientSecret';
-    public const string SCOPE = 'scope';
-    public const string AUTHORIZE_URL = 'authorizeURL';
-    public const string ACCESSTOKEN_URL = 'accessTokenURL';
-    public const string GETUSERINFO_URL = 'getUserInfoURL';
-    public const string OAUTH_LOGOUT_URL = 'oauthLogoutURL';
+    /**
+     * @var string
+     */
+    public const TEST_RELAYSTATE = 'testvalidate';
+    /**
+     * @var string
+     */
+    public const MAP_MAP_BY = 'amAccountMatcher';
+    /**
+     * @var string
+     */
+    public const DEFAULT_MAP_BY = 'email';
+    /**
+     * @var string
+     */
+    public const DEFAULT_GROUP = 'General';
+    /**
+     * @var string
+     */
+    public const SEND_HEADER = 'header';
+    /**
+     * @var string
+     */
+    public const SEND_BODY = 'body';
+    /**
+     * @var string
+     */
+    public const ENDPOINT_URL = 'endpoint_url';
 
-    public const string TEST_RELAYSTATE = 'testvalidate';
-    public const string MAP_MAP_BY = 'amAccountMatcher';
-    public const string DEFAULT_MAP_BY = 'email';
-    public const string DEFAULT_GROUP = 'General';
-    public const string SEND_HEADER = 'header';
-    public const string SEND_BODY = 'body';
-    public const string ENDPOINT_URL = 'endpoint_url';
-
-    public const string X509CERT = 'certificate';
-    public const string JWKS_URL = 'jwks_url';
-    /** Per-provider JWKS public-key cache TTL in seconds. Default 86400 (24 h). */
-    public const string JWKS_CACHE_TTL = 'jwks_cache_ttl';
-    /** Per-provider HTTP connect/read timeout in seconds. */
-    public const string HTTP_TIMEOUT         = 'http_timeout';
-    public const int    HTTP_TIMEOUT_DEFAULT = 30;
-    public const string ISSUER = 'samlIssuer';
-    public const string DB_FIRSTNAME = 'firstname';
-    public const string USER_NAME = 'username';
-    public const string DB_LASTNAME = 'lastname';
-    public const string SHOW_ADMIN_LINK = 'showadminlink';
-    public const string SHOW_CUSTOMER_LINK = 'showcustomerlink';
-    public const string BUTTON_TEXT = 'buttonText';
-    public const string IS_TEST = 'isTest';
-    public const string AUTO_CREATE_ADMIN = 'autoCreateAdmin';
-    public const string AUTO_CREATE_CUSTOMER = 'autoCreateCustomer';
-    public const string ENABLE_LOGIN_REDIRECT = 'enableLoginRedirect';
-    public const string DISABLE_NON_OIDC_ADMIN_LOGIN = 'disableNonOidcAdminLogin';
-    public const string DISABLE_NON_OIDC_CUSTOMER_LOGIN = 'disableNonOidcCustomerLogin';
-    public const string CREATEIFNOTMAP_CUSTOMER = 'createIfNotMapped';
+    /**
+     * @var string
+     */
+    public const X509CERT = 'certificate';
+    /**
+     * @var string
+     */
+    public const JWKS_URL = 'jwks_url';
+    /** Per-provider JWKS public-key cache TTL in seconds. Default 86400 (24 h).
+     * @var string */
+    public const JWKS_CACHE_TTL = 'jwks_cache_ttl';
+    /** Per-provider HTTP connect/read timeout in seconds.
+     * @var string */
+    public const HTTP_TIMEOUT         = 'http_timeout';
+    /**
+     * @var int
+     */
+    public const HTTP_TIMEOUT_DEFAULT = 30;
+    /**
+     * @var string
+     */
+    public const ISSUER = 'samlIssuer';
+    /**
+     * @var string
+     */
+    public const DB_FIRSTNAME = 'firstname';
+    /**
+     * @var string
+     */
+    public const USER_NAME = 'username';
+    /**
+     * @var string
+     */
+    public const DB_LASTNAME = 'lastname';
+    /**
+     * @var string
+     */
+    public const SHOW_ADMIN_LINK = 'showadminlink';
+    /**
+     * @var string
+     */
+    public const SHOW_CUSTOMER_LINK = 'showcustomerlink';
+    /**
+     * @var string
+     */
+    public const BUTTON_TEXT = 'buttonText';
+    /**
+     * @var string
+     */
+    public const IS_TEST = 'isTest';
+    /**
+     * @var string
+     */
+    public const AUTO_CREATE_ADMIN = 'autoCreateAdmin';
+    /**
+     * @var string
+     */
+    public const AUTO_CREATE_CUSTOMER = 'autoCreateCustomer';
+    /**
+     * @var string
+     */
+    public const ENABLE_LOGIN_REDIRECT = 'enableLoginRedirect';
+    /**
+     * @var string
+     */
+    public const DISABLE_NON_OIDC_ADMIN_LOGIN = 'disableNonOidcAdminLogin';
+    /**
+     * @var string
+     */
+    public const DISABLE_NON_OIDC_CUSTOMER_LOGIN = 'disableNonOidcCustomerLogin';
+    /**
+     * @var string
+     */
+    public const CREATEIFNOTMAP_CUSTOMER = 'createIfNotMapped';
 
     // Per-provider SSO sync flags (stored in m2oidc_oauth_client_apps)
-    public const string SYNC_CUSTOMER_PROFILE_ON_SSO = 'sync_customer_profile_on_sso';
-    public const string SYNC_CUSTOMER_ADDRESS_ON_SSO = 'sync_customer_address_on_sso';
-    public const string SYNC_CUSTOMER_GROUP_ON_SSO   = 'sync_customer_group_on_sso';
-    public const string SYNC_ADMIN_PROFILE_ON_SSO    = 'sync_admin_profile_on_sso';
-    public const string SYNC_ADMIN_ROLE_ON_SSO       = 'sync_admin_role_on_sso';
-    public const string UPDATE_FRONTEND_GROUPS_ON_SSO = 'updateFrontendGroupsOnSso';
+    /**
+     * @var string
+     */
+    public const SYNC_CUSTOMER_PROFILE_ON_SSO = 'sync_customer_profile_on_sso';
+    /**
+     * @var string
+     */
+    public const SYNC_CUSTOMER_ADDRESS_ON_SSO = 'sync_customer_address_on_sso';
+    /**
+     * @var string
+     */
+    public const SYNC_CUSTOMER_GROUP_ON_SSO   = 'sync_customer_group_on_sso';
+    /**
+     * @var string
+     */
+    public const SYNC_ADMIN_PROFILE_ON_SSO    = 'sync_admin_profile_on_sso';
+    /**
+     * @var string
+     */
+    public const SYNC_ADMIN_ROLE_ON_SSO       = 'sync_admin_role_on_sso';
+    /**
+     * @var string
+     */
+    public const UPDATE_FRONTEND_GROUPS_ON_SSO = 'updateFrontendGroupsOnSso';
 
     // Login type constants for differentiating admin vs customer OIDC login
-    public const string LOGIN_TYPE_CUSTOMER = 'customer';
-    public const string LOGIN_TYPE_ADMIN = 'admin';
+    /**
+     * @var string
+     */
+    public const LOGIN_TYPE_CUSTOMER = 'customer';
+    /**
+     * @var string
+     */
+    public const LOGIN_TYPE_ADMIN = 'admin';
 
     // IdP-Initiated SSO (OIDC Third-Party Initiated Login §4)
-    public const string IDP_INITIATED_ENABLED = 'idpInitiatedEnabled';
+    /**
+     * @var string
+     */
+    public const IDP_INITIATED_ENABLED = 'idpInitiatedEnabled';
 
     // Claim value encoding applied during attribute flattening
-    public const string CLAIM_ENCODING        = 'claimEncoding';
-    public const string CLAIM_ENCODING_NONE   = 'none';
-    public const string CLAIM_ENCODING_BASE64 = 'base64';
+    /**
+     * @var string
+     */
+    public const CLAIM_ENCODING        = 'claimEncoding';
+    /**
+     * @var string
+     */
+    public const CLAIM_ENCODING_NONE   = 'none';
+    /**
+     * @var string
+     */
+    public const CLAIM_ENCODING_BASE64 = 'base64';
 
     // attribute mapping constants
-    public const string MAP_EMAIL = 'amEmail';
-    public const string DEFAULT_MAP_EMAIL = 'email';
-    public const string MAP_USERNAME = 'amUsername';
-    public const string DEFAULT_MAP_USERN = 'username';
-    public const string MAP_FIRSTNAME = 'amFirstName';
-    public const string DEFAULT_MAP_FN = 'firstName';
-    public const string DEFAULT_MAP_LN = 'lastName';
-    public const string MAP_LASTNAME = 'amLastName';
-    public const string MAP_DEFAULT_ROLE = 'defaultRole';
-    public const string ADMIN_ROLE_MAPPING = 'adminRoleMapping';
-    public const string DEFAULT_ROLE = 'General';
-    public const string MAP_GROUP = 'group';
-    public const string UNLISTED_ROLE = 'unlistedRole';
-    public const string CUSTOMER_GROUP_MAPPING = 'customerGroupMapping';
-    public const string MAP_DEFAULT_CUSTOMER_GROUP = 'defaultCustomerGroup';
-    public const string DEFAULT_CUSTOMER_GROUP = 'General';
+    /**
+     * @var string
+     */
+    public const MAP_EMAIL = 'amEmail';
+    /**
+     * @var string
+     */
+    public const DEFAULT_MAP_EMAIL = 'email';
+    /**
+     * @var string
+     */
+    public const MAP_USERNAME = 'amUsername';
+    /**
+     * @var string
+     */
+    public const DEFAULT_MAP_USERN = 'username';
+    /**
+     * @var string
+     */
+    public const MAP_FIRSTNAME = 'amFirstName';
+    /**
+     * @var string
+     */
+    public const DEFAULT_MAP_FN = 'firstName';
+    /**
+     * @var string
+     */
+    public const DEFAULT_MAP_LN = 'lastName';
+    /**
+     * @var string
+     */
+    public const MAP_LASTNAME = 'amLastName';
+    /**
+     * @var string
+     */
+    public const MAP_DEFAULT_ROLE = 'defaultRole';
+    /**
+     * @var string
+     */
+    public const ADMIN_ROLE_MAPPING = 'adminRoleMapping';
+    /**
+     * @var string
+     */
+    public const DEFAULT_ROLE = 'General';
+    /**
+     * @var string
+     */
+    public const MAP_GROUP = 'group';
+    /**
+     * @var string
+     */
+    public const UNLISTED_ROLE = 'unlistedRole';
+    /**
+     * @var string
+     */
+    public const CUSTOMER_GROUP_MAPPING = 'customerGroupMapping';
+    /**
+     * @var string
+     */
+    public const MAP_DEFAULT_CUSTOMER_GROUP = 'defaultCustomerGroup';
+    /**
+     * @var string
+     */
+    public const DEFAULT_CUSTOMER_GROUP = 'General';
 
     // Customer data attribute mapping constants
-    public const string MAP_DOB = 'amDob';
-    public const string DEFAULT_MAP_DOB = 'birthdate';
-    public const string MAP_GENDER = 'amGender';
-    public const string DEFAULT_MAP_GENDER = 'gender';
-    public const string MAP_PHONE = 'amPhone';
-    public const string DEFAULT_MAP_PHONE = 'phone_number';
-    public const string MAP_STREET = 'amStreet';
-    public const string DEFAULT_MAP_STREET = 'address.street_address';
-    public const string MAP_ZIP = 'amZip';
-    public const string DEFAULT_MAP_ZIP = 'address.postal_code';
-    public const string MAP_CITY = 'amCity';
-    public const string DEFAULT_MAP_CITY = 'address.locality';
-    public const string MAP_STATE = 'amState';
-    public const string DEFAULT_MAP_STATE = 'address.region';
-    public const string MAP_COUNTRY = 'amCountry';
-    public const string DEFAULT_MAP_COUNTRY = 'address.country';
+    /**
+     * @var string
+     */
+    public const MAP_DOB = 'amDob';
+    /**
+     * @var string
+     */
+    public const DEFAULT_MAP_DOB = 'birthdate';
+    /**
+     * @var string
+     */
+    public const MAP_GENDER = 'amGender';
+    /**
+     * @var string
+     */
+    public const DEFAULT_MAP_GENDER = 'gender';
+    /**
+     * @var string
+     */
+    public const MAP_PHONE = 'amPhone';
+    /**
+     * @var string
+     */
+    public const DEFAULT_MAP_PHONE = 'phone_number';
+    /**
+     * @var string
+     */
+    public const MAP_STREET = 'amStreet';
+    /**
+     * @var string
+     */
+    public const DEFAULT_MAP_STREET = 'address.street_address';
+    /**
+     * @var string
+     */
+    public const MAP_ZIP = 'amZip';
+    /**
+     * @var string
+     */
+    public const DEFAULT_MAP_ZIP = 'address.postal_code';
+    /**
+     * @var string
+     */
+    public const MAP_CITY = 'amCity';
+    /**
+     * @var string
+     */
+    public const DEFAULT_MAP_CITY = 'address.locality';
+    /**
+     * @var string
+     */
+    public const MAP_STATE = 'amState';
+    /**
+     * @var string
+     */
+    public const DEFAULT_MAP_STATE = 'address.region';
+    /**
+     * @var string
+     */
+    public const MAP_COUNTRY = 'amCountry';
+    /**
+     * @var string
+     */
+    public const DEFAULT_MAP_COUNTRY = 'address.country';
 
     // Standard OIDC Claims for dropdown selection in admin UI
-    public const array OIDC_STANDARD_CLAIMS = [
+    /**
+     * @var mixed[]
+     */
+    public const OIDC_STANDARD_CLAIMS = [
         'sub',
         'name',
         'given_name',
@@ -154,38 +422,101 @@ class OAuthConstants
     ];
 
     //URLs
-    public const string OAUTH_LOGIN_URL = 'm2oidc/actions/sendAuthorizationRequest';
+    /**
+     * @var string
+     */
+    public const OAUTH_LOGIN_URL = 'm2oidc/actions/sendAuthorizationRequest';
 
     //images
-    public const string IMAGE_RIGHT = 'right.png';
-    public const string IMAGE_WRONG = 'wrong.png';
+    /**
+     * @var string
+     */
+    public const IMAGE_RIGHT = 'right.png';
+    /**
+     * @var string
+     */
+    public const IMAGE_WRONG = 'wrong.png';
 
-    public const string CALLBACK_URL = 'm2oidc/actions/ReadAuthorizationResponse';
-    public const string CODE = 'code';
-    public const string GRANT_TYPE = 'authorization_code';
+    /**
+     * @var string
+     */
+    public const CALLBACK_URL = 'm2oidc/actions/ReadAuthorizationResponse';
+    /**
+     * @var string
+     */
+    public const CODE = 'code';
+    /**
+     * @var string
+     */
+    public const GRANT_TYPE = 'authorization_code';
 
     // PKCE (RFC 7636) — FEAT-01
-    public const string PKCE_VERIFIER_SESSION_KEY = 'oidc_pkce_verifier';
-    public const string PKCE_METHOD_S256 = 'S256';
-    public const string PKCE_METHOD_PLAIN = 'plain';
+    /**
+     * @var string
+     */
+    public const PKCE_VERIFIER_SESSION_KEY = 'oidc_pkce_verifier';
+    /**
+     * @var string
+     */
+    public const PKCE_METHOD_S256 = 'S256';
+    /**
+     * @var string
+     */
+    public const PKCE_METHOD_PLAIN = 'plain';
 
     //OAUTH Constants
-    public const string OAUTH = 'OAUTH';
-    public const string HTTP_REDIRECT = 'HttpRedirect';
+    /**
+     * @var string
+     */
+    public const OAUTH = 'OAUTH';
+    /**
+     * @var string
+     */
+    public const HTTP_REDIRECT = 'HttpRedirect';
 
     //Registration Status
-    public const string STATUS_VERIFY_LOGIN = "M2OIDC_VERIFY_CUSTOMER";
-    public const string STATUS_COMPLETE_LOGIN = "M2OIDC_VERIFIED";
+    /**
+     * @var string
+     */
+    public const STATUS_VERIFY_LOGIN = "M2OIDC_VERIFY_CUSTOMER";
+    /**
+     * @var string
+     */
+    public const STATUS_COMPLETE_LOGIN = "M2OIDC_VERIFIED";
 
     //plugin constants
-    public const string VERSION = "v4.2.0";
-    public const string MAGENTO_COUNTER = "magento_count";
+    /**
+     * @var string
+     */
+    public const VERSION = "v4.2.0";
+    /**
+     * @var string
+     */
+    public const MAGENTO_COUNTER = "magento_count";
 
     //Debug log
-    public const string ENABLE_DEBUG_LOG = 'debug_log';
-    public const string LOG_FILE_TIME = 'log_file_time';
-    public const string SEND_EMAIL = 'send_email';
-    public const string ADMINEMAIL = 'admin_email';
-    public const string PLUGIN_VERSION = 'v4.2.0';
-    public const string CUSTOMER_EMAIL = 'email';
+    /**
+     * @var string
+     */
+    public const ENABLE_DEBUG_LOG = 'debug_log';
+    /**
+     * @var string
+     */
+    public const LOG_FILE_TIME = 'log_file_time';
+    /**
+     * @var string
+     */
+    public const SEND_EMAIL = 'send_email';
+    /**
+     * @var string
+     */
+    public const ADMINEMAIL = 'admin_email';
+    /**
+     * @var string
+     */
+    public const PLUGIN_VERSION = 'v4.2.0';
+    /**
+     * @var string
+     */
+    public const CUSTOMER_EMAIL = 'email';
 }

@@ -76,31 +76,21 @@ class OAuth extends \Magento\Framework\View\Element\Template
     /**
      * Escape HTML to prevent XSS
      *
-     * @param mixed $data Data to escape
-     * @param mixed $allowedTags Allowed HTML tags
-     * @return array<int|string, mixed>|string
-     * @psalm-suppress ImplementedReturnTypeMismatch Parent only declares string, but Escaper supports array
+     * @param string|int|float|\Stringable|array<string|int|float|\Stringable> $data Data to escape
+     * @param array<mixed>|null $allowedTags Allowed HTML tags
+     * @return ($data is array ? string[] : string)
      */
     #[\Override]
     public function escapeHtml($data, $allowedTags = null)
     {
-        // Normalize allowed tags to array|null as expected by Escaper::escapeHtml
-        if (is_string($allowedTags)) {
-            // Try to extract tag names from strings like "<b><i>"
-            preg_match_all('/<([a-z0-9]+)>/i', $allowedTags, $matches);
-            $allowedTags = empty($matches[1]) ? null : array_map(strtolower(...), $matches[1]);
-        } elseif (!is_array($allowedTags)) {
-            $allowedTags = null;
-        }
-
         return $this->escaper->escapeHtml($data, $allowedTags);
     }
 
     /**
      * Escape string for HTML attribute
      *
-     * @param  string $string
-     * @param  bool   $escapeSingleQuote
+     * @param  string|int|float|\Stringable $string
+     * @param  bool                         $escapeSingleQuote
      * @return string
      */
     #[\Override]
@@ -124,7 +114,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     /**
      * Escape JavaScript string
      *
-     * @param  string $string
+     * @param  string|int|float|\Stringable $string
      * @return string
      */
     #[\Override]
@@ -962,10 +952,8 @@ class OAuth extends \Magento\Framework\View\Element\Template
 
     /**
      * Get OIDC error message from URL parameter
-     *
-     * @return string|null
      */
-    public function getOidcErrorMessage()
+    public function getOidcErrorMessage(): ?string
     {
         $encodedMessage = $this->getRequest()->getParam('oidc_error');
         if ($encodedMessage) {

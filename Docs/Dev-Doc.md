@@ -88,7 +88,7 @@ Fix all the mentioned issue and warnings. Use sub-agents where applicable. DO no
 ##############################################
 
 ### ToDo ###
-- 
+- adjust PHPStan, Psalm, PHPCS, PHPUnit and Rector for PHP 8.4 & PHP 8.5 --> 8.2 to 8.5
 
 ### FIX ###
 - 

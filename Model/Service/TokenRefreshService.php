@@ -44,8 +44,9 @@ class TokenRefreshService
     /** Session key for the access token expiry Unix timestamp. */
     public const SESSION_TOKEN_EXPIRES   = 'oidc_access_token_expires';
 
-    /** Refresh this many seconds before the token actually expires. */
-    private const int REFRESH_THRESHOLD_SECS = 60;
+    /** Refresh this many seconds before the token actually expires.
+     * @var int */
+    private const REFRESH_THRESHOLD_SECS = 60;
 
     /** @var OAuthUtility */
     private readonly OAuthUtility $oauthUtility;

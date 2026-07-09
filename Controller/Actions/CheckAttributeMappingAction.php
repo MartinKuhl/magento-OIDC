@@ -678,12 +678,10 @@ class CheckAttributeMappingAction extends BaseAction
     }
 
     // Setter methods for dependency injection pattern
-
     /**
      * Set user info response
      *
      * @param  mixed $userInfoResponse
-     * @return $this
      */
     public function setUserInfoResponse($userInfoResponse): static
     {
@@ -695,7 +693,6 @@ class CheckAttributeMappingAction extends BaseAction
      * Set flattened user info response
      *
      * @param  mixed $flattenedUserInfoResponse
-     * @return $this
      */
     public function setFlattenedUserInfoResponse($flattenedUserInfoResponse): static
     {
@@ -707,7 +704,6 @@ class CheckAttributeMappingAction extends BaseAction
      * Set user email
      *
      * @param  string $userEmail
-     * @return $this
      */
     public function setUserEmail($userEmail): static
     {
@@ -719,7 +715,6 @@ class CheckAttributeMappingAction extends BaseAction
      * Set login type (admin or customer)
      *
      * @param  string $loginType
-     * @return $this
      */
     public function setLoginType($loginType): static
     {
@@ -731,7 +726,6 @@ class CheckAttributeMappingAction extends BaseAction
      * Set the headless mode flag (FEAT-09).
      *
      * @param  bool $headless
-     * @return $this
      */
     public function setHeadless(bool $headless): static
     {
@@ -751,7 +745,6 @@ class CheckAttributeMappingAction extends BaseAction
      *   lastname_attribute, group_attribute
      *
      * @param  mixed[] $clientDetails Provider row data array
-     * @return $this
      */
     public function setClientDetails(array $clientDetails): static
     {

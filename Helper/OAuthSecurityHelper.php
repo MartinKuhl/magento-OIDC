@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace M2Oidc\OAuth\Helper;
 
-use Magento\Framework\App\CacheInterface;
 use M2Oidc\OAuth\Model\Cache\AtomicCacheInterface;
 
 /**
@@ -16,45 +15,59 @@ use M2Oidc\OAuth\Model\Cache\AtomicCacheInterface;
  */
 class OAuthSecurityHelper
 {
-    private const string NONCE_CACHE_PREFIX = 'm2oidc_nonce_';
+    /**
+     * @var string
+     */
+    private const NONCE_CACHE_PREFIX = 'm2oidc_nonce_';
     /**
      * Cache prefix for customer OIDC login nonces
+     * @var string
      */
-    private const string CUSTOMER_NONCE_CACHE_PREFIX = 'm2oidc_custnonce_';
-    private const string STATE_CACHE_PREFIX = 'm2oidc_state_';
-    private const int NONCE_TTL = 300;     // 5 minutes — covers browser round-trips to slow IdPs
-    private const int STATE_TTL = 600;     // 10 minutes
-
+    private const CUSTOMER_NONCE_CACHE_PREFIX = 'm2oidc_custnonce_';
+    /**
+     * @var string
+     */
+    private const STATE_CACHE_PREFIX = 'm2oidc_state_';
+    /**
+     * @var int
+     */
+    private const NONCE_TTL = 300;     // 5 minutes — covers browser round-trips to slow IdPs
+    /**
+     * @var int
+     */
+    private const STATE_TTL = 600;     // 10 minutes
     /**
      * Cache prefix for ephemeral OIDC auth tokens (C-01).
      * Key: hash('sha256', token) → value: email address.
+     * @var string
      */
-    private const string OIDC_AUTH_TOKEN_PREFIX = 'm2oidc_authtoken_';
-    /** TTL for ephemeral OIDC auth tokens: long enough to survive a single login round-trip. */
-    private const int OIDC_AUTH_TOKEN_TTL = 300; // 5 minutes
-
+    private const OIDC_AUTH_TOKEN_PREFIX = 'm2oidc_authtoken_';
+    /** TTL for ephemeral OIDC auth tokens: long enough to survive a single login round-trip.
+     * @var int */
+    private const OIDC_AUTH_TOKEN_TTL = 300; // 5 minutes
     /**
      * Prefix used as a fast, non-secret distinguisher for OIDC auth tokens (C-01).
      * The token itself is a cryptographically random hex string — this prefix merely
      * lets plugin code skip the cache lookup when the password is clearly not an OIDC token.
+     * @var string
      */
-    private const string OIDC_AUTH_TOKEN_MARKER = 'OIDC_';
+    private const OIDC_AUTH_TOKEN_MARKER = 'OIDC_';
 
-    /** Cache prefix for per-flow OIDC id_token nonces (H-01). */
-    private const string OIDC_NONCE_CACHE_PREFIX = 'm2oidc_oidcnonce_';
-    /** TTL matches STATE_TTL so nonce stays available until state is consumed. */
-    private const int OIDC_NONCE_TTL = 600; // 10 minutes
-
-    /** Cache prefix for PKCE code verifiers bridging the customer OAuth redirect. */
-    private const string PKCE_VERIFIER_CACHE_PREFIX = 'm2oidc_pkce_verifier_';
-    /** TTL for PKCE verifier cache entries: 10 minutes, matching STATE_TTL. */
-    private const int PKCE_VERIFIER_TTL = 600;
-
-    /** @var CacheInterface Used for write (save) operations */
-    private readonly CacheInterface $cache;
+    /** Cache prefix for per-flow OIDC id_token nonces (H-01).
+     * @var string */
+    private const OIDC_NONCE_CACHE_PREFIX = 'm2oidc_oidcnonce_';
+    /** TTL matches STATE_TTL so nonce stays available until state is consumed.
+     * @var int */
+    private const OIDC_NONCE_TTL = 600; // 10 minutes
+    /** Cache prefix for PKCE code verifiers bridging the customer OAuth redirect.
+     * @var string */
+    private const PKCE_VERIFIER_CACHE_PREFIX = 'm2oidc_pkce_verifier_';
+    /** TTL for PKCE verifier cache entries: 10 minutes, matching STATE_TTL.
+     * @var int */
+    private const PKCE_VERIFIER_TTL = 600;
 
     /**
-     * Atomic read-and-delete for one-time-use cache tokens.
+     * Atomic save / read-and-delete for one-time-use cache tokens.
      * Eliminates the TOCTOU window between load() and remove().
      *
      * @var AtomicCacheInterface
@@ -67,16 +80,13 @@ class OAuthSecurityHelper
     /**
      * Initialize OAuth security helper.
      *
-     * @param CacheInterface       $cache
      * @param OAuthUtility         $oauthUtility
      * @param AtomicCacheInterface $atomicCache
      */
     public function __construct(
-        CacheInterface $cache,
         OAuthUtility $oauthUtility,
         AtomicCacheInterface $atomicCache
     ) {
-        $this->cache       = $cache;
         $this->oauthUtility = $oauthUtility;
         $this->atomicCache  = $atomicCache;
     }
@@ -94,7 +104,7 @@ class OAuthSecurityHelper
     {
         $nonce = bin2hex(random_bytes(16));
         $cacheKey = self::NONCE_CACHE_PREFIX . $nonce;
-        $this->cache->save($email, $cacheKey, [], self::NONCE_TTL);
+        $this->atomicCache->save($cacheKey, $email, self::NONCE_TTL);
         return $nonce;
     }
 
@@ -149,7 +159,7 @@ class OAuthSecurityHelper
             $payload['headless'] = true;
         }
         $data = json_encode($payload, JSON_THROW_ON_ERROR);
-        $this->cache->save($data, $cacheKey, [], self::NONCE_TTL);
+        $this->atomicCache->save($cacheKey, $data, self::NONCE_TTL);
         return $nonce;
     }
 
@@ -216,7 +226,7 @@ class OAuthSecurityHelper
     {
         $token = bin2hex(random_bytes(16));
         $cacheKey = self::STATE_CACHE_PREFIX . hash('sha256', $sessionId . $token);
-        $this->cache->save('1', $cacheKey, [], self::STATE_TTL);
+        $this->atomicCache->save($cacheKey, '1', self::STATE_TTL);
         return $token;
     }
 
@@ -451,7 +461,7 @@ class OAuthSecurityHelper
     {
         $nonce    = bin2hex(random_bytes(16));
         $cacheKey = self::PKCE_VERIFIER_CACHE_PREFIX . $nonce;
-        $this->cache->save($verifier, $cacheKey, [], self::PKCE_VERIFIER_TTL);
+        $this->atomicCache->save($cacheKey, $verifier, self::PKCE_VERIFIER_TTL);
         $this->oauthUtility->customlog(
             "OAuthSecurityHelper: PKCE verifier stored in cache for provider_id={$providerId}"
         );
@@ -501,7 +511,7 @@ class OAuthSecurityHelper
         $token = self::OIDC_AUTH_TOKEN_MARKER . $raw; // 'OIDC_' + 64 chars
 
         $cacheKey = self::OIDC_AUTH_TOKEN_PREFIX . hash('sha256', $token);
-        $this->cache->save($email, $cacheKey, [], self::OIDC_AUTH_TOKEN_TTL);
+        $this->atomicCache->save($cacheKey, $email, self::OIDC_AUTH_TOKEN_TTL);
 
         return $token;
     }
@@ -564,7 +574,7 @@ class OAuthSecurityHelper
     public function storeOidcNonce(string $stateToken, string $nonce): void
     {
         $cacheKey = self::OIDC_NONCE_CACHE_PREFIX . hash('sha256', $stateToken);
-        $this->cache->save($nonce, $cacheKey, [], self::OIDC_NONCE_TTL);
+        $this->atomicCache->save($cacheKey, $nonce, self::OIDC_NONCE_TTL);
     }
 
     /**

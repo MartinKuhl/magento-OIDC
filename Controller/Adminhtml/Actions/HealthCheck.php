@@ -37,8 +37,9 @@ class HealthCheck extends Action implements HttpGetActionInterface
     /**
      * ACL resource required to call this endpoint.
      * Maps to M2Oidc_OAuth::oauth_settings in etc/acl.xml.
+     * @var string
      */
-    public const string ADMIN_RESOURCE = 'M2Oidc_OAuth::oauth_settings';
+    public const ADMIN_RESOURCE = 'M2Oidc_OAuth::oauth_settings';
 
     /** @var OAuthUtility */
     private readonly OAuthUtility $oauthUtility;

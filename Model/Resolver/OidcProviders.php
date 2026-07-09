@@ -33,8 +33,9 @@ use M2Oidc\OAuth\Helper\OAuthUtility;
  */
 class OidcProviders implements ResolverInterface
 {
-    /** Allowed login_type filter values. */
-    private const array ALLOWED_LOGIN_TYPES = ['customer', 'admin', 'both'];
+    /** Allowed login_type filter values.
+     * @var mixed[] */
+    private const ALLOWED_LOGIN_TYPES = ['customer', 'admin', 'both'];
 
     /** @var OAuthUtility */
     private readonly OAuthUtility $oauthUtility;

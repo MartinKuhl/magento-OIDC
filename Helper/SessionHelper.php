@@ -20,8 +20,9 @@ class SessionHelper
     /**
      * Known admin-related cookie names to update with SameSite=None.
      * Used instead of iterating $_COOKIE directly.
+     * @var mixed[]
      */
-    private const array ADMIN_COOKIE_NAMES = ['PHPSESSID', 'admin'];
+    private const ADMIN_COOKIE_NAMES = ['PHPSESSID', 'admin'];
 
     /** @var \Magento\Framework\Stdlib\CookieManagerInterface */
     private readonly \Magento\Framework\Stdlib\CookieManagerInterface $cookieManager;

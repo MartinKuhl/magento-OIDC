@@ -26,8 +26,9 @@ class OAuthObserver implements ObserverInterface
 {
     /**
      * Query-parameter keys this observer reacts to.
+     * @var mixed[]
      */
-    private const array REQUEST_PARAMS = ['option'];
+    private const REQUEST_PARAMS = ['option'];
 
     /**
      * Initialize OAuth observer.

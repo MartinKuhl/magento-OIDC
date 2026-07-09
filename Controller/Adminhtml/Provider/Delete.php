@@ -23,7 +23,10 @@ use M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps as AppResource;
  */
 class Delete extends Action implements HttpPostActionInterface
 {
-    public const string ADMIN_RESOURCE = 'M2Oidc_OAuth::oauth_settings';
+    /**
+     * @var string
+     */
+    public const ADMIN_RESOURCE = 'M2Oidc_OAuth::oauth_settings';
 
     /** @var M2oidcOauthClientAppsFactory */
     private readonly M2oidcOauthClientAppsFactory $clientAppsFactory;

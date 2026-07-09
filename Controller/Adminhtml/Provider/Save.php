@@ -12,6 +12,7 @@ use Magento\Framework\App\Request\DataPersistorInterface;
 use Magento\Framework\Controller\Result\Redirect;
 use Magento\Framework\Encryption\EncryptorInterface;
 use M2Oidc\OAuth\Helper\Curl;
+use M2Oidc\OAuth\Model\M2oidcOauthClientApps;
 use M2Oidc\OAuth\Model\M2oidcOauthClientAppsFactory;
 use M2Oidc\OAuth\Model\Provider\MappingRepository;
 use M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps as AppResource;
@@ -28,7 +29,10 @@ use M2Oidc\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
  */
 class Save extends Action implements HttpPostActionInterface
 {
-    public const string ADMIN_RESOURCE = 'M2Oidc_OAuth::oauth_settings';
+    /**
+     * @var string
+     */
+    public const ADMIN_RESOURCE = 'M2Oidc_OAuth::oauth_settings';
 
     /** @var M2oidcOauthClientAppsFactory */
     private readonly M2oidcOauthClientAppsFactory $clientAppsFactory;
@@ -343,60 +347,7 @@ class Save extends Action implements HttpPostActionInterface
             if ($discoveryUrl !== '') {
                 $discovered = $this->performDiscovery($discoveryUrl);
                 if ($discovered instanceof \stdClass) {
-                    // H-10: Validate discovered endpoints are HTTPS
-                    $epKeys = [
-                        'authorization_endpoint', 'token_endpoint', 'userinfo_endpoint',
-                        'jwks_uri', 'end_session_endpoint', 'revocation_endpoint',
-                    ];
-                    foreach ($epKeys as $epKey) {
-                        if (isset($discovered->$epKey) && is_string($discovered->$epKey)) {
-                            // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
-                            $epScheme = parse_url($discovered->$epKey, PHP_URL_SCHEME);
-                            if (strtolower((string) $epScheme) !== 'https') {
-                                $this->messageManager->addWarningMessage(
-                                    (string) __('Discovered %1 is not HTTPS and was skipped.', $epKey)
-                                );
-                                unset($discovered->$epKey);
-                            }
-                        }
-                    }
-                    if (isset($discovered->authorization_endpoint)) {
-                        $model->setData('authorize_endpoint', trim((string) $discovered->authorization_endpoint));
-                    }
-                    if (isset($discovered->token_endpoint)) {
-                        $model->setData('access_token_endpoint', trim((string) $discovered->token_endpoint));
-                    }
-                    if (isset($discovered->userinfo_endpoint)) {
-                        $model->setData('user_info_endpoint', trim((string) $discovered->userinfo_endpoint));
-                    }
-                    if (isset($discovered->issuer)) {
-                        $model->setData('issuer', trim((string) $discovered->issuer));
-                    }
-                    if (isset($discovered->end_session_endpoint)) {
-                        $model->setData('endsession_endpoint', trim((string) $discovered->end_session_endpoint));
-                    }
-                    if (isset($discovered->revocation_endpoint)) {
-                        $model->setData('revocation_endpoint', trim((string) $discovered->revocation_endpoint));
-                    }
-                    if (isset($discovered->jwks_uri)) {
-                        $model->setData('jwks_endpoint', trim((string) $discovered->jwks_uri));
-                    }
-                    // Public-client hint: if the IdP advertises 'none' as a supported token-endpoint
-                    // auth method, this signals the server supports public clients. Pre-enable the
-                    // toggle so the admin does not have to set it manually.
-                    // Only applied on CREATE ($providerId === 0) — never on EDIT, so the admin's
-                    // explicit choice is always preserved when re-saving an existing provider.
-                    // Background: token_endpoint_auth_methods_supported is server-wide, not
-                    // per-client. Authelia and other IdPs list 'none' even for confidential clients,
-                    // so overriding on every save would incorrectly flip confidential clients to public.
-                    if ($providerId === 0
-                        && (int) $model->getData('public_client') === 0
-                        && isset($discovered->token_endpoint_auth_methods_supported)
-                        && is_array($discovered->token_endpoint_auth_methods_supported)
-                        && in_array('none', $discovered->token_endpoint_auth_methods_supported, true)
-                    ) {
-                        $model->setData('public_client', 1);
-                    }
+                    $this->applyDiscoveredEndpoints($discovered, $model, $providerId);
                     $discoverySucceeded = true;
                 }
                 // On failure, performDiscovery() already added an error message.
@@ -483,6 +434,78 @@ class Save extends Action implements HttpPostActionInterface
                 return $redirect->setPath('*/*/edit', ['id' => $providerId]);
             }
             return $redirect->setPath('*/*/edit');
+        }
+    }
+
+    /**
+     * Apply auto-discovered OIDC endpoints from a discovery document to the provider model.
+     *
+     * Skips (and warns about) any discovered endpoint that is not HTTPS (H-10) and
+     * pre-enables the public-client toggle on CREATE when the IdP advertises 'none'
+     * as a supported token-endpoint auth method.
+     *
+     * @param \stdClass              $discovered Parsed OIDC discovery document.
+     * @param M2oidcOauthClientApps  $model      Provider model being saved.
+     * @param int                    $providerId Provider ID from the form (0 on CREATE).
+     */
+    private function applyDiscoveredEndpoints(
+        \stdClass $discovered,
+        M2oidcOauthClientApps $model,
+        int $providerId
+    ): void {
+        // H-10: Validate discovered endpoints are HTTPS
+        $epKeys = [
+            'authorization_endpoint', 'token_endpoint', 'userinfo_endpoint',
+            'jwks_uri', 'end_session_endpoint', 'revocation_endpoint',
+        ];
+        foreach ($epKeys as $epKey) {
+            if (isset($discovered->$epKey) && is_string($discovered->$epKey)) {
+                // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
+                $epScheme = parse_url($discovered->$epKey, PHP_URL_SCHEME);
+                if (strtolower((string) $epScheme) !== 'https') {
+                    $this->messageManager->addWarningMessage(
+                        (string) __('Discovered %1 is not HTTPS and was skipped.', $epKey)
+                    );
+                    unset($discovered->$epKey);
+                }
+            }
+        }
+        if (isset($discovered->authorization_endpoint)) {
+            $model->setData('authorize_endpoint', trim((string) $discovered->authorization_endpoint));
+        }
+        if (isset($discovered->token_endpoint)) {
+            $model->setData('access_token_endpoint', trim((string) $discovered->token_endpoint));
+        }
+        if (isset($discovered->userinfo_endpoint)) {
+            $model->setData('user_info_endpoint', trim((string) $discovered->userinfo_endpoint));
+        }
+        if (isset($discovered->issuer)) {
+            $model->setData('issuer', trim((string) $discovered->issuer));
+        }
+        if (isset($discovered->end_session_endpoint)) {
+            $model->setData('endsession_endpoint', trim((string) $discovered->end_session_endpoint));
+        }
+        if (isset($discovered->revocation_endpoint)) {
+            $model->setData('revocation_endpoint', trim((string) $discovered->revocation_endpoint));
+        }
+        if (isset($discovered->jwks_uri)) {
+            $model->setData('jwks_endpoint', trim((string) $discovered->jwks_uri));
+        }
+        // Public-client hint: if the IdP advertises 'none' as a supported token-endpoint
+        // auth method, this signals the server supports public clients. Pre-enable the
+        // toggle so the admin does not have to set it manually.
+        // Only applied on CREATE ($providerId === 0) — never on EDIT, so the admin's
+        // explicit choice is always preserved when re-saving an existing provider.
+        // Background: token_endpoint_auth_methods_supported is server-wide, not
+        // per-client. Authelia and other IdPs list 'none' even for confidential clients,
+        // so overriding on every save would incorrectly flip confidential clients to public.
+        if ($providerId === 0
+            && (int) $model->getData('public_client') === 0
+            && isset($discovered->token_endpoint_auth_methods_supported)
+            && is_array($discovered->token_endpoint_auth_methods_supported)
+            && in_array('none', $discovered->token_endpoint_auth_methods_supported, true)
+        ) {
+            $model->setData('public_client', 1);
         }
     }
 

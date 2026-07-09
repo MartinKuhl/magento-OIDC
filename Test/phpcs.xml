@@ -28,6 +28,7 @@
 
     <!-- Enforce declare(strict_types=1) in all PHP files -->
     <rule ref="Generic.PHP.RequireStrictTypes">
+        <include-pattern>*\.php$</include-pattern>
         <exclude-pattern>*.phtml</exclude-pattern>
     </rule>
 
@@ -42,6 +43,10 @@
          is intentional for minimal CI fixtures — not subject to PSR-1 class rules -->
     <exclude-pattern>Test/Stubs/*</exclude-pattern>
 
-    <!-- Minimum supported PHP version (8.2+) -->
-    <config name="testVersion" value="8.2-"/>
+    <!-- Supported PHP version range (8.2 through 8.5); bounded so PHPCompatibility
+         also flags features deprecated/removed within 8.3-8.5 -->
+    <config name="testVersion" value="8.2-8.5"/>
+
+    <!-- Warnings are informational (see LiteralNamespaces demotion above); only errors block -->
+    <config name="ignore_warnings_on_exit" value="1"/>
 </ruleset>

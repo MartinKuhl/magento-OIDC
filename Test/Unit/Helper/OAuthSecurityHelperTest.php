@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace M2Oidc\OAuth\Test\Unit\Helper;
 
-use Magento\Framework\App\CacheInterface;
 use M2Oidc\OAuth\Helper\OAuthSecurityHelper;
 use M2Oidc\OAuth\Helper\OAuthUtility;
 use M2Oidc\OAuth\Model\Cache\AtomicCacheInterface;
@@ -14,16 +13,13 @@ use PHPUnit\Framework\TestCase;
 /**
  * Unit tests for OAuthSecurityHelper.
  *
- * All Magento infrastructure (CacheInterface, OAuthUtility) is replaced
+ * All Magento infrastructure (AtomicCacheInterface, OAuthUtility) is replaced
  * with PHPUnit mocks so these tests run without a Magento installation.
  *
  * @covers \M2Oidc\OAuth\Helper\OAuthSecurityHelper
  */
 class OAuthSecurityHelperTest extends TestCase
 {
-    /** @var CacheInterface&MockObject */
-    private CacheInterface $cache;
-
     /** @var OAuthUtility&MockObject */
     private OAuthUtility $oauthUtility;
 
@@ -35,12 +31,10 @@ class OAuthSecurityHelperTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->cache        = $this->createMock(CacheInterface::class);
         $this->oauthUtility = $this->createMock(OAuthUtility::class);
         $this->atomicCache  = $this->createMock(AtomicCacheInterface::class);
 
         $this->helper = new OAuthSecurityHelper(
-            $this->cache,
             $this->oauthUtility,
             $this->atomicCache
         );
@@ -50,22 +44,32 @@ class OAuthSecurityHelperTest extends TestCase
     // Admin nonce
     // -------------------------------------------------------------------------
 
+    public function testCreateAdminLoginNonceSavesEmailViaAtomicCache(): void
+    {
+        $this->atomicCache->expects($this->once())
+            ->method('save')
+            ->with($this->isType('string'), 'admin@example.com', $this->isType('int'));
+
+        $nonce = $this->helper->createAdminLoginNonce('admin@example.com');
+        $this->assertMatchesRegularExpression('/^[a-f0-9]{32}$/', $nonce);
+    }
+
     public function testRedeemAdminLoginNonceReturnNullForEmptyNonce(): void
     {
-        $this->cache->expects($this->never())->method('load');
+        $this->atomicCache->expects($this->never())->method('getAndDelete');
         $this->assertNull($this->helper->redeemAdminLoginNonce(''));
     }
 
     public function testRedeemAdminLoginNonceReturnNullForNonHexNonce(): void
     {
-        $this->cache->expects($this->never())->method('load');
+        $this->atomicCache->expects($this->never())->method('getAndDelete');
         $this->assertNull($this->helper->redeemAdminLoginNonce('not-a-valid-nonce'));
     }
 
     public function testRedeemAdminLoginNonceReturnNullForWrongLength(): void
     {
         // 30 hex chars — too short
-        $this->cache->expects($this->never())->method('load');
+        $this->atomicCache->expects($this->never())->method('getAndDelete');
         $this->assertNull($this->helper->redeemAdminLoginNonce(str_repeat('a', 30)));
     }
 
@@ -95,9 +99,27 @@ class OAuthSecurityHelperTest extends TestCase
     // Customer nonce
     // -------------------------------------------------------------------------
 
+    public function testCreateCustomerLoginNonceSavesPayloadViaAtomicCache(): void
+    {
+        $this->atomicCache->expects($this->once())
+            ->method('save')
+            ->with(
+                $this->isType('string'),
+                $this->callback(function (string $data): bool {
+                    $decoded = json_decode($data, true);
+                    return $decoded['email'] === 'customer@example.com'
+                        && $decoded['relayState'] === '/checkout';
+                }),
+                $this->isType('int')
+            );
+
+        $nonce = $this->helper->createCustomerLoginNonce('customer@example.com', '/checkout');
+        $this->assertMatchesRegularExpression('/^[a-f0-9]{32}$/', $nonce);
+    }
+
     public function testRedeemCustomerLoginNonceReturnNullForInvalidFormat(): void
     {
-        $this->cache->expects($this->never())->method('load');
+        $this->atomicCache->expects($this->never())->method('getAndDelete');
         $this->assertNull($this->helper->redeemCustomerLoginNonce('INVALID'));
     }
 
@@ -137,15 +159,25 @@ class OAuthSecurityHelperTest extends TestCase
     // State token
     // -------------------------------------------------------------------------
 
+    public function testCreateStateTokenSavesViaAtomicCache(): void
+    {
+        $this->atomicCache->expects($this->once())
+            ->method('save')
+            ->with($this->isType('string'), '1', $this->isType('int'));
+
+        $token = $this->helper->createStateToken('session123');
+        $this->assertMatchesRegularExpression('/^[a-f0-9]{32}$/', $token);
+    }
+
     public function testValidateStateTokenReturnsFalseForEmptySessionId(): void
     {
-        $this->cache->expects($this->never())->method('load');
+        $this->atomicCache->expects($this->never())->method('getAndDelete');
         $this->assertFalse($this->helper->validateStateToken('', str_repeat('f', 32)));
     }
 
     public function testValidateStateTokenReturnsFalseForInvalidFormat(): void
     {
-        $this->cache->expects($this->never())->method('load');
+        $this->atomicCache->expects($this->never())->method('getAndDelete');
         $this->assertFalse($this->helper->validateStateToken('session123', 'not-hex'));
     }
 
@@ -166,6 +198,39 @@ class OAuthSecurityHelperTest extends TestCase
         $this->assertTrue(
             $this->helper->validateStateToken('session123', str_repeat('a', 32))
         );
+    }
+
+    // -------------------------------------------------------------------------
+    // PKCE verifier / ephemeral OIDC auth token / OIDC nonce — write paths
+    // -------------------------------------------------------------------------
+
+    public function testStorePkceVerifierSavesViaAtomicCache(): void
+    {
+        $this->atomicCache->expects($this->once())
+            ->method('save')
+            ->with($this->isType('string'), 'verifier-value', $this->isType('int'));
+
+        $nonce = $this->helper->storePkceVerifier('verifier-value', 1);
+        $this->assertMatchesRegularExpression('/^[a-f0-9]{32}$/', $nonce);
+    }
+
+    public function testCreateOidcAuthTokenSavesEmailViaAtomicCache(): void
+    {
+        $this->atomicCache->expects($this->once())
+            ->method('save')
+            ->with($this->isType('string'), 'admin@example.com', $this->isType('int'));
+
+        $token = $this->helper->createOidcAuthToken('admin@example.com');
+        $this->assertStringStartsWith('OIDC_', $token);
+    }
+
+    public function testStoreOidcNonceSavesViaAtomicCache(): void
+    {
+        $this->atomicCache->expects($this->once())
+            ->method('save')
+            ->with($this->isType('string'), 'the-nonce', $this->isType('int'));
+
+        $this->helper->storeOidcNonce('the-state-token', 'the-nonce');
     }
 
     // -------------------------------------------------------------------------

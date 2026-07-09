@@ -28,9 +28,18 @@ use Magento\Framework\App\CacheInterface;
  */
 class SlidingWindowStrategy implements StrategyInterface
 {
-    private const string SORTED_SET_PREFIX = 'oidc_rl_';
-    private const int MAX_ATTEMPTS      = 10;
-    private const int WINDOW_SECONDS    = 60;
+    /**
+     * @var string
+     */
+    private const SORTED_SET_PREFIX = 'oidc_rl_';
+    /**
+     * @var int
+     */
+    private const MAX_ATTEMPTS      = 10;
+    /**
+     * @var int
+     */
+    private const WINDOW_SECONDS    = 60;
 
     /** @var CacheInterface Non-Redis fallback */
     private readonly CacheInterface $cache;

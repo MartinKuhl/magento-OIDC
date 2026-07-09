@@ -21,7 +21,10 @@ use M2Oidc\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
  */
 class Delete extends Action implements HttpPostActionInterface
 {
-    public const string ADMIN_RESOURCE = 'M2Oidc_OAuth::oidc_sessions';
+    /**
+     * @var string
+     */
+    public const ADMIN_RESOURCE = 'M2Oidc_OAuth::oidc_sessions';
 
     /** @var UserProviderResource */
     private readonly UserProviderResource $userProviderResource;

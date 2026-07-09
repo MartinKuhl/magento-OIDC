@@ -21,8 +21,9 @@ use Magento\Framework\View\Result\PageFactory;
  */
 class Index extends Action implements HttpGetActionInterface
 {
-    /** ACL resource required to access provider management. */
-    public const string ADMIN_RESOURCE = 'M2Oidc_OAuth::oauth_settings';
+    /** ACL resource required to access provider management.
+     * @var string */
+    public const ADMIN_RESOURCE = 'M2Oidc_OAuth::oauth_settings';
 
     /** @var PageFactory */
     private readonly PageFactory $pageFactory;
