@@ -164,7 +164,12 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
             unset($data['id']);
             // Re-encrypt sensitive fields for safe transport
             if (!empty($data['client_secret'])) {
-                $data['client_secret'] = $encryptor->encrypt($data['client_secret']);
+                $plain = (string) $data['client_secret'];
+                // Value is already Magento-encrypted in the DB — unwrap before re-encrypting
+                if (preg_match('/^\d+:\d+:/', $plain)) {
+                    $plain = $encryptor->decrypt($plain);
+                }
+                $data['client_secret'] = $encryptor->encrypt($plain);
             }
             $exportData['providers'][] = $data;
         }
