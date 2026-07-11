@@ -137,7 +137,18 @@ class BackChannelLogout extends BaseAction implements HttpPostActionInterface, C
 
         // Verify JWT signature via the provider's JWKS endpoint
         $jwksEndpoint = (string) ($provider['jwks_endpoint'] ?? '');
-        $clientId     = (string) ($provider['clientID'] ?? ($audiences[0] ?? ''));
+        $clientId     = (string) ($provider['clientID'] ?? '');
+
+        // M-12: Fail closed when the provider row has no clientID — falling back to
+        // the token's own aud claim would make the audience check self-referential
+        // and always pass.
+        if ($clientId === '') {
+            $this->oauthUtility->customlog(
+                "BackChannelLogout: ERROR — provider matched by issuer={$issuer} has no clientID"
+                . " configured. Fix the provider configuration to accept back-channel logout."
+            );
+            return $this->jsonError('Provider misconfigured — missing clientID.', 400);
+        }
 
         // Validate audience contains our client ID
         if (!in_array($clientId, $audiences, true)) {
@@ -237,7 +248,8 @@ class BackChannelLogout extends BaseAction implements HttpPostActionInterface, C
      * Find the provider row whose `issuer` column matches the token issuer.
      *
      * Falls back to matching against `well_known_config_url` prefix when no
-     * exact `issuer` match is found.
+     * exact `issuer` match is found. L-37: when more than one active provider
+     * matches the issuer, the first match wins and a WARNING is logged.
      *
      * @param  string $issuer Token `iss` claim value
      * @return array<string, mixed>|null Provider data array or null if not found
@@ -248,12 +260,14 @@ class BackChannelLogout extends BaseAction implements HttpPostActionInterface, C
             return null;
         }
 
+        /** @var array<int, array<string, mixed>> $matches */
+        $matches = [];
         $providers = $this->oauthUtility->getAllActiveProviders('both');
         foreach ($providers as $provider) {
             // Exact issuer match (preferred)
             if (isset($provider['issuer']) && $provider['issuer'] === $issuer) {
-                /** @psalm-suppress InvalidReturnStatement */
-                return $provider;
+                $matches[] = $provider;
+                continue;
             }
             // Fallback: issuer prefix from well-known URL
             $wellKnown = (string) ($provider['well_known_config_url'] ?? '');
@@ -264,11 +278,33 @@ class BackChannelLogout extends BaseAction implements HttpPostActionInterface, C
                     $wellKnown
                 );
                 if ($derivedIssuer === $issuer) {
-                    return $provider;
+                    $matches[] = $provider;
                 }
             }
         }
-        return null;
+
+        if ($matches === []) {
+            return null;
+        }
+
+        // L-37: Multiple active providers sharing one issuer is ambiguous —
+        // the first match wins, which may use the wrong clientID for the
+        // audience check. Log the affected provider ids for the operator.
+        if (count($matches) > 1) {
+            $ids = implode(
+                ', ',
+                array_map(
+                    static fn(array $p): string => (string) ($p['id'] ?? '?'),
+                    $matches
+                )
+            );
+            $this->oauthUtility->customlog(
+                "BackChannelLogout: WARNING — multiple active providers match issuer={$issuer}"
+                . " (provider ids: {$ids}); first match wins."
+            );
+        }
+
+        return $matches[0];
     }
 
     /**

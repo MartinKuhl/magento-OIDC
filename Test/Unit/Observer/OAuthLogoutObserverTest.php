@@ -16,6 +16,7 @@ use Magento\Framework\Stdlib\CookieManagerInterface;
 use Magento\Framework\UrlInterface;
 use M2Oidc\OAuth\Helper\OAuthConstants;
 use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Model\Service\RpInitiatedLogoutService;
 use M2Oidc\OAuth\Observer\OAuthLogoutObserver;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -55,6 +56,9 @@ class OAuthLogoutObserverTest extends TestCase
     /** @var CurlFactory&MockObject */
     private CurlFactory $curlFactory;
 
+    /** @var RpInitiatedLogoutService */
+    private RpInitiatedLogoutService $rpInitiatedLogoutService;
+
     /** @var Observer */
     private Observer $observer;
 
@@ -73,6 +77,13 @@ class OAuthLogoutObserverTest extends TestCase
 
         $this->oauthUtility->method('customlog');
         $this->oauthUtility->method('customlogContext');
+
+        // Real service wired with the shared mocks so revocation assertions on
+        // the CurlFactory keep working after the M29 extraction.
+        $this->rpInitiatedLogoutService = new RpInitiatedLogoutService(
+            $this->oauthUtility,
+            $this->curlFactory
+        );
     }
 
     // -------------------------------------------------------------------------
@@ -88,7 +99,7 @@ class OAuthLogoutObserverTest extends TestCase
             $this->cookieMetadataFactory,
             $this->customerSession,
             $this->url,
-            $this->curlFactory
+            $this->rpInitiatedLogoutService
         );
     }
 
@@ -202,7 +213,7 @@ class OAuthLogoutObserverTest extends TestCase
             $this->cookieMetadataFactory,
             $this->customerSession,
             $this->url,
-            $this->curlFactory
+            $this->rpInitiatedLogoutService
         );
         $observer->execute($this->observer);
 
@@ -254,7 +265,7 @@ class OAuthLogoutObserverTest extends TestCase
             $this->cookieMetadataFactory,
             $this->customerSession,
             $this->url,
-            $this->curlFactory
+            $this->rpInitiatedLogoutService
         );
 
         try {
@@ -314,7 +325,7 @@ class OAuthLogoutObserverTest extends TestCase
             $this->cookieMetadataFactory,
             $this->customerSession,
             $this->url,
-            $this->curlFactory
+            $this->rpInitiatedLogoutService
         );
 
         try {
@@ -368,7 +379,7 @@ class OAuthLogoutObserverTest extends TestCase
             $this->cookieMetadataFactory,
             $this->customerSession,
             $this->url,
-            $this->curlFactory
+            $this->rpInitiatedLogoutService
         );
         $observer->execute($this->observer);
     }
@@ -403,7 +414,7 @@ class OAuthLogoutObserverTest extends TestCase
             $this->cookieMetadataFactory,
             $this->customerSession,
             $this->url,
-            $this->curlFactory
+            $this->rpInitiatedLogoutService
         );
         $observer->execute($this->observer);
     }
@@ -437,7 +448,7 @@ class OAuthLogoutObserverTest extends TestCase
             $this->cookieMetadataFactory,
             $this->customerSession,
             $this->url,
-            $this->curlFactory
+            $this->rpInitiatedLogoutService
         );
         $observer->execute($this->observer);
     }
@@ -485,7 +496,7 @@ class OAuthLogoutObserverTest extends TestCase
             $this->cookieMetadataFactory,
             $this->customerSession,
             $this->url,
-            $this->curlFactory
+            $this->rpInitiatedLogoutService
         );
         $observer->execute($this->observer);
 
@@ -559,7 +570,7 @@ class OAuthLogoutObserverTest extends TestCase
             $this->cookieMetadataFactory,
             $this->customerSession,
             $this->url,
-            $this->curlFactory
+            $this->rpInitiatedLogoutService
         );
 
         try {

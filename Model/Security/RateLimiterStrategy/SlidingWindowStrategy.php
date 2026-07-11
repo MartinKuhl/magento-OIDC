@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace M2Oidc\OAuth\Model\Security\RateLimiterStrategy;
 
 use Magento\Framework\App\CacheInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * Sliding-window rate-limiting strategy.
@@ -47,16 +48,25 @@ class SlidingWindowStrategy implements StrategyInterface
     /** @var \Magento\Framework\Cache\FrontendInterface */
     private readonly \Magento\Framework\Cache\FrontendInterface $cacheFrontend;
 
+    /** @var LoggerInterface PSR logger for degraded-mode warnings */
+    private readonly LoggerInterface $logger;
+
+    /** @var bool Whether the degraded-to-fallback warning has been emitted (once per instance) */
+    private bool $fallbackWarned = false;
+
     /**
      * @param CacheInterface                             $cache         Fallback (non-Redis)
      * @param \Magento\Framework\Cache\FrontendInterface $cacheFrontend Redis backend access
+     * @param LoggerInterface                            $logger        PSR logger for degraded-mode warnings
      */
     public function __construct(
         CacheInterface $cache,
-        \Magento\Framework\Cache\FrontendInterface $cacheFrontend
+        \Magento\Framework\Cache\FrontendInterface $cacheFrontend,
+        LoggerInterface $logger
     ) {
         $this->cache         = $cache;
         $this->cacheFrontend = $cacheFrontend;
+        $this->logger        = $logger;
     }
 
     /**
@@ -165,21 +175,55 @@ LUA;
     /**
      * Attempt to retrieve the Credis_Client from the cache backend via reflection.
      *
-     * Returns null if not on a Redis backend.
+     * Fragility note: this reads Cm_Cache_Backend_Redis's PRIVATE `_client`
+     * property via Reflection — there is no public accessor for the underlying
+     * Credis_Client. If a colahub/cm_cache_backend_redis (or Magento) upgrade
+     * renames or removes that property, or the deployment uses a different
+     * Redis-backed cache class (e.g. a Symfony cache adapter), this method
+     * returns null and the strategy silently degrades to the non-atomic
+     * fallback. A one-time WARNING is logged in that case so operators know
+     * the true sliding-window guarantee is not in effect.
+     *
+     * Returns null if not on a recognized Redis backend.
      */
     private function tryGetRedisClient(): ?\Credis_Client
     {
         try {
             $backend = $this->cacheFrontend->getBackend();
             if (!($backend instanceof \Cm_Cache_Backend_Redis)) {
+                $this->warnDegradedOnce(
+                    'cache backend ' . get_debug_type($backend) . ' is not Cm_Cache_Backend_Redis'
+                );
                 return null;
             }
             // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
             $ref = new \ReflectionProperty(\Cm_Cache_Backend_Redis::class, '_client');
             $client = $ref->getValue($backend);
-            return ($client instanceof \Credis_Client) ? $client : null;
-        } catch (\Throwable) {
+            if (!($client instanceof \Credis_Client)) {
+                $this->warnDegradedOnce('could not extract Credis_Client from Cm_Cache_Backend_Redis');
+                return null;
+            }
+            return $client;
+        } catch (\Throwable $e) {
+            $this->warnDegradedOnce('backend inspection failed: ' . $e->getMessage());
             return null;
         }
+    }
+
+    /**
+     * Emit a single WARNING (per instance) when the Redis sliding window is unavailable.
+     *
+     * @param string $reason Why the Redis client could not be obtained
+     */
+    private function warnDegradedOnce(string $reason): void
+    {
+        if ($this->fallbackWarned) {
+            return;
+        }
+        $this->fallbackWarned = true;
+        $this->logger->warning(
+            'M2Oidc: SlidingWindowStrategy degraded to the non-atomic in-cache fallback ('
+            . $reason . ') — the true sliding-window rate-limit guarantee is not in effect.'
+        );
     }
 }

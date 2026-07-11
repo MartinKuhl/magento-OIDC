@@ -323,4 +323,41 @@ class ProviderSettingsIndexTest extends TestCase
             'white'         => ['#ffffff'],
         ];
     }
+
+    // -------------------------------------------------------------------------
+    // C-01 / M-30 — ADMIN_RESOURCE constant must match etc/acl.xml
+    // -------------------------------------------------------------------------
+
+    /**
+     * Index::ADMIN_RESOURCE must be the correctly namespaced ACL resource ID.
+     *
+     * Regression guard for C-01: the removed hand-built _isAllowed() override
+     * concatenated OAuthConstants::MODULE_DIR . 'provider_settings' without a
+     * '::' separator, producing the non-existent resource
+     * 'M2Oidc_OAuthprovider_settings' and silently granting access to any
+     * authenticated admin user regardless of ACL role assignment.
+     */
+    public function testAdminResourceConstantIsCorrectlyNamespaced(): void
+    {
+        $this->assertSame('M2Oidc_OAuth::provider_settings', Index::ADMIN_RESOURCE);
+    }
+
+    /**
+     * Index::ADMIN_RESOURCE must reference a resource ID that is actually
+     * declared in etc/acl.xml, so Magento's standard _isAllowed() (inherited
+     * from \Magento\Backend\App\Action) can resolve it.
+     */
+    public function testAdminResourceMatchesAclXmlDeclaration(): void
+    {
+        $aclXmlPath = dirname(__DIR__, 3) . '/etc/acl.xml';
+        $this->assertFileExists($aclXmlPath, 'etc/acl.xml must exist');
+
+        $aclContent = (string) file_get_contents($aclXmlPath);
+
+        $this->assertStringContainsString(
+            'resource id="' . Index::ADMIN_RESOURCE . '"',
+            $aclContent,
+            'etc/acl.xml must declare the resource referenced by Index::ADMIN_RESOURCE'
+        );
+    }
 }

@@ -203,14 +203,7 @@ class HeadlessOidcCallback extends BaseAction
                 'HeadlessOidcCallback: WARNING — store base URL is not HTTPS: ' . $baseUrl
             );
         }
-        // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
-        $parsedOrigin = parse_url($baseUrl);
-        $origin = ($parsedOrigin['scheme'] ?? 'https')
-            . '://'
-            . ($parsedOrigin['host'] ?? '');
-        if (isset($parsedOrigin['port']) && $parsedOrigin['port'] !== 0) {
-            $origin .= ':' . $parsedOrigin['port'];
-        }
+        $origin = $this->resolveStoreOrigin();
 
         // Determine the relay state URL to pass to the opener
         $safeRelayState = (in_array($relayState, ['', '0', '/'], true))
@@ -272,6 +265,10 @@ HTML;
     /**
      * Build an error HTML page that posts an error status to the opener window.
      *
+     * L-36: The error postMessage target is restricted to the store origin —
+     * the same origin computation used by the success page — instead of the
+     * '*' wildcard, so error details never leak to a foreign opener.
+     *
      * @param string $message Human-readable error message
      */
     private function buildErrorPage(string $message): \Magento\Framework\Controller\ResultInterface
@@ -281,6 +278,9 @@ HTML;
             'error'  => $message,
         ]);
 
+        // Escape origin for JS string literal (same sanitation as buildTokenPage()).
+        $safeOrigin = $this->escaper->escapeHtmlAttr($this->resolveStoreOrigin());
+
         $html = <<<HTML
 <!DOCTYPE html>
 <html>
@@ -289,8 +289,9 @@ HTML;
 <script>
 (function () {
     var payload = {$payload};
+    var target  = '{$safeOrigin}';
     if (window.opener && typeof window.opener.postMessage === 'function') {
-        window.opener.postMessage(payload, '*');
+        window.opener.postMessage(payload, target);
     }
     window.close();
 })();
@@ -305,5 +306,30 @@ HTML;
         $result->setHeader('Content-Type', 'text/html; charset=utf-8');
         $result->setContents($html);
         return $result;
+    }
+
+    /**
+     * Compute the allowed postMessage target origin from the store base URL.
+     *
+     * Shared by the success (buildTokenPage) and error (buildErrorPage) pages
+     * so both restrict postMessage to the store's own origin (L-36).
+     *
+     * @return string Origin in scheme://host[:port] form
+     */
+    private function resolveStoreOrigin(): string
+    {
+        $baseUrl = rtrim($this->oauthUtility->getBaseUrl(), '/');
+        // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
+        $parsedOrigin = parse_url($baseUrl);
+        if (!is_array($parsedOrigin)) {
+            $parsedOrigin = [];
+        }
+        $origin = ($parsedOrigin['scheme'] ?? 'https')
+            . '://'
+            . ($parsedOrigin['host'] ?? '');
+        if (isset($parsedOrigin['port']) && $parsedOrigin['port'] !== 0) {
+            $origin .= ':' . $parsedOrigin['port'];
+        }
+        return $origin;
     }
 }

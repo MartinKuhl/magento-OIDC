@@ -37,9 +37,9 @@ $oidcVisibility = $block->getData('oidc_visibility');
     <?php foreach ($adminProviders as $provider):
         $pid   = (int) ($provider['id'] ?? 0);
         $displayName = $provider['display_name'] ?? $provider['app_name'] ?? '';
-        $color = preg_match('/^#[0-9a-fA-F]{6}$/', (string) ($provider['button_color'] ?? ''))
-            ? $escaper->escapeHtmlAttr($provider['button_color'])
-            : '#eb5202';
+        $color = $escaper->escapeHtmlAttr(
+            $block->resolveButtonColor($provider['button_color'] ?? null, '#eb5202')
+        );
         $url = $block->getSPInitiatedUrlForProvider($pid, null, 'admin', $provider['app_name'] ?? '');
         ?>
     <button
@@ -51,9 +51,7 @@ $oidcVisibility = $block->getData('oidc_visibility');
                border-color:<?= $color /* @noEscape */ ?>;"
         data-url="<?= $escaper->escapeHtmlAttr($url) ?>">
         <?= $escaper->escapeHtml(
-            !empty($provider['button_label'])
-            ? $provider['button_label']
-            : __('Login with %1', $displayName)
+            $block->resolveButtonLabel($provider['button_label'] ?? null, (string) $displayName)
         ) ?>
     </button>
     <?php endforeach; ?>

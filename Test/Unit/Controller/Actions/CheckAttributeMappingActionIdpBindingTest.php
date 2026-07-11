@@ -22,6 +22,7 @@ use M2Oidc\OAuth\Controller\Actions\ShowTestResults;
 use M2Oidc\OAuth\Helper\OAuthConstants;
 use M2Oidc\OAuth\Helper\OAuthSecurityHelper;
 use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Model\Data\OidcAttributeMappingContext;
 use M2Oidc\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
 use M2Oidc\OAuth\Model\Service\AdminProfileSyncService;
 use M2Oidc\OAuth\Model\Service\AdminUserCreator;
@@ -188,9 +189,19 @@ class CheckAttributeMappingActionIdpBindingTest extends TestCase
     }
 
     /**
-     * Configure a fully-loaded CheckAttributeMappingAction for an admin login flow.
+     * Build a CheckAttributeMappingAction ready for an admin login flow.
      */
     private function buildActionForAdminLogin(): CheckAttributeMappingAction
+    {
+        return $this->buildAction();
+    }
+
+    /**
+     * Build the OidcAttributeMappingContext for an admin login flow — replaces the
+     * former setUserInfoResponse()/setFlattenedUserInfoResponse()/setUserEmail()/
+     * setLoginType()/setClientDetails() setter chain.
+     */
+    private function buildAdminLoginContext(): OidcAttributeMappingContext
     {
         $attrs = [
             'email'      => self::ADMIN_EMAIL,
@@ -203,17 +214,17 @@ class CheckAttributeMappingActionIdpBindingTest extends TestCase
             'family_name'        => 'User',
         ];
 
-        $action = $this->buildAction();
-        $action->setUserInfoResponse($attrs);
-        $action->setFlattenedUserInfoResponse($flattenedAttrs);
-        $action->setUserEmail(self::ADMIN_EMAIL);
-        $action->setLoginType(OAuthConstants::LOGIN_TYPE_ADMIN);
-        $action->setClientDetails([
-            'id'                  => self::CURRENT_PROVIDER_ID,
-            'endsession_endpoint' => '',
-        ]);
-
-        return $action;
+        return new OidcAttributeMappingContext(
+            $attrs,
+            $flattenedAttrs,
+            self::ADMIN_EMAIL,
+            OAuthConstants::LOGIN_TYPE_ADMIN,
+            false,
+            [
+                'id'                  => self::CURRENT_PROVIDER_ID,
+                'endsession_endpoint' => '',
+            ]
+        );
     }
 
     // -------------------------------------------------------------------------
@@ -242,7 +253,7 @@ class CheckAttributeMappingActionIdpBindingTest extends TestCase
         $this->redirectFactory->method('create')->willReturn($callbackRedirect);
 
         $action = $this->buildActionForAdminLogin();
-        $result = $action->execute();
+        $result = $action->handle($this->buildAdminLoginContext());
 
         // Must redirect (not an error result)
         $this->assertSame($callbackRedirect, $result);
@@ -277,7 +288,7 @@ class CheckAttributeMappingActionIdpBindingTest extends TestCase
         $this->messageManager->expects($this->once())->method('addErrorMessage');
 
         $action = $this->buildActionForAdminLogin();
-        $result = $action->execute();
+        $result = $action->handle($this->buildAdminLoginContext());
 
         $this->assertSame($errorRedirect, $result);
     }
@@ -312,7 +323,7 @@ class CheckAttributeMappingActionIdpBindingTest extends TestCase
         $this->redirectFactory->method('create')->willReturn($callbackRedirect);
 
         $action = $this->buildActionForAdminLogin();
-        $result = $action->execute();
+        $result = $action->handle($this->buildAdminLoginContext());
 
         $this->assertSame($callbackRedirect, $result);
     }

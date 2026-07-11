@@ -17,7 +17,8 @@ use M2Oidc\OAuth\Model\M2oidcOauthClientAppsFactory;
 use M2Oidc\OAuth\Model\Provider\MappingRepository;
 use M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps as AppResource;
 use M2Oidc\OAuth\Model\ResourceModel\OauthRoleMapping as RoleMappingResource;
-use M2Oidc\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
+use M2Oidc\OAuth\Model\Validation\ProviderDataValidator;
+use M2Oidc\OAuth\Model\Validation\SsrfUrlValidator;
 
 /**
  * Admin controller — Save OIDC Provider (MP-06).
@@ -49,14 +50,17 @@ class Save extends Action implements HttpPostActionInterface
     /** @var Curl */
     private readonly Curl $curl;
 
-    /** @var UserProviderResource */
-    private readonly UserProviderResource $userProviderResource;
-
     /** @var EncryptorInterface */
     private readonly EncryptorInterface $encryptor;
 
     /** @var CacheInterface */
     private readonly CacheInterface $cache;
+
+    /** @var ProviderDataValidator */
+    private readonly ProviderDataValidator $providerDataValidator;
+
+    /** @var SsrfUrlValidator */
+    private readonly SsrfUrlValidator $ssrfUrlValidator;
 
     /**
      * Initialize provider save controller.
@@ -67,9 +71,10 @@ class Save extends Action implements HttpPostActionInterface
      * @param DataPersistorInterface        $dataPersistor
      * @param MappingRepository             $mappingRepository
      * @param Curl                          $curl
-     * @param UserProviderResource          $userProviderResource
      * @param EncryptorInterface            $encryptor
      * @param CacheInterface                $cache
+     * @param ProviderDataValidator         $providerDataValidator
+     * @param SsrfUrlValidator              $ssrfUrlValidator
      */
     public function __construct(
         Context $context,
@@ -78,18 +83,20 @@ class Save extends Action implements HttpPostActionInterface
         DataPersistorInterface $dataPersistor,
         MappingRepository $mappingRepository,
         Curl $curl,
-        UserProviderResource $userProviderResource,
         EncryptorInterface $encryptor,
-        CacheInterface $cache
+        CacheInterface $cache,
+        ProviderDataValidator $providerDataValidator,
+        SsrfUrlValidator $ssrfUrlValidator
     ) {
-        $this->clientAppsFactory    = $clientAppsFactory;
-        $this->appResource          = $appResource;
-        $this->dataPersistor        = $dataPersistor;
-        $this->mappingRepository    = $mappingRepository;
-        $this->curl                 = $curl;
-        $this->userProviderResource = $userProviderResource;
-        $this->cache                = $cache;
-        $this->encryptor            = $encryptor;
+        $this->clientAppsFactory     = $clientAppsFactory;
+        $this->appResource           = $appResource;
+        $this->dataPersistor         = $dataPersistor;
+        $this->mappingRepository     = $mappingRepository;
+        $this->curl                  = $curl;
+        $this->cache                 = $cache;
+        $this->encryptor             = $encryptor;
+        $this->providerDataValidator = $providerDataValidator;
+        $this->ssrfUrlValidator      = $ssrfUrlValidator;
         parent::__construct($context);
     }
 
@@ -146,11 +153,41 @@ class Save extends Action implements HttpPostActionInterface
                     : $redirect->setPath('*/*/edit');
             }
 
+            // Lockout-prevention: OIDC-only requires the SSO button to be shown.
+            // isset() is intentional here — we check POST presence, not the value.
+            if (!isset($data['show_admin_link']) && isset($data['m2oidc_disable_non_oidc_admin_login'])) {
+                $data['m2oidc_disable_non_oidc_admin_login'] = 0;
+                $this->messageManager->addWarningMessage(
+                    (string) __(
+                        'Admin OIDC-only login was automatically disabled because the OIDC '
+                        . 'login button is not shown on the admin login page.'
+                    )
+                );
+            }
+
+            if (!isset($data['show_customer_link']) && isset($data['m2oidc_disable_non_oidc_customer_login'])) {
+                $data['m2oidc_disable_non_oidc_customer_login'] = 0;
+                $this->messageManager->addWarningMessage(
+                    (string) __(
+                        'Customer OIDC-only login was automatically disabled because the OIDC '
+                        . 'login button is not shown on the customer login page.'
+                    )
+                );
+            }
+
+            // C-03: shared validation — enum whitelists, SSRF-safe endpoint URLs, and
+            // the "no OIDC users yet" lockout guard are enforced by the validator.
+            $validation = $this->providerDataValidator->validate($data, $providerId);
+            foreach ($validation->getWarnings() as $validationWarning) {
+                $this->messageManager->addWarningMessage($validationWarning);
+            }
+            $data = $validation->getData();
+
             // Sanitize and apply multi-provider fields
             $model->setData('app_name', $this->sanitizeString($data['app_name'] ?? ''));
             $model->setData('display_name', $this->sanitizeString($data['display_name'] ?? ''));
             $model->setData('is_active', (int) ($data['is_active'] ?? 0));
-            $model->setData('login_type', $this->validateLoginType($data['login_type'] ?? 'customer'));
+            $model->setData('login_type', (string) ($data['login_type'] ?? 'customer'));
             $model->setData('sort_order', max(0, (int) ($data['sort_order'] ?? 0)));
             $model->setData('button_label', $this->sanitizeString($data['button_label'] ?? ''));
             $model->setData('button_color', $this->validateHexColor($data['button_color'] ?? ''));
@@ -178,12 +215,8 @@ class Save extends Action implements HttpPostActionInterface
                 }
             }
 
-            // Claim value encoding — whitelist-validated select field.
-            $claimEncoding = $this->sanitizeString($data['claim_encoding'] ?? 'none');
-            $model->setData(
-                'claim_encoding',
-                in_array($claimEncoding, ['none', 'base64'], true) ? $claimEncoding : 'none'
-            );
+            // Claim value encoding — whitelist-validated by ProviderDataValidator (C-03).
+            $model->setData('claim_encoding', (string) ($data['claim_encoding'] ?? 'none'));
 
             // Checkbox/Toggle fields.
             //
@@ -220,55 +253,6 @@ class Save extends Action implements HttpPostActionInterface
                 // FIX: use $field (not $checkbox) — variable name matches the foreach above.
                 // (int) cast reads the actual "0"/"1" value sent by the hidden+checkbox pair.
                 $model->setData($field, (int) ($data[$field] ?? 0));
-            }
-
-            // Lockout-prevention: OIDC-only requires the SSO button to be shown.
-            // isset() is intentional here — we check POST presence, not the value.
-            if (!isset($data['show_admin_link']) && isset($data['m2oidc_disable_non_oidc_admin_login'])) {
-                $model->setData('m2oidc_disable_non_oidc_admin_login', 0);
-                $this->messageManager->addWarningMessage(
-                    (string) __(
-                        'Admin OIDC-only login was automatically disabled because the OIDC '
-                        . 'login button is not shown on the admin login page.'
-                    )
-                );
-            }
-
-            if (!isset($data['show_customer_link']) && isset($data['m2oidc_disable_non_oidc_customer_login'])) {
-                $model->setData('m2oidc_disable_non_oidc_customer_login', 0);
-                $this->messageManager->addWarningMessage(
-                    (string) __(
-                        'Customer OIDC-only login was automatically disabled because the OIDC '
-                        . 'login button is not shown on the customer login page.'
-                    )
-                );
-            }
-
-            // Lockout-prevention: OIDC-only requires at least one OIDC user to exist for this provider.
-            if ($model->getData('m2oidc_disable_non_oidc_admin_login') == 1
-                && $providerId > 0
-                && $this->userProviderResource->countByTypeAndProvider('admin', $providerId) === 0
-            ) {
-                $model->setData('m2oidc_disable_non_oidc_admin_login', 0);
-                $this->messageManager->addWarningMessage(
-                    (string) __(
-                        'Admin OIDC-only login was automatically disabled because no admin users '
-                        . 'have logged in via this provider yet.'
-                    )
-                );
-            }
-
-            if ($model->getData('m2oidc_disable_non_oidc_customer_login') == 1
-                && $providerId > 0
-                && $this->userProviderResource->countByTypeAndProvider('customer', $providerId) === 0
-            ) {
-                $model->setData('m2oidc_disable_non_oidc_customer_login', 0);
-                $this->messageManager->addWarningMessage(
-                    (string) __(
-                        'Customer OIDC-only login was automatically disabled because no customers '
-                        . 'have logged in via this provider yet.'
-                    )
-                );
             }
 
             // Default admin role
@@ -316,12 +300,8 @@ class Save extends Action implements HttpPostActionInterface
                 $model->setData('client_secret', $this->encryptor->encrypt($data['client_secret']));
             }
 
-            // PKCE method — only allow 'S256', 'plain', or '' (disabled)
-            $pkceFlow = $this->sanitizeString($data['pkce_flow'] ?? '');
-            if (!in_array($pkceFlow, ['S256', 'plain', ''], true)) {
-                $pkceFlow = '';
-            }
-            $model->setData('pkce_flow', $pkceFlow);
+            // PKCE method — whitelist-validated by ProviderDataValidator (C-03).
+            $model->setData('pkce_flow', (string) ($data['pkce_flow'] ?? ''));
 
             // Require client_secret when creating a new confidential (non-public) client.
             // Public clients (RFC 6749 §2.1) have no secret by design — PKCE takes its role.
@@ -537,10 +517,8 @@ class Save extends Action implements HttpPostActionInterface
         // Block loopback and RFC-1918 private ranges (SSRF protection).
         // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
         $host = (string) parse_url($validated, PHP_URL_HOST);
-        $isPrivate = in_array($host, ['localhost', '127.0.0.1', '::1', '0.0.0.0'], true)
-            || (bool) preg_match('/^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/', $host);
 
-        if ($isPrivate) {
+        if ($this->ssrfUrlValidator->isPrivateHost($host)) {
             $this->messageManager->addErrorMessage(
                 (string) __('Discovery URL must not point to a private or internal network address.')
             );
@@ -572,16 +550,6 @@ class Save extends Action implements HttpPostActionInterface
     private function sanitizeString(string $value): string
     {
         return trim(strip_tags($value));
-    }
-
-    /**
-     * Validate login_type — only 'customer', 'admin', 'both' are valid.
-     *
-     * @param string $value
-     */
-    private function validateLoginType(string $value): string
-    {
-        return in_array($value, ['customer', 'admin', 'both'], true) ? $value : 'customer';
     }
 
     /**

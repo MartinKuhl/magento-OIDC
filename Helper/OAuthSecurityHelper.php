@@ -233,16 +233,12 @@ class OAuthSecurityHelper
     /**
      * Validate and consume a CSRF state token.
      *
-     * C-03: The cache read and subsequent delete are two separate operations and are
-     * therefore not atomic. Risk profile by cache backend:
-     *  - File cache (single server): OS-level file locks make concurrent access effectively
-     *    serialised — negligible race window.
-     *  - Redis (phpredis / Predis): no mutual exclusion between two concurrent PHP-FPM workers
-     *    accessing the same key. Two simultaneous callbacks carrying the same state token
-     *    could both pass validation before either delete executes.
-     *  - Mitigation: use Redis ≥6.2 GETDEL for atomic read-and-delete (see Future Improvement #3
-     *    in Docs/Code-Review.md). Until then the residual window is milliseconds and requires
-     *    an attacker to replay a token that was never exposed outside the OAuth flow.
+     * C-03 (resolved): read-and-delete goes through AtomicCacheInterface::getAndDelete(),
+     * a single one-shot consume operation. With the default RedisAtomicCache backend this
+     * is truly atomic (Redis GETDEL / Lua), so two concurrent callbacks carrying the same
+     * state token can never both pass validation. The FileAtomicCache fallback performs a
+     * sequential load + remove — not strictly atomic, but safe for the single-server
+     * deployments it targets.
      *
      * @param  string $sessionId  The session ID used when the token was created
      * @param  string $stateToken The state token to validate

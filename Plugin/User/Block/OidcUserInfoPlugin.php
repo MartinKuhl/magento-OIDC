@@ -54,7 +54,13 @@ class OidcUserInfoPlugin
     }
 
     /**
-     * Around getFormHtml — inject OIDC Provider note after the form is prepared.
+     * Around getFormHtml — inject the OIDC Provider note before the form is rendered.
+     *
+     * The form object is already prepared when getFormHtml() runs (the block's
+     * _beforeToHtml() calls _prepareForm() earlier in the render cycle), so the
+     * fieldset is mutated first and $proceed() performs the single, final render.
+     * This preserves contributions from other getFormHtml plugins instead of
+     * discarding them with a second $form->toHtml() pass.
      *
      * The admin user is loaded from the registry key 'permissions_user',
      * which is set by the Edit controller before block rendering.
@@ -64,19 +70,16 @@ class OidcUserInfoPlugin
      */
     public function aroundGetFormHtml(Main $subject, Closure $proceed): string
     {
-        $result = $proceed();
-
         $form = $subject->getForm();
 
-        // Guard: field already added (e.g. multiple render passes)
-        if ($form->getElement('oidc_provider_info')) {
-            return $result;
+        // Guard: form not prepared yet, or field already added (multiple render passes)
+        if (!is_object($form) || $form->getElement('oidc_provider_info')) {
+            return $proceed();
         }
 
         // Registry is the reliable source — getUser() returns null at this stage
         $user   = $this->registry->registry('permissions_user');
         $userId = $user ? (int) $user->getId() : 0;
-        error_log('aroundGetFormHtml: userId=' . $userId . ' user_class=' . ($user ? get_class($user) : 'null'));
 
         $info = $userId > 0
             ? $this->userProviderResource->getProviderInfo('admin', $userId)
@@ -125,6 +128,6 @@ class OidcUserInfoPlugin
             );
         }
 
-        return $form->toHtml();
+        return $proceed();
     }
 }

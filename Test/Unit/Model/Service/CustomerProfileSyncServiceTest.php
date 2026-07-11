@@ -15,6 +15,8 @@ use Magento\Directory\Model\Country;
 use Magento\Directory\Model\ResourceModel\Country\Collection as CountryCollection;
 use Magento\Directory\Model\ResourceModel\Country\CollectionFactory as CountryCollectionFactory;
 use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Model\Attribute\CountryResolver;
+use M2Oidc\OAuth\Model\Attribute\GenderMapper;
 use M2Oidc\OAuth\Model\Provider\MappingRepository;
 use M2Oidc\OAuth\Model\Service\CustomerProfileSyncService;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -77,10 +79,11 @@ class CustomerProfileSyncServiceTest extends TestCase
             $this->customerRepository,
             $this->addressFactory,
             $this->addressRepository,
-            $this->countryCollectionFactory,
             $this->regionFactory,
             $this->oauthUtility,
-            $this->mappingRepository
+            $this->mappingRepository,
+            new GenderMapper(),
+            new CountryResolver($this->countryCollectionFactory, $this->oauthUtility)
         );
     }
 
@@ -127,6 +130,9 @@ class CustomerProfileSyncServiceTest extends TestCase
         $collection->method('addFieldToFilter')->willReturnSelf();
         $collection->method('getFirstItem')->willReturn($country);
         $collection->method('getColumnValues')->willReturn([]);
+        // CountryResolver's store-locale scan (step 3) iterates the collection;
+        // an empty iterator means "no name match", falling through to the intl step.
+        $collection->method('getIterator')->willReturn(new \ArrayIterator([]));
 
         return $collection;
     }
@@ -288,14 +294,15 @@ class CustomerProfileSyncServiceTest extends TestCase
             'm (short)'        => ['m',        1],
             'M (uppercase)'    => ['M',        1],
             '1 (numeric male)' => ['1',        1],
+            'mann (German)'    => ['mann',     1],
+            'männlich (German)' => ['männlich', 1],
             'female (string)'  => ['female',   2],
             'Female'           => ['Female',   2],
             'f (short)'        => ['f',        2],
             'F (uppercase)'    => ['F',        2],
             '2 (numeric female)' => ['2',      2],
-            'other (string)'   => ['other',    3],
-            'diverse'          => ['diverse',  3],
-            '3 (numeric other)' => ['3',       3],
+            'frau (German)'    => ['frau',     2],
+            'weiblich (German)' => ['weiblich', 2],
         ];
     }
 
@@ -306,6 +313,33 @@ class CustomerProfileSyncServiceTest extends TestCase
         $this->customerRepository->expects($this->never())->method('save');
 
         $this->service->syncProfile($customer, ['gender' => 'unknown_value'], [], ['gender' => 'gender']);
+    }
+
+    /**
+     * GenderMapper (M19) only recognizes male/female vocabulary; "other"/"diverse"/"3"
+     * are no longer special-cased to gender ID 3 (that bucket was CustomerProfileSyncService-
+     * only behaviour prior to unification). They now behave like any other unrecognized
+     * value: sync is skipped rather than forcing "Not Specified".
+     *
+     * @dataProvider unspecifiedGenderProvider
+     */
+    public function testSyncProfileSkipsGenderForUnspecifiedValues(string $oidcGender): void
+    {
+        $customer = $this->makeCustomerMock(gender: 0);
+        $customer->expects($this->never())->method('setGender');
+        $this->customerRepository->expects($this->never())->method('save');
+
+        $this->service->syncProfile($customer, ['gender' => $oidcGender], [], ['gender' => 'gender']);
+    }
+
+    /** @return array<string, array{string}> */
+    public static function unspecifiedGenderProvider(): array
+    {
+        return [
+            'other'        => ['other'],
+            'diverse'      => ['diverse'],
+            'numeric-3'    => ['3'],
+        ];
     }
 
     public function testSyncProfileSkipsGenderWhenAlreadyMatches(): void

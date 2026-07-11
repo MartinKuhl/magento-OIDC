@@ -8,9 +8,9 @@ use Magento\Customer\Api\CustomerRepositoryInterface;
 use Magento\Customer\Api\Data\CustomerInterface;
 use Magento\Customer\Api\Data\AddressInterfaceFactory;
 use Magento\Customer\Api\AddressRepositoryInterface;
-use Magento\Directory\Model\ResourceModel\Country\CollectionFactory as CountryCollectionFactory;
-use M2Oidc\OAuth\Helper\OAuthConstants;
 use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Model\Attribute\CountryResolver;
+use M2Oidc\OAuth\Model\Attribute\GenderMapper;
 use M2Oidc\OAuth\Model\Provider\MappingRepository;
 
 /**
@@ -25,28 +25,27 @@ use M2Oidc\OAuth\Model\Provider\MappingRepository;
  */
 class CustomerProfileSyncService
 {
-    /** @var array<string>|null Cached country codes for intl lookup */
-    private ?array $countryCodes = null;
-
     /**
      * Constructor.
      *
      * @param CustomerRepositoryInterface                              $customerRepository
      * @param AddressInterfaceFactory                                  $addressFactory
      * @param AddressRepositoryInterface                               $addressRepository
-     * @param CountryCollectionFactory                                 $countryCollectionFactory
      * @param \Magento\Customer\Api\Data\RegionInterfaceFactory        $regionFactory
      * @param OAuthUtility                                             $oauthUtility
      * @param MappingRepository                                        $mappingRepository
+     * @param GenderMapper                                             $genderMapper
+     * @param CountryResolver                                          $countryResolver
      */
     public function __construct(
         private readonly CustomerRepositoryInterface $customerRepository,
         private readonly AddressInterfaceFactory $addressFactory,
         private readonly AddressRepositoryInterface $addressRepository,
-        private readonly CountryCollectionFactory $countryCollectionFactory,
         private readonly \Magento\Customer\Api\Data\RegionInterfaceFactory $regionFactory,
         private readonly OAuthUtility $oauthUtility,
-        private readonly MappingRepository $mappingRepository
+        private readonly MappingRepository $mappingRepository,
+        private readonly GenderMapper $genderMapper,
+        private readonly CountryResolver $countryResolver
     ) {
     }
 
@@ -114,7 +113,7 @@ class CustomerProfileSyncService
         if ($this->shouldSync($attrMap, 'gender')) {
             $gender = $this->extract($attrKeys['gender'] ?? null, $flat, $raw);
             if ($gender !== null) {
-                $genderId = $this->mapGender($gender);
+                $genderId = $this->genderMapper->map($gender);
                 if ($genderId !== null && (int) $customer->getGender() !== $genderId) {
                     $customer->setGender($genderId);
                     $changed = true;
@@ -174,7 +173,7 @@ class CustomerProfileSyncService
             return;
         }
 
-        $countryId = $this->resolveCountryId($country);
+        $countryId = $this->countryResolver->resolve($country);
         if ($countryId === null) {
             $this->oauthUtility->customlog(
                 'CustomerProfileSync: could not resolve country "' . $country . '"'
@@ -322,85 +321,5 @@ class CustomerProfileSyncService
         // Fallback: let PHP try
         $ts = strtotime($dob);
         return $ts !== false ? date('Y-m-d', $ts) : null;
-    }
-
-    /**
-     * Map gender string to Magento gender ID (1=Male, 2=Female, 3=Not specified).
-     *
-     * @param string $gender Gender string from OIDC claim
-     */
-    private function mapGender(string $gender): ?int
-    {
-        $lower = strtolower(trim($gender));
-        return match (true) {
-            in_array($lower, ['male', 'm', '1'], true)   => 1,
-            in_array($lower, ['female', 'f', '2'], true)  => 2,
-            in_array($lower, ['other', 'diverse', '3'], true) => 3,
-            default => null,
-        };
-    }
-
-    /**
-     * Resolve a country name or ISO code to a Magento country_id.
-     *
-     * @param string $country Country name or ISO code from OIDC claim
-     */
-    private function resolveCountryId(string $country): ?string
-    {
-        // Already a 2-letter ISO code
-        if (preg_match('/^[A-Z]{2}$/', strtoupper($country))) {
-            return strtoupper($country);
-        }
-
-        try {
-            $collection = $this->countryCollectionFactory->create();
-            $collection->addFieldToFilter(
-                ['country_id', 'iso3_code'],
-                [
-                    ['eq' => strtoupper($country)],
-                    ['eq' => strtoupper($country)],
-                ]
-            );
-
-            $item = $collection->getFirstItem();
-            if ($item->getCountryId()) {
-                return $item->getCountryId();
-            }
-        } catch (\Exception $e) {
-            $this->oauthUtility->customlog(
-                'CustomerProfileSync: country collection error: ' . $e->getMessage()
-            );
-        }
-
-        // Fallback: use PHP intl extension for en_US country name → ISO code lookup.
-        // OIDC providers (e.g. Authelia) always send English names ("Germany") regardless of
-        // the Magento store locale. Using Magento's active country codes (not a full AA-ZZ
-        // brute-force) avoids deprecated ISO codes like "DD" that ICU/CLDR still maps to "Germany".
-        if (extension_loaded('intl')) {
-            $normalizedInput = strtolower(trim($country));
-            if ($this->countryCodes === null) {
-                try {
-                    $this->countryCodes = $this->countryCollectionFactory->create()
-                        ->getColumnValues('country_id');
-                } catch (\Exception $e) {
-                    $this->countryCodes = [];
-                }
-            }
-            $codes = $this->countryCodes;
-            foreach ($codes as $code) {
-                $displayName = \Locale::getDisplayRegion('-' . $code, 'en_US');
-                if ($displayName && $displayName !== $code
-                    && strtolower($displayName) === $normalizedInput
-                ) {
-                    return (string) $code;
-                }
-            }
-        }
-
-        $this->oauthUtility->customlog(
-            'CustomerProfileSync: could not resolve country "' . $country . '"'
-        );
-
-        return null;
     }
 }

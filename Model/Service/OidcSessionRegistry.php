@@ -202,13 +202,17 @@ class OidcSessionRegistry
     /**
      * Build a stable, unique cache key for a (sub, sid) pair.
      *
+     * Each part is hashed independently before the outer hash so that no
+     * concatenation ambiguity can make distinct pairs collide (e.g. the pair
+     * ("a|b", "") and the pair ("a", "b|") must map to different keys).
+     *
      * @param  string $sub
      * @param  string $sid
      * @return string Cache key, e.g. "oidc_sess_<64-char hash>"
      */
     private function buildKey(string $sub, string $sid): string
     {
-        return self::KEY_PREFIX . hash('sha256', $sub . '|' . $sid);
+        return self::KEY_PREFIX . hash('sha256', hash('sha256', $sub) . hash('sha256', $sid));
     }
 
     /**

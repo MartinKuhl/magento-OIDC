@@ -61,8 +61,10 @@ class Curl
                 'Accept: application/json',
             ];
         } elseif ($clientSecret === '') {
-            // Public client (RFC 6749 §2.1): no client secret — send no credentials.
-            // client_id is already included in $postData by the request builder.
+            // Public client (RFC 6749 §2.1): no client secret — no Authorization header
+            // is sent. Callers MUST include client_id in $postData themselves
+            // (RFC 6749 §3.2.1); both AccessTokenRequest and AccessTokenRequestBody
+            // support this for public clients (H-06).
             $authHeader = [
                 "Content-Type: application/x-www-form-urlencoded",
                 'Accept: application/json',

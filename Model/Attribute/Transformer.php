@@ -35,6 +35,16 @@ use M2Oidc\OAuth\Logger\OidcLogger;
 class Transformer
 {
     /**
+     * Maximum claim-value length (bytes) accepted by regex_replace.
+     *
+     * Longer values skip the transform (raw value returned) to bound the cost
+     * of pathological PCRE backtracking on attacker-sized claim values.
+     *
+     * @var int
+     */
+    private const REGEX_VALUE_MAX_LENGTH = 4096;
+
+    /**
      * @param OidcLogger $logger
      */
     public function __construct(
@@ -172,12 +182,23 @@ class Transformer
      *   pattern     (required) PCRE pattern (e.g. /@.*$/)
      *   replacement (optional) defaults to empty string
      *
+     * Values longer than REGEX_VALUE_MAX_LENGTH bytes are returned unchanged
+     * (with a WARNING log) to avoid expensive regex evaluation on oversized input.
+     *
      * @param  string|null $rawValue
      * @param  array<string,string> $params
      */
     private function applyRegexReplace(?string $rawValue, array $params): ?string
     {
         if ($rawValue === null || $rawValue === '') {
+            return $rawValue;
+        }
+
+        if (strlen($rawValue) > self::REGEX_VALUE_MAX_LENGTH) {
+            $this->logger->customlog(
+                'Transformer: WARNING — regex_replace claim value exceeds '
+                . self::REGEX_VALUE_MAX_LENGTH . ' bytes — skipping transform'
+            );
             return $rawValue;
         }
 

@@ -419,7 +419,6 @@
             <argument name="cookieManager" xsi:type="object">Magento\Framework\Stdlib\CookieManagerInterface</argument>
             <argument name="cookieMetadataFactory" xsi:type="object">Magento\Framework\Stdlib\Cookie\CookieMetadataFactory</argument>
             <argument name="customerSession" xsi:type="object">Magento\Customer\Model\Session\Proxy</argument>
-            <argument name="curlFactory" xsi:type="object">Magento\Framework\HTTP\Adapter\CurlFactory</argument>
         </arguments>
     </type>
 
@@ -432,7 +431,6 @@
             <argument name="authSession" xsi:type="object">Magento\Backend\Model\Auth\Session\Proxy</argument>
             <argument name="backendUrl" xsi:type="object">Magento\Backend\Model\UrlInterface</argument>
             <argument name="response" xsi:type="object">Magento\Framework\App\ResponseInterface</argument>
-            <argument name="curlFactory" xsi:type="object">Magento\Framework\HTTP\Adapter\CurlFactory</argument>
         </arguments>
     </type>
 

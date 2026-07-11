@@ -32,6 +32,7 @@ class AdminProfileSyncService
      * @param OAuthUtility              $oauthUtility
      * @param OidcAuthenticationService $oidcAuthenticationService
      * @param MappingRepository         $mappingRepository
+     * @param GroupMappingResolver      $groupMappingResolver
      */
     public function __construct(
         private readonly UserFactory $userFactory,
@@ -39,7 +40,8 @@ class AdminProfileSyncService
         private readonly RoleCollectionFactory $roleCollectionFactory,
         private readonly OAuthUtility $oauthUtility,
         private readonly OidcAuthenticationService $oidcAuthenticationService,
-        private readonly MappingRepository $mappingRepository
+        private readonly MappingRepository $mappingRepository,
+        private readonly GroupMappingResolver $groupMappingResolver
     ) {
     }
 
@@ -55,17 +57,17 @@ class AdminProfileSyncService
      * the attribute is skipped.  When no normalized row exists (legacy mode) the attribute
      * is always synced (the coarse global flag still guards the call-site).
      *
-     * @param string  $email          Admin email (lookup key)
-     * @param mixed[] $flattenedAttrs Flattened OIDC attributes
-     * @param mixed[] $rawAttrs       Raw (nested) OIDC attributes
-     * @param string  $firstNameKey   OIDC claim key for firstname
-     * @param string  $lastNameKey    OIDC claim key for lastname
-     * @param string  $usernameKey    OIDC claim key for username
-     * @param string  $emailKey       OIDC claim key for email (empty = skip email sync)
-     * @param int     $providerId     Provider ID for per-attribute sync flag lookup (0 = legacy)
+     * @param \Magento\User\Model\User $user           Already-loaded admin user (M17)
+     * @param mixed[]                  $flattenedAttrs Flattened OIDC attributes
+     * @param mixed[]                  $rawAttrs       Raw (nested) OIDC attributes
+     * @param string                   $firstNameKey   OIDC claim key for firstname
+     * @param string                   $lastNameKey    OIDC claim key for lastname
+     * @param string                   $usernameKey    OIDC claim key for username
+     * @param string                   $emailKey       OIDC claim key for email (empty = skip email sync)
+     * @param int                      $providerId     Provider ID for per-attribute sync flag lookup (0 = legacy)
      */
     public function syncProfile(
-        string $email,
+        \Magento\User\Model\User $user,
         array $flattenedAttrs,
         array $rawAttrs,
         string $firstNameKey,
@@ -74,8 +76,7 @@ class AdminProfileSyncService
         string $emailKey = '',
         int $providerId = 0
     ): void {
-        $user = $this->loadAdminByEmail($email);
-        if (!$user instanceof \Magento\User\Model\User) {
+        if (!$user->getId()) {
             return;
         }
 
@@ -133,7 +134,7 @@ class AdminProfileSyncService
             $user->setHasDataChanges(true);
             $this->userResource->save($user);
             $this->oauthUtility->customlog(
-                'AdminProfileSync: profile updated for ' . $email
+                'AdminProfileSync: profile updated for ' . $user->getEmail()
             );
         }
     }
@@ -145,27 +146,27 @@ class AdminProfileSyncService
     /**
      * Re-evaluate and update admin role from OIDC group claims.
      *
-     * Uses the same role-mapping logic as AdminUserCreator:
-     * iterate provider role mappings, match against OIDC groups,
-     * assign first matching role.
+     * Uses the same role-mapping logic as AdminUserCreator (via
+     * GroupMappingResolver::matchGroups(), M18): iterate provider role
+     * mappings, match against OIDC groups case-insensitively, assign the
+     * first matching role.
      *
-     * @param string  $email          Admin email
-     * @param mixed[] $flattenedAttrs Flattened OIDC attributes
-     * @param mixed[] $rawAttrs       Raw (nested) OIDC attributes
-     * @param string  $groupAttribute OIDC claim key for groups
-     * @param mixed[] $roleMappings   [['group' => 'idp-group', 'role' => 'magento-role-id'], ...]
-     * @param string  $defaultRole    Fallback role name if no mapping matches
+     * @param \Magento\User\Model\User $user           Already-loaded admin user (M17)
+     * @param mixed[]                  $flattenedAttrs Flattened OIDC attributes
+     * @param mixed[]                  $rawAttrs       Raw (nested) OIDC attributes
+     * @param string                   $groupAttribute OIDC claim key for groups
+     * @param mixed[]                  $roleMappings   [['group' => 'idp-group', 'role' => 'magento-role-id'], ...]
+     * @param string                   $defaultRole    Fallback role name if no mapping matches
      */
     public function syncRole(
-        string $email,
+        \Magento\User\Model\User $user,
         array $flattenedAttrs,
         array $rawAttrs,
         string $groupAttribute,
         array $roleMappings,
         string $defaultRole = ''
     ): void {
-        $user = $this->loadAdminByEmail($email);
-        if (!$user instanceof \Magento\User\Model\User) {
+        if (!$user->getId()) {
             return;
         }
 
@@ -182,16 +183,8 @@ class AdminProfileSyncService
             return;
         }
 
-        // Find first matching role
-        $targetRoleId = null;
-        foreach ($roleMappings as $mapping) {
-            $idpGroup = $mapping['group'] ?? '';
-            $roleId   = $mapping['role'] ?? '';
-            if ($idpGroup !== '' && $roleId !== '' && in_array($idpGroup, $userGroups, true)) {
-                $targetRoleId = (int) $roleId;
-                break;
-            }
-        }
+        // Find first matching role (case-insensitive, same semantics as user creation)
+        $targetRoleId = $this->groupMappingResolver->matchGroups($roleMappings, $userGroups);
 
         if ($targetRoleId === null) {
             // No mapping matched — use default role if configured
@@ -212,7 +205,7 @@ class AdminProfileSyncService
         $this->userResource->save($user);
         $this->oauthUtility->customlog(
             'AdminProfileSync: role updated to ID ' . $targetRoleId
-            . ' for ' . $email
+            . ' for ' . $user->getEmail()
         );
     }
 
@@ -235,18 +228,6 @@ class AdminProfileSyncService
         }
         // No normalized row → fall through to legacy sync
         return true;
-    }
-
-    /**
-     * Load admin user by email. Returns null if not found.
-     *
-     * @param string $email Admin email address
-     */
-    private function loadAdminByEmail(string $email): ?\Magento\User\Model\User
-    {
-        $user = $this->userFactory->create();
-        $this->userResource->load($user, $email, 'email');
-        return $user->getId() ? $user : null;
     }
 
     /**

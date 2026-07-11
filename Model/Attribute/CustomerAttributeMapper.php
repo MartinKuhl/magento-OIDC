@@ -6,7 +6,6 @@ namespace M2Oidc\OAuth\Model\Attribute;
 
 use M2Oidc\OAuth\Helper\OAuthUtility;
 use M2Oidc\OAuth\Model\Attribute\Transformer;
-use Magento\Directory\Model\ResourceModel\Country\CollectionFactory as CountryCollectionFactory;
 
 /**
  * Maps flattened OIDC claims to Magento customer attribute values.
@@ -32,14 +31,16 @@ use Magento\Directory\Model\ResourceModel\Country\CollectionFactory as CountryCo
 class CustomerAttributeMapper implements AttributeMapperInterface
 {
     /**
-     * @param OAuthUtility             $oauthUtility
-     * @param CountryCollectionFactory $countryCollectionFactory
-     * @param Transformer              $transformer
+     * @param OAuthUtility    $oauthUtility
+     * @param Transformer     $transformer
+     * @param GenderMapper    $genderMapper
+     * @param CountryResolver $countryResolver
      */
     public function __construct(
         private readonly OAuthUtility $oauthUtility,
-        private readonly CountryCollectionFactory $countryCollectionFactory,
-        private readonly Transformer $transformer
+        private readonly Transformer $transformer,
+        private readonly GenderMapper $genderMapper,
+        private readonly CountryResolver $countryResolver
     ) {
     }
 
@@ -71,10 +72,8 @@ class CustomerAttributeMapper implements AttributeMapperInterface
         );
         $genderRaw = $this->applyTransform($genderRaw, $flattenedAttrs, $transforms, 'gender');
         if (!in_array($genderRaw, [null, '', '0'], true)) {
-            $genderId = $this->mapGender($genderRaw);
-            if ($genderId !== null) {
-                $result['gender'] = $genderId;
-            }
+            // Unrecognized values default to 3 (Not Specified) on customer creation (M19)
+            $result['gender'] = $this->genderMapper->map($genderRaw) ?? 3;
         }
 
         // --- Billing street ---
@@ -118,7 +117,7 @@ class CustomerAttributeMapper implements AttributeMapperInterface
         );
         $country = $this->applyTransform($country, $flattenedAttrs, $transforms, 'billing_country');
         if (!in_array($country, [null, '', '0'], true)) {
-            $countryId = $this->resolveCountryId($country);
+            $countryId = $this->countryResolver->resolve($country);
             if ($countryId !== null) {
                 $result['billing_country_id'] = $countryId;
             }
@@ -232,89 +231,6 @@ class CustomerAttributeMapper implements AttributeMapperInterface
         } catch (\Exception $e) {
             $this->oauthUtility->customlog('CustomerAttributeMapper: DOB parse error: ' . $e->getMessage());
         }
-        return null;
-    }
-
-    /**
-     * Map an OIDC gender string to a Magento gender ID (1=Male, 2=Female, 3=Not Specified).
-     *
-     * @param  string $genderValue
-     */
-    private function mapGender(string $genderValue): ?int
-    {
-        if ($genderValue === '' || $genderValue === '0') {
-            return null;
-        }
-
-        $lower = strtolower(trim($genderValue));
-
-        if (in_array($lower, ['male', 'm', '1', 'mann', 'männlich'], true)) {
-            return 1;
-        }
-        if (in_array($lower, ['female', 'f', '2', 'frau', 'weiblich'], true)) {
-            return 2;
-        }
-
-        return 3; // Not Specified
-    }
-
-    /**
-     * Resolve a country name or ISO code to a Magento country_id.
-     *
-     * @param  string $country
-     */
-    private function resolveCountryId(string $country): ?string
-    {
-        if ($country === '' || $country === '0') {
-            return null;
-        }
-
-        // Already a 2-letter ISO code
-        if (strlen($country) === 2) {
-            return strtoupper($country);
-        }
-
-        try {
-            $collection = $this->countryCollectionFactory->create();
-            foreach ($collection as $countryItem) {
-                $countryName = $countryItem->getName();
-                if ($countryName !== null && strcasecmp((string) $countryName, $country) === 0) {
-                    return (string) $countryItem->getId();
-                }
-            }
-        } catch (\Exception $e) {
-            $this->oauthUtility->customlog(
-                'CustomerAttributeMapper: country resolve error: ' . $e->getMessage()
-            );
-        }
-
-        // Fallback: use PHP intl extension for en_US country name → ISO code lookup.
-        // OIDC providers (e.g. Authelia) always send English names ("Germany") regardless of
-        // the Magento store locale, so the locale-aware collection above misses them.
-        // Using Magento's active country codes (not a full AA-ZZ brute-force) avoids
-        // deprecated ISO codes like "DD" (East Germany) that ICU/CLDR still maps to "Germany".
-        if (extension_loaded('intl')) {
-            $normalizedInput = strtolower(trim($country));
-            try {
-                $codes = $this->countryCollectionFactory->create()->getColumnValues('country_id');
-            } catch (\Exception $e) {
-                $codes = [];
-            }
-            foreach ($codes as $code) {
-                $displayName = \Locale::getDisplayRegion('-' . $code, 'en_US');
-                if ($displayName && $displayName !== $code
-                    && strtolower($displayName) === $normalizedInput
-                ) {
-                    return (string) $code;
-                }
-            }
-        }
-
-        // Short value that looks like a code (e.g. "USA")
-        if (strlen($country) <= 3) {
-            return strtoupper($country);
-        }
-
         return null;
     }
 }

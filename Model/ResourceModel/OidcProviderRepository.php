@@ -63,7 +63,7 @@ class OidcProviderRepository
 
         if ($data !== null && isset($data['client_secret']) && !empty($data['client_secret'])
             && preg_match('/^\d+:\d+:/', (string) $data['client_secret'])) {
-            $data['client_secret'] = $this->encryptor->decrypt($data['client_secret']);
+            $data['client_secret'] = $this->decryptSecretWithLogging((string) $data['client_secret'], $appName);
         }
 
         return $data;
@@ -90,7 +90,10 @@ class OidcProviderRepository
 
         if ($data !== null && isset($data['client_secret']) && !empty($data['client_secret'])
             && preg_match('/^\d+:\d+:/', (string) $data['client_secret'])) {
-            $data['client_secret'] = $this->encryptor->decrypt($data['client_secret']);
+            $data['client_secret'] = $this->decryptSecretWithLogging(
+                (string) $data['client_secret'],
+                'id=' . $providerId
+            );
         }
 
         return $data;
@@ -200,7 +203,10 @@ class OidcProviderRepository
     /**
      * Return all active provider records for a given login type, ordered by sort_order.
      *
-     * Client secrets are decrypted before being returned.
+     * Client secrets are decrypted before being returned. An empty/NULL `login_type`
+     * is treated as a wildcard — such a row matches any requested login type, not just
+     * 'both' — mirroring legacy rows backfilled before the multi-provider `login_type`
+     * column existed.
      *
      * @param  string $loginType 'customer', 'admin', or 'both'
      * @return array<int, array<string, mixed>> Array of provider data arrays (may be empty)
@@ -209,22 +215,46 @@ class OidcProviderRepository
     {
         $collection = $this->getOAuthClientApps();
         $collection->addFieldToFilter('is_active', ['eq' => 1]);
-        $collection->addFieldToFilter(
-            'login_type',
-            ['in' => [$loginType, 'both']]
-        );
         $collection->setOrder('sort_order', 'ASC');
 
         $results = [];
         foreach ($collection as $item) {
             $data = $item->getData();
+            $providerLoginType = (string) ($data['login_type'] ?? '');
+            if (!in_array($providerLoginType, [$loginType, 'both', ''], true)) {
+                continue;
+            }
+
             if (isset($data['client_secret']) && !empty($data['client_secret'])
                 && preg_match('/^\d+:\d+:/', (string) $data['client_secret'])) {
-                $data['client_secret'] = $this->encryptor->decrypt($data['client_secret']);
+                $data['client_secret'] = $this->decryptSecretWithLogging(
+                    (string) $data['client_secret'],
+                    'id=' . (string) ($data['id'] ?? '')
+                );
             }
             $results[] = $data;
         }
 
         return $results;
+    }
+
+    /**
+     * Decrypt a client_secret ciphertext, logging a WARNING when a non-empty
+     * ciphertext decrypts to an empty string (silent decryption failure — e.g.
+     * corrupted ciphertext or a post-key-rotation mismatch).
+     *
+     * @param string $ciphertext Encrypted secret matching the `^\d+:\d+:` envelope
+     * @param string $context    Human-readable identifier for the affected provider (for the log line)
+     */
+    private function decryptSecretWithLogging(string $ciphertext, string $context): string
+    {
+        $decrypted = $this->encryptor->decrypt($ciphertext);
+        if ($decrypted === '') {
+            $this->logger->warning(
+                'OidcProviderRepository: client_secret decrypted to an empty string for provider (' . $context . ')'
+            );
+        }
+
+        return $decrypted;
     }
 }

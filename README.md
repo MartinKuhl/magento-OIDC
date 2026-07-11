@@ -31,7 +31,7 @@ Modern e-commerce platforms require secure, centralized authentication. This mod
 - ✅ **Just-in-Time (JIT) Provisioning**: Auto-create users with group/role mapping
 - ✅ **OIDC Group Mapping**: Map IdP groups to Magento admin roles and customer groups
 - ✅ **Security Enhancements**: CAPTCHA bypass, password verification bypass for OIDC users
-- ✅ **Lockout-Prevention Guards**: Prevents enabling OIDC-only mode when no OIDC users exist yet
+- ✅ **Lockout-Prevention Guards**: Prevents enabling OIDC-only mode when no OIDC users exist yet — enforced consistently on the manual provider save form and on both configuration-import paths (CLI `oidc:config:import` and the Sign In Settings admin import), which also validate imported endpoint URLs and reject unsafe values before writing anything to the database
 - ✅ **Cross-Origin Session Handling**: SameSite=None cookies scoped to OIDC routes only
 - ✅ **JWT Token Verification**: RS256/384/512 signatures with JWKS caching
 - ✅ **RP-Initiated Logout**: Admin and customer logout with IdP redirect and RFC 7009 token revocation; unified single Post Logout Redirect URI (`/m2oidc/actions/postlogout`) for providers that only allow one registered URL
@@ -64,7 +64,7 @@ Modern e-commerce platforms require secure, centralized authentication. This mod
 
 ## Requirements
 
-- **PHP**: 8.1 or higher
+- **PHP**: 8.2 – 8.5 (per `composer.json`'s `require.php` constraint: `~8.2.0 || ~8.3.0 || ~8.4.0 || ~8.5.0`)
 - **Magento**: 2.4.7 or higher
 - **Identity Provider**: OIDC-compliant IdP (OpenID Connect 1.0)
 - **HTTPS**: Required for production (SameSite=None cookies require Secure flag)
@@ -76,7 +76,7 @@ Modern e-commerce platforms require secure, centralized authentication. This mod
 ### Step 1: Install via Composer
 
 ```bash
-composer require m2oidc_inc/m2oidc-oauth-sso
+composer require martinkuhl/magento2-oidc-sso
 bin/magento module:enable M2Oidc_OAuth
 bin/magento setup:upgrade
 bin/magento setup:di:compile
@@ -551,6 +551,7 @@ OAuth/OIDC **requires HTTPS** in production:
 - **Access tokens**, **ID tokens**, and **refresh tokens** stored in PHP session only, never in database
 - **Session lifetime**: Standard Magento session timeout (default: 86400 seconds = 24 hours)
 - **Refresh tokens**: Stored in session (`oidc_refresh_token`) and used by `TokenRefreshService` / `AdminTokenRefreshService` for silent token renewal
+- **Client secrets**: The OAuth `client_secret` is always Magento-encrypted at rest, regardless of which admin page saved it. If you're upgrading from a version where this wasn't consistently enforced, a one-time setup patch runs automatically on `bin/magento setup:upgrade` and encrypts any provider row that still has a plaintext secret — no manual action needed.
 
 ### JWT Verification
 
@@ -572,7 +573,7 @@ OAuth `state` parameter includes session ID to prevent CSRF attacks:
 Authentication endpoints are protected by IP-based rate limiting via the `OidcRateLimiter` strategy pattern:
 - **Default strategy**: Fixed-window — 10 attempts per 60-second window (`FixedWindowStrategy`; safe for all cache backends)
 - **Redis deployments**: Inject `OidcSlidingWindowRateLimiter` DI virtual type to switch to a true sliding-window strategy (`SlidingWindowStrategy`, Lua-based) for burst tolerance
-- **Protected endpoints**: Customer callback (`ReadAuthorizationResponse`), admin callback (`Oidccallback`), and back-channel logout (`BackChannelLogout`)
+- **Protected endpoints**: Customer callback (`ReadAuthorizationResponse`), admin callback (`Oidccallback`), back-channel logout (`BackChannelLogout`), front-channel logout (`FrontChannelLogout`), IdP-initiated login (`IdpInitiatedLogin`), and the headless callback (`HeadlessOidcCallback`)
 - Requests that exceed the limit receive an error response before any token processing occurs
 
 ### Emergency Access
@@ -677,7 +678,7 @@ Module inherits IdP's security policies:
 - **Module Version**: 1.0.0
 - **Package**: `martinkuhl/magento2-oidc-sso`
 - **License**: MIT
-- **Minimum Requirements**: PHP 8.1+, Magento 2.4.7+
+- **Minimum Requirements**: PHP 8.2 – 8.5, Magento 2.4.7+
 
 ---
 

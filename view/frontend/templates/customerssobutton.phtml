@@ -66,13 +66,11 @@ $oidcVisibility = $block->getData('oidc_visibility');
             $pid      = (int) ($provider['id'] ?? 0);
             $name     = $escaper->escapeHtml($provider['display_name'] ?? $provider['app_name'] ?? '');
             $label    = $escaper->escapeHtml(
-                !empty($provider['button_label'])
-                ? $provider['button_label']
-                : __('Login with %1', $name)
+                $block->resolveButtonLabel($provider['button_label'] ?? null, (string) $name)
             );
-            $color    = preg_match('/^#[0-9a-fA-F]{6}$/', (string) ($provider['button_color'] ?? ''))
-            ? $escaper->escapeHtmlAttr($provider['button_color'])
-            : '#0066cc';
+            $color    = $escaper->escapeHtmlAttr(
+                $block->resolveButtonColor($provider['button_color'] ?? null, '#0066cc')
+            );
             $url      = $escaper->escapeUrl(
                 $block->getSPInitiatedUrlForProvider($pid, null, 'customer', $provider['app_name'] ?? '')
             );

@@ -4,7 +4,7 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
     <!-- This event is invoked before every controller is processed -->
     <event name="controller_action_predispatch">
-        <observer name="oauth_observer" instance="M2Oidc\OAuth\Observer\OAuthObserver" />
+        <observer name="m2oidc_test_config_request" instance="M2Oidc\OAuth\Observer\TestConfigRequestObserver" />
         <observer name="m2oidc_token_auto_refresh" instance="M2Oidc\OAuth\Observer\TokenAutoRefreshObserver" />
     </event>
 

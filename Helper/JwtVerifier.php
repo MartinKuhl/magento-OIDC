@@ -100,23 +100,50 @@ class JwtVerifier
             return null;
         }
 
-        // Find the matching public key
-        $kid = $header['kid'] ?? null;
+        // Find the matching public key in the cached JWKS
+        $kid = isset($header['kid']) ? (string) $header['kid'] : null;
         $pem = $this->findPublicKey($jwks, $kid, $alg);
-        if ($pem === null) {
-            $this->oauthUtility->customlog("JwtVerifier: No matching key found in JWKS for kid=" . ($kid ?? 'null'));
+
+        // Token has no kid and the cached key set holds no usable key at all —
+        // a re-fetch cannot pick a better key, so fail immediately.
+        if ($pem === null && $kid === null) {
+            $this->oauthUtility->customlog("JwtVerifier: No matching key found in JWKS for kid=null");
             return null;
         }
 
-        // Verify signature — retry once with a fresh JWKS fetch on failure (handles key rotation)
         $dataToVerify = $headerB64 . '.' . $payloadB64;
         $signature = $this->base64UrlDecode($signatureB64);
 
-        $result = openssl_verify($dataToVerify, $signature, $pem, $algMap[$alg]);
+        $result = ($pem !== null)
+            ? openssl_verify($dataToVerify, $signature, $pem, $algMap[$alg])
+            : 0;
+
         if ($result !== 1) {
-            $this->oauthUtility->customlog(
-                "JwtVerifier: Signature verification FAILED with cached JWKS. Retrying with fresh JWKS."
-            );
+            // M-13: Only evict + re-fetch the JWKS cache on a true key-rotation
+            // signal: the token names a kid that is absent from the cached key set,
+            // or the token has no kid header at all (some IdPs omit it, so a stale
+            // cache cannot be distinguished from a bad signature). A failed
+            // signature under a kid that IS in the cached set means the token
+            // itself is invalid — re-fetching would not change the outcome.
+            if ($kid !== null && $pem !== null) {
+                $this->oauthUtility->customlog(
+                    "JwtVerifier: Signature verification FAILED with known kid=" . $kid
+                    . " — token invalid, keeping cached JWKS"
+                );
+                return null;
+            }
+
+            if ($pem === null) {
+                $this->oauthUtility->customlog(
+                    "JwtVerifier: kid=" . $kid . " not found in cached JWKS —"
+                    . " possible key rotation. Re-fetching JWKS."
+                );
+            } else {
+                $this->oauthUtility->customlog(
+                    "JwtVerifier: Signature verification FAILED with cached JWKS (token has no kid)."
+                    . " Retrying with fresh JWKS."
+                );
+            }
 
             // #11: Circuit-breaker — if JWKS endpoint recently returned an error, skip re-fetch
             // to prevent 30 s cURL timeouts cascading across concurrent login attempts during IdP outage.

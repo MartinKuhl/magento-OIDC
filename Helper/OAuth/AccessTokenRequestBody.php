@@ -34,17 +34,25 @@ class AccessTokenRequestBody
     private readonly ?string $codeVerifier;
 
     /**
+     * @var string|null OAuth client ID to include in the body for public clients (H-06);
+     *                  null when the client authenticates via HTTP Basic (RFC 6749 §2.3.1)
+     */
+    private readonly ?string $clientID;
+
+    /**
      * Initialize access token request body.
      *
      * @param string      $redirectURL
      * @param string      $code
      * @param string|null $codeVerifier PKCE code_verifier (RFC 7636 §4.5); null when PKCE is disabled
+     * @param string|null $clientID     Client ID for public clients (H-06); null when HTTP Basic auth is used
      */
-    public function __construct($redirectURL, $code, ?string $codeVerifier = null)
+    public function __construct($redirectURL, $code, ?string $codeVerifier = null, ?string $clientID = null)
     {
         $this->redirectURL  = $redirectURL;
         $this->code         = $code;
         $this->codeVerifier = $codeVerifier;
+        $this->clientID     = $clientID;
     }
 
     /**
@@ -59,6 +67,14 @@ class AccessTokenRequestBody
             'grant_type'   => OAuthConstants::GRANT_TYPE,
             'code'         => $this->code,
         ];
+
+        // H-06: Public clients send no Authorization header, so the token endpoint
+        // can only identify them via a client_id body parameter (RFC 6749 §3.2.1).
+        // Confidential clients authenticate via HTTP Basic and must not duplicate
+        // client_id in the body (RFC 6749 §2.3.1) — they pass null here.
+        if ($this->clientID !== null && $this->clientID !== '') {
+            $body['client_id'] = $this->clientID;
+        }
 
         // PKCE (RFC 7636 §4.5): include code_verifier when PKCE is enabled (FEAT-01)
         if ($this->codeVerifier !== null && $this->codeVerifier !== '') {

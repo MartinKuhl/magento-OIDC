@@ -7,13 +7,14 @@ namespace M2Oidc\OAuth\Controller\Adminhtml\OAuthsettings;
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\App\Action\HttpGetActionInterface;
 use Magento\Framework\App\Action\HttpPostActionInterface;
-use M2Oidc\OAuth\Helper\OAuthConstants;
+use Magento\Framework\Encryption\EncryptorInterface;
 use M2Oidc\OAuth\Helper\OAuthMessages;
 
 use M2Oidc\OAuth\Controller\Actions\BaseAdminAction;
 use M2Oidc\OAuth\Helper\Curl;
 use M2Oidc\OAuth\Model\M2oidcOauthClientAppsFactory;
 use M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps as AppResource;
+use M2Oidc\OAuth\Model\Validation\SsrfUrlValidator;
 
 /**
  * OAuth Settings admin controller.
@@ -26,6 +27,13 @@ use M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps as AppResource;
  */
 class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetActionInterface
 {
+    /**
+     * ACL resource checked by \Magento\Backend\App\Action::_isAllowed() (C-01/M-30).
+     *
+     * @var string
+     */
+    public const ADMIN_RESOURCE = 'M2Oidc_OAuth::oauth_settings';
+
     /** @var Curl */
     private readonly Curl $curl;
 
@@ -34,6 +42,12 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
 
     /** @var AppResource */
     private readonly AppResource $appResource;
+
+    /** @var EncryptorInterface */
+    private readonly EncryptorInterface $encryptor;
+
+    /** @var SsrfUrlValidator */
+    private readonly SsrfUrlValidator $ssrfUrlValidator;
 
     /**
      * Initialize OAuth settings controller.
@@ -46,6 +60,8 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
      * @param Curl                                           $curl
      * @param M2oidcOauthClientAppsFactory                   $clientAppsFactory
      * @param AppResource                                    $appResource
+     * @param EncryptorInterface                             $encryptor
+     * @param SsrfUrlValidator                               $ssrfUrlValidator
      */
     public function __construct(
         \Magento\Backend\App\Action\Context $context,
@@ -55,11 +71,15 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         \Psr\Log\LoggerInterface $logger,
         Curl $curl,
         M2oidcOauthClientAppsFactory $clientAppsFactory,
-        AppResource $appResource
+        AppResource $appResource,
+        EncryptorInterface $encryptor,
+        SsrfUrlValidator $ssrfUrlValidator
     ) {
         $this->curl              = $curl;
         $this->clientAppsFactory = $clientAppsFactory;
         $this->appResource       = $appResource;
+        $this->encryptor         = $encryptor;
+        $this->ssrfUrlValidator  = $ssrfUrlValidator;
         parent::__construct($context, $resultPageFactory, $oauthUtility, $messageManager, $logger);
     }
 
@@ -107,13 +127,8 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
                             // SEC-04: Block SSRF — reject loopback and RFC-1918 private ranges
                             // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
                             $host = (string) parse_url($url, PHP_URL_HOST);
-                            $isPrivateHost = in_array($host, ['localhost', '127.0.0.1', '::1', '0.0.0.0'], true)
-                                || (bool) preg_match(
-                                    '/^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/',
-                                    $host
-                                );
 
-                            if ($isPrivateHost) {
+                            if ($this->ssrfUrlValidator->isPrivateHost($host)) {
                                 $this->messageManager->addErrorMessage(
                                     'Discovery URL must not point to a private or internal network address.'
                                 );
@@ -257,22 +272,10 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
             $model->setData('values_in_header', (int) $send_header);
             $model->setData('values_in_body', (int) $send_body);
             if ($m2oidc_client_secret !== '') {
-                $model->setData('client_secret', $m2oidc_client_secret);
+                // C-02: never store the client secret in plain text
+                $model->setData('client_secret', $this->encryptor->encrypt($m2oidc_client_secret));
             }
             $this->appResource->save($model);
         }
-    }
-
-    /**
-     * Is the user allowed to view the Service Provider settings.
-     * This is based on the ACL set by the admin in the backend.
-     * Works in conjugation with acl.xml
-     *
-     * @return bool
-     */
-    #[\Override]
-    protected function _isAllowed()
-    {
-        return $this->_authorization->isAllowed(OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_OAUTHSETTINGS);
     }
 }

@@ -10,7 +10,6 @@ use Magento\Framework\App\Action\HttpGetActionInterface;
 use Magento\Framework\App\Action\HttpPostActionInterface;
 use Magento\Framework\Message\ManagerInterface;
 use Magento\Framework\View\Result\PageFactory;
-use M2Oidc\OAuth\Helper\OAuthConstants;
 use M2Oidc\OAuth\Helper\OAuthMessages;
 use M2Oidc\OAuth\Controller\Actions\BaseAdminAction;
 use M2Oidc\OAuth\Helper\OAuthUtility;
@@ -29,6 +28,12 @@ use Psr\Log\LoggerInterface;
  */
 class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetActionInterface
 {
+    /**
+     * ACL resource checked by \Magento\Backend\App\Action::_isAllowed() (C-01/M-30).
+     *
+     * @var string
+     */
+    public const ADMIN_RESOURCE = 'M2Oidc_OAuth::attr_settings';
 
     /** @var M2oidcOauthClientAppsFactory */
     private readonly M2oidcOauthClientAppsFactory $clientAppsFactory;
@@ -144,18 +149,5 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
                 'Saved attribute mapping for provider ID ' . $providerId
             );
         }
-    }
-
-    /**
-     * Is the user allowed to view the Attribute Mapping settings.
-     * This is based on the ACL set by the admin in the backend.
-     * Works in conjugation with acl.xml
-     *
-     * @return bool
-     */
-    #[\Override]
-    protected function _isAllowed()
-    {
-        return $this->_authorization->isAllowed(OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_ATTR);
     }
 }

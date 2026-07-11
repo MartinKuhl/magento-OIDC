@@ -18,6 +18,12 @@ use Psr\Log\LoggerInterface;
  * (env.php: cache/frontend/default/backend_options) and opens an independent
  * connection — so it keeps working regardless of which cache backend class
  * Magento constructs internally.
+ *
+ * Supported topology: a single Redis node addressed by `server` + `port`,
+ * with optional `password` (AUTH) and `database` (SELECT index). NOT
+ * supported: Redis Sentinel, Redis Cluster, TLS/SSL connections, and ACL
+ * usernames (username+password AUTH). On such setups getConnection() returns
+ * null and callers fall back to non-atomic load + remove behavior.
  */
 class RedisConnectionFactory
 {
@@ -86,7 +92,10 @@ class RedisConnectionFactory
             return $redis;
         } catch (\Throwable $e) {
             $this->logger->warning(
-                'M2Oidc: RedisConnectionFactory could not open a dedicated Redis connection: ' . $e->getMessage()
+                'M2Oidc: RedisConnectionFactory could not open a dedicated Redis connection'
+                . ' (this does not necessarily mean Redis is down — an unsupported topology'
+                . ' such as Sentinel/Cluster/TLS/ACL-username auth is a likely cause): '
+                . $e->getMessage()
             );
             $this->connection = false;
             return null;

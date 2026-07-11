@@ -13,6 +13,7 @@ use M2Oidc\OAuth\Helper\Exception\IncorrectUserInfoDataException;
 use M2Oidc\OAuth\Helper\JwtVerifier;
 use M2Oidc\OAuth\Helper\OAuthSecurityHelper;
 use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Model\Data\OidcAttributeMappingContext;
 use M2Oidc\OAuth\Model\Security\OidcRateLimiter;
 use M2Oidc\OAuth\Model\Service\OidcAuthenticationService;
 use M2Oidc\OAuth\Model\Service\TokenRefreshService;
@@ -174,15 +175,9 @@ class ReadAuthorizationResponse extends BaseAction
                     return $this->_redirect($errorUrl);
                 }
 
-                $query = ['_query' => ['oidc_error' => urlencode($encodedError)]];
-                if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
-                    // Admin: redirect to admin login page
-                    $loginUrl = $this->url->getUrl('admin', $query);
-                } else {
-                    // Customer: redirect to customer login page
-                    $loginUrl = $this->url->getUrl('customer/account/login', $query);
-                }
-                return $this->_redirect($loginUrl);
+                return $this->_redirect(
+                    $this->resolveErrorLoginUrl($loginType, urlencode($encodedError))
+                );
             }
         } else {
             $authorizationCode = $params['code'];
@@ -224,13 +219,7 @@ class ReadAuthorizationResponse extends BaseAction
             ) {
                 $this->oauthUtility->customlog("ERROR: State token validation failed (CSRF protection)");
                 $encodedError = urlencode(base64_encode('Security validation failed. Please try logging in again.'));
-                $query = ['_query' => ['oidc_error' => $encodedError]];
-                if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
-                    $loginUrl = $this->url->getUrl('admin', $query);
-                } else {
-                    $loginUrl = $this->url->getUrl('customer/account/login', $query);
-                }
-                return $this->_redirect($loginUrl);
+                return $this->_redirect($this->resolveErrorLoginUrl($loginType, $encodedError));
             }
 
             $this->oauthUtility->customlog(
@@ -253,13 +242,7 @@ class ReadAuthorizationResponse extends BaseAction
                 $encodedError = base64_encode(
                     'OAuth provider not found. Please try signing in again.'
                 );
-                $query = ['_query' => ['oidc_error' => $encodedError]];
-                if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
-                    $loginUrl = $this->url->getUrl('admin', $query);
-                } else {
-                    $loginUrl = $this->url->getUrl('customer/account/login', $query);
-                }
-                return $this->_redirect($loginUrl);
+                return $this->_redirect($this->resolveErrorLoginUrl($loginType, $encodedError));
             }
 
             // M-24: Re-validate headless flag against provider config
@@ -316,8 +299,17 @@ class ReadAuthorizationResponse extends BaseAction
             }
 
             if ($header === 1 && $body === 0) {
-                $accessTokenRequest = (new AccessTokenRequestBody($redirectURL, $authorizationCode, $codeVerifier))
-                    ->build();
+                // H-06: Public clients (empty secret) get no Authorization header from
+                // Curl::sendAccessTokenRequest(), so client_id must be carried in the
+                // body (RFC 6749 §3.2.1). Confidential clients authenticate via HTTP
+                // Basic and must not duplicate client_id in the body (RFC 6749 §2.3.1).
+                $bodyClientID = ($clientSecret === '') ? (string) $clientID : null;
+                $accessTokenRequest = (new AccessTokenRequestBody(
+                    $redirectURL,
+                    $authorizationCode,
+                    $codeVerifier,
+                    $bodyClientID
+                ))->build();
             } else {
                 $accessTokenRequest = (new AccessTokenRequest(
                     $clientID,
@@ -487,13 +479,7 @@ class ReadAuthorizationResponse extends BaseAction
                         $errorUrl = rtrim($safeRelay, '/') . '?oidc_error=' . urlencode($encodedError);
                         return $this->_redirect($errorUrl);
                     }
-                    $query = ['_query' => ['oidc_error' => $encodedError]];
-                    if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
-                        $loginUrl = $this->url->getUrl('admin', $query);
-                    } else {
-                        $loginUrl = $this->url->getUrl('customer/account/login', $query);
-                    }
-                    return $this->_redirect($loginUrl);
+                    return $this->_redirect($this->resolveErrorLoginUrl($loginType, $encodedError));
                 }
 
                 // ==== TEST REDIRECT LOGIC ====
@@ -573,16 +559,17 @@ class ReadAuthorizationResponse extends BaseAction
 
                 $this->oauthUtility->customlog("ReadAuthorizationResponse: loginType = " . $loginType);
 
-                // MP-07: pass per-provider attribute mappings
-                $this->attrMappingAction->setClientDetails($clientDetails);
+                // MP-07: pass per-provider attribute mappings via the immutable context DTO
+                $mappingContext = new OidcAttributeMappingContext(
+                    $userInfoResponseData,
+                    $flattenedResponse,
+                    $userEmail,
+                    $loginType,
+                    $headless,
+                    $clientDetails
+                );
 
-                return $this->attrMappingAction
-                    ->setUserInfoResponse($userInfoResponseData)
-                    ->setFlattenedUserInfoResponse($flattenedResponse)
-                    ->setUserEmail($userEmail)
-                    ->setLoginType($loginType)
-                    ->setHeadless($headless)
-                    ->execute();
+                return $this->attrMappingAction->handle($mappingContext);
             } else {
                 $this->oauthUtility->customlog("ERROR: Invalid token response - no access_token or id_token");
                 $encodedError = base64_encode('Invalid response from OAuth provider. Please try again.');
@@ -595,13 +582,7 @@ class ReadAuthorizationResponse extends BaseAction
                     $errorUrl = rtrim($safeRelay, '/') . '?oidc_error=' . urlencode($encodedError);
                     return $this->_redirect($errorUrl);
                 }
-                $query = ['_query' => ['oidc_error' => $encodedError]];
-                if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
-                    $loginUrl = $this->url->getUrl('admin', $query);
-                } else {
-                    $loginUrl = $this->url->getUrl('customer/account/login', $query);
-                }
-                return $this->_redirect($loginUrl);
+                return $this->_redirect($this->resolveErrorLoginUrl($loginType, $encodedError));
             }
         }
         /** @var \Magento\Framework\Controller\Result\Redirect $resultRedirect */
@@ -700,13 +681,7 @@ class ReadAuthorizationResponse extends BaseAction
                         . urlencode($encodedError);
                     return $this->_redirect($errorUrl);
                 }
-                $query = ['_query' => ['oidc_error' => $encodedError]];
-                if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
-                    $loginUrl = $this->url->getUrl('admin', $query);
-                } else {
-                    $loginUrl = $this->url->getUrl('customer/account/login', $query);
-                }
-                return $this->_redirect($loginUrl);
+                return $this->_redirect($this->resolveErrorLoginUrl($loginType, $encodedError));
             }
             return $decoded;
         }
@@ -728,12 +703,25 @@ class ReadAuthorizationResponse extends BaseAction
                 . urlencode($encodedError);
             return $this->_redirect($errorUrl);
         }
+        return $this->_redirect($this->resolveErrorLoginUrl($loginType, $encodedError));
+    }
+
+    /**
+     * Resolve the login-page error URL for the given login type.
+     *
+     * Routes admin logins to the admin login page and customer logins to the
+     * customer login page, carrying the Base64-encoded error message in the
+     * oidc_error query parameter (decoded for display by OidcErrorMessage).
+     *
+     * @param  string $loginType    Login type (admin|customer)
+     * @param  string $encodedError Base64-encoded error message
+     * @return string Login URL with the oidc_error query parameter
+     */
+    private function resolveErrorLoginUrl(string $loginType, string $encodedError): string
+    {
         $query = ['_query' => ['oidc_error' => $encodedError]];
-        if ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN) {
-            $loginUrl = $this->url->getUrl('admin', $query);
-        } else {
-            $loginUrl = $this->url->getUrl('customer/account/login', $query);
-        }
-        return $this->_redirect($loginUrl);
+        return ($loginType === OAuthConstants::LOGIN_TYPE_ADMIN)
+            ? $this->url->getUrl('admin', $query)
+            : $this->url->getUrl('customer/account/login', $query);
     }
 }

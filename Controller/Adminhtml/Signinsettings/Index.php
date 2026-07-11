@@ -17,6 +17,7 @@ use Magento\Framework\View\Result\PageFactory;
 use Magento\Customer\Model\ResourceModel\Group\Collection;
 use Magento\Framework\Message\ManagerInterface;
 use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Model\Validation\ProviderDataValidator;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -31,6 +32,20 @@ use Psr\Log\LoggerInterface;
  */
 class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetActionInterface
 {
+    /**
+     * ACL resource checked by \Magento\Backend\App\Action::_isAllowed() (C-01/M-30).
+     *
+     * @var string
+     */
+    public const ADMIN_RESOURCE = 'M2Oidc_OAuth::signin_settings';
+
+    /**
+     * Runtime/diagnostic provider fields excluded from configuration exports (M-31).
+     *
+     * @var string[]
+     */
+    private const EXPORT_EXCLUDED_FIELDS = ['received_oidc_claims', 'last_test_status', 'last_test_at'];
+
     /** @var \Magento\Framework\App\Response\Http\FileFactory */
     protected \Magento\Framework\App\Response\Http\FileFactory $fileFactory;
 
@@ -46,6 +61,9 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
     /** @var \Magento\Framework\Filesystem\Driver\File */
     private readonly \Magento\Framework\Filesystem\Driver\File $fileDriver;
 
+    /** @var ProviderDataValidator */
+    private readonly ProviderDataValidator $providerDataValidator;
+
     /**
      * Initialize sign-in settings controller.
      *
@@ -59,6 +77,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
      * @param \Magento\Framework\App\ProductMetadataInterface  $productMetadata
      * @param \Magento\Framework\Filesystem\Io\File            $ioFile
      * @param \Magento\Framework\Filesystem\Driver\File        $fileDriver
+     * @param ProviderDataValidator                            $providerDataValidator
      */
     public function __construct(
         Context $context,
@@ -70,7 +89,8 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         \Magento\Store\Model\StoreManagerInterface $storeManager,
         \Magento\Framework\App\ProductMetadataInterface $productMetadata,
         \Magento\Framework\Filesystem\Io\File $ioFile,
-        \Magento\Framework\Filesystem\Driver\File $fileDriver
+        \Magento\Framework\Filesystem\Driver\File $fileDriver,
+        ProviderDataValidator $providerDataValidator
     ) {
         parent::__construct($context, $resultPageFactory, $oauthUtility, $messageManager, $logger);
         $this->_storeManager = $storeManager;
@@ -78,6 +98,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         $this->productMetadata = $productMetadata;
         $this->ioFile = $ioFile;
         $this->fileDriver = $fileDriver;
+        $this->providerDataValidator = $providerDataValidator;
     }
 
     /**
@@ -162,6 +183,10 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
             $data = $provider->getData();
             // Remove internal DB primary key
             unset($data['id']);
+            // M-31: strip runtime/diagnostic fields from the export
+            foreach (self::EXPORT_EXCLUDED_FIELDS as $excludedField) {
+                unset($data[$excludedField]);
+            }
             // Re-encrypt sensitive fields for safe transport
             if (!empty($data['client_secret'])) {
                 $plain = (string) $data['client_secret'];
@@ -267,6 +292,20 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
 
             // Remove DB-specific fields
             unset($providerData['id']);
+
+            // C-03: shared whitelist / SSRF / lockout validation before persisting
+            $validation = $this->providerDataValidator->validate($providerData, 0);
+            foreach ($validation->getWarnings() as $warning) {
+                $this->messageManager->addWarningMessage($warning);
+            }
+            if (!$validation->isValid()) {
+                foreach ($validation->getErrors() as $error) {
+                    $this->messageManager->addErrorMessage($error);
+                }
+                $skipped++;
+                continue;
+            }
+            $providerData = $validation->getData();
 
             $model = $appFactory->create();
             $model->setData($providerData);
@@ -391,18 +430,5 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         $this->oauthUtility->customlog("Customer_email: " . $values[11]);
         $this->oauthUtility->customlog("Enable login redirect: " . $values[12]);
         $this->oauthUtility->customlog("......................................................................");
-    }
-
-    /**
-     * Is the user allowed to view the Sign in Settings.
-     * This is based on the ACL set by the admin in the backend.
-     * Works in conjugation with acl.xml
-     *
-     * @return bool
-     */
-    #[\Override]
-    protected function _isAllowed()
-    {
-        return $this->_authorization->isAllowed(OAuthConstants::MODULE_DIR . OAuthConstants::MODULE_SIGNIN);
     }
 }

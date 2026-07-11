@@ -243,6 +243,72 @@ class OidcAuthenticationServiceTest extends TestCase
     }
 
     // =========================================================================
+    // flattenAttributes() — key-count limit (MAX_FLATTENED_KEYS = 2000)
+    // =========================================================================
+
+    /**
+     * M21: a response producing more flattened keys than MAX_FLATTENED_KEYS
+     * must be rejected via the same failure mechanism as validateUserInfo().
+     */
+    public function testFlattenAttributesRejectsMoreThanMaxFlattenedKeys(): void
+    {
+        $this->withEncoding(OAuthConstants::CLAIM_ENCODING_NONE);
+
+        $data = [];
+        for ($i = 0; $i < 2001; $i++) {
+            $data['claim_' . $i] = 'value';
+        }
+
+        $this->expectException(IncorrectUserInfoDataException::class);
+
+        $result = [];
+        $this->service->flattenAttributes('', $data, $result);
+    }
+
+    /**
+     * Exactly MAX_FLATTENED_KEYS keys are still accepted.
+     */
+    public function testFlattenAttributesAcceptsExactlyMaxFlattenedKeys(): void
+    {
+        $this->withEncoding(OAuthConstants::CLAIM_ENCODING_NONE);
+
+        $data = [];
+        for ($i = 0; $i < 2000; $i++) {
+            $data['claim_' . $i] = 'value';
+        }
+
+        $result = [];
+        $this->service->flattenAttributes('', $data, $result);
+
+        $this->assertCount(2000, $result);
+    }
+
+    /**
+     * M21: the claim_encoding config lookup is hoisted out of the recursion —
+     * one flattenAttributes() call resolves it exactly once, no matter how
+     * deeply the input nests.
+     */
+    public function testFlattenAttributesResolvesClaimEncodingConfigExactlyOnce(): void
+    {
+        $this->oauthUtility->expects($this->once())
+            ->method('getStoreConfig')
+            ->with(OAuthConstants::CLAIM_ENCODING)
+            ->willReturn(OAuthConstants::CLAIM_ENCODING_NONE);
+
+        $data   = [
+            'a' => ['b' => ['c' => ['d' => 'leaf1']]],
+            'e' => ['f' => 'leaf2'],
+            'g' => 'leaf3',
+        ];
+        $result = [];
+        $this->service->flattenAttributes('', $data, $result);
+
+        $this->assertSame('leaf1', $result['a.b.c.d']);
+        $this->assertSame('leaf2', $result['e.f']);
+        $this->assertSame('leaf3', $result['g']);
+    }
+
+    // =========================================================================
     // normalizeGroups()
     // =========================================================================
 

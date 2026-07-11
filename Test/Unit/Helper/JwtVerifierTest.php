@@ -354,18 +354,9 @@ class JwtVerifierTest extends TestCase
         $payload = ['sub' => 'u', 'exp' => time() + 3600];
         $token = $this->buildJwt($payload, self::$kid, 'RS256', $wrongKey);
 
-        // JWKS contains the ORIGINAL test key — signature will fail
-        // Both cache hit and re-fetch return same JWKS (no rotation scenario)
+        // JWKS contains the ORIGINAL test key under the SAME kid — signature fails.
+        // M-13: since the kid is known to the cached key set, no re-fetch happens.
         $this->cache->method('load')->willReturn(self::buildJwks(self::$kid));
-        $this->cache->method('remove');
-
-        // curlFactory is called for the re-fetch after signature failure
-        $curl = $this->createMock(CurlAdapter::class);
-        $curl->method('setConfig');
-        $curl->method('write');
-        $curl->method('read')->willReturn(self::buildJwks(self::$kid));
-        $curl->method('close');
-        $this->curlFactory->method('create')->willReturn($curl);
 
         $result = $this->verifier->verifyAndDecode(
             $token,
@@ -375,6 +366,116 @@ class JwtVerifierTest extends TestCase
         );
 
         $this->assertNull($result, 'JWT signed with wrong key should return null');
+    }
+
+    // -------------------------------------------------------------------------
+    // M-13: JWKS eviction heuristic
+    // -------------------------------------------------------------------------
+
+    public function testBadSignatureWithKnownKidDoesNotEvictCacheOrRefetch(): void
+    {
+        // Token names a kid that IS present in the cached JWKS but is signed with
+        // the wrong key — the token itself is invalid; re-fetching the JWKS would
+        // not change the outcome and must not happen.
+        $wrongKey = openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
+        $this->assertNotFalse($wrongKey, 'Could not generate second RSA key');
+
+        $payload = ['sub' => 'u', 'exp' => time() + 3600];
+        $token = $this->buildJwt($payload, self::$kid, 'RS256', $wrongKey);
+
+        $this->cache->method('load')->willReturn(self::buildJwks(self::$kid));
+
+        // M-13: cache must NOT be evicted and no network re-fetch may occur
+        $this->cache->expects($this->never())->method('remove');
+        $this->curlFactory->expects($this->never())->method('create');
+
+        $result = $this->verifier->verifyAndDecode(
+            $token,
+            'https://idp.example.com/.well-known/jwks.json',
+            null,
+            null
+        );
+
+        $this->assertNull($result, 'Bad signature under a known kid must fail without eviction');
+    }
+
+    public function testUnknownKidEvictsCacheAndRefetchesViaNetwork(): void
+    {
+        // Token is signed with the CORRECT key but names a kid the cached JWKS
+        // does not contain — the true key-rotation signal. The verifier must
+        // evict the cache and re-fetch; the fresh JWKS contains the new kid.
+        $rotatedKid = 'rotated-key-2';
+        $payload = ['sub' => 'rotation-user', 'exp' => time() + 3600];
+        $token = $this->buildJwt($payload, $rotatedKid);
+
+        $staleJwks = self::buildJwks('old-key-1');   // does NOT contain rotated-key-2
+        $freshJwks = self::buildJwks($rotatedKid);   // fetched from the network
+
+        // cache->load: stale JWKS on first load, circuit breaker closed,
+        // cache miss after eviction (forces the curl network fetch)
+        $jwksCallCount = 0;
+        $this->cache->method('load')
+            ->willReturnCallback(
+                function (string $key) use ($staleJwks, &$jwksCallCount) {
+                    if (str_starts_with($key, 'm2oidc_jwks_fail_')) {
+                        return false; // Circuit breaker not open
+                    }
+                    $jwksCallCount++;
+                    return $jwksCallCount === 1 ? $staleJwks : false;
+                }
+            );
+
+        // M-13: eviction must happen exactly once
+        $this->cache->expects($this->once())->method('remove');
+
+        // Network re-fetch returns the fresh JWKS
+        $curl = $this->createMock(CurlAdapter::class);
+        $curl->method('setConfig');
+        $curl->method('write');
+        $curl->method('read')->willReturn($freshJwks);
+        $curl->method('getInfo')->willReturn(200);
+        $curl->method('close');
+        $this->curlFactory->expects($this->once())->method('create')->willReturn($curl);
+
+        $result = $this->verifier->verifyAndDecode(
+            $token,
+            'https://idp.example.com/.well-known/jwks.json',
+            null,
+            null
+        );
+
+        $this->assertIsArray($result, 'Unknown kid must trigger eviction + re-fetch and then verify');
+        $this->assertSame('rotation-user', $result['sub']);
+    }
+
+    public function testNoKidBadSignatureKeepsEvictAndRefetchBehavior(): void
+    {
+        // Tokens without a kid header (some IdPs omit it): a stale cache cannot be
+        // distinguished from a bad signature, so the evict+refetch retry is kept.
+        $wrongKey = openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
+        $this->assertNotFalse($wrongKey, 'Could not generate second RSA key');
+
+        $payload = ['sub' => 'u', 'exp' => time() + 3600];
+        $token = $this->buildJwt($payload, null, 'RS256', $wrongKey); // no kid header
+
+        // Cached and re-fetched JWKS both hold the original key — still fails
+        $this->cache->method('load')->willReturnCallback(
+            fn(string $key) => str_starts_with($key, 'm2oidc_jwks_fail_')
+                ? false // circuit breaker closed
+                : self::buildJwks(self::$kid)
+        );
+
+        // Evict+refetch retry must still run for kid-less tokens
+        $this->cache->expects($this->once())->method('remove');
+
+        $result = $this->verifier->verifyAndDecode(
+            $token,
+            'https://idp.example.com/.well-known/jwks.json',
+            null,
+            null
+        );
+
+        $this->assertNull($result, 'Kid-less token with bad signature must still fail after retry');
     }
 
     // -------------------------------------------------------------------------
@@ -406,29 +507,29 @@ class JwtVerifierTest extends TestCase
 
     public function testKeyRotationTriggersJwksCacheInvalidationAndRetry(): void
     {
-        // This test verifies that when the cached JWKS produces a failed signature,
-        // the verifier clears the cache and re-fetches. The re-fetch returns the
-        // correct key, and verification succeeds.
+        // This test verifies real key rotation: the stale cached JWKS only holds
+        // the RETIRED kid, while the token names the new kid. M-13: the unknown
+        // kid is the rotation signal — the verifier clears the cache, re-fetches,
+        // finds the new key, and verification succeeds.
 
         $payload = ['sub' => 'rotated-user', 'exp' => time() + 3600];
         $token = $this->buildJwt($payload, self::$kid);
 
-        // Build a JWKS with a DIFFERENT (wrong) key for the initial cache hit
+        // Build a stale JWKS holding a DIFFERENT key under a RETIRED kid
         $wrongKey = openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
         $this->assertNotFalse($wrongKey);
         $wrongDetails  = openssl_pkey_get_details($wrongKey);
         $wrongJwks = json_encode(['keys' => [[
             'kty' => 'RSA',
-            'kid' => self::$kid,
+            'kid' => 'retired-key-0',
             'n'   => self::base64UrlEncode($wrongDetails['rsa']['n']),
             'e'   => self::base64UrlEncode($wrongDetails['rsa']['e']),
         ]]]);
 
         // cache->load returns different values based on key type and call order:
-        //   - JWKS key, first load  → wrongJwks (stale cache hit)
+        //   - JWKS key, first load  → wrongJwks (stale cache hit, kid not present)
         //   - fail key             → false (circuit breaker: not open)
         //   - JWKS key, second load → correct JWKS (after cache invalidation)
-        $jwksCacheKey = 'm2oidc_jwks_' . hash('sha256', 'https://idp.example.com/.well-known/jwks.json');
         $jwksCallCount = 0;
         $correctJwks   = self::buildJwks(self::$kid);
         $this->cache->method('load')

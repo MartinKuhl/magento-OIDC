@@ -18,6 +18,7 @@ use Magento\Framework\Stdlib\Cookie\PublicCookieMetadata;
 use Magento\Framework\Stdlib\CookieManagerInterface;
 use M2Oidc\OAuth\Helper\OAuthConstants;
 use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Model\Service\RpInitiatedLogoutService;
 use M2Oidc\OAuth\Plugin\Auth\OidcLogoutPlugin;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -60,6 +61,9 @@ class OidcLogoutPluginTest extends TestCase
     /** @var CurlFactory&MockObject */
     private CurlFactory $curlFactory;
 
+    /** @var RpInitiatedLogoutService */
+    private RpInitiatedLogoutService $rpInitiatedLogoutService;
+
     /** @var ResourceConnection&MockObject */
     private ResourceConnection $resourceConnection;
 
@@ -80,6 +84,13 @@ class OidcLogoutPluginTest extends TestCase
         $this->authSubject           = $this->createMock(Auth::class);
 
         $this->oauthUtility->method('customlog');
+
+        // Real service wired with the shared mocks so revocation assertions on
+        // the CurlFactory keep working after the M29 extraction.
+        $this->rpInitiatedLogoutService = new RpInitiatedLogoutService(
+            $this->oauthUtility,
+            $this->curlFactory
+        );
 
         // Default: DB adapter that accepts any update/insert call
         $dbConnection = $this->createMock(AdapterInterface::class);
@@ -102,7 +113,7 @@ class OidcLogoutPluginTest extends TestCase
             $this->backendUrl,
             $this->response,
             $this->frontNameResolver,
-            $this->curlFactory,
+            $this->rpInitiatedLogoutService,
             $this->resourceConnection
         );
     }

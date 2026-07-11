@@ -13,12 +13,17 @@ use Magento\User\Model\UserFactory;
 use M2Oidc\OAuth\Helper\OAuthUtility;
 use M2Oidc\OAuth\Model\Provider\MappingRepository;
 use M2Oidc\OAuth\Model\Service\AdminProfileSyncService;
+use M2Oidc\OAuth\Model\Service\GroupMappingResolver;
 use M2Oidc\OAuth\Model\Service\OidcAuthenticationService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 /**
  * Unit tests for AdminProfileSyncService.
+ *
+ * M17: syncProfile()/syncRole() now accept an already-loaded \Magento\User\Model\User
+ * instead of an email string (the caller, CheckAttributeMappingAction, loads the user
+ * once and reuses it). Tests below pass a pre-built user mock directly.
  *
  * Verifies:
  *  - syncProfile() updates fields on change and skips when unchanged
@@ -71,7 +76,8 @@ class AdminProfileSyncServiceTest extends TestCase
             $this->roleCollectionFactory,
             $this->oauthUtility,
             $this->oidcAuthenticationService,
-            $this->mappingRepository
+            $this->mappingRepository,
+            new GroupMappingResolver($this->mappingRepository, $this->oauthUtility)
         );
     }
 
@@ -148,17 +154,15 @@ class AdminProfileSyncServiceTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // syncProfile – user not found
+    // syncProfile – user not found (M17: caller passes an unloaded User)
     // -------------------------------------------------------------------------
 
     public function testSyncProfileDoesNothingWhenUserNotFound(): void
     {
-        $this->userFactory->method('create')->willReturn($this->makeNotFoundUserMock());
-
         $this->userResource->expects($this->never())->method('save');
 
         $this->service->syncProfile(
-            'unknown@example.com',
+            $this->makeNotFoundUserMock(),
             ['given_name' => 'Alice'],
             [],
             'given_name',
@@ -174,13 +178,12 @@ class AdminProfileSyncServiceTest extends TestCase
     public function testSyncProfileUpdatesFirstnameWhenChanged(): void
     {
         $user = $this->makeUserMock(firstName: 'OldFirst');
-        $this->userFactory->method('create')->willReturn($user);
 
         $user->expects($this->once())->method('setFirstName')->with('NewFirst');
         $this->userResource->expects($this->once())->method('save');
 
         $this->service->syncProfile(
-            'a@example.com',
+            $user,
             ['given_name' => 'NewFirst'],
             [],
             'given_name',
@@ -192,13 +195,12 @@ class AdminProfileSyncServiceTest extends TestCase
     public function testSyncProfileSkipsFirstnameWhenUnchanged(): void
     {
         $user = $this->makeUserMock(firstName: 'Alice');
-        $this->userFactory->method('create')->willReturn($user);
 
         $user->expects($this->never())->method('setFirstName');
         $this->userResource->expects($this->never())->method('save');
 
         $this->service->syncProfile(
-            'a@example.com',
+            $user,
             ['given_name' => 'Alice'],
             [],
             'given_name',
@@ -210,13 +212,12 @@ class AdminProfileSyncServiceTest extends TestCase
     public function testSyncProfileSkipsFirstnameWhenKeyNotInAttrs(): void
     {
         $user = $this->makeUserMock(firstName: 'OldFirst');
-        $this->userFactory->method('create')->willReturn($user);
 
         // 'given_name' not present in flat or raw → extract returns null → skip
         $user->expects($this->never())->method('setFirstName');
         $this->userResource->expects($this->never())->method('save');
 
-        $this->service->syncProfile('a@example.com', [], [], 'given_name', 'family_name', 'preferred_username');
+        $this->service->syncProfile($user, [], [], 'given_name', 'family_name', 'preferred_username');
     }
 
     // -------------------------------------------------------------------------
@@ -226,13 +227,12 @@ class AdminProfileSyncServiceTest extends TestCase
     public function testSyncProfileUpdatesLastnameWhenChanged(): void
     {
         $user = $this->makeUserMock(lastName: 'OldLast');
-        $this->userFactory->method('create')->willReturn($user);
 
         $user->expects($this->once())->method('setLastName')->with('Jones');
         $this->userResource->expects($this->once())->method('save');
 
         $this->service->syncProfile(
-            'a@example.com',
+            $user,
             ['family_name' => 'Jones'],
             [],
             'given_name',
@@ -244,12 +244,11 @@ class AdminProfileSyncServiceTest extends TestCase
     public function testSyncProfileSkipsLastnameWhenUnchanged(): void
     {
         $user = $this->makeUserMock(lastName: 'Smith');
-        $this->userFactory->method('create')->willReturn($user);
 
         $user->expects($this->never())->method('setLastName');
         $this->userResource->expects($this->never())->method('save');
 
-        $this->service->syncProfile('a@example.com', ['family_name' => 'Smith'], [], 'gn', 'family_name', 'un');
+        $this->service->syncProfile($user, ['family_name' => 'Smith'], [], 'gn', 'family_name', 'un');
     }
 
     // -------------------------------------------------------------------------
@@ -261,14 +260,15 @@ class AdminProfileSyncServiceTest extends TestCase
         $user         = $this->makeUserMock(id: 1, username: 'old_user');
         $notFoundUser = $this->makeNotFoundUserMock(); // username check: no conflict
 
-        $this->userFactory->expects($this->exactly(2))->method('create')
-            ->willReturnOnConsecutiveCalls($user, $notFoundUser);
+        // Only the uniqueness check now goes through the factory (M17: the primary
+        // user is passed in directly, no longer loaded via userFactory->create()).
+        $this->userFactory->expects($this->once())->method('create')->willReturn($notFoundUser);
 
         $user->expects($this->once())->method('setUserName')->with('new_user');
         $this->userResource->expects($this->once())->method('save');
 
         $this->service->syncProfile(
-            'a@example.com',
+            $user,
             ['preferred_username' => 'new_user'],
             [],
             'gn',
@@ -282,14 +282,13 @@ class AdminProfileSyncServiceTest extends TestCase
         $user        = $this->makeUserMock(id: 1, username: 'old_user');
         $conflicting = $this->makeUserMock(id: 99); // different user owns the new username
 
-        $this->userFactory->expects($this->exactly(2))->method('create')
-            ->willReturnOnConsecutiveCalls($user, $conflicting);
+        $this->userFactory->expects($this->once())->method('create')->willReturn($conflicting);
 
         $user->expects($this->never())->method('setUserName');
         $this->userResource->expects($this->never())->method('save');
 
         $this->service->syncProfile(
-            'a@example.com',
+            $user,
             ['preferred_username' => 'taken'],
             [],
             'gn',
@@ -304,14 +303,13 @@ class AdminProfileSyncServiceTest extends TestCase
         $user     = $this->makeUserMock(id: 5, username: 'old_user');
         $sameUser = $this->makeUserMock(id: 5); // same ID as $user
 
-        $this->userFactory->expects($this->exactly(2))->method('create')
-            ->willReturnOnConsecutiveCalls($user, $sameUser);
+        $this->userFactory->expects($this->once())->method('create')->willReturn($sameUser);
 
         $user->expects($this->once())->method('setUserName')->with('new_user');
         $this->userResource->expects($this->once())->method('save');
 
         $this->service->syncProfile(
-            'a@example.com',
+            $user,
             ['preferred_username' => 'new_user'],
             [],
             'gn',
@@ -323,14 +321,13 @@ class AdminProfileSyncServiceTest extends TestCase
     public function testSyncProfileSkipsUsernameWhenUnchanged(): void
     {
         $user = $this->makeUserMock(username: 'asmith');
-        $this->userFactory->method('create')->willReturn($user);
 
-        // Factory should only be called once (for loadAdminByEmail); no second call for uniqueness check
-        $this->userFactory->expects($this->once())->method('create');
+        // Uniqueness check is only performed when the username actually changes.
+        $this->userFactory->expects($this->never())->method('create');
         $user->expects($this->never())->method('setUserName');
 
         $this->service->syncProfile(
-            'a@example.com',
+            $user,
             ['preferred_username' => 'asmith'],
             [],
             'gn',
@@ -346,34 +343,31 @@ class AdminProfileSyncServiceTest extends TestCase
     public function testSyncProfileUpdatesEmailWhenChanged(): void
     {
         $user = $this->makeUserMock(email: 'old@example.com');
-        $this->userFactory->method('create')->willReturn($user);
 
         $user->expects($this->once())->method('setEmail')->with('new@example.com');
         $this->userResource->expects($this->once())->method('save');
 
-        $this->service->syncProfile('old@example.com', ['email' => 'new@example.com'], [], 'gn', 'ln', 'un', 'email');
+        $this->service->syncProfile($user, ['email' => 'new@example.com'], [], 'gn', 'ln', 'un', 'email');
     }
 
     public function testSyncProfileSkipsEmailWhenEmailKeyIsEmpty(): void
     {
         $user = $this->makeUserMock(email: 'a@example.com');
-        $this->userFactory->method('create')->willReturn($user);
 
         $user->expects($this->never())->method('setEmail');
 
         // emailKey='' → extract returns null → skip
-        $this->service->syncProfile('a@example.com', ['email' => 'new@example.com'], [], 'gn', 'ln', 'un', '');
+        $this->service->syncProfile($user, ['email' => 'new@example.com'], [], 'gn', 'ln', 'un', '');
     }
 
     public function testSyncProfileSkipsEmailWhenUnchanged(): void
     {
         $user = $this->makeUserMock(email: 'same@example.com');
-        $this->userFactory->method('create')->willReturn($user);
 
         $user->expects($this->never())->method('setEmail');
         $this->userResource->expects($this->never())->method('save');
 
-        $this->service->syncProfile('same@example.com', ['email' => 'same@example.com'], [], 'gn', 'ln', 'un', 'email');
+        $this->service->syncProfile($user, ['email' => 'same@example.com'], [], 'gn', 'ln', 'un', 'email');
     }
 
     // -------------------------------------------------------------------------
@@ -383,7 +377,6 @@ class AdminProfileSyncServiceTest extends TestCase
     public function testSyncProfileSkipsFirstnameWhenSyncOnSsoIsZero(): void
     {
         $user = $this->makeUserMock(id: 1, firstName: 'OldFirst');
-        $this->userFactory->method('create')->willReturn($user);
 
         $this->mappingRepository->method('getFullAttributeMap')->with(1)->willReturn([
             'firstname' => ['sync_on_sso' => 0],
@@ -392,13 +385,12 @@ class AdminProfileSyncServiceTest extends TestCase
         $user->expects($this->never())->method('setFirstName');
         $this->userResource->expects($this->never())->method('save');
 
-        $this->service->syncProfile('a@example.com', ['given_name' => 'NewFirst'], [], 'given_name', 'ln', 'un', '', 1);
+        $this->service->syncProfile($user, ['given_name' => 'NewFirst'], [], 'given_name', 'ln', 'un', '', 1);
     }
 
     public function testSyncProfileSyncsFirstnameWhenSyncOnSsoIsOne(): void
     {
         $user = $this->makeUserMock(id: 1, firstName: 'OldFirst');
-        $this->userFactory->method('create')->willReturn($user);
 
         $this->mappingRepository->method('getFullAttributeMap')->with(2)->willReturn([
             'firstname' => ['sync_on_sso' => 1],
@@ -407,13 +399,12 @@ class AdminProfileSyncServiceTest extends TestCase
         $user->expects($this->once())->method('setFirstName')->with('NewFirst');
         $this->userResource->expects($this->once())->method('save');
 
-        $this->service->syncProfile('a@example.com', ['given_name' => 'NewFirst'], [], 'given_name', 'ln', 'un', '', 2);
+        $this->service->syncProfile($user, ['given_name' => 'NewFirst'], [], 'given_name', 'ln', 'un', '', 2);
     }
 
     public function testSyncProfileSkipsLastnameWhenSyncOnSsoIsZero(): void
     {
         $user = $this->makeUserMock(id: 1, lastName: 'OldLast');
-        $this->userFactory->method('create')->willReturn($user);
 
         $this->mappingRepository->method('getFullAttributeMap')->with(3)->willReturn([
             'lastname' => ['sync_on_sso' => 0],
@@ -423,7 +414,7 @@ class AdminProfileSyncServiceTest extends TestCase
         $this->userResource->expects($this->never())->method('save');
 
         $this->service->syncProfile(
-            'a@example.com',
+            $user,
             ['family_name' => 'NewLast'],
             [],
             'gn',
@@ -437,7 +428,6 @@ class AdminProfileSyncServiceTest extends TestCase
     public function testSyncProfileSkipsUsernameWhenSyncOnSsoIsZero(): void
     {
         $user = $this->makeUserMock(id: 1, username: 'old_user');
-        $this->userFactory->method('create')->willReturn($user);
 
         $this->mappingRepository->method('getFullAttributeMap')->with(4)->willReturn([
             'username' => ['sync_on_sso' => 0],
@@ -447,7 +437,7 @@ class AdminProfileSyncServiceTest extends TestCase
         $this->userResource->expects($this->never())->method('save');
 
         $this->service->syncProfile(
-            'a@example.com',
+            $user,
             ['preferred_username' => 'new_user'],
             [],
             'gn',
@@ -461,7 +451,6 @@ class AdminProfileSyncServiceTest extends TestCase
     public function testSyncProfileSkipsEmailWhenSyncOnSsoIsZero(): void
     {
         $user = $this->makeUserMock(id: 1, email: 'old@example.com');
-        $this->userFactory->method('create')->willReturn($user);
 
         $this->mappingRepository->method('getFullAttributeMap')->with(5)->willReturn([
             'email' => ['sync_on_sso' => 0],
@@ -471,7 +460,7 @@ class AdminProfileSyncServiceTest extends TestCase
         $this->userResource->expects($this->never())->method('save');
 
         $this->service->syncProfile(
-            'old@example.com',
+            $user,
             ['email' => 'new@example.com'],
             [],
             'gn',
@@ -489,7 +478,6 @@ class AdminProfileSyncServiceTest extends TestCase
     public function testSyncProfileLegacyModeAlwaysSyncsWhenNoNormalizedRow(): void
     {
         $user = $this->makeUserMock(id: 1, firstName: 'OldFirst');
-        $this->userFactory->method('create')->willReturn($user);
 
         // Empty attrMap = legacy mode, attribute IS synced
         $this->mappingRepository->method('getFullAttributeMap')->with(6)->willReturn([]);
@@ -497,17 +485,16 @@ class AdminProfileSyncServiceTest extends TestCase
         $user->expects($this->once())->method('setFirstName');
         $this->userResource->expects($this->once())->method('save');
 
-        $this->service->syncProfile('a@example.com', ['given_name' => 'NewFirst'], [], 'given_name', 'ln', 'un', '', 6);
+        $this->service->syncProfile($user, ['given_name' => 'NewFirst'], [], 'given_name', 'ln', 'un', '', 6);
     }
 
     public function testSyncProfileLegacyModeWithProviderIdZeroNeverCallsMappingRepository(): void
     {
         $user = $this->makeUserMock(id: 1, firstName: 'OldFirst');
-        $this->userFactory->method('create')->willReturn($user);
 
         $this->mappingRepository->expects($this->never())->method('getFullAttributeMap');
 
-        $this->service->syncProfile('a@example.com', ['given_name' => 'NewFirst'], [], 'given_name', 'ln', 'un', '', 0);
+        $this->service->syncProfile($user, ['given_name' => 'NewFirst'], [], 'given_name', 'ln', 'un', '', 0);
     }
 
     // -------------------------------------------------------------------------
@@ -517,23 +504,21 @@ class AdminProfileSyncServiceTest extends TestCase
     public function testSyncProfileDoesNotSaveWhenNothingChanged(): void
     {
         $user = $this->makeUserMock(firstName: 'Alice', lastName: 'Smith', username: 'asmith', email: 'a@example.com');
-        $this->userFactory->method('create')->willReturn($user);
 
         $this->userResource->expects($this->never())->method('save');
 
         // All attrs are empty → extract returns null → no changes
-        $this->service->syncProfile('a@example.com', [], [], 'given_name', 'family_name', 'preferred_username');
+        $this->service->syncProfile($user, [], [], 'given_name', 'family_name', 'preferred_username');
     }
 
     public function testSyncProfileDoesNotSaveWhenAllValuesMatch(): void
     {
         $user = $this->makeUserMock(firstName: 'Alice', lastName: 'Smith');
-        $this->userFactory->method('create')->willReturn($user);
 
         $this->userResource->expects($this->never())->method('save');
 
         $this->service->syncProfile(
-            'a@example.com',
+            $user,
             ['given_name' => 'Alice', 'family_name' => 'Smith'],
             [],
             'given_name',
@@ -549,26 +534,24 @@ class AdminProfileSyncServiceTest extends TestCase
     public function testSyncProfileExtractsFromRawAttrsWhenNotInFlat(): void
     {
         $user = $this->makeUserMock(firstName: 'OldFirst');
-        $this->userFactory->method('create')->willReturn($user);
 
         // Flat is empty; value is in raw
         $user->expects($this->once())->method('setFirstName')->with('RawFirst');
         $this->userResource->expects($this->once())->method('save');
 
-        $this->service->syncProfile('a@example.com', [], ['given_name' => 'RawFirst'], 'given_name', 'ln', 'un');
+        $this->service->syncProfile($user, [], ['given_name' => 'RawFirst'], 'given_name', 'ln', 'un');
     }
 
     public function testSyncProfileFlatAttrsTakePriorityOverRaw(): void
     {
         $user = $this->makeUserMock(firstName: 'OldFirst');
-        $this->userFactory->method('create')->willReturn($user);
 
         // Both flat and raw have 'given_name' — flat wins
         $user->expects($this->once())->method('setFirstName')->with('FlatFirst');
         $this->userResource->expects($this->once())->method('save');
 
         $this->service->syncProfile(
-            'a@example.com',
+            $user,
             ['given_name' => 'FlatFirst'],
             ['given_name' => 'RawFirst'],
             'given_name',
@@ -586,8 +569,7 @@ class AdminProfileSyncServiceTest extends TestCase
         $user         = $this->makeUserMock(id: 1, firstName: 'OldFirst', lastName: 'OldLast', username: 'old_user');
         $notFoundUser = $this->makeNotFoundUserMock();
 
-        $this->userFactory->expects($this->exactly(2))->method('create')
-            ->willReturnOnConsecutiveCalls($user, $notFoundUser);
+        $this->userFactory->expects($this->once())->method('create')->willReturn($notFoundUser);
 
         $user->expects($this->once())->method('setFirstName');
         $user->expects($this->once())->method('setLastName');
@@ -595,7 +577,7 @@ class AdminProfileSyncServiceTest extends TestCase
         $this->userResource->expects($this->once())->method('save'); // single save
 
         $this->service->syncProfile(
-            'a@example.com',
+            $user,
             ['given_name' => 'NewFirst', 'family_name' => 'NewLast', 'preferred_username' => 'new_user'],
             [],
             'given_name',
@@ -611,14 +593,13 @@ class AdminProfileSyncServiceTest extends TestCase
     public function testSyncProfileExtractsFirstValueFromArrayAttr(): void
     {
         $user = $this->makeUserMock(firstName: 'OldFirst');
-        $this->userFactory->method('create')->willReturn($user);
 
         $user->expects($this->once())->method('setFirstName')->with('ArrayFirst');
         $this->userResource->expects($this->once())->method('save');
 
         // Array value: service collapses to first element
         $this->service->syncProfile(
-            'a@example.com',
+            $user,
             ['given_name' => ['ArrayFirst', 'Extra']],
             [],
             'given_name',
@@ -628,16 +609,14 @@ class AdminProfileSyncServiceTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // syncRole – user not found
+    // syncRole – user not found (M17: caller passes an unloaded User)
     // -------------------------------------------------------------------------
 
     public function testSyncRoleDoesNothingWhenUserNotFound(): void
     {
-        $this->userFactory->method('create')->willReturn($this->makeNotFoundUserMock());
-
         $this->userResource->expects($this->never())->method('save');
 
-        $this->service->syncRole('unknown@example.com', [], [], 'groups', [], '');
+        $this->service->syncRole($this->makeNotFoundUserMock(), [], [], 'groups', [], '');
     }
 
     // -------------------------------------------------------------------------
@@ -647,30 +626,27 @@ class AdminProfileSyncServiceTest extends TestCase
     public function testSyncRoleSkipsWhenNoGroupsAndNoDefaultRole(): void
     {
         $user = $this->makeUserMock();
-        $this->userFactory->method('create')->willReturn($user);
         $this->oidcAuthenticationService->method('normalizeGroups')->willReturn([]);
 
         $this->userResource->expects($this->never())->method('save');
 
-        $this->service->syncRole('a@example.com', [], [], 'groups', [], '');
+        $this->service->syncRole($user, [], [], 'groups', [], '');
     }
 
     public function testSyncRoleSkipsWhenNoGroupsAndNoRoleMappings(): void
     {
         $user = $this->makeUserMock();
-        $this->userFactory->method('create')->willReturn($user);
         $this->oidcAuthenticationService->method('normalizeGroups')->willReturn([]);
 
         $this->userResource->expects($this->never())->method('save');
 
         // No role mappings configured AND no default role
-        $this->service->syncRole('a@example.com', [], [], 'groups', [], '');
+        $this->service->syncRole($user, [], [], 'groups', [], '');
     }
 
     public function testSyncRoleAssignsDefaultRoleWhenNoGroupsInResponse(): void
     {
         $user = $this->makeUserMock(roles: []);
-        $this->userFactory->method('create')->willReturn($user);
         $this->oidcAuthenticationService->method('normalizeGroups')->willReturn([]);
 
         $role = $this->makeRoleMock(3);
@@ -681,7 +657,7 @@ class AdminProfileSyncServiceTest extends TestCase
 
         // Groups claim is empty but role mappings exist; default role is configured
         $this->service->syncRole(
-            'a@example.com',
+            $user,
             [],
             [],
             'groups',
@@ -697,7 +673,6 @@ class AdminProfileSyncServiceTest extends TestCase
     public function testSyncRoleAssignsFirstMatchingRole(): void
     {
         $user = $this->makeUserMock(roles: []);
-        $this->userFactory->method('create')->willReturn($user);
         $this->oidcAuthenticationService->method('normalizeGroups')->willReturn(['engineers', 'staff']);
 
         $user->expects($this->once())->method('setRoleId')->with(7);
@@ -709,7 +684,7 @@ class AdminProfileSyncServiceTest extends TestCase
         ];
 
         $this->service->syncRole(
-            'a@example.com',
+            $user,
             ['groups' => ['engineers', 'staff']],
             [],
             'groups',
@@ -721,7 +696,6 @@ class AdminProfileSyncServiceTest extends TestCase
     public function testSyncRoleAssignsSecondMappingWhenFirstGroupDoesNotMatch(): void
     {
         $user = $this->makeUserMock(roles: []);
-        $this->userFactory->method('create')->willReturn($user);
         $this->oidcAuthenticationService->method('normalizeGroups')->willReturn(['staff']);
 
         $user->expects($this->once())->method('setRoleId')->with(2);
@@ -732,26 +706,24 @@ class AdminProfileSyncServiceTest extends TestCase
             ['group' => 'staff',     'role' => '2'],
         ];
 
-        $this->service->syncRole('a@example.com', ['groups' => ['staff']], [], 'groups', $roleMappings, '');
+        $this->service->syncRole($user, ['groups' => ['staff']], [], 'groups', $roleMappings, '');
     }
 
     public function testSyncRoleSkipsWhenNoMappingMatchesAndNoDefaultRole(): void
     {
         $user = $this->makeUserMock(roles: []);
-        $this->userFactory->method('create')->willReturn($user);
         $this->oidcAuthenticationService->method('normalizeGroups')->willReturn(['unknown_group']);
 
         $this->userResource->expects($this->never())->method('save');
 
         $roleMappings = [['group' => 'engineers', 'role' => '7']];
 
-        $this->service->syncRole('a@example.com', ['groups' => ['unknown_group']], [], 'groups', $roleMappings, '');
+        $this->service->syncRole($user, ['groups' => ['unknown_group']], [], 'groups', $roleMappings, '');
     }
 
     public function testSyncRoleUsesDefaultRoleWhenNoMappingMatches(): void
     {
         $user = $this->makeUserMock(roles: []);
-        $this->userFactory->method('create')->willReturn($user);
         $this->oidcAuthenticationService->method('normalizeGroups')->willReturn(['unknown']);
 
         $role = $this->makeRoleMock(5);
@@ -761,7 +733,7 @@ class AdminProfileSyncServiceTest extends TestCase
         $this->userResource->expects($this->once())->method('save');
 
         $this->service->syncRole(
-            'a@example.com',
+            $user,
             [],
             [],
             'groups',
@@ -777,27 +749,25 @@ class AdminProfileSyncServiceTest extends TestCase
     public function testSyncRoleSkipsWhenUserAlreadyHasTargetRole(): void
     {
         $user = $this->makeUserMock(roles: ['7']); // role 7 already assigned (string)
-        $this->userFactory->method('create')->willReturn($user);
         $this->oidcAuthenticationService->method('normalizeGroups')->willReturn(['engineers']);
 
         $this->userResource->expects($this->never())->method('save');
 
         $roleMappings = [['group' => 'engineers', 'role' => '7']];
 
-        $this->service->syncRole('a@example.com', ['groups' => ['engineers']], [], 'groups', $roleMappings, '');
+        $this->service->syncRole($user, ['groups' => ['engineers']], [], 'groups', $roleMappings, '');
     }
 
     public function testSyncRoleSkipsWhenUserAlreadyHasTargetRoleAsInt(): void
     {
         $user = $this->makeUserMock(roles: ['7']); // role 7 as integer
-        $this->userFactory->method('create')->willReturn($user);
         $this->oidcAuthenticationService->method('normalizeGroups')->willReturn(['engineers']);
 
         $this->userResource->expects($this->never())->method('save');
 
         $roleMappings = [['group' => 'engineers', 'role' => '7']];
 
-        $this->service->syncRole('a@example.com', ['groups' => ['engineers']], [], 'groups', $roleMappings, '');
+        $this->service->syncRole($user, ['groups' => ['engineers']], [], 'groups', $roleMappings, '');
     }
 
     // -------------------------------------------------------------------------
@@ -807,7 +777,6 @@ class AdminProfileSyncServiceTest extends TestCase
     public function testSyncRoleLogsAndSkipsWhenDefaultRoleNotFound(): void
     {
         $user = $this->makeUserMock(roles: []);
-        $this->userFactory->method('create')->willReturn($user);
         $this->oidcAuthenticationService->method('normalizeGroups')->willReturn([]);
 
         $emptyRole = $this->makeRoleMock(null); // no ID — not found
@@ -817,7 +786,7 @@ class AdminProfileSyncServiceTest extends TestCase
         $this->userResource->expects($this->never())->method('save');
 
         $this->service->syncRole(
-            'a@example.com',
+            $user,
             [],
             [],
             'groups',
@@ -833,7 +802,6 @@ class AdminProfileSyncServiceTest extends TestCase
     public function testSyncRoleAssignByNameSkipsWhenRoleAlreadyAssigned(): void
     {
         $user = $this->makeUserMock(roles: ['5']); // already has role 5
-        $this->userFactory->method('create')->willReturn($user);
         $this->oidcAuthenticationService->method('normalizeGroups')->willReturn([]);
 
         $role = $this->makeRoleMock(5);
@@ -842,7 +810,7 @@ class AdminProfileSyncServiceTest extends TestCase
         $this->userResource->expects($this->never())->method('save');
 
         $this->service->syncRole(
-            'a@example.com',
+            $user,
             [],
             [],
             'groups',
@@ -858,14 +826,13 @@ class AdminProfileSyncServiceTest extends TestCase
     public function testSyncRoleSkipsWhenGroupAttributeKeyIsEmpty(): void
     {
         $user = $this->makeUserMock(roles: []);
-        $this->userFactory->method('create')->willReturn($user);
 
         // normalizeGroups returns empty when key is ''
         $this->oidcAuthenticationService->method('normalizeGroups')->willReturn([]);
 
         $this->userResource->expects($this->never())->method('save');
 
-        $this->service->syncRole('a@example.com', [], [], '', [['group' => 'admins', 'role' => '1']], '');
+        $this->service->syncRole($user, [], [], '', [['group' => 'admins', 'role' => '1']], '');
     }
 
     // -------------------------------------------------------------------------
@@ -875,7 +842,6 @@ class AdminProfileSyncServiceTest extends TestCase
     public function testSyncRoleSkipsMalformedMappingRows(): void
     {
         $user = $this->makeUserMock(roles: []);
-        $this->userFactory->method('create')->willReturn($user);
         $this->oidcAuthenticationService->method('normalizeGroups')->willReturn(['engineers']);
 
         // Rows with empty group or role keys
@@ -888,6 +854,6 @@ class AdminProfileSyncServiceTest extends TestCase
         // the matching row has an empty role and the service casts it to 0)
         $this->userResource->expects($this->never())->method('save');
 
-        $this->service->syncRole('a@example.com', ['groups' => ['engineers']], [], 'groups', $roleMappings, '');
+        $this->service->syncRole($user, ['groups' => ['engineers']], [], 'groups', $roleMappings, '');
     }
 }

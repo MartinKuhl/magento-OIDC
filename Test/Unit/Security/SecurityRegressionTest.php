@@ -79,23 +79,6 @@ class SecurityRegressionTest extends TestCase
         );
     }
 
-    /**
-     * Debug.php test curl call must not hard-set CURLOPT_SSL_VERIFYPEER to false.
-     *
-     * Fixes: SEC-01
-     */
-    public function testDebugBlockDoesNotDisableSslVerification(): void
-    {
-        $file    = self::$root . '/Block/Adminhtml/Debug.php';
-        $content = $this->readFile($file);
-
-        $this->assertStringNotContainsString(
-            'CURLOPT_SSL_VERIFYPEER, false',
-            $content,
-            'SEC-01: Debug.php must not disable CURLOPT_SSL_VERIFYPEER'
-        );
-    }
-
     // -------------------------------------------------------------------------
     // SEC-03 — Alpine.js XSS via x-html
     // -------------------------------------------------------------------------

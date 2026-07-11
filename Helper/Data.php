@@ -261,7 +261,7 @@ class Data extends AbstractHelper
      * @param bool       $admin
      * @throws \Exception
      */
-    public function saveConfig(string $url, $value, $id, bool $admin): void
+    public function saveConfig(string $url, mixed $value, int|string $id, bool $admin): void
     {
         $admin ? $this->saveAdminStoreConfig($url, $value, $id) : $this->saveCustomerStoreConfig($url, $value, $id);
     }
@@ -271,9 +271,8 @@ class Data extends AbstractHelper
      *
      * @param  string     $config
      * @param  int|string $id
-     * @return mixed
      */
-    public function getAdminStoreConfig(string $config, $id)
+    public function getAdminStoreConfig(string $config, int|string $id): mixed
     {
         $model = $this->adminFactory->create();
         $this->userResource->load($model, $id);
@@ -288,7 +287,7 @@ class Data extends AbstractHelper
      * @param int|string $id
      * @throws \Exception
      */
-    private function saveAdminStoreConfig(string $url, $value, $id): void
+    private function saveAdminStoreConfig(string $url, mixed $value, int|string $id): void
     {
         $data  = [$url => $value];
         $model = $this->adminFactory->create();
@@ -303,9 +302,8 @@ class Data extends AbstractHelper
      *
      * @param  string     $config
      * @param  int|string $id
-     * @return mixed
      */
-    public function getCustomerStoreConfig(string $config, $id)
+    public function getCustomerStoreConfig(string $config, int|string $id): mixed
     {
         $model = $this->customerFactory->create();
         $this->customerResource->load($model, (int) $id);
@@ -320,7 +318,7 @@ class Data extends AbstractHelper
      * @param int|string $id
      * @throws \Exception
      */
-    private function saveCustomerStoreConfig(string $url, $value, $id): void
+    private function saveCustomerStoreConfig(string $url, mixed $value, int|string $id): void
     {
         $data  = [$url => $value];
         $model = $this->customerFactory->create();
@@ -527,7 +525,7 @@ class Data extends AbstractHelper
      *
      * @param  mixed $value
      */
-    protected function sanitize($value): string
+    protected function sanitize(mixed $value): string
     {
         return $this->escaper->escapeHtml((string) $value);
     }

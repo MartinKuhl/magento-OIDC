@@ -8,7 +8,9 @@ use Magento\Directory\Model\Country;
 use Magento\Directory\Model\ResourceModel\Country\Collection as CountryCollection;
 use Magento\Directory\Model\ResourceModel\Country\CollectionFactory as CountryCollectionFactory;
 use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Model\Attribute\CountryResolver;
 use M2Oidc\OAuth\Model\Attribute\CustomerAttributeMapper;
+use M2Oidc\OAuth\Model\Attribute\GenderMapper;
 use M2Oidc\OAuth\Model\Attribute\Transformer;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -43,8 +45,9 @@ class CustomerAttributeMapperTest extends TestCase
 
         $this->mapper = new CustomerAttributeMapper(
             $this->oauthUtility,
-            $this->countryCollectionFactory,
-            $this->transformer
+            $this->transformer,
+            new GenderMapper(),
+            new CountryResolver($this->countryCollectionFactory, $this->oauthUtility)
         );
     }
 

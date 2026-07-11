@@ -8,6 +8,7 @@ use M2Oidc\OAuth\Helper\Curl;
 use M2Oidc\OAuth\Helper\OAuthUtility;
 use M2Oidc\OAuth\Logger\OidcLogger;
 use M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps\CollectionFactory as ProviderCollectionFactory;
+use M2Oidc\OAuth\Model\Validation\SsrfUrlValidator;
 
 /**
  * Periodically re-fetches the OIDC discovery document for every active provider
@@ -50,22 +51,28 @@ class RefreshOidcDiscovery
     /** @var OidcLogger */
     private readonly OidcLogger $oidcLogger;
 
+    /** @var SsrfUrlValidator */
+    private readonly SsrfUrlValidator $ssrfUrlValidator;
+
     /**
      * @param ProviderCollectionFactory $collectionFactory
      * @param Curl                      $curl
      * @param OAuthUtility              $oauthUtility
      * @param OidcLogger                $oidcLogger
+     * @param SsrfUrlValidator          $ssrfUrlValidator
      */
     public function __construct(
         ProviderCollectionFactory $collectionFactory,
         Curl $curl,
         OAuthUtility $oauthUtility,
-        OidcLogger $oidcLogger
+        OidcLogger $oidcLogger,
+        SsrfUrlValidator $ssrfUrlValidator
     ) {
         $this->collectionFactory = $collectionFactory;
         $this->curl = $curl;
         $this->oauthUtility = $oauthUtility;
         $this->oidcLogger = $oidcLogger;
+        $this->ssrfUrlValidator = $ssrfUrlValidator;
     }
 
     /**
@@ -138,6 +145,17 @@ class RefreshOidcDiscovery
         if ($validated === false || parse_url($validated, PHP_URL_SCHEME) !== 'https') {
             $this->oidcLogger->customlog(
                 "RefreshOidcDiscovery: [{$appName}] Skipping — discovery URL is not a valid HTTPS URL: {$url}"
+            );
+            return null;
+        }
+
+        // H-09: SSRF protection — never fetch discovery documents from private hosts.
+        // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
+        $host = (string) parse_url($validated, PHP_URL_HOST);
+        if ($this->ssrfUrlValidator->isPrivateHost($host)) {
+            $this->oidcLogger->customlog(
+                "RefreshOidcDiscovery: [{$appName}] WARNING: Blocked SSRF attempt — "
+                . "discovery URL points to a private or internal host: {$url}"
             );
             return null;
         }

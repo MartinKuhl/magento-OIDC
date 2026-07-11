@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace M2Oidc\OAuth\Model\Provider;
 
-use M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps\CollectionFactory;
 use M2Oidc\OAuth\Model\ResourceModel\OidcProviderRepository;
 
 /**
@@ -32,11 +31,9 @@ class ProviderResolver
     private ?array $activeProviderCache = null;
 
     /**
-     * @param CollectionFactory      $clientCollectionFactory Collection factory for provider records
-     * @param OidcProviderRepository $providerRepository      Repository for provider lookup by ID
+     * @param OidcProviderRepository $providerRepository Repository for provider lookup by ID
      */
     public function __construct(
-        private readonly CollectionFactory $clientCollectionFactory,
         private readonly OidcProviderRepository $providerRepository
     ) {
     }
@@ -47,10 +44,19 @@ class ProviderResolver
      * Must be called once per request (e.g. in execute()) before any
      * config resolution call that reads provider-specific values.
      *
+     * A value of 0 (or negative) is ignored — it represents "no provider context"
+     * (e.g. no `provider_id` query param present) and must never be cached as active,
+     * otherwise resolveActiveProvider() would treat "no provider selected" as
+     * "provider 0 is selected" instead of falling back to the first active provider.
+     *
      * @param int $providerId Row `id` from m2oidc_oauth_client_apps (> 0)
      */
     public function setActiveProviderId(int $providerId): void
     {
+        if ($providerId <= 0) {
+            return;
+        }
+
         if ($this->activeProviderId !== $providerId) {
             $this->activeProviderId = $providerId;
             $this->activeProviderCache = null;
@@ -86,36 +92,8 @@ class ProviderResolver
         }
 
         // Fallback: first active provider (covers single-provider installations)
-        $providers = $this->getAllActiveProviders();
+        $providers = $this->providerRepository->getAllActiveProviders();
         $this->activeProviderCache = $providers === [] ? [] : reset($providers);
         return $this->activeProviderCache;
-    }
-
-    /**
-     * Return all active providers for the given login type, ordered by sort_order.
-     *
-     * @param  string $loginType 'customer' | 'admin' | 'both'
-     * @return array<int, array<string, mixed>>
-     */
-    public function getAllActiveProviders(string $loginType = 'customer'): array
-    {
-        $collection = $this->clientCollectionFactory->create();
-        $collection->addFieldToFilter('is_active', ['eq' => 1]);
-        $providers = [];
-
-        foreach ($collection as $item) {
-            $data = $item->getData();
-            $providerLoginType = $data['login_type'] ?? 'both';
-
-            if (in_array($providerLoginType, [$loginType, 'both', ''], true)) {
-                $providers[] = $data;
-            }
-        }
-
-        usort($providers, function (array $a, array $b): int {
-            return ((int) ($a['sort_order'] ?? 0)) <=> ((int) ($b['sort_order'] ?? 0));
-        });
-
-        return $providers;
     }
 }

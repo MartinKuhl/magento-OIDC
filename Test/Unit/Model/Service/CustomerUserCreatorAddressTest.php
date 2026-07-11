@@ -11,18 +11,20 @@ use Magento\Customer\Api\Data\AddressInterfaceFactory;
 use Magento\Customer\Api\Data\CustomerInterface;
 use Magento\Customer\Model\Customer;
 use Magento\Customer\Model\CustomerFactory;
-use Magento\Framework\Math\Random;
 use Magento\Store\Api\Data\WebsiteInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use M2Oidc\OAuth\Helper\OAuthConstants;
 use M2Oidc\OAuth\Helper\OAuthUtility;
 use M2Oidc\OAuth\Model\Attribute\AttributeMapperInterface;
 use M2Oidc\OAuth\Model\Attribute\CustomerAttributeMapper;
+use M2Oidc\OAuth\Model\Attribute\GenderMapper;
 use M2Oidc\OAuth\Model\Attribute\Transformer;
 use M2Oidc\OAuth\Model\Provider\MappingRepository;
 use M2Oidc\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
 use M2Oidc\OAuth\Model\Service\CustomerUserCreator;
+use M2Oidc\OAuth\Model\Service\GroupMappingResolver;
 use M2Oidc\OAuth\Model\Service\OidcAuthenticationService;
+use M2Oidc\OAuth\Model\Service\RandomPasswordGenerator;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -85,8 +87,8 @@ class CustomerUserCreatorAddressTest extends TestCase
             [OAuthConstants::CUSTOMER_GROUP_MAPPING, null],
         ]);
 
-        $random = $this->createMock(Random::class);
-        $random->method('getRandomString')->willReturn('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
+        $passwordGenerator = $this->createMock(RandomPasswordGenerator::class);
+        $passwordGenerator->method('generate')->willReturn('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
 
         $storeManager = $this->createMock(StoreManagerInterface::class);
         $website = $this->createMock(WebsiteInterface::class);
@@ -98,13 +100,14 @@ class CustomerUserCreatorAddressTest extends TestCase
             $this->addressFactory,
             $this->addressRepository,
             $storeManager,
-            $random,
+            $passwordGenerator,
             $this->oauthUtility,
             $this->customerRepository,
             $this->createMock(UserProviderResource::class),
             $this->createMock(MappingRepository::class),
             $this->attributeMapper,
-            $this->createMock(OidcAuthenticationService::class)
+            $this->createMock(OidcAuthenticationService::class),
+            new GroupMappingResolver($this->createMock(MappingRepository::class), $this->oauthUtility)
         );
     }
 
@@ -330,7 +333,8 @@ class CustomerUserCreatorAddressTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // mapGender / formatDateOfBirth — delegated to CustomerAttributeMapper
+    // mapGender (M19) — extracted to GenderMapper, exercised directly here;
+    // full coverage lives in Test/Unit/Model/Attribute/GenderMapperTest.php
     // -------------------------------------------------------------------------
 
     /**
@@ -340,17 +344,19 @@ class CustomerUserCreatorAddressTest extends TestCase
     {
         return new CustomerAttributeMapper(
             $this->oauthUtility,
-            $this->createMock(\Magento\Directory\Model\ResourceModel\Country\CollectionFactory::class),
-            $this->createMock(Transformer::class)
+            $this->createMock(Transformer::class),
+            new GenderMapper(),
+            new \M2Oidc\OAuth\Model\Attribute\CountryResolver(
+                $this->createMock(\Magento\Directory\Model\ResourceModel\Country\CollectionFactory::class),
+                $this->oauthUtility
+            )
         );
     }
 
     /** @dataProvider genderMaleProvider */
     public function testMapGenderReturnsMaleForVariousInputs(string $input): void
     {
-        $method = new \ReflectionMethod(CustomerAttributeMapper::class, 'mapGender');
-
-        $this->assertSame(1, $method->invoke($this->makeMapper(), $input));
+        $this->assertSame(1, (new GenderMapper())->map($input));
     }
 
     /** @return iterable<string, array{string}> */
@@ -367,9 +373,7 @@ class CustomerUserCreatorAddressTest extends TestCase
     /** @dataProvider genderFemaleProvider */
     public function testMapGenderReturnsFemaleForVariousInputs(string $input): void
     {
-        $method = new \ReflectionMethod(CustomerAttributeMapper::class, 'mapGender');
-
-        $this->assertSame(2, $method->invoke($this->makeMapper(), $input));
+        $this->assertSame(2, (new GenderMapper())->map($input));
     }
 
     /** @return iterable<string, array{string}> */
@@ -383,18 +387,14 @@ class CustomerUserCreatorAddressTest extends TestCase
         yield 'weiblich' => ['weiblich'];
     }
 
-    public function testMapGenderReturnsNotSpecifiedForUnknownValue(): void
+    public function testMapGenderReturnsNullForUnknownValue(): void
     {
-        $method = new \ReflectionMethod(CustomerAttributeMapper::class, 'mapGender');
-
-        $this->assertSame(3, $method->invoke($this->makeMapper(), 'other'));
+        $this->assertNull((new GenderMapper())->map('other-unrecognized'));
     }
 
     public function testMapGenderReturnsNullForEmptyString(): void
     {
-        $method = new \ReflectionMethod(CustomerAttributeMapper::class, 'mapGender');
-
-        $this->assertNull($method->invoke($this->makeMapper(), ''));
+        $this->assertNull((new GenderMapper())->map(''));
     }
 
     // -------------------------------------------------------------------------

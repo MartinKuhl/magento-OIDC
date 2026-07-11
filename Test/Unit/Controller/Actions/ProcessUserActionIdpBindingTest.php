@@ -15,6 +15,7 @@ use M2Oidc\OAuth\Controller\Actions\ProcessUserAction;
 use M2Oidc\OAuth\Helper\OAuthConstants;
 use M2Oidc\OAuth\Helper\OAuthMessages;
 use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Model\Data\OidcUserProvisioningContext;
 use M2Oidc\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
 use M2Oidc\OAuth\Model\Service\CustomerProfileSyncService;
 use M2Oidc\OAuth\Model\Service\CustomerUserCreator;
@@ -125,9 +126,10 @@ class ProcessUserActionIdpBindingTest extends TestCase
     }
 
     /**
-     * Build a ProcessUserAction pre-loaded with the minimum attributes for a login attempt.
+     * Build the OidcUserProvisioningContext with the minimum attributes for a login attempt —
+     * replaces the former setAttrs()/setFlattenedAttrs()/setUserEmail()/setProviderId() setter chain.
      */
-    private function buildActionWithAttrs(): ProcessUserAction
+    private function buildContext(): OidcUserProvisioningContext
     {
         $attrs = [
             'email'      => self::USER_EMAIL,
@@ -140,13 +142,14 @@ class ProcessUserActionIdpBindingTest extends TestCase
             'family_name'        => 'Doe',
         ];
 
-        $action = $this->buildAction();
-        $action->setAttrs($attrs);
-        $action->setFlattenedAttrs($flattenedAttrs);
-        $action->setUserEmail(self::USER_EMAIL);
-        $action->setProviderId(self::CURRENT_PROVIDER_ID);
-
-        return $action;
+        return new OidcUserProvisioningContext(
+            $attrs,
+            $flattenedAttrs,
+            self::USER_EMAIL,
+            null,
+            self::CURRENT_PROVIDER_ID,
+            false
+        );
     }
 
     // -------------------------------------------------------------------------
@@ -167,8 +170,8 @@ class ProcessUserActionIdpBindingTest extends TestCase
         $this->customerLoginAction->method('setHeadless')->willReturnSelf();
         $this->customerLoginAction->method('execute')->willReturn($redirectResult);
 
-        $action = $this->buildActionWithAttrs();
-        $result = $action->execute();
+        $action = $this->buildAction();
+        $result = $action->handle($this->buildContext());
 
         $this->assertSame($redirectResult, $result);
     }
@@ -194,8 +197,8 @@ class ProcessUserActionIdpBindingTest extends TestCase
         // saveMapping must NOT be called
         $this->userProviderResource->expects($this->never())->method('saveMapping');
 
-        $action = $this->buildActionWithAttrs();
-        $result = $action->execute();
+        $action = $this->buildAction();
+        $result = $action->handle($this->buildContext());
 
         // The returned redirect must point to the login URL with oidc_error
         $this->assertSame($errorRedirect, $result);
@@ -223,8 +226,8 @@ class ProcessUserActionIdpBindingTest extends TestCase
         $this->customerLoginAction->method('setHeadless')->willReturnSelf();
         $this->customerLoginAction->method('execute')->willReturn($redirectResult);
 
-        $action = $this->buildActionWithAttrs();
-        $result = $action->execute();
+        $action = $this->buildAction();
+        $result = $action->handle($this->buildContext());
 
         $this->assertSame($redirectResult, $result);
     }

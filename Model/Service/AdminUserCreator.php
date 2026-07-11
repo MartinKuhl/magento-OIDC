@@ -13,7 +13,6 @@ use M2Oidc\OAuth\Model\Provider\MappingRepository;
 use M2Oidc\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
 use Magento\User\Model\UserFactory;
 use Magento\User\Model\ResourceModel\User\CollectionFactory as UserCollectionFactory;
-use Magento\Framework\Math\Random;
 
 /**
  * Service class for creating Admin Users via OAuth/OIDC
@@ -26,8 +25,8 @@ class AdminUserCreator
     /** @var \M2Oidc\OAuth\Helper\OAuthUtility */
     private readonly \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility;
 
-    /** @var \Magento\Framework\Math\Random */
-    private readonly \Magento\Framework\Math\Random $randomUtility;
+    /** @var RandomPasswordGenerator */
+    private readonly RandomPasswordGenerator $passwordGenerator;
 
     /** @var \Magento\User\Model\ResourceModel\User */
     private readonly \Magento\User\Model\ResourceModel\User $userResource;
@@ -44,6 +43,9 @@ class AdminUserCreator
     /** @var AttributeMapperInterface Default admin attribute mapper (fallback when no pool or no override) */
     private readonly AttributeMapperInterface $adminAttributeMapper;
 
+    /** @var GroupMappingResolver */
+    private readonly GroupMappingResolver $groupMappingResolver;
+
     /** @var MapperPool|null Per-provider mapper registry (null in unit-test context without DI) */
     private readonly ?MapperPool $mapperPool;
 
@@ -52,33 +54,36 @@ class AdminUserCreator
      *
      * @param UserFactory                            $userFactory
      * @param OAuthUtility                           $oauthUtility
-     * @param Random                                 $randomUtility
+     * @param RandomPasswordGenerator                $passwordGenerator
      * @param \Magento\User\Model\ResourceModel\User $userResource
      * @param UserCollectionFactory                  $userCollectionFactory
      * @param UserProviderResource                   $userProviderResource
      * @param MappingRepository                      $mappingRepository
      * @param AttributeMapperInterface               $adminAttributeMapper
+     * @param GroupMappingResolver                   $groupMappingResolver
      * @param MapperPool|null                        $mapperPool
      */
     public function __construct(
         UserFactory $userFactory,
         OAuthUtility $oauthUtility,
-        Random $randomUtility,
+        RandomPasswordGenerator $passwordGenerator,
         \Magento\User\Model\ResourceModel\User $userResource,
         UserCollectionFactory $userCollectionFactory,
         UserProviderResource $userProviderResource,
         MappingRepository $mappingRepository,
         AttributeMapperInterface $adminAttributeMapper,
+        GroupMappingResolver $groupMappingResolver,
         ?MapperPool $mapperPool = null
     ) {
         $this->userFactory = $userFactory;
         $this->oauthUtility = $oauthUtility;
-        $this->randomUtility = $randomUtility;
+        $this->passwordGenerator = $passwordGenerator;
         $this->userResource = $userResource;
         $this->userCollectionFactory = $userCollectionFactory;
         $this->userProviderResource = $userProviderResource;
         $this->mappingRepository = $mappingRepository;
         $this->adminAttributeMapper = $adminAttributeMapper;
+        $this->groupMappingResolver = $groupMappingResolver;
         $this->mapperPool = $mapperPool;
     }
 
@@ -181,12 +186,8 @@ class AdminUserCreator
         int $roleId,
         int $providerId = 0
     ) {
-        // Generate a 32-char password and shuffle to avoid predictable character-class ordering (SEC-12).
-        $randomPassword = str_shuffle(
-            $this->randomUtility->getRandomString(28)
-            . $this->randomUtility->getRandomString(2, '!@#$%^&*')
-            . $this->randomUtility->getRandomString(2, '0123456789')
-        );
+        // Generate a 32-char password with guaranteed special/digit characters (SEC-12, M25).
+        $randomPassword = $this->passwordGenerator->generate();
 
         $user = $this->userFactory->create();
         $user->setUsername($userName)
@@ -238,9 +239,9 @@ class AdminUserCreator
     /**
      * Get admin role ID from OIDC groups using configured mappings.
      *
-     * Reads from the normalized m2oidc_oauth_role_mappings table first (Phase 4).
-     * Falls back to the legacy JSON column when the new table has no data for this provider
-     * (e.g. before the migration patch runs or on providers saved through older admin UI).
+     * Delegates to GroupMappingResolver (M18): normalized m2oidc_oauth_role_mappings
+     * table first, legacy JSON column fallback, case-insensitive group match,
+     * configured default role, deny (null).
      *
      * @param  mixed[] $userGroups Groups from OIDC response
      * @param  int     $providerId OIDC provider ID (used for new table lookup)
@@ -248,72 +249,31 @@ class AdminUserCreator
      */
     private function getAdminRoleFromGroups(array $userGroups, int $providerId = 0): ?int
     {
-        // --- Phase 4 path: read from normalized table ---
-        $roleMappings = [];
-        if ($providerId > 0) {
-            $newRows = $this->mappingRepository->getAdminRoleMappings($providerId);
-            // Normalize to legacy key names so the loop below is unchanged
-            foreach ($newRows as $row) {
-                $roleMappings[] = [
-                    'group' => $row['oidc_group'],
-                    'role'  => $row['magento_role_id'],
-                ];
-            }
-        }
-
-        // --- Fallback path: legacy JSON column ---
-        if ($roleMappings === []) {
-            $roleMappingsJson = $this->oauthUtility->getStoreConfig(OAuthConstants::ADMIN_ROLE_MAPPING);
-            if (!$this->oauthUtility->isBlank($roleMappingsJson)) {
-                $decoded = json_decode((string) $roleMappingsJson, true);
-                $roleMappings = is_array($decoded) ? $decoded : [];
-            }
-        }
-
-        // Use strict empty-array check instead of empty() to avoid falsy edge-cases.
-        if ($userGroups !== [] && $roleMappings !== []) {
-            foreach ($roleMappings as $mapping) {
-                $mappedGroup = $mapping['group'] ?? '';
-                $mappedRole = $mapping['role'] ?? '';
-
-                if (!empty($mappedGroup) && !empty($mappedRole)) {
-                    // Check if user has this group (case-insensitive comparison)
-                    foreach ($userGroups as $userGroup) {
-                        if (strcasecmp((string) $userGroup, (string) $mappedGroup) === 0) {
-                            $this->oauthUtility->customlog(
-                                "AdminUserCreator: Found matching role mapping: group '$userGroup' "
-                                . "-> role ID '$mappedRole'"
-                            );
-                            return (int) $mappedRole;
-                        }
-                    }
-                }
-            }
-        }
-
-        // No mapping found, use default role
         $defaultRole = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_DEFAULT_ROLE);
-        if (!empty($defaultRole) && is_numeric($defaultRole)) {
+        $roleId = $this->groupMappingResolver->resolve(
+            GroupMappingResolver::TYPE_ADMIN_ROLE,
+            $providerId,
+            $userGroups,
+            $defaultRole !== null ? (string) $defaultRole : null
+        );
+
+        if ($roleId === null) {
+            $groupList = $userGroups !== [] ? implode(', ', $userGroups) : '(none)';
             $this->oauthUtility->customlog(
-                "AdminUserCreator: Using configured default role ID: " . (string)$defaultRole
+                OAuthMessages::parse('ADMIN_ROLE_MAPPING_NO_MATCH', ['groups' => $groupList])
             );
-            return (int) $defaultRole;
         }
 
-        $groupList = $userGroups !== [] ? implode(', ', $userGroups) : '(none)';
-        $this->oauthUtility->customlog(
-            OAuthMessages::parse('ADMIN_ROLE_MAPPING_NO_MATCH', ['groups' => $groupList])
-        );
-        return null;
+        return $roleId;
     }
 
     /**
      * Return the role-mapping array for a given provider.
      *
-     * Checks the normalized m2oidc_oauth_role_mappings table first (Phase 4),
-     * falls back to the legacy JSON column. Intended for use by
-     * AdminProfileSyncService::syncRole() so that role re-evaluation on every
-     * login uses the same mapping data as initial user creation.
+     * Delegates to GroupMappingResolver (normalized table first, legacy JSON
+     * fallback) and converts to the legacy 'group'/'role' key shape. Intended
+     * for use by AdminProfileSyncService::syncRole() so that role re-evaluation
+     * on every login uses the same mapping data as initial user creation.
      *
      * @param  int $providerId OIDC provider ID (0 = legacy JSON only)
      * @return array<int,array{group:string,role:string}>
@@ -321,21 +281,12 @@ class AdminUserCreator
     public function getAdminRoleMappingsForProvider(int $providerId): array
     {
         $roleMappings = [];
-        if ($providerId > 0) {
-            $newRows = $this->mappingRepository->getAdminRoleMappings($providerId);
-            foreach ($newRows as $row) {
-                $roleMappings[] = [
-                    'group' => $row['oidc_group'],
-                    'role'  => $row['magento_role_id'],
-                ];
-            }
-        }
-        if ($roleMappings === []) {
-            $json = $this->oauthUtility->getStoreConfig(OAuthConstants::ADMIN_ROLE_MAPPING);
-            if (!$this->oauthUtility->isBlank($json)) {
-                $decoded = json_decode((string) $json, true);
-                $roleMappings = is_array($decoded) ? $decoded : [];
-            }
+        $mappings = $this->groupMappingResolver->getMappings(GroupMappingResolver::TYPE_ADMIN_ROLE, $providerId);
+        foreach ($mappings as $mapping) {
+            $roleMappings[] = [
+                'group' => $mapping['group'],
+                'role'  => $mapping['id'],
+            ];
         }
         return $roleMappings;
     }

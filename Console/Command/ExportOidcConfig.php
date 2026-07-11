@@ -35,8 +35,8 @@ class ExportOidcConfig extends Command
     /** Fields that contain sensitive credentials. */
     private const SENSITIVE_FIELDS = ['client_secret'];
 
-    /** Fields excluded entirely from the export (runtime / internal). */
-    private const EXCLUDED_FIELDS = [];
+    /** Fields excluded entirely from the export (runtime / internal) — M-31. */
+    private const EXCLUDED_FIELDS = ['received_oidc_claims', 'last_test_status', 'last_test_at'];
 
     /** @var OAuthUtility */
     private readonly OAuthUtility $oauthUtility;

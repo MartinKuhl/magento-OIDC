@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace M2Oidc\OAuth\Test\Unit\Model\Service;
 
-use Magento\Framework\Math\Random;
 use Magento\User\Model\ResourceModel\User;
 use Magento\User\Model\ResourceModel\User\CollectionFactory as UserCollectionFactory;
 use Magento\User\Model\UserFactory;
@@ -12,6 +11,8 @@ use M2Oidc\OAuth\Helper\OAuthUtility;
 use M2Oidc\OAuth\Model\Attribute\AttributeMapperInterface;
 use M2Oidc\OAuth\Model\Provider\MappingRepository;
 use M2Oidc\OAuth\Model\Service\AdminUserCreator;
+use M2Oidc\OAuth\Model\Service\GroupMappingResolver;
+use M2Oidc\OAuth\Model\Service\RandomPasswordGenerator;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -41,12 +42,13 @@ class AdminUserCreatorApplyNameFallbacksTest extends TestCase
         $this->creator = new AdminUserCreator(
             $this->createMock(UserFactory::class),
             $this->oauthUtility,
-            $this->createMock(Random::class),
+            $this->createMock(RandomPasswordGenerator::class),
             $this->createMock(User::class),
             $this->createMock(UserCollectionFactory::class),
             $this->createMock(\M2Oidc\OAuth\Model\ResourceModel\UserProvider::class),
             $this->createMock(MappingRepository::class),
-            $this->createMock(AttributeMapperInterface::class)
+            $this->createMock(AttributeMapperInterface::class),
+            new GroupMappingResolver($this->createMock(MappingRepository::class), $this->oauthUtility)
         );
     }
 
@@ -104,12 +106,13 @@ class AdminUserCreatorApplyNameFallbacksTest extends TestCase
         $creator = new AdminUserCreator(
             $userFactory,
             $this->oauthUtility,
-            $this->createMock(Random::class),
+            $this->createMock(RandomPasswordGenerator::class),
             $this->createMock(User::class),
             $collectionFactory,
             $this->createMock(\M2Oidc\OAuth\Model\ResourceModel\UserProvider::class),
             $this->createMock(MappingRepository::class),
-            $this->createMock(AttributeMapperInterface::class)
+            $this->createMock(AttributeMapperInterface::class),
+            new GroupMappingResolver($this->createMock(MappingRepository::class), $this->oauthUtility)
         );
 
         $this->assertFalse($creator->isAdminUser('nonexistent@example.com'));

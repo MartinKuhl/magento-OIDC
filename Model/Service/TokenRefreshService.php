@@ -12,51 +12,22 @@ use M2Oidc\OAuth\Helper\OAuthUtility;
 /**
  * Token refresh service for OIDC access token renewal (FEAT-03).
  *
- * Implements RFC 6749 §6 — Refreshing an Access Token.
+ * Customer-area specialisation of AbstractTokenRefreshService: all RFC 6749 §6
+ * refresh logic is inherited; this class only binds the Magento customer
+ * session as token storage.
  *
  * At login time, the caller should persist the refresh_token (encrypted) into
- * the customer session via `storeRefreshToken()`. When a request needs a fresh
- * access token, call `refreshIfNeeded()`. The service sends a
- * `grant_type=refresh_token` request to the provider's token endpoint,
- * updates the stored tokens, and returns the new access token.
+ * the customer session via `storeTokens()`. When a request needs a fresh
+ * access token, call `refreshIfNeeded()`.
  *
  * Storage: Magento customer session keys
  *   oidc_access_token           — Magento-encrypted access token (M-01)
  *   oidc_access_token_expires   — Unix timestamp when it expires
  *   oidc_refresh_token          — Magento-encrypted refresh token
  *   oidc_provider_id            — provider row ID (set by CheckAttributeMappingAction)
- *
- * Design notes:
- *  - The service is stateless (no DB writes beyond the session).
- *  - Refresh failures are logged but do not throw; callers get null and must
- *    redirect to re-authentication.
- *  - A configurable threshold (default: 60 s) controls how early the refresh
- *    is triggered before actual expiry to account for clock skew.
  */
-class TokenRefreshService
+class TokenRefreshService extends AbstractTokenRefreshService
 {
-    /** Session key for the encrypted refresh token. */
-    public const SESSION_REFRESH_TOKEN   = 'oidc_refresh_token';
-
-    /** Session key for the current access token. */
-    public const SESSION_ACCESS_TOKEN    = 'oidc_access_token';
-
-    /** Session key for the access token expiry Unix timestamp. */
-    public const SESSION_TOKEN_EXPIRES   = 'oidc_access_token_expires';
-
-    /** Refresh this many seconds before the token actually expires.
-     * @var int */
-    private const REFRESH_THRESHOLD_SECS = 60;
-
-    /** @var OAuthUtility */
-    private readonly OAuthUtility $oauthUtility;
-
-    /** @var Curl */
-    private readonly Curl $curl;
-
-    /** @var EncryptorInterface */
-    private readonly EncryptorInterface $encryptor;
-
     /** @var CustomerSession */
     private readonly CustomerSession $customerSession;
 
@@ -74,196 +45,61 @@ class TokenRefreshService
         EncryptorInterface $encryptor,
         CustomerSession $customerSession
     ) {
-        $this->oauthUtility   = $oauthUtility;
-        $this->curl           = $curl;
-        $this->encryptor      = $encryptor;
+        parent::__construct($oauthUtility, $curl, $encryptor);
         $this->customerSession = $customerSession;
     }
 
-    // -------------------------------------------------------------------------
-    // Public API
-    // -------------------------------------------------------------------------
-
     /**
-     * Persist a refresh token in the customer session (encrypted).
-     *
-     * Call this immediately after a successful token exchange in
-     * ReadAuthorizationResponse, when an `refresh_token` is present in
-     * the token response.
-     *
-     * @param string $refreshToken Plain-text refresh token from the IdP
-     * @param int    $expiresIn    Access token lifetime in seconds (from `expires_in`)
-     * @param string $accessToken  Current access token
+     * @inheritDoc
      */
-    public function storeTokens(string $refreshToken, int $expiresIn, string $accessToken): void
+    #[\Override]
+    protected function getSessionData(string $key): mixed
     {
-        if ($refreshToken !== '') {
-            $this->customerSession->setData(
-                self::SESSION_REFRESH_TOKEN,
-                $this->encryptor->encrypt($refreshToken)
-            );
-        }
-        if ($accessToken !== '') {
-            // M-01: Encrypt access token before storing — mirrors how refresh token is stored
-            $this->customerSession->setData(self::SESSION_ACCESS_TOKEN, $this->encryptor->encrypt($accessToken));
-        }
-        if ($expiresIn > 0) {
-            $this->customerSession->setData(
-                self::SESSION_TOKEN_EXPIRES,
-                time() + $expiresIn
-            );
-        }
+        return $this->customerSession->getData($key);
     }
 
     /**
-     * Return a valid access token, refreshing if the current one is near expiry.
-     *
-     * Returns null when:
-     *  - No refresh token is stored in the session (single-token flow).
-     *  - The refresh request to the IdP failed.
-     *  - The customer is not logged in.
-     *
-     * @return string|null Fresh access token, or null if unavailable
+     * @inheritDoc
      */
-    public function refreshIfNeeded(): ?string
+    #[\Override]
+    protected function setSessionData(string $key, mixed $value): void
     {
-        if (!$this->customerSession->isLoggedIn()) {
-            return null;
-        }
-
-        $expiresAt       = (int) $this->customerSession->getData(self::SESSION_TOKEN_EXPIRES);
-        $encryptedAccess = (string) ($this->customerSession->getData(self::SESSION_ACCESS_TOKEN) ?? '');
-
-        // Token is still fresh enough — decrypt before returning
-        if ($encryptedAccess !== '' && $expiresAt > 0 && time() < ($expiresAt - self::REFRESH_THRESHOLD_SECS)) {
-            try {
-                return $this->encryptor->decrypt($encryptedAccess);
-            } catch (\Exception $e) {
-                $this->oauthUtility->customlog('TokenRefreshService: Failed to decrypt access token.');
-                // Fall through to refresh below
-            }
-        }
-
-        return $this->refresh();
+        $this->customerSession->setData($key, $value);
     }
 
     /**
-     * Force a token refresh regardless of current expiry.
-     *
-     * @return string|null New access token, or null on failure
+     * @inheritDoc
      */
-    public function refresh(): ?string
+    #[\Override]
+    protected function unsetSessionData(string $key): void
     {
-        $encryptedRefresh = (string) ($this->customerSession->getData(self::SESSION_REFRESH_TOKEN) ?? '');
-        if ($encryptedRefresh === '') {
-            return null;
-        }
-
-        // Decrypt stored refresh token
-        try {
-            $refreshToken = $this->encryptor->decrypt($encryptedRefresh);
-        } catch (\Exception $e) {
-            $this->oauthUtility->customlog('TokenRefreshService: Failed to decrypt refresh token.');
-            return null;
-        }
-
-        if ($refreshToken === '') {
-            return null;
-        }
-
-        // Load provider details
-        $providerId = (int) $this->customerSession->getData('oidc_provider_id');
-        $provider   = $providerId > 0
-            ? $this->oauthUtility->getClientDetailsById($providerId)
-            : null;
-
-        if ($provider === null) {
-            // Fallback to first configured provider
-            $collection = $this->oauthUtility->getOAuthClientApps();
-            $provider   = count($collection) > 0 ? $collection->getFirstItem()->getData() : null;
-        }
-
-        if ($provider === null) {
-            $this->oauthUtility->customlog('TokenRefreshService: No provider configured for refresh.');
-            return null;
-        }
-
-        return $this->sendRefreshRequest($provider, $refreshToken);
+        $this->customerSession->unsetData($key);
     }
 
     /**
-     * Clear all stored token data from the session (call on logout).
+     * @inheritDoc
      */
-    public function clearTokens(): void
+    #[\Override]
+    protected function isUserLoggedIn(): bool
     {
-        $this->customerSession->unsetData(self::SESSION_REFRESH_TOKEN);
-        $this->customerSession->unsetData(self::SESSION_ACCESS_TOKEN);
-        $this->customerSession->unsetData(self::SESSION_TOKEN_EXPIRES);
+        return $this->customerSession->isLoggedIn();
     }
 
-    // -------------------------------------------------------------------------
-    // Internal helpers
-    // -------------------------------------------------------------------------
+    /**
+     * @inheritDoc
+     */
+    #[\Override]
+    protected function getLogPrefix(): string
+    {
+        return 'TokenRefreshService';
+    }
 
     /**
-     * Send the RFC 6749 §6 refresh token grant request.
-     *
-     * @param  mixed[] $provider      Provider data row
-     * @param  string  $refreshToken  Plain-text refresh token
-     * @return string|null          New access token or null on failure
+     * @inheritDoc
      */
-    private function sendRefreshRequest(array $provider, string $refreshToken): ?string
+    #[\Override]
+    protected function getLogContext(): array
     {
-        $tokenEndpoint = (string) ($provider['access_token_endpoint'] ?? '');
-        if ($tokenEndpoint === '') {
-            $this->oauthUtility->customlog('TokenRefreshService: No token endpoint configured.');
-            return null;
-        }
-
-        $clientId     = (string) ($provider['clientID'] ?? '');
-        $clientSecret = (string) ($provider['client_secret'] ?? '');
-        $header       = (int) ($provider['values_in_header'] ?? 1);
-        $body         = (int) ($provider['values_in_body'] ?? 0);
-
-        $postData = [
-            'grant_type'    => 'refresh_token',
-            'refresh_token' => $refreshToken,
-            'client_id'     => $clientId,
-        ];
-
-        $startMs  = (int) round((float) hrtime(true) / 1e6);
-        $response = $this->curl->sendAccessTokenRequest(
-            $postData,
-            $tokenEndpoint,
-            $clientId,
-            $clientSecret,
-            $header,
-            $body
-        );
-        $elapsed  = (int) round((float) hrtime(true) / 1e6) - $startMs;
-
-        $decoded = json_decode($response, true);
-        if (!is_array($decoded) || empty($decoded['access_token'])) {
-            $this->oauthUtility->customlogContext('oidc.token_refresh_failed', [
-                'provider' => $provider['app_name'] ?? '',
-                'ms'       => $elapsed,
-            ]);
-            return null;
-        }
-
-        // Persist updated tokens
-        $newAccessToken  = (string) $decoded['access_token'];
-        $newRefreshToken = (string) ($decoded['refresh_token'] ?? '');
-        $expiresIn       = (int) ($decoded['expires_in'] ?? 3600);
-
-        $this->storeTokens($newRefreshToken, $expiresIn, $newAccessToken);
-
-        $this->oauthUtility->customlogContext('oidc.token_refreshed', [
-            'provider'   => $provider['app_name'] ?? '',
-            'expires_in' => $expiresIn,
-            'ms'         => $elapsed,
-        ]);
-
-        return $newAccessToken;
+        return [];
     }
 }

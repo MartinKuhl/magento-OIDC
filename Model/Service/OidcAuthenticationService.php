@@ -12,7 +12,7 @@ use M2Oidc\OAuth\Helper\OAuthUtility;
  * Service layer for OIDC authentication response processing.
  *
  * Encapsulates the core logic previously spread across controller-to-controller
- * chaining (ProcessResponseAction). Provides validation, attribute flattening,
+ * chaining. Provides validation, attribute flattening,
  * email extraction, and login type detection as reusable service methods.
  */
 class OidcAuthenticationService
@@ -21,6 +21,16 @@ class OidcAuthenticationService
      * @var int
      */
     private const MAX_RECURSION_DEPTH = 5;
+
+    /**
+     * Maximum number of flattened claim keys accepted per response.
+     *
+     * Guards against memory exhaustion from a malicious or misbehaving IdP
+     * sending a userinfo payload with an enormous number of claims.
+     *
+     * @var int
+     */
+    private const MAX_FLATTENED_KEYS = 2000;
 
     /** @var \M2Oidc\OAuth\Helper\OAuthUtility */
     private readonly \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility;
@@ -65,20 +75,52 @@ class OidcAuthenticationService
      * This transparently handles providers like Zitadel that Base64-encode all metadata
      * keys and values.
      *
+     * The flattened output is capped at MAX_FLATTENED_KEYS (2000) keys. When a
+     * response would exceed that limit the whole operation is aborted and the
+     * response is treated as invalid — the same failure mechanism used by
+     * validateUserInfo(), so callers reject the login.
+     *
+     * The claim-encoding configuration is resolved once per top-level call and
+     * reused for the whole recursive flatten operation.
+     *
      * @param string  $keyPrefix Current key prefix for recursion
      * @param mixed   $arr       The nested data structure
      * @param mixed[] $result    Accumulator for flattened key-value pairs
      * @param int     $depth     Current recursion depth
      * @return array<string, mixed> Flattened associative array
+     * @throws IncorrectUserInfoDataException When more than MAX_FLATTENED_KEYS keys would be produced
      */
     public function flattenAttributes(string $keyPrefix, $arr, array &$result, int $depth = 0): array
     {
-        if ($depth > self::MAX_RECURSION_DEPTH) {
-            return $result;
-        }
-
         $decodeBase64 = $this->oauthUtility->getStoreConfig(OAuthConstants::CLAIM_ENCODING)
             === OAuthConstants::CLAIM_ENCODING_BASE64;
+        $keyCount = count($result);
+        $this->doFlattenAttributes($keyPrefix, $arr, $result, $depth, $decodeBase64, $keyCount);
+        return $result;
+    }
+
+    /**
+     * Recursive worker for flattenAttributes().
+     *
+     * @param string  $keyPrefix    Current key prefix for recursion
+     * @param mixed   $arr          The nested data structure
+     * @param mixed[] $result       Accumulator for flattened key-value pairs
+     * @param int     $depth        Current recursion depth
+     * @param bool    $decodeBase64 Whether claim keys/values are Base64-decoded (resolved once)
+     * @param int     $keyCount     Running number of flattened keys across the whole operation
+     * @throws IncorrectUserInfoDataException When more than MAX_FLATTENED_KEYS keys would be produced
+     */
+    private function doFlattenAttributes(
+        string $keyPrefix,
+        $arr,
+        array &$result,
+        int $depth,
+        bool $decodeBase64,
+        int &$keyCount
+    ): void {
+        if ($depth > self::MAX_RECURSION_DEPTH) {
+            return;
+        }
 
         foreach ($arr as $key => $resource) {
             $resolvedKey = ($decodeBase64 && $keyPrefix === '') ? $this->tryBase64Decode((string) $key) : (string) $key;
@@ -86,17 +128,23 @@ class OidcAuthenticationService
                 $newPrefix = $keyPrefix === '' || $keyPrefix === '0'
                     ? $resolvedKey
                     : $keyPrefix . '.' . $resolvedKey;
-                $this->flattenAttributes($newPrefix, $resource, $result, $depth + 1);
+                $this->doFlattenAttributes($newPrefix, $resource, $result, $depth + 1, $decodeBase64, $keyCount);
             } else {
                 $newKey = $keyPrefix === '' || $keyPrefix === '0'
                     ? $resolvedKey
                     : $keyPrefix . '.' . $resolvedKey;
+                if (++$keyCount > self::MAX_FLATTENED_KEYS) {
+                    $this->oauthUtility->customlog(
+                        'OidcAuthenticationService: WARNING — flattened claim count exceeds '
+                        . self::MAX_FLATTENED_KEYS . ', treating response as invalid'
+                    );
+                    throw new IncorrectUserInfoDataException();
+                }
                 $result[$newKey] = $decodeBase64
                     ? $this->tryBase64Decode((string) $resource)
                     : $resource;
             }
         }
-        return $result;
     }
 
     /**

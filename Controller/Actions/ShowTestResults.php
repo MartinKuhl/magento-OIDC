@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace M2Oidc\OAuth\Controller\Actions;
 
+use M2Oidc\OAuth\Helper\Exception\IncorrectUserInfoDataException;
 use M2Oidc\OAuth\Helper\OAuthConstants;
 use M2Oidc\OAuth\Helper\OAuthUtility;
 use M2Oidc\OAuth\Model\Service\OidcAuthenticationService;
@@ -122,9 +123,16 @@ class ShowTestResults extends Action
             && $this->oauthUtility->getStoreConfig(OAuthConstants::CLAIM_ENCODING)
                 === OAuthConstants::CLAIM_ENCODING_BASE64
         ) {
-            $decoded = [];
-            $this->oidcAuthService->flattenAttributes('', $attrs, $decoded);
-            $attrs = $decoded;
+            try {
+                $decoded = [];
+                $this->oidcAuthService->flattenAttributes('', $attrs, $decoded);
+                $attrs = $decoded;
+            } catch (IncorrectUserInfoDataException $e) {
+                // Flatten limit exceeded — keep the raw attrs so the test page still renders.
+                $this->oauthUtility->customlog(
+                    'ShowTestResults: WARNING — could not flatten test attributes: ' . $e->getMessage()
+                );
+            }
         }
 
         // Normalize all Zitadel-style role claims for display — runs unconditionally so
@@ -220,7 +228,8 @@ class ShowTestResults extends Action
             'greetingName'   => '',
             'rightImage'     => $this->oauthUtility->getImageUrl(OAuthConstants::IMAGE_RIGHT),
             'wrongImage'     => $this->oauthUtility->getImageUrl(OAuthConstants::IMAGE_WRONG),
-            'errorMessage'   => $this->escaper->escapeHtml($errorMessage),
+            // Raw value — the template escapes it at the render site (M33)
+            'errorMessage'   => $errorMessage,
             'providerConfig' => $providerConfig,
         ]);
 

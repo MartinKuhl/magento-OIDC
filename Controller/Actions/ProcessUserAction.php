@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace M2Oidc\OAuth\Controller\Actions;
 
+use M2Oidc\OAuth\Model\Data\OidcUserProvisioningContext;
 use M2Oidc\OAuth\Model\Service\CustomerUserCreator;
 use M2Oidc\OAuth\Model\Service\CustomerProfileSyncService;
 use Magento\Framework\App\ResponseFactory;
@@ -33,14 +34,9 @@ class ProcessUserAction
     private $attrs;
 
     /**
-     * @var mixed
+     * @var mixed[]|null
      */
-    private $flattenedattrs;
-
-    /**
-     * @var string|null
-     */
-    private $userEmail;
+    private ?array $flattenedattrs = null;
 
     /**
      * @var string|null
@@ -136,7 +132,7 @@ class ProcessUserAction
     /**
      * Lazy-initialize attribute mappings from the active provider context.
      *
-     * Must be called at the start of execute() — after setActiveProviderId()
+     * Must be called at the start of handle() — after setActiveProviderId()
      * has been called on oauthUtility — so that getStoreConfig() resolves
      * values from the correct provider row instead of core_config_data.
      *
@@ -173,9 +169,17 @@ class ProcessUserAction
 
     /**
      * Execute the user processing action.
+     *
+     * @param OidcUserProvisioningContext $context Immutable input replacing the former setter chain
      */
-    public function execute(): \Magento\Framework\Controller\Result\Redirect
+    public function handle(OidcUserProvisioningContext $context): \Magento\Framework\Controller\Result\Redirect
     {
+        $this->attrs = $context->attrs;
+        $this->flattenedattrs = $context->flattenedAttrs;
+        $this->providerAutoCreateCustomer = $context->autoCreateCustomer;
+        $this->providerId = $context->providerId;
+        $this->headless = $context->headless;
+
         // MP-05: Initialize attribute mappings from active provider context
         $this->initAttributeMappings();
         $this->oauthUtility->customlog("ProcessUserAction: execute");
@@ -192,9 +196,7 @@ class ProcessUserAction
             $this->defaultRole = OAuthConstants::DEFAULT_ROLE;
         }
 
-        // phpcs:ignore Magento2.Security.InsecureFunction.Found
-        assert($this->userEmail !== null, 'userEmail must be set');
-        return $this->processUserAction($this->userEmail, $firstName, $lastName, $userName);
+        return $this->processUserAction($context->userEmail, $firstName, $lastName, $userName);
     }
 
     /**
@@ -297,18 +299,14 @@ class ProcessUserAction
 
         // SEC-09: Validate relay state by comparing parsed hosts — str_contains allows open-redirect bypass
         // (e.g. https://evil.com?q=real-store.com would have passed str_contains).
-        if (isset($this->attrs['relayState']) && $this->attrs['relayState'] !== '/') {
-            // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
-            $relayHost = parse_url((string) $this->attrs['relayState'], PHP_URL_HOST);
-            // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
-            $storeHost  = parse_url($store_url, PHP_URL_HOST);
-            if ($relayHost !== $storeHost) {
-                $this->attrs['relayState'] = $store_url;
-                $this->oauthUtility->customlog(
-                    "SEC-09: relayState host mismatch ('"
-                    . (string)($relayHost ?? '') . "' != '" . (string)($storeHost ?? '') . "'), reset to store URL."
-                );
-            }
+        if (isset($this->attrs['relayState'])
+            && $this->attrs['relayState'] !== '/'
+            && !$this->isRelayStateSameOrigin((string) $this->attrs['relayState'], $store_url)
+        ) {
+            $this->attrs['relayState'] = $store_url;
+            $this->oauthUtility->customlog(
+                "SEC-09: relayState host mismatch, reset to store URL."
+            );
         }
 
         // Customer login flow (admin routing is now handled by CheckAttributeMappingAction)
@@ -339,6 +337,30 @@ class ProcessUserAction
             ->setRelayState('/')
             ->setHeadless($this->headless)
             ->execute();
+    }
+
+    /**
+     * SEC-09/H-05: Decide whether a relay state may be used as redirect target.
+     *
+     * A relay state is same-origin when it has no host component (a relative
+     * path such as /checkout/cart) or when its host equals the store host.
+     * Scheme-relative URLs (//evil.com/x) DO carry a host per parse_url and are
+     * therefore still compared. Malformed URLs (parse_url returns false) fail
+     * closed and are rejected.
+     *
+     * @param  string $relayState Relay state URL or path to validate
+     * @param  string $storeUrl   Store base URL
+     * @return bool True when the relay state may be kept, false to reset it
+     */
+    private function isRelayStateSameOrigin(string $relayState, string $storeUrl): bool
+    {
+        // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
+        $relayHost = parse_url($relayState, PHP_URL_HOST);
+        // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
+        $storeHost = parse_url($storeUrl, PHP_URL_HOST);
+
+        // null host = relative path = same-origin by definition (H-05)
+        return $relayHost === null || $relayHost === $storeHost;
     }
 
     /**
@@ -401,72 +423,6 @@ class ProcessUserAction
         } catch (NoSuchEntityException $e) {
             return false;
         }
-    }
-
-    /**
-     * Set raw attribute array received from OIDC provider.
-     *
-     * @param  mixed $attrs
-     */
-    public function setAttrs($attrs): static
-    {
-        $this->attrs = $attrs;
-        return $this;
-    }
-
-    /**
-     * Set flattened attribute map (simple key => value mapping).
-     *
-     * @param  mixed $flattenedattrs
-     */
-    public function setFlattenedAttrs($flattenedattrs): static
-    {
-        $this->flattenedattrs = $flattenedattrs;
-        return $this;
-    }
-
-    /**
-     * Set the user's email address resolved from attributes.
-     *
-     * @param  string $userEmail
-     */
-    public function setUserEmail($userEmail): static
-    {
-        $this->userEmail = $userEmail;
-        return $this;
-    }
-
-    /**
-     * Override auto-create customer with a per-provider value.
-     *
-     * @param int|null $value 1 = enabled, 0 = disabled, null = use global config
-     */
-    public function setAutoCreateCustomer(?int $value): static
-    {
-        $this->providerAutoCreateCustomer = $value;
-        return $this;
-    }
-
-    /**
-     * Set the OIDC provider ID to record when a new customer is created.
-     *
-     * @param int $providerId m2oidc_oauth_client_apps.id (0 = not tracked)
-     */
-    public function setProviderId(int $providerId): static
-    {
-        $this->providerId = $providerId;
-        return $this;
-    }
-
-    /**
-     * Set the headless PWA mode flag (FEAT-09).
-     *
-     * @param bool $headless When true, CustomerLoginAction redirects to HeadlessOidcCallback.
-     */
-    public function setHeadless(bool $headless): static
-    {
-        $this->headless = $headless;
-        return $this;
     }
 
     /**

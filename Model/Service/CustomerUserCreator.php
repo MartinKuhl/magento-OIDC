@@ -14,7 +14,6 @@ use Magento\Customer\Model\CustomerFactory;
 use Magento\Customer\Api\Data\AddressInterfaceFactory;
 use Magento\Customer\Api\AddressRepositoryInterface;
 use Magento\Store\Model\StoreManagerInterface;
-use Magento\Framework\Math\Random;
 use Magento\Customer\Api\Data\CustomerInterface;
 use M2Oidc\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
 
@@ -23,6 +22,19 @@ use M2Oidc\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
  */
 class CustomerUserCreator
 {
+    /**
+     * Attribute-mapping config lookups (M24): attribute type => [config key, default claim name].
+     */
+    private const ATTRIBUTE_CONFIG = [
+        'dob'     => [OAuthConstants::MAP_DOB,     OAuthConstants::DEFAULT_MAP_DOB],
+        'gender'  => [OAuthConstants::MAP_GENDER,  OAuthConstants::DEFAULT_MAP_GENDER],
+        'phone'   => [OAuthConstants::MAP_PHONE,   OAuthConstants::DEFAULT_MAP_PHONE],
+        'street'  => [OAuthConstants::MAP_STREET,  OAuthConstants::DEFAULT_MAP_STREET],
+        'zip'     => [OAuthConstants::MAP_ZIP,     OAuthConstants::DEFAULT_MAP_ZIP],
+        'city'    => [OAuthConstants::MAP_CITY,    OAuthConstants::DEFAULT_MAP_CITY],
+        'country' => [OAuthConstants::MAP_COUNTRY, OAuthConstants::DEFAULT_MAP_COUNTRY],
+    ];
+
     /** @var \Magento\Customer\Model\CustomerFactory */
     private readonly \Magento\Customer\Model\CustomerFactory $customerFactory;
 
@@ -35,41 +47,14 @@ class CustomerUserCreator
     /** @var \Magento\Store\Model\StoreManagerInterface */
     private readonly \Magento\Store\Model\StoreManagerInterface $storeManager;
 
-    /** @var \Magento\Framework\Math\Random */
-    private readonly \Magento\Framework\Math\Random $randomUtility;
+    /** @var RandomPasswordGenerator */
+    private readonly RandomPasswordGenerator $passwordGenerator;
 
     /** @var \M2Oidc\OAuth\Helper\OAuthUtility */
     private readonly \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility;
 
-    // Attribute mapping keys
-    /**
-     * @var string|null OIDC claim name for date of birth
-     */
-    private $dobAttribute;
-    /**
-     * @var string|null OIDC claim name for gender
-     */
-    private $genderAttribute;
-    /**
-     * @var string|null OIDC claim name for phone number
-     */
-    private $phoneAttribute;
-    /**
-     * @var string|null OIDC claim name for street address
-     */
-    private $streetAttribute;
-    /**
-     * @var string|null OIDC claim name for postal/zip code
-     */
-    private $zipAttribute;
-    /**
-     * @var string|null OIDC claim name for city/locality
-     */
-    private $cityAttribute;
-    /**
-     * @var string|null OIDC claim name for country
-     */
-    private $countryAttribute;
+    /** @var array<string, string> Resolved OIDC claim name per attribute type (see ATTRIBUTE_CONFIG) */
+    private array $attributeMapping = [];
 
     /** @var \Magento\Customer\Api\CustomerRepositoryInterface */
     private readonly \Magento\Customer\Api\CustomerRepositoryInterface $customerRepository;
@@ -86,6 +71,9 @@ class CustomerUserCreator
     /** @var OidcAuthenticationService */
     private readonly OidcAuthenticationService $oidcAuthenticationService;
 
+    /** @var GroupMappingResolver */
+    private readonly GroupMappingResolver $groupMappingResolver;
+
     /** @var MapperPool|null Per-provider mapper registry (null in unit-test context without DI) */
     private readonly ?MapperPool $mapperPool;
 
@@ -96,13 +84,14 @@ class CustomerUserCreator
      * @param AddressInterfaceFactory                           $addressFactory
      * @param AddressRepositoryInterface                        $addressRepository
      * @param StoreManagerInterface                             $storeManager
-     * @param Random                                            $randomUtility
+     * @param RandomPasswordGenerator                           $passwordGenerator
      * @param OAuthUtility                                      $oauthUtility
      * @param \Magento\Customer\Api\CustomerRepositoryInterface $customerRepository
      * @param UserProviderResource                              $userProviderResource
      * @param MappingRepository                                 $mappingRepository
      * @param AttributeMapperInterface                          $attributeMapper
      * @param OidcAuthenticationService                         $oidcAuthenticationService
+     * @param GroupMappingResolver                              $groupMappingResolver
      * @param MapperPool|null                                   $mapperPool
      */
     public function __construct(
@@ -110,26 +99,28 @@ class CustomerUserCreator
         AddressInterfaceFactory $addressFactory,
         AddressRepositoryInterface $addressRepository,
         StoreManagerInterface $storeManager,
-        Random $randomUtility,
+        RandomPasswordGenerator $passwordGenerator,
         OAuthUtility $oauthUtility,
         \Magento\Customer\Api\CustomerRepositoryInterface $customerRepository,
         UserProviderResource $userProviderResource,
         MappingRepository $mappingRepository,
         AttributeMapperInterface $attributeMapper,
         OidcAuthenticationService $oidcAuthenticationService,
+        GroupMappingResolver $groupMappingResolver,
         ?MapperPool $mapperPool = null
     ) {
         $this->customerFactory = $customerFactory;
         $this->addressFactory = $addressFactory;
         $this->addressRepository = $addressRepository;
         $this->storeManager = $storeManager;
-        $this->randomUtility = $randomUtility;
+        $this->passwordGenerator = $passwordGenerator;
         $this->oauthUtility = $oauthUtility;
         $this->customerRepository = $customerRepository;
         $this->userProviderResource = $userProviderResource;
         $this->mappingRepository = $mappingRepository;
         $this->attributeMapper = $attributeMapper;
         $this->oidcAuthenticationService = $oidcAuthenticationService;
+        $this->groupMappingResolver = $groupMappingResolver;
         $this->mapperPool = $mapperPool;
     }
 
@@ -155,37 +146,19 @@ class CustomerUserCreator
     }
 
     /**
-     * Initialize attribute mapping from configuration.
+     * Initialize attribute mapping from configuration (M24).
+     *
+     * For each attribute type in ATTRIBUTE_CONFIG the configured claim name is
+     * read from store config; blank values fall back to the module default.
      */
     private function initializeAttributeMapping(): void
     {
-        $this->dobAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_DOB);
-        $this->dobAttribute = $this->oauthUtility->isBlank($this->dobAttribute)
-            ? OAuthConstants::DEFAULT_MAP_DOB : $this->dobAttribute;
-
-        $this->genderAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_GENDER);
-        $this->genderAttribute = $this->oauthUtility->isBlank($this->genderAttribute)
-            ? OAuthConstants::DEFAULT_MAP_GENDER : $this->genderAttribute;
-
-        $this->phoneAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_PHONE);
-        $this->phoneAttribute = $this->oauthUtility->isBlank($this->phoneAttribute)
-            ? OAuthConstants::DEFAULT_MAP_PHONE : $this->phoneAttribute;
-
-        $this->streetAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_STREET);
-        $this->streetAttribute = $this->oauthUtility->isBlank($this->streetAttribute)
-            ? OAuthConstants::DEFAULT_MAP_STREET : $this->streetAttribute;
-
-        $this->zipAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_ZIP);
-        $this->zipAttribute = $this->oauthUtility->isBlank($this->zipAttribute)
-            ? OAuthConstants::DEFAULT_MAP_ZIP : $this->zipAttribute;
-
-        $this->cityAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_CITY);
-        $this->cityAttribute = $this->oauthUtility->isBlank($this->cityAttribute)
-            ? OAuthConstants::DEFAULT_MAP_CITY : $this->cityAttribute;
-
-        $this->countryAttribute = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_COUNTRY);
-        $this->countryAttribute = $this->oauthUtility->isBlank($this->countryAttribute)
-            ? OAuthConstants::DEFAULT_MAP_COUNTRY : $this->countryAttribute;
+        foreach (self::ATTRIBUTE_CONFIG as $type => [$configKey, $defaultClaim]) {
+            $configured = $this->oauthUtility->getStoreConfig($configKey);
+            $this->attributeMapping[$type] = $this->oauthUtility->isBlank($configured)
+                ? $defaultClaim
+                : (string) $configured;
+        }
     }
 
     /**
@@ -225,12 +198,8 @@ class CustomerUserCreator
 
             $userName = $this->oauthUtility->isBlank($userName) ? $email : $userName;
 
-            // Generate a 32-char password and shuffle to avoid predictable character-class ordering (SEC-12).
-            $randomPassword = str_shuffle(
-                $this->randomUtility->getRandomString(28)
-                . $this->randomUtility->getRandomString(2, '!@#$%^&*')
-                . $this->randomUtility->getRandomString(2, '0123456789')
-            );
+            // Generate a 32-char password with guaranteed special/digit characters (SEC-12, M25).
+            $randomPassword = $this->passwordGenerator->generate();
 
             $websiteId = $this->storeManager->getWebsite()->getId();
 
@@ -305,8 +274,11 @@ class CustomerUserCreator
     /**
      * Resolve Magento customer group ID from OIDC group claims.
      *
-     * Reads from the normalized m2oidc_oauth_role_mappings table first (Phase 4).
-     * Falls back to the legacy JSON column when the new table has no data for this provider.
+     * Delegates to GroupMappingResolver (M18): normalized m2oidc_oauth_role_mappings
+     * table first, legacy JSON column fallback, case-insensitive group match,
+     * configured default group. When the deny policy
+     * (m2oidc_dont_create_customer_if_group_not_mapped) is active, an unmatched
+     * user is denied (null) instead of falling back to a default group.
      *
      * @param  string[] $userGroups OIDC group claim values
      * @param  int      $providerId OIDC provider ID (0 = unknown)
@@ -315,65 +287,27 @@ class CustomerUserCreator
      */
     private function getCustomerGroupFromOidcGroups(array $userGroups, int $providerId = 0): ?int
     {
-        // --- Phase 4 path: read from normalized table ---
-        $mappings = [];
-        if ($providerId > 0) {
-            $newRows = $this->mappingRepository->getCustomerGroupMappings($providerId);
-            // Normalize to legacy key names so the loop below is unchanged
-            foreach ($newRows as $row) {
-                $mappings[] = [
-                    'group'         => $row['oidc_group'],
-                    'customerGroup' => $row['magento_role_id'],
-                ];
-            }
-        }
-
-        // --- Fallback path: legacy JSON column ---
-        if ($mappings === []) {
-            $mappingsJson = $this->oauthUtility->getStoreConfig(OAuthConstants::CUSTOMER_GROUP_MAPPING);
-            if (!$this->oauthUtility->isBlank($mappingsJson)) {
-                $decoded = json_decode((string) $mappingsJson, true);
-                if (is_array($decoded)) {
-                    $mappings = $decoded;
-                }
-            }
-        }
-
-        // Match OIDC groups against configured mappings (case-insensitive)
-        if ($userGroups !== [] && $mappings !== []) {
-            foreach ($mappings as $mapping) {
-                $oidcGroup = (string) ($mapping['group'] ?? '');
-                $magentoGroupId = (string) ($mapping['customerGroup'] ?? '');
-                if ($oidcGroup === '' || $magentoGroupId === '') {
-                    continue;
-                }
-                foreach ($userGroups as $userGroup) {
-                    if (strcasecmp((string) $userGroup, $oidcGroup) === 0) {
-                        $this->oauthUtility->customlog(
-                            "CustomerGroupMapping: matched '{$userGroup}' -> group ID {$magentoGroupId}"
-                        );
-                        return (int) $magentoGroupId;
-                    }
-                }
-            }
-        }
-
-        // No match – check deny policy via m2oidc_dont_create_customer_if_group_not_mapped
+        // Deny policy: m2oidc_dont_create_customer_if_group_not_mapped suppresses all fallbacks
         $dontCreate = $this->oauthUtility->getStoreConfig(OAuthConstants::CREATEIFNOTMAP_CUSTOMER);
-        if (!$this->oauthUtility->isBlank($dontCreate) && $dontCreate === 'checked') {
+        $denyIfUnmapped = $dontCreate === 'checked';
+
+        $defaultGroup = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_DEFAULT_CUSTOMER_GROUP);
+        $resolved = $this->groupMappingResolver->resolve(
+            GroupMappingResolver::TYPE_CUSTOMER_GROUP,
+            $providerId,
+            $userGroups,
+            ($denyIfUnmapped || $defaultGroup === null) ? null : (string) $defaultGroup
+        );
+
+        if ($resolved !== null) {
+            return $resolved;
+        }
+
+        if ($denyIfUnmapped) {
             $this->oauthUtility->customlog(
                 'CustomerGroupMapping: no match, creation denied (dont_create_customer_if_group_not_mapped)'
             );
             return null;
-        }
-
-        // Fallback: configured default customer group
-        $defaultGroup = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_DEFAULT_CUSTOMER_GROUP);
-        if (!$this->oauthUtility->isBlank($defaultGroup) && is_numeric($defaultGroup)) {
-            $this->oauthUtility->customlog(
-                "CustomerGroupMapping: fallback to default group ID {$defaultGroup}"
-            );
-            return (int) $defaultGroup;
         }
 
         // Ultimate fallback: Magento "General" group (ID 1)
@@ -532,13 +466,13 @@ class CustomerUserCreator
         }
 
         return [
-            'dob'             => $this->dobAttribute,
-            'gender'          => $this->genderAttribute,
-            'billing_address' => $this->streetAttribute,
-            'billing_city'    => $this->cityAttribute,
-            'billing_zip'     => $this->zipAttribute,
-            'billing_country' => $this->countryAttribute,
-            'billing_phone'   => $this->phoneAttribute,
+            'dob'             => $this->attributeMapping['dob'] ?? null,
+            'gender'          => $this->attributeMapping['gender'] ?? null,
+            'billing_address' => $this->attributeMapping['street'] ?? null,
+            'billing_city'    => $this->attributeMapping['city'] ?? null,
+            'billing_zip'     => $this->attributeMapping['zip'] ?? null,
+            'billing_country' => $this->attributeMapping['country'] ?? null,
+            'billing_phone'   => $this->attributeMapping['phone'] ?? null,
             '_raw_attrs'      => $rawAttrs,
             '_transforms'     => $transforms,
         ];

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace M2Oidc\OAuth\Test\Unit\Model\Service;
 
 use Magento\Framework\DB\Adapter\AdapterInterface;
-use Magento\Framework\Math\Random;
 use Magento\User\Model\ResourceModel\User as UserResourceModel;
 use Magento\User\Model\ResourceModel\User\Collection as UserCollection;
 use Magento\User\Model\ResourceModel\User\CollectionFactory as UserCollectionFactory;
@@ -17,6 +16,8 @@ use M2Oidc\OAuth\Model\Attribute\AttributeMapperInterface;
 use M2Oidc\OAuth\Model\Provider\MappingRepository;
 use M2Oidc\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
 use M2Oidc\OAuth\Model\Service\AdminUserCreator;
+use M2Oidc\OAuth\Model\Service\GroupMappingResolver;
+use M2Oidc\OAuth\Model\Service\RandomPasswordGenerator;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -68,12 +69,13 @@ class AdminUserCreatorRoleMappingTest extends TestCase
         $this->creator = new AdminUserCreator(
             $this->userFactory,
             $this->oauthUtility,
-            $this->createMock(Random::class),
+            $this->createMock(RandomPasswordGenerator::class),
             $this->userResource,
             $this->userCollectionFactory,
             $this->userProviderResource,
             $this->createMock(MappingRepository::class),
-            $mapperMock
+            $mapperMock,
+            new GroupMappingResolver($this->createMock(MappingRepository::class), $this->oauthUtility)
         );
     }
 

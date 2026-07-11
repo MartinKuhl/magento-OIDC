@@ -35,21 +35,25 @@ if ($customerSession->isLoggedIn()) {
     window.addEventListener('load', function() {
         if (typeof jQuery !== 'undefined') {
             reloadCustomerData();
-            
-            // Setup the same delay mechanism
-            var delay = 0;
-            while (delay < 5000) {
-                (function(d) {
-                    setTimeout(function() {
-                        m2oidc_invalidate(
-                            jQuery,
-                            "<?= $escaper->escapeJs($fullname); ?>",
-                            "<?= $escaper->escapeJs($fname); ?>"
-                        );
-                    }, d);
-                })(delay);
-                delay += 100;
-            }
+
+            // Poll every 100ms for 5 seconds with a single timer instead of
+            // pre-registering ~50 setTimeout closures at once.
+            var applyInvalidate = function () {
+                m2oidc_invalidate(
+                    jQuery,
+                    "<?= $escaper->escapeJs($fullname); ?>",
+                    "<?= $escaper->escapeJs($fname); ?>"
+                );
+            };
+            applyInvalidate();
+            var elapsed = 100;
+            var invalidateTimer = setInterval(function () {
+                applyInvalidate();
+                elapsed += 100;
+                if (elapsed >= 5000) {
+                    clearInterval(invalidateTimer);
+                }
+            }, 100);
         }
     });
 </script>

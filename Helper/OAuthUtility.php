@@ -300,54 +300,24 @@ class OAuthUtility extends Data
     }
 
     /**
-     * This function returns phone number as an obfuscated string for display to the user.
-     *
-     * @param  string $phone references the phone number.
-     */
-    public function getHiddenPhone($phone): string
-    {
-        return 'xxxxxxx' . substr($phone, strlen($phone) - 3);
-    }
-
-    /**
      * Check if a value is empty or not set.
+     *
+     * Treats null, empty arrays, and whitespace-only strings as blank, but NOT the
+     * string "0" (a legitimate claim value — username, employee ID, group name —
+     * that empty() would otherwise misclassify as blank).
      *
      * @param mixed $value
      */
     public function isBlank(mixed $value): bool
     {
-        return empty($value);
-    }
-
-    /**
-     * This function checks if cURL has been installed or enabled on the site.
-     */
-    public function isCurlInstalled(): int
-    {
-        return function_exists('curl_init') ? 1 : 0;
-    }
-
-    /**
-     * This function is used to obfuscate and return the email in question.
-     *
-     * @param  string $email
-     * @return string obfuscated email id.
-     */
-    public function getHiddenEmail($email): string
-    {
-        if (trim($email) === '') {
-            return "";
+        if ($value === null) {
+            return true;
+        }
+        if (is_array($value)) {
+            return $value === [];
         }
 
-        $emailsize = strlen($email);
-        $partialemail = substr($email, 0, 1);
-        $temp = (int)strrpos($email, "@");
-        $endemail = substr($email, $temp - 1, $emailsize);
-        for ($i = 1; $i < $temp; $i++) {
-            $partialemail .= 'x';
-        }
-
-        return $partialemail . $endemail;
+        return trim((string) $value) === '';
     }
 
     /**
@@ -363,9 +333,8 @@ class OAuthUtility extends Data
      *
      * @param  string $key
      * @param  mixed  $value
-     * @return mixed
      */
-    public function setAdminSessionData($key, $value)
+    public function setAdminSessionData(string $key, mixed $value): mixed
     {
         return $this->adminSession->setData($key, $value);
     }
@@ -375,9 +344,8 @@ class OAuthUtility extends Data
      *
      * @param  string $key
      * @param  bool   $remove
-     * @return mixed
      */
-    public function getAdminSessionData($key, $remove = false)
+    public function getAdminSessionData(string $key, bool $remove = false): mixed
     {
         return $this->adminSession->getData($key, $remove);
     }
@@ -387,9 +355,8 @@ class OAuthUtility extends Data
      *
      * @param  string $key
      * @param  mixed  $value
-     * @return mixed
      */
-    public function setSessionData($key, $value)
+    public function setSessionData(string $key, mixed $value): mixed
     {
         return $this->customerSession->setData($key, $value);
     }
@@ -399,9 +366,8 @@ class OAuthUtility extends Data
      *
      * @param  string $key
      * @param  bool   $remove
-     * @return mixed
      */
-    public function getSessionData($key, $remove = false)
+    public function getSessionData(string $key, bool $remove = false): mixed
     {
         return $this->customerSession->getData($key, $remove);
     }
@@ -412,7 +378,7 @@ class OAuthUtility extends Data
      * @param  string $key
      * @param  mixed  $value
      */
-    public function setSessionDataForCurrentUser($key, $value): void
+    public function setSessionDataForCurrentUser(string $key, mixed $value): void
     {
         if ($this->customerSession->isLoggedIn()) {
             $this->setSessionData($key, $value);
@@ -440,20 +406,6 @@ class OAuthUtility extends Data
         return !empty($clientDetails['clientID'])
             && !empty($clientDetails['authorize_endpoint'])
             && !empty($clientDetails['access_token_endpoint']);
-    }
-
-    /**
-     * Return all active providers for the given login type.
-     *
-     * Delegates to ProviderResolver.
-     *
-     * @param  string $loginType 'customer' | 'admin' | 'both'
-     * @return array<int, array<string, mixed>>
-     */
-    #[\Override]
-    public function getAllActiveProviders(string $loginType = 'customer'): array
-    {
-        return $this->providerResolver->getAllActiveProviders($loginType);
     }
 
     /**
@@ -556,28 +508,6 @@ class OAuthUtility extends Data
     }
 
     /**
-     * Get data in the file specified by the path
-     *
-     * @param  string $file
-     * @return string
-     */
-    public function getFileContents($file)
-    {
-        return $this->fileSystem->fileGetContents($file);
-    }
-
-    /**
-     * Put data in the file specified by the path
-     *
-     * @param string $file
-     * @param string $data
-     */
-    public function putFileContents($file, $data): void
-    {
-        $this->fileSystem->filePutContents($file, $data);
-    }
-
-    /**
      * Get the Current User's logout url
      */
     public function getLogoutUrl(): string
@@ -600,55 +530,11 @@ class OAuthUtility extends Data
     }
 
     /**
-     * Remove sign-in settings for all providers.
-     *
-     * Updates the provider table directly instead of core_config_data.
-     */
-    public function removeSignInSettings(): void
-    {
-        $collection = $this->getOAuthClientApps();
-        foreach ($collection as $item) {
-            $item->setData('show_customer_link', '0');
-            $item->setData('show_admin_link', '0');
-            $this->appResource->save($item);
-        }
-    }
-
-    /**
      * Reinitialize config
      */
     public function reinitConfig(): void
     {
         $this->reinitableConfig->reinit();
-    }
-
-    /**
-     * Get client details — reads all values from the active provider row.
-     *
-     * All values come from the provider table via resolveActiveProvider().
-     *
-     * @return array<int, mixed>
-     */
-    public function getClientDetails(): array
-    {
-        $provider = $this->providerResolver->resolveActiveProvider();
-
-        return [
-            $provider['app_name'] ?? null,
-            $provider['scope'] ?? null,
-            $provider['clientID'] ?? null,
-            $provider['client_secret'] ?? null,
-            $provider['authorize_endpoint'] ?? null,
-            $provider['access_token_endpoint'] ?? null,
-            $provider['user_info_endpoint'] ?? null,
-            $provider['values_in_header'] ?? null,
-            $provider['values_in_body'] ?? null,
-            $provider['well_known_config_url'] ?? null,
-            $provider['show_customer_link'] ?? null,
-            $provider['email_attribute'] ?? OAuthConstants::DEFAULT_MAP_EMAIL,
-            $provider['username_attribute'] ?? OAuthConstants::DEFAULT_MAP_USERN,
-            $provider['firstname_attribute'] ?? OAuthConstants::DEFAULT_MAP_FN,
-        ];
     }
 
     /**
@@ -751,122 +637,6 @@ class OAuthUtility extends Data
             'first' => ucfirst(strtolower($parts[0])),
             'last'  => ucfirst(strtolower($parts[1] ?? '')),
         ];
-    }
-
-    /**
-     * Persist the OIDC test result to the provider record by app_name (legacy).
-     *
-     * @param string $appName The app_name of the provider
-     * @param string $status  'success', 'failed', or 'unsuccessful'
-     */
-    #[\Override]
-    public function saveTestStatus(string $appName, string $status): void
-    {
-        if ($appName === '') {
-            $this->oidcLogger->customlog('saveTestStatus: skipped — empty app_name');
-            return;
-        }
-
-        $now = (new \DateTime('now', new \DateTimeZone('UTC')))->format('Y-m-d H:i:s');
-        $connection = $this->appResource->getConnection();
-        $tableName  = $this->appResource->getMainTable();
-
-        if ($connection === false) {
-            $this->oidcLogger->customlog('saveTestStatus: failed — could not obtain database connection');
-            return;
-        }
-
-        try {
-            $affected = $connection->update(
-                $tableName,
-                ['last_test_status' => $status, 'last_test_at' => $now],
-                ['app_name = ?' => $appName]
-            );
-            if ($affected === 0) {
-                $this->oidcLogger->customlog('saveTestStatus: provider not found for app_name: ' . $appName);
-            }
-        } catch (\Exception $e) {
-            $this->oidcLogger->customlog('saveTestStatus: failed — ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * Persist the OIDC test result to the provider record by numeric ID (preferred).
-     *
-     * @param int    $providerId Row `id` from m2oidc_oauth_client_apps
-     * @param string $status     'success', 'failed', or 'unsuccessful'
-     */
-    #[\Override]
-    public function saveTestStatusById(int $providerId, string $status): void
-    {
-        if ($providerId <= 0) {
-            $this->oidcLogger->customlog('saveTestStatusById: skipped — invalid provider ID');
-            return;
-        }
-
-        $now = (new \DateTime('now', new \DateTimeZone('UTC')))->format('Y-m-d H:i:s');
-        $connection = $this->appResource->getConnection();
-        $tableName  = $this->appResource->getMainTable();
-
-        if ($connection === false) {
-            $this->oidcLogger->customlog('saveTestStatusById: failed — could not obtain database connection');
-            return;
-        }
-
-        try {
-            $connection->update(
-                $tableName,
-                ['last_test_status' => $status, 'last_test_at' => $now],
-                ['id = ?' => $providerId]
-            );
-        } catch (\Exception $e) {
-            $this->oidcLogger->customlog('saveTestStatusById: failed — ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * Persist received OIDC claim keys to the provider record.
-     *
-     * @param int      $providerId Row `id` from m2oidc_oauth_client_apps
-     * @param string[] $claimKeys  Flat list of claim key names
-     */
-    #[\Override]
-    public function saveReceivedOidcClaims(int $providerId, array $claimKeys): void
-    {
-        if ($providerId <= 0) {
-            return;
-        }
-
-        $json = json_encode(array_values(array_unique($claimKeys)), JSON_UNESCAPED_SLASHES);
-
-        $connection = $this->appResource->getConnection();
-        $tableName  = $this->appResource->getMainTable();
-
-        if ($connection === false) {
-            $this->oidcLogger->customlog('saveReceivedOidcClaims: failed — could not obtain database connection');
-            return;
-        }
-
-        try {
-            $connection->update(
-                $tableName,
-                ['received_oidc_claims' => $json !== false ? $json : '[]'],
-                ['id = ?' => $providerId]
-            );
-        } catch (\Exception $e) {
-            $this->oidcLogger->customlog('saveReceivedOidcClaims: failed — ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * Decrypt an encrypted secret value using Magento's encryptor.
-     *
-     * @param string $secret Encrypted secret string
-     * @return string Decrypted secret
-     */
-    public function decryptSecret(string $secret): string
-    {
-        return $this->encryptor->decrypt($secret);
     }
 
     /**

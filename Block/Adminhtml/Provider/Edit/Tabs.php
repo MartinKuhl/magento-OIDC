@@ -7,10 +7,11 @@ namespace M2Oidc\OAuth\Block\Adminhtml\Provider\Edit;
 /**
  * Left-sidebar tab navigation for the OIDC Provider edit form.
  *
- * Registers three inline tabs:
+ * Registers four inline tabs:
  *   - Provider Settings  (identity / appearance)
- *   - OAuth Settings   final   (endpoints / credentials)
+ *   - OAuth Settings     (endpoints / credentials)
  *   - Attribute Mapping  (claim → Magento field mapping)
+ *   - Login Options      (login behavior / restrictions)
  */
 class Tabs extends \Magento\Backend\Block\Widget\Tabs
 {
@@ -27,7 +28,7 @@ class Tabs extends \Magento\Backend\Block\Widget\Tabs
     }
 
     /**
-     * Register the three inline tabs and their child-block content.
+     * Register the four inline tabs and their child-block content.
      */
     #[\Override]
     protected function _beforeToHtml(): self

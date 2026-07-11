@@ -246,4 +246,131 @@ class BackChannelLogoutTest extends TestCase
         $controller = $this->buildController();
         $controller->execute();
     }
+
+    // -------------------------------------------------------------------------
+    // Test 5 – M-12: Provider without clientID fails closed with 400
+    // -------------------------------------------------------------------------
+
+    public function testEmptyProviderClientIdReturns400WithoutSelfReferentialAudienceCheck(): void
+    {
+        $this->rateLimiter->method('isAllowed')->willReturn(true);
+        $this->request->method('getClientIp')->willReturn('127.0.0.1');
+        $this->request->method('getParam')->with('logout_token', '')->willReturn('valid.jwt.token');
+
+        // The attacker controls the token's aud claim. With the old fallback
+        // (clientId = audiences[0]) the audience check compared the token's aud
+        // against itself and always passed.
+        $this->jwtVerifier->method('decodeWithoutVerification')->willReturn([
+            'iss' => 'https://idp.example.com',
+            'aud' => 'attacker-chosen-audience',
+            'sub' => 'user-sub-123',
+        ]);
+
+        // Provider matched by issuer, but clientID is missing/empty (misconfiguration)
+        $this->oauthUtility->method('getAllActiveProviders')->willReturn([
+            [
+                'issuer'        => 'https://idp.example.com',
+                'jwks_endpoint' => 'https://idp.example.com/jwks',
+                'clientID'      => '',
+            ],
+        ]);
+
+        // M-12: must fail closed before any signature verification is attempted
+        $this->jwtVerifier->expects($this->never())->method('verifyAndDecode');
+
+        $jsonResult = $this->makeJsonResult(400);
+        $jsonResult->method('setData')->willReturnSelf();
+        $this->jsonFactory->method('create')->willReturn($jsonResult);
+
+        $controller = $this->buildController();
+        $controller->execute();
+    }
+
+    public function testMissingProviderClientIdKeyAlsoReturns400(): void
+    {
+        $this->rateLimiter->method('isAllowed')->willReturn(true);
+        $this->request->method('getClientIp')->willReturn('127.0.0.1');
+        $this->request->method('getParam')->with('logout_token', '')->willReturn('valid.jwt.token');
+
+        $this->jwtVerifier->method('decodeWithoutVerification')->willReturn([
+            'iss' => 'https://idp.example.com',
+            'aud' => 'attacker-chosen-audience',
+            'sub' => 'user-sub-123',
+        ]);
+
+        // Provider row without a clientID key at all
+        $this->oauthUtility->method('getAllActiveProviders')->willReturn([
+            [
+                'issuer'        => 'https://idp.example.com',
+                'jwks_endpoint' => 'https://idp.example.com/jwks',
+            ],
+        ]);
+
+        $this->jwtVerifier->expects($this->never())->method('verifyAndDecode');
+
+        $jsonResult = $this->makeJsonResult(400);
+        $jsonResult->method('setData')->willReturnSelf();
+        $this->jsonFactory->method('create')->willReturn($jsonResult);
+
+        $controller = $this->buildController();
+        $controller->execute();
+    }
+
+    // -------------------------------------------------------------------------
+    // Test 6 – L-37: Multiple providers matching one issuer — first match wins
+    // -------------------------------------------------------------------------
+
+    public function testMultipleProvidersMatchingIssuerFirstMatchWins(): void
+    {
+        $this->rateLimiter->method('isAllowed')->willReturn(true);
+        $this->request->method('getClientIp')->willReturn('127.0.0.1');
+        $this->request->method('getParam')->with('logout_token', '')->willReturn('valid.jwt.token');
+
+        $claims = [
+            'iss' => 'https://idp.example.com',
+            'aud' => 'first_client',
+            'sub' => 'user-sub-123',
+        ];
+        $this->jwtVerifier->method('decodeWithoutVerification')->willReturn($claims);
+
+        // Two active providers share the same issuer — the first must be used
+        $this->oauthUtility->method('getAllActiveProviders')->willReturn([
+            [
+                'id'            => 1,
+                'issuer'        => 'https://idp.example.com',
+                'jwks_endpoint' => 'https://idp.example.com/jwks',
+                'clientID'      => 'first_client',
+            ],
+            [
+                'id'            => 2,
+                'issuer'        => 'https://idp.example.com',
+                'jwks_endpoint' => 'https://idp.example.com/jwks',
+                'clientID'      => 'second_client',
+            ],
+        ]);
+
+        // verifyAndDecode must receive the FIRST provider's clientID as audience
+        $verifiedClaims = array_merge($claims, [
+            'events' => [
+                'http://schemas.openid.net/event/backchannel-logout' => (object) [],
+            ],
+        ]);
+        $this->jwtVerifier->expects($this->once())
+            ->method('verifyAndDecode')
+            ->with('valid.jwt.token', 'https://idp.example.com/jwks', 'https://idp.example.com', 'first_client')
+            ->willReturn($verifiedClaims);
+
+        // No registered session → treated as success (200)
+        $this->sessionRegistry->method('resolve')->willReturn(null);
+
+        $jsonResult = $this->createMock(Json::class);
+        $jsonResult->method('setData')->willReturnSelf();
+        $jsonResult->expects($this->never())->method('setHttpResponseCode');
+        $this->jsonFactory->method('create')->willReturn($jsonResult);
+
+        $controller = $this->buildController();
+        $result     = $controller->execute();
+
+        $this->assertSame($jsonResult, $result);
+    }
 }

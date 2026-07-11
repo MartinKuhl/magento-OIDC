@@ -14,12 +14,14 @@ namespace M2Oidc\OAuth\Model\Cache;
  * the get-and-delete as a single operation so implementations can use
  * backend-native atomics (e.g. Redis GETDEL) when available.
  *
- * Default preference: FileAtomicCache (load + remove — safe for single-server).
- * Redis preference:   RedisAtomicCache (Lua GETDEL — truly atomic).
+ * Default preference (etc/di.xml): RedisAtomicCache (Redis GETDEL / Lua — truly
+ * atomic; degrades to sequential load + remove when its dedicated Redis
+ * connection is unavailable).
  *
- * Switch the preference in etc/di.xml:
+ * Alternative: FileAtomicCache (sequential load + remove — safe for
+ * single-server deployments without Redis). Switch in etc/di.xml:
  * <preference for="M2Oidc\OAuth\Model\Cache\AtomicCacheInterface"
- *             type="M2Oidc\OAuth\Model\Cache\RedisAtomicCache"/>
+ *             type="M2Oidc\OAuth\Model\Cache\FileAtomicCache"/>
  */
 interface AtomicCacheInterface
 {

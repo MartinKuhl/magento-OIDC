@@ -18,20 +18,6 @@ class OAuthConstants
      */
     public const MODULE_TITLE = 'Authelia OIDC';
 
-    //ACL Settings
-    /**
-     * @var string
-     */
-    public const MODULE_OAUTHSETTINGS = '::oauth_settings';
-    /**
-     * @var string
-     */
-    public const MODULE_SIGNIN = '::signin_settings';
-    /**
-     * @var string
-     */
-    public const MODULE_ATTR = '::attr_settings';
-
     /**
      * @var string
      */
@@ -454,10 +440,6 @@ class OAuthConstants
     /**
      * @var string
      */
-    public const PKCE_VERIFIER_SESSION_KEY = 'oidc_pkce_verifier';
-    /**
-     * @var string
-     */
     public const PKCE_METHOD_S256 = 'S256';
     /**
      * @var string
@@ -511,10 +493,6 @@ class OAuthConstants
      * @var string
      */
     public const ADMINEMAIL = 'admin_email';
-    /**
-     * @var string
-     */
-    public const PLUGIN_VERSION = 'v4.2.0';
     /**
      * @var string
      */

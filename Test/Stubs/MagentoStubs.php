@@ -553,3 +553,117 @@ namespace Magento\Customer\Model {
         }
     }
 }
+
+// ─── Encryption (WS-A: SsrfUrlValidator / data patch tests) ──────────────────
+
+namespace Magento\Framework\Encryption {
+    /**
+     * Encryptor interface stub — only the methods used by this module.
+     */
+    interface EncryptorInterface
+    {
+        /**
+         * @param  string $data
+         * @return string
+         */
+        public function encrypt($data);
+
+        /**
+         * @param  string $data
+         * @return string
+         */
+        public function decrypt($data);
+    }
+}
+
+// ─── Setup / data patches (WS-A: EncryptPlaintextClientSecrets tests) ────────
+
+namespace Magento\Framework\Setup {
+    /**
+     * Module data setup stub — only the methods used by this module's patches.
+     */
+    interface ModuleDataSetupInterface
+    {
+        /** @return \Magento\Framework\DB\Adapter\AdapterInterface */
+        public function getConnection();
+
+        /**
+         * @param  string $tableName
+         * @return string
+         */
+        public function getTable($tableName);
+
+        /** @return void */
+        public function startSetup();
+
+        /** @return void */
+        public function endSetup();
+    }
+}
+
+namespace Magento\Framework\Setup\Patch {
+    interface DependentPatchInterface
+    {
+        /** @return string[] */
+        public static function getDependencies();
+    }
+
+    interface PatchInterface extends DependentPatchInterface
+    {
+        /** @return string[] */
+        public function getAliases();
+
+        /** @return $this */
+        public function apply();
+    }
+
+    interface DataPatchInterface extends PatchInterface
+    {
+    }
+}
+
+// ─── DB adapter / select (WS-A: EncryptPlaintextClientSecrets tests) ─────────
+
+namespace Magento\Framework\DB {
+    /**
+     * Minimal SQL select builder stub.
+     */
+    class Select
+    {
+        /**
+         * @param  mixed $name
+         * @param  mixed $cols
+         * @return $this
+         */
+        public function from($name, $cols = '*')
+        {
+            return $this;
+        }
+    }
+}
+
+namespace Magento\Framework\DB\Adapter {
+    /**
+     * DB adapter stub — only the methods used by this module's data patches.
+     */
+    interface AdapterInterface
+    {
+        /** @return \Magento\Framework\DB\Select */
+        public function select();
+
+        /**
+         * @param  mixed $sql
+         * @param  mixed $bind
+         * @return mixed[]
+         */
+        public function fetchAll($sql, $bind = []);
+
+        /**
+         * @param  mixed $table
+         * @param  mixed $bind
+         * @param  mixed $where
+         * @return int
+         */
+        public function update($table, array $bind, $where = '');
+    }
+}

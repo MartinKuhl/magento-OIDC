@@ -7,6 +7,8 @@ namespace M2Oidc\OAuth\Controller\Actions;
 use M2Oidc\OAuth\Helper\Exception\MissingAttributesException;
 use M2Oidc\OAuth\Helper\OAuthConstants;
 use M2Oidc\OAuth\Helper\OAuthMessages;
+use M2Oidc\OAuth\Model\Data\OidcAttributeMappingContext;
+use M2Oidc\OAuth\Model\Data\OidcUserProvisioningContext;
 use M2Oidc\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
 use M2Oidc\OAuth\Helper\OAuthSecurityHelper;
 use M2Oidc\OAuth\Model\Service\AdminProfileSyncService;
@@ -31,24 +33,14 @@ use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
 class CheckAttributeMappingAction extends BaseAction
 {
     /**
-     * @var mixed Raw userinfo response from provider
-     */
-    private $userInfoResponse;
-
-    /**
-     * @var mixed Flattened userinfo attributes
-     */
-    private $flattenedUserInfoResponse;
-
-    /**
      * @var string|null User email extracted from attributes
      */
-    private $userEmail;
+    private ?string $userEmail = null;
 
     /**
      * @var string|null Login type (admin|customer)
      */
-    private $loginType;
+    private ?string $loginType = null;
 
     /**
      * @var string Email attribute mapping key
@@ -198,7 +190,7 @@ class CheckAttributeMappingAction extends BaseAction
     /**
      * Lazy-initialize attribute mappings from the active provider context.
      *
-     * Called at the start of execute() after setActiveProviderId() has been
+     * Called at the start of handle() after setActiveProviderId() has been
      * set on oauthUtility. Ensures mappings come from the correct provider row.
      */
     private function initAttributeMappings(): void
@@ -225,19 +217,44 @@ class CheckAttributeMappingAction extends BaseAction
     }
 
     /**
-     * Execute attribute mapping and route users accordingly
+     * Not dispatched via routing.
      *
-     * Admin users are redirected to a separate callback endpoint that handles
-     * admin authentication. Regular users proceed with the normal customer login flow.
+     * CheckAttributeMappingAction is only ever constructed as a per-request collaborator
+     * (see etc/di.xml, shared="false") and invoked via {@see handle()} — it has no entry
+     * in any routes.xml. This override exists solely to satisfy the abstract execute()
+     * contract inherited from BaseAction/\Magento\Framework\App\Action\Action.
+     *
+     * @throws \LogicException Always.
      */
     #[\Override]
     public function execute(): \Magento\Framework\Controller\ResultInterface
     {
+        throw new \LogicException(
+            'CheckAttributeMappingAction is not dispatched via routing; call handle() with a '
+            . 'OidcAttributeMappingContext instead.'
+        );
+    }
+
+    /**
+     * Execute attribute mapping and route users accordingly
+     *
+     * Admin users are redirected to a separate callback endpoint that handles
+     * admin authentication. Regular users proceed with the normal customer login flow.
+     *
+     * @param OidcAttributeMappingContext $context Immutable input replacing the former setter chain
+     */
+    public function handle(OidcAttributeMappingContext $context): \Magento\Framework\Controller\ResultInterface
+    {
+        // MP-07: apply per-provider attribute mappings and metadata from the client details row
+        $this->applyClientDetails($context->clientDetails);
+        $this->userEmail = $context->userEmail;
+        $this->loginType = $context->loginType;
+        $this->headless  = $context->headless;
 
         // MP-05: Initialize attribute mappings from active provider context
         $this->initAttributeMappings();
-        $attrs = $this->userInfoResponse ?? [];
-        $flattenedAttrs = $this->flattenedUserInfoResponse ?? [];
+        $attrs = $context->userInfoResponse ?? [];
+        $flattenedAttrs = $context->flattenedUserInfoResponse;
         $userEmail = $this->userEmail;
 
         // Detect test mode from relay state embedded in userInfoResponse — avoids persisting
@@ -286,15 +303,17 @@ class CheckAttributeMappingAction extends BaseAction
             if ($userEmail === null) {
                 return $this->resultRedirectFactory->create()->setPath('customer/account/login');
             }
-            $hasAdminAccount = $this->adminUserCreator->isAdminUser($userEmail);
+            // M17: single load reused for both the existence check and the user object
+            // (previously isAdminUser() + getAdminUserByEmail() each queried admin_user separately)
+            $adminUser = $this->adminUserCreator->getAdminUserByEmail($userEmail);
+            $hasAdminAccount = $adminUser instanceof \Magento\User\Model\User && $adminUser->getId();
             $hasAccountMsg = "Admin login intent detected. Has admin account: ";
             $hasAccountMsg .= ($hasAdminAccount ? 'YES' : 'NO');
             $this->oauthUtility->customlog($hasAccountMsg);
 
             if ($hasAdminAccount) {
                 // Provider binding check: reject if account is bound to a different IdP
-                $adminUser = $this->adminUserCreator->getAdminUserByEmail($userEmail);
-                if ($adminUser && $adminUser->getId()) {
+                if ($adminUser->getId()) {
                     $boundProvider = $this->userProviderResource->getBoundProviderId(
                         'admin',
                         (int) $adminUser->getId()
@@ -322,8 +341,8 @@ class CheckAttributeMappingAction extends BaseAction
                 $this->oauthUtility->customlog("Routing admin user to admin callback endpoint");
 
                 // Sync admin profile and role from OIDC claims before login (if enabled)
-                $this->syncAdminProfileIfEnabled($userEmail, $flattenedAttrs, $attrs);
-                $this->syncAdminRoleIfEnabled($userEmail, $flattenedAttrs, $attrs);
+                $this->syncAdminProfileIfEnabled($adminUser, $flattenedAttrs, $attrs);
+                $this->syncAdminRoleIfEnabled($adminUser, $flattenedAttrs, $attrs);
 
                 $nonce = $this->securityHelper->createAdminLoginNonce($userEmail);
                 $this->cookieManager->setPublicCookie(
@@ -391,8 +410,8 @@ class CheckAttributeMappingAction extends BaseAction
                         $this->oauthUtility->customlog("Admin user created successfully. ID: " . $adminUser->getId());
 
                         // Sync profile and role for the newly created admin (if enabled)
-                        $this->syncAdminProfileIfEnabled($userEmail, $flattenedAttrs, $attrs);
-                        $this->syncAdminRoleIfEnabled($userEmail, $flattenedAttrs, $attrs);
+                        $this->syncAdminProfileIfEnabled($adminUser, $flattenedAttrs, $attrs);
+                        $this->syncAdminRoleIfEnabled($adminUser, $flattenedAttrs, $attrs);
 
                         // Redirect to admin callback for login
                         $nonce = $this->securityHelper->createAdminLoginNonce($userEmail);
@@ -520,16 +539,17 @@ class CheckAttributeMappingAction extends BaseAction
         string $email
     ): \Magento\Framework\Controller\ResultInterface {
         // Production mode - process user login/registration
-        // Note: test mode is handled earlier in execute() before moOAuthCheckMapping() is called.
+        // Note: test mode is handled earlier in handle() before moOAuthCheckMapping() is called.
         $this->oauthUtility->customlog("Production mode - processing user login/registration");
-        return $this->processUserAction
-            ->setFlattenedAttrs($flattenedattrs)
-            ->setAttrs($attrs)
-            ->setUserEmail($email)
-            ->setAutoCreateCustomer($this->providerAutoCreateCustomer)
-            ->setProviderId($this->providerId)
-            ->setHeadless($this->headless)
-            ->execute();
+        $provisioningContext = new OidcUserProvisioningContext(
+            $attrs,
+            $flattenedattrs,
+            $email,
+            $this->providerAutoCreateCustomer,
+            $this->providerId,
+            $this->headless
+        );
+        return $this->processUserAction->handle($provisioningContext);
     }
 
     /**
@@ -677,68 +697,13 @@ class CheckAttributeMappingAction extends BaseAction
         $this->oauthUtility->customlog("Group name not provided, using empty array");
     }
 
-    // Setter methods for dependency injection pattern
     /**
-     * Set user info response
-     *
-     * @param  mixed $userInfoResponse
-     */
-    public function setUserInfoResponse($userInfoResponse): static
-    {
-        $this->userInfoResponse = $userInfoResponse;
-        return $this;
-    }
-
-    /**
-     * Set flattened user info response
-     *
-     * @param  mixed $flattenedUserInfoResponse
-     */
-    public function setFlattenedUserInfoResponse($flattenedUserInfoResponse): static
-    {
-        $this->flattenedUserInfoResponse = $flattenedUserInfoResponse;
-        return $this;
-    }
-
-    /**
-     * Set user email
-     *
-     * @param  string $userEmail
-     */
-    public function setUserEmail($userEmail): static
-    {
-        $this->userEmail = $userEmail;
-        return $this;
-    }
-
-    /**
-     * Set login type (admin or customer)
-     *
-     * @param  string $loginType
-     */
-    public function setLoginType($loginType): static
-    {
-        $this->loginType = $loginType;
-        return $this;
-    }
-
-    /**
-     * Set the headless mode flag (FEAT-09).
-     *
-     * @param  bool $headless
-     */
-    public function setHeadless(bool $headless): static
-    {
-        $this->headless = $headless;
-        return $this;
-    }
-
-    /**
-     * Override attribute mappings with per-provider values from the client details row (MP-07).
+     * Apply per-provider attribute mappings and metadata from the client details row (MP-07).
      *
      * When a numeric provider_id is known, ReadAuthorizationResponse passes the provider's
-     * DB row here. Any non-empty attribute column in the row takes precedence over the
-     * global store-config defaults set in the constructor, enabling per-provider mapping.
+     * DB row here (via OidcAttributeMappingContext::$clientDetails). Any non-empty attribute
+     * column in the row takes precedence over the global store-config defaults set in the
+     * constructor, enabling per-provider mapping.
      *
      * Fields read from the provider row:
      *   email_attribute, username_attribute, firstname_attribute,
@@ -746,7 +711,7 @@ class CheckAttributeMappingAction extends BaseAction
      *
      * @param  mixed[] $clientDetails Provider row data array
      */
-    public function setClientDetails(array $clientDetails): static
+    private function applyClientDetails(array $clientDetails): void
     {
         if (!empty($clientDetails['email_attribute'])) {
             $this->emailAttribute = (string) $clientDetails['email_attribute'];
@@ -791,8 +756,6 @@ class CheckAttributeMappingAction extends BaseAction
         ) {
             $this->providerAutoCreateCustomer = (int) $clientDetails['m2oidc_auto_create_customer'];
         }
-
-        return $this;
     }
 
     /**
@@ -917,11 +880,11 @@ class CheckAttributeMappingAction extends BaseAction
      * Called in the admin routing path before the nonce cookie is set so that
      * profile data is up-to-date by the time the admin logs in.
      *
-     * @param string  $email Admin email (lookup key)
-     * @param mixed[] $flat  Flattened OIDC attributes
-     * @param mixed[] $raw   Raw (nested) OIDC attributes
+     * @param \Magento\User\Model\User $adminUser Already-loaded admin user (M17)
+     * @param mixed[]                  $flat      Flattened OIDC attributes
+     * @param mixed[]                  $raw       Raw (nested) OIDC attributes
      */
-    private function syncAdminProfileIfEnabled(string $email, array $flat, array $raw): void
+    private function syncAdminProfileIfEnabled(\Magento\User\Model\User $adminUser, array $flat, array $raw): void
     {
         $flag = $this->oauthUtility->getStoreConfig(OAuthConstants::SYNC_ADMIN_PROFILE_ON_SSO);
         if ((string) $flag !== '1') {
@@ -929,7 +892,7 @@ class CheckAttributeMappingAction extends BaseAction
         }
         try {
             $this->adminProfileSyncService->syncProfile(
-                $email,
+                $adminUser,
                 $flat,
                 $raw,
                 $this->firstName,
@@ -948,11 +911,11 @@ class CheckAttributeMappingAction extends BaseAction
     /**
      * Re-evaluate and update admin role from OIDC group claims when sync_admin_role_on_sso is enabled.
      *
-     * @param string  $email Admin email
-     * @param mixed[] $flat  Flattened OIDC attributes
-     * @param mixed[] $raw   Raw (nested) OIDC attributes
+     * @param \Magento\User\Model\User $adminUser Already-loaded admin user (M17)
+     * @param mixed[]                  $flat      Flattened OIDC attributes
+     * @param mixed[]                  $raw       Raw (nested) OIDC attributes
      */
-    private function syncAdminRoleIfEnabled(string $email, array $flat, array $raw): void
+    private function syncAdminRoleIfEnabled(\Magento\User\Model\User $adminUser, array $flat, array $raw): void
     {
         $flag = $this->oauthUtility->getStoreConfig(OAuthConstants::SYNC_ADMIN_ROLE_ON_SSO);
         if ((string) $flag !== '1') {
@@ -963,7 +926,7 @@ class CheckAttributeMappingAction extends BaseAction
         $groupAttr    = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_GROUP) ?: 'groups';
         try {
             $this->adminProfileSyncService->syncRole(
-                $email,
+                $adminUser,
                 $flat,
                 $raw,
                 $groupAttr,

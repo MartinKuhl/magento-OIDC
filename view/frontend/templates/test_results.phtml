@@ -6,7 +6,7 @@
  * @var string       $status       'TEST SUCCESSFUL' | 'TEST FAILED' | 'TEST UNSUCCESSFUL'
  * @var array|null   $attrs        Received OIDC attributes
  * @var string       $greetingName Display name for greeting
- * @var string       $errorMessage Escaped error message (only set on TEST UNSUCCESSFUL)
+ * @var string       $errorMessage Raw error message (only set on TEST UNSUCCESSFUL); escaped below
  * @var string       $rightImage   URL to the success tick image
  * @var string       $wrongImage   URL to the error cross image
  */
@@ -34,7 +34,7 @@
         <div style="font-size:14pt;padding:15px;background-color:#fff3cd;border:1px solid #ffc107;
                     border-radius:4px;margin-bottom:20px;">
             <p style="font-weight:bold;color:#856404;margin:0 0 10px 0;">Error Message:</p>
-            <p style="color:#856404;margin:0;"><?= $errorMessage /* @noEscape */ ?></p>
+            <p style="color:#856404;margin:0;"><?= $escaper->escapeHtml($errorMessage) ?></p>
         </div>
     <?php else: ?>
         <div style="color:#a94442;background-color:#f2dede;padding:15px;margin-bottom:20px;

@@ -15,6 +15,7 @@ use M2Oidc\OAuth\Model\M2oidcOauthClientAppsFactory;
 use M2Oidc\OAuth\Model\Provider\MappingRepository;
 use M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps as AppResource;
 use M2Oidc\OAuth\Model\ResourceModel\OauthRoleMapping as RoleMappingResource;
+use M2Oidc\OAuth\Model\Validation\ProviderDataValidator;
 
 /**
  * CLI command: import OIDC provider configurations from a JSON file (FEAT-07).
@@ -55,6 +56,9 @@ class ImportOidcConfig extends Command
     /** @var MappingRepository */
     private readonly MappingRepository $mappingRepository;
 
+    /** @var ProviderDataValidator */
+    private readonly ProviderDataValidator $providerDataValidator;
+
     /**
      * Initialize import command.
      *
@@ -64,6 +68,7 @@ class ImportOidcConfig extends Command
      * @param EncryptorInterface           $encryptor
      * @param State                        $appState
      * @param MappingRepository            $mappingRepository
+     * @param ProviderDataValidator        $providerDataValidator
      */
     public function __construct(
         OAuthUtility $oauthUtility,
@@ -71,14 +76,16 @@ class ImportOidcConfig extends Command
         AppResource $appResource,
         EncryptorInterface $encryptor,
         State $appState,
-        MappingRepository $mappingRepository
+        MappingRepository $mappingRepository,
+        ProviderDataValidator $providerDataValidator
     ) {
-        $this->oauthUtility      = $oauthUtility;
-        $this->clientAppsFactory = $clientAppsFactory;
-        $this->appResource       = $appResource;
-        $this->encryptor         = $encryptor;
-        $this->appState          = $appState;
-        $this->mappingRepository = $mappingRepository;
+        $this->oauthUtility          = $oauthUtility;
+        $this->clientAppsFactory     = $clientAppsFactory;
+        $this->appResource           = $appResource;
+        $this->encryptor             = $encryptor;
+        $this->appState              = $appState;
+        $this->mappingRepository     = $mappingRepository;
+        $this->providerDataValidator = $providerDataValidator;
         parent::__construct();
     }
 
@@ -244,7 +251,14 @@ class ImportOidcConfig extends Command
 
             if (!$dryRun) {
                 try {
-                    $this->persistProvider($model, $importData, $attributeMappings, $roleMappings);
+                    $this->persistProvider(
+                        $model,
+                        $importData,
+                        $attributeMappings,
+                        $roleMappings,
+                        $output,
+                        (string) $label
+                    );
                     if ($existing !== null) {
                         $updated++;
                     } else {
@@ -290,13 +304,29 @@ class ImportOidcConfig extends Command
      * @param mixed[]                                   $importData         Provider import data
      * @param mixed[]                                   $attributeMappings  Attribute mappings
      * @param mixed[]                                   $roleMappings       Role mappings
+     * @param OutputInterface                           $output             CLI output for warnings
+     * @param string                                    $label              Provider label for messages
      */
     private function persistProvider(
         \M2Oidc\OAuth\Model\M2oidcOauthClientApps $model,
         array $importData,
         array $attributeMappings,
-        array $roleMappings
+        array $roleMappings,
+        OutputInterface $output,
+        string $label
     ): void {
+        // C-03: shared whitelist / SSRF / lockout validation before persisting
+        $validation = $this->providerDataValidator->validate($importData, (int) $model->getId());
+        foreach ($validation->getWarnings() as $warning) {
+            $output->writeln("<comment>  [{$label}] WARNING: {$warning}</comment>");
+        }
+        if (!$validation->isValid()) {
+            throw new \RuntimeException(
+                'Validation failed: ' . implode(' ', $validation->getErrors())
+            );
+        }
+        $importData = $validation->getData();
+
         $model->setData($importData);
         $this->appResource->save($model);
         $savedId = (int) $model->getId();

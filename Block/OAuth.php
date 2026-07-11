@@ -19,12 +19,6 @@ class OAuth extends \Magento\Framework\View\Element\Template
     /** @var \M2Oidc\OAuth\Helper\OAuthUtility */
     private readonly \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility;
 
-    /** @var \Magento\Authorization\Model\ResourceModel\Role\Collection */
-    private readonly \Magento\Authorization\Model\ResourceModel\Role\Collection $adminRoleModel;
-
-    /** @var \Magento\Customer\Model\ResourceModel\Group\Collection */
-    private readonly \Magento\Customer\Model\ResourceModel\Group\Collection $userGroupModel;
-
     /** @var \Magento\Customer\Model\Session */
     protected \Magento\Customer\Model\Session $customerSession;
 
@@ -39,8 +33,6 @@ class OAuth extends \Magento\Framework\View\Element\Template
      *
      * @param \Magento\Framework\View\Element\Template\Context $context
      * @param \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility
-     * @param \Magento\Authorization\Model\ResourceModel\Role\Collection $adminRoleModel
-     * @param \Magento\Customer\Model\ResourceModel\Group\Collection $userGroupModel
      * @param Session $customerSession
      * @param Escaper $escaper
      * @param \Magento\Framework\Data\Form\FormKey $formKey
@@ -49,16 +41,12 @@ class OAuth extends \Magento\Framework\View\Element\Template
     public function __construct(
         \Magento\Framework\View\Element\Template\Context $context,
         \M2Oidc\OAuth\Helper\OAuthUtility $oauthUtility,
-        \Magento\Authorization\Model\ResourceModel\Role\Collection $adminRoleModel,
-        \Magento\Customer\Model\ResourceModel\Group\Collection $userGroupModel,
         Session $customerSession,
         Escaper $escaper,
         \Magento\Framework\Data\Form\FormKey $formKey,
         array $data = []
     ) {
         $this->oauthUtility = $oauthUtility;
-        $this->adminRoleModel = $adminRoleModel;
-        $this->userGroupModel = $userGroupModel;
         $this->customerSession = $customerSession;
         $this->escaper = $escaper;
         $this->_formKey = $formKey;
@@ -134,159 +122,6 @@ class OAuth extends \Magento\Framework\View\Element\Template
     }
 
     /**
-     * Test function to check if the template is being loaded properly in the frontend without any issues.
-     *
-     * @psalm-return 'Hello world!'
-     */
-    public function getHelloWorldTxt(): string
-    {
-        return 'Hello world!';
-    }
-
-    /**
-     * Check if header sending is enabled.
-     */
-    public function isHeader(): mixed
-    {
-        return $this->oauthUtility->getStoreConfig(OAuthConstants::SEND_HEADER);
-    }
-
-    /**
-     * Check if body sending is enabled.
-     */
-    public function isBody(): mixed
-    {
-        return $this->oauthUtility->getStoreConfig(OAuthConstants::SEND_BODY);
-    }
-
-    /**
-     * Plugin is always enabled (M2Oidc registration removed)
-     *
-     * @return true
-     */
-    public function isEnabled(): bool
-    {
-        return true;
-    }
-
-    /**
-     * Get the OAuth grant type from configuration
-     *
-     * @return string
-     */
-    public function getGrantType()
-    {
-        $appName = $this->getAppName();
-        if (!empty($appName)) {
-            $collection = $this->getAllIdpConfiguration();
-            foreach ($collection as $item) {
-                if ($item->getData()['app_name'] === $appName) {
-                    return $item->getData()['grant_type'] ?? 'authorization_code';
-                }
-            }
-        }
-        return 'authorization_code';
-    }
-
-    /**
-     * Get table mapping configuration (placeholder)
-     *
-     * @psalm-return ''
-     */
-    public function getTable(): string
-    {
-        return '';
-    }
-
-    /**
-     * Get date of birth attribute mapping
-     *
-     * @return string
-     */
-    public function getDobMapping()
-    {
-        $amDob = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_DOB);
-        return $this->oauthUtility->isBlank($amDob) ? '' : $amDob;
-    }
-
-    /**
-     * Get phone number attribute mapping
-     *
-     * @return string
-     */
-    public function getPhoneMapping()
-    {
-        $amPhone = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_PHONE);
-        return $this->oauthUtility->isBlank($amPhone) ? '' : $amPhone;
-    }
-
-    /**
-     * Get street address attribute mapping
-     *
-     * @return string
-     */
-    public function getStreetMapping()
-    {
-        $amStreet = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_STREET);
-        return $this->oauthUtility->isBlank($amStreet) ? '' : $amStreet;
-    }
-
-    /**
-     * Get zip code attribute mapping
-     *
-     * @return string
-     */
-    public function getZipMapping()
-    {
-        $amZip = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_ZIP);
-        return $this->oauthUtility->isBlank($amZip) ? '' : $amZip;
-    }
-
-    /**
-     * Get city attribute mapping
-     *
-     * @return string
-     */
-    public function getCityMapping()
-    {
-        $amCity = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_CITY);
-        return $this->oauthUtility->isBlank($amCity) ? '' : $amCity;
-    }
-
-    /**
-     * Get state/region attribute mapping
-     *
-     * @return string
-     */
-    public function getStateMapping()
-    {
-        $amState = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_STATE);
-        return $this->oauthUtility->isBlank($amState) ? '' : $amState;
-    }
-
-    /**
-     * Get country attribute mapping
-     *
-     * @return string
-     */
-    public function getCountryMapping()
-    {
-        $amCountry = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_COUNTRY);
-        return $this->oauthUtility->isBlank($amCountry) ? '' : $amCountry;
-    }
-
-    /**
-     * Get gender attribute mapping
-     *
-     * @return string
-     */
-    public function getGenderMapping()
-    {
-        $amGender = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_GENDER);
-        return $this->oauthUtility->isBlank($amGender) ? '' : $amGender;
-    }
-
-    /**
      * Get OIDC claims for dropdown selection.
      *
      * Loads claims per-provider from the m2oidc_oauth_client_apps table.
@@ -332,111 +167,11 @@ class OAuth extends \Magento\Framework\View\Element\Template
     }
 
     /**
-     * Get company attribute mapping
-     *
-     * @psalm-return ''
-     */
-    public function getCompanyMapping(): string
-    {
-        return '';
-    }
-
-    /**
-     * This function checks if OAuth has been configured or not.
-     */
-    public function isOAuthConfigured(): bool
-    {
-        return $this->oauthUtility->isOAuthConfigured();
-    }
-
-    /**
      * This function fetches the OAuth App name saved by the admin
      */
     public function getAppName(): mixed
     {
         return $this->oauthUtility->getStoreConfig(OAuthConstants::APP_NAME);
-    }
-
-    /**
-     * This function fetches the Client ID saved by the admin
-     */
-    public function getClientID(): mixed
-    {
-        return $this->oauthUtility->getStoreConfig(OAuthConstants::CLIENT_ID);
-    }
-
-    /**
-     * Retrieve the configured endpoint URL.
-     */
-    public function getConfigUrl(): mixed
-    {
-        return $this->oauthUtility->getStoreConfig(OAuthConstants::ENDPOINT_URL);
-    }
-
-    /**
-     * This function fetches the Client secret saved by the admin
-     */
-    public function getClientSecret(): mixed
-    {
-        return $this->oauthUtility->getStoreConfig(OAuthConstants::CLIENT_SECRET);
-    }
-
-    /**
-     * This function fetches the Scope saved by the admin
-     */
-    public function getScope(): mixed
-    {
-        return $this->oauthUtility->getStoreConfig(OAuthConstants::SCOPE);
-    }
-
-    /**
-     * This function fetches the Authorize URL saved by the admin
-     */
-    public function getAuthorizeURL(): mixed
-    {
-        return $this->oauthUtility->getStoreConfig(OAuthConstants::AUTHORIZE_URL);
-    }
-
-    /**
-     * This function fetches the AccessToken URL saved by the admin
-     */
-    public function getAccessTokenURL(): mixed
-    {
-        return $this->oauthUtility->getStoreConfig(OAuthConstants::ACCESSTOKEN_URL);
-    }
-
-    /**
-     * This function fetches the GetUserInfo URL saved by the admin
-     */
-    public function getUserInfoURL(): mixed
-    {
-        return $this->oauthUtility->getStoreConfig(OAuthConstants::GETUSERINFO_URL);
-    }
-
-    /**
-     * Retrieve the configured logout URL.
-     */
-    public function getLogoutURL(): mixed
-    {
-        return $this->oauthUtility->getStoreConfig(OAuthConstants::OAUTH_LOGOUT_URL);
-    }
-
-    /**
-     * Get the admin CSS URL to be appended to the admin dashboard screen.
-     */
-    public function getAdminCssURL(): string
-    {
-        return $this->oauthUtility->getAdminCssUrl('adminSettings.css');
-    }
-
-    /**
-     * Get the current version of the plugin admin dashboard screen.
-     *
-     * @psalm-return 'v4.2.0'
-     */
-    public function getCurrentVersion(): string
-    {
-        return OAuthConstants::VERSION;
     }
 
     /**
@@ -448,48 +183,12 @@ class OAuth extends \Magento\Framework\View\Element\Template
     }
 
     /**
-     * Get the IntelTelInput JS URL to be appended to admin pages to show country code dropdown on phone number fields.
-     */
-    public function getIntlTelInputJs(): string
-    {
-        return $this->oauthUtility->getAdminJSUrl('intlTelInput.min.js');
-    }
-
-    /**
-     * Fetch/create the TEST Configuration URL of the Plugin.
-     *
-     * @return string
-     */
-    public function getTestUrl()
-    {
-        return $this->getUrl('m2oidc/actions/sendAuthorizationRequest');
-    }
-
-    /**
      * Get/Create Base URL of the site
      */
     #[\Override]
     public function getBaseUrl()
     {
         return $this->oauthUtility->getBaseUrl();
-    }
-
-    /**
-     * Get/Create Base URL of the site
-     */
-    public function getCallBackUrl(): string
-    {
-        return $this->oauthUtility->getBaseUrl() . OAuthConstants::CALLBACK_URL;
-    }
-
-    /**
-     * Create the URL for one of the SAML SP plugin sections to be shown as link on any of the template files.
-     *
-     * @param string $page
-     */
-    public function getExtensionPageUrl(string $page): string
-    {
-        return $this->oauthUtility->getAdminUrl('m2oidc/' . $page . '/index');
     }
 
     /**
@@ -533,82 +232,6 @@ class OAuth extends \Magento\Framework\View\Element\Template
     }
 
     /**
-     * Build a tab URL that carries the current provider_id when in provider-context.
-     *
-     * Falls back to the plain extension page URL when no provider_id is active.
-     *
-     * @param string $page e.g. 'oauthsettings', 'attrsettings'
-     */
-    public function getProviderTabUrl(string $page): string
-    {
-        $providerId = $this->getActiveProviderId();
-        if ($providerId > 0) {
-            return $this->getUrl('m2oidc/' . $page . '/index', ['provider_id' => $providerId]);
-        }
-        return $this->getExtensionPageUrl($page);
-    }
-
-    /**
-     * Read the Tab and retrieve the current active tab if any.
-     */
-    public function getCurrentActiveTab(): string
-    {
-        $page = $this->getUrl('*/*/*', ['_current' => true, '_use_rewrite' => false]);
-        $start = (int)strpos($page, '/m2oidc') + 9;
-        $end   = (int)strpos($page, '/index/key');
-        return substr($page, $start, $end - $start);
-    }
-
-    /**
-     * Check if auto-create admin is enabled for any active admin provider.
-     */
-    public function autoCreateAdmin(): bool
-    {
-        foreach ($this->oauthUtility->getAllActiveProviders('admin') as $provider) {
-            if (!empty($provider['m2oidc_auto_create_admin'])) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Check if auto-create customer is enabled for any active customer provider.
-     */
-    public function autoCreateCustomer(): bool
-    {
-        foreach ($this->oauthUtility->getAllActiveProviders('customer') as $provider) {
-            if (!empty($provider['m2oidc_auto_create_customer'])) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Check if auto-redirect to login is enabled.
-     */
-    public function isLoginRedirectEnabled(): mixed
-    {
-        return $this->oauthUtility->getStoreConfig(OAuthConstants::ENABLE_LOGIN_REDIRECT);
-    }
-
-    /**
-     * Check if the SSO link should be shown on the Admin login page.
-     *
-     * Aggregator: returns true if ANY active admin provider has show_admin_link = 1.
-     */
-    public function showAdminLink(): bool
-    {
-        foreach ($this->oauthUtility->getAllActiveProviders('admin') as $provider) {
-            if ((int) ($provider['show_admin_link'] ?? 0) === 1) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
      * Check if non-OIDC admin login is disabled.
      *
      * Aggregator: returns true if ANY active admin provider (with visible button)
@@ -621,21 +244,6 @@ class OAuth extends \Magento\Framework\View\Element\Template
                 continue;
             }
             if ((int) ($provider['m2oidc_disable_non_oidc_admin_login'] ?? 0) === 1) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Check if the SSO link should be shown on the Customer login page.
-     *
-     * Aggregator: returns true if ANY active customer provider has show_customer_link = 1.
-     */
-    public function showCustomerLink(): bool
-    {
-        foreach ($this->oauthUtility->getAllActiveProviders('customer') as $provider) {
-            if ((int) ($provider['show_customer_link'] ?? 0) === 1) {
                 return true;
             }
         }
@@ -664,133 +272,6 @@ class OAuth extends \Magento\Framework\View\Element\Template
     public function getAdminSPInitiatedUrl(?string $relayState = null, ?string $app_name = null): string
     {
         return $this->oauthUtility->getAdminSPInitiatedUrl($relayState, $app_name);
-    }
-
-    /**
-     * Get the configuration of OAuth Server.
-     */
-    public function getAllIdpConfiguration(): \M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps\Collection
-    {
-        return $this->oauthUtility->getOAuthClientApps();
-    }
-
-    /**
-     * Fetch the setting saved by the admin which decides if the account should be mapped to username or email.
-     */
-    public function getAccountMatcher(): mixed
-    {
-        return $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_MAP_BY);
-    }
-
-    /**
-     * Fetch the setting saved by the admin which doesn't allow roles to be assigned to unlisted users.
-     *
-     * @return string
-     */
-    public function getDisallowUnlistedUserRole()
-    {
-        $disallowUnlistedRole = $this->oauthUtility->getStoreConfig(OAuthConstants::UNLISTED_ROLE);
-        return $this->oauthUtility->isBlank($disallowUnlistedRole) ? '' : $disallowUnlistedRole;
-    }
-
-    /**
-     * Fetch the setting which decides what attribute should be mapped to the user's userName.
-     *
-     * @return string
-     */
-    public function getUserNameMapping()
-    {
-        $amUserName = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_USERNAME);
-        return $this->oauthUtility->isBlank($amUserName) ? '' : $amUserName;
-    }
-
-    /**
-     * Check if admin auto-redirect is enabled.
-     *
-     * @return string|null
-     */
-    public function getGroupMapping()
-    {
-        $amGroupName = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_GROUP);
-        return $this->oauthUtility->isBlank($amGroupName) ? '' : $amGroupName;
-    }
-
-    /**
-     * Get admin role mappings (OIDC group -> Magento role)
-     *
-     * @return array<int|string, mixed> Array of mappings with 'group' and 'role' keys
-     */
-    public function getAdminRoleMappings(): array
-    {
-        $mappings = $this->oauthUtility->getStoreConfig('adminRoleMapping');
-        if (!$this->oauthUtility->isBlank($mappings)) {
-            $decoded = json_decode((string) $mappings, true);
-            return is_array($decoded) ? $decoded : [];
-        }
-        return [];
-    }
-
-    /**
-     * Get customer group mappings from provider or global config.
-     *
-     * @return array<int, array{group: string, customerGroup: string}>
-     */
-    public function getCustomerGroupMappings(): array
-    {
-        $mappings = $this->oauthUtility->getStoreConfig(OAuthConstants::CUSTOMER_GROUP_MAPPING);
-        if (!$this->oauthUtility->isBlank($mappings)) {
-            $decoded = json_decode((string) $mappings, true);
-            return is_array($decoded) ? $decoded : [];
-        }
-        return [];
-    }
-
-    /**
-     * Get default customer group (ID or name).
-     */
-    public function getDefaultCustomerGroup(): string
-    {
-        $group = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_DEFAULT_CUSTOMER_GROUP);
-        return $this->oauthUtility->isBlank($group)
-            ? OAuthConstants::DEFAULT_CUSTOMER_GROUP
-            : (string) $group;
-    }
-
-    /**
-     * This fetches the setting saved by the admin which decides what
-     * attribute in the SAML response should be mapped to the Magento
-     * user's Email.
-     *
-     * @return string
-     */
-    public function getUserEmailMapping()
-    {
-        $amEmail = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_EMAIL);
-        return $this->oauthUtility->isBlank($amEmail) ? '' : $amEmail;
-    }
-
-    /**
-     * This fetches the setting saved by the admin which decides what
-     * attribute in the SAML response should be mapped to the Magento
-     * user's firstName.
-     *
-     * @return string
-     */
-    public function getFirstNameMapping()
-    {
-        $amFirstName = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_FIRSTNAME);
-        return $this->oauthUtility->isBlank($amFirstName) ? '' : $amFirstName;
-    }
-
-    /**
-     * Fetch the setting which decides what attribute should be mapped to the user's lastName
-     *
-     * @return string
-     */
-    public function getLastNameMapping()
-    {
-        $amLastName = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_LASTNAME);
-        return $this->oauthUtility->isBlank($amLastName) ? '' : $amLastName;
     }
 
     /**
@@ -830,49 +311,6 @@ class OAuth extends \Magento\Framework\View\Element\Template
     }
 
     /**
-     * Get all admin roles set by the admin on his site.
-     *
-     * @return array<int, mixed>
-     */
-    public function getAllRoles(): array
-    {
-        //Apply a filter to only include roles of a certain type ('G' in this case)
-        $rolesCollection = $this->adminRoleModel->addFieldToFilter('role_type', 'G');
-        // Convert the filtered collection to an options array
-        $rolesOptionsArray = $rolesCollection->toOptionArray();
-        return $rolesOptionsArray;
-    }
-
-    /**
-     * Get all customer groups set by the admin on his site.
-     *
-     * @return array<int, mixed>
-     */
-    public function getAllGroups(): array
-    {
-        return $this->userGroupModel->toOptionArray();
-    }
-
-    /**
-     * Get the default role to be set for the user if it doesn't match any of the role/group mappings
-     *
-     * @return string|null
-     */
-    public function getDefaultRole()
-    {
-        $defaultRole = $this->oauthUtility->getStoreConfig(OAuthConstants::MAP_DEFAULT_ROLE);
-        return $this->oauthUtility->isBlank($defaultRole) ? OAuthConstants::DEFAULT_ROLE : $defaultRole;
-    }
-
-    /**
-     * Get the Current Admin user from session
-     */
-    public function getCurrentAdminUser(): ?\Magento\User\Model\User
-    {
-        return $this->oauthUtility->getCurrentAdminUser();
-    }
-
-    /**
      * Fetch/Create the text of the button to be shown for SP initiated login from the admin / customer login pages.
      *
      * @return string
@@ -885,69 +323,11 @@ class OAuth extends \Magento\Framework\View\Element\Template
     }
 
     /**
-     * Get Admin Logout URL for the site
-     */
-    public function getAdminLogoutUrl(): string
-    {
-        return $this->oauthUtility->getLogoutUrl();
-    }
-
-    /**
-     * Is Test Configuration clicked?
-     */
-    public function getIsTestConfigurationClicked(): bool
-    {
-        return $this->oauthUtility->getIsTestConfigurationClicked();
-    }
-
-    /**
      * Check if log printing is on or off
      */
     public function isDebugLogEnable(): mixed
     {
         return $this->oauthUtility->getStoreConfig(OAuthConstants::ENABLE_DEBUG_LOG);
-    }
-
-    /**
-     * Fetch the X509 cert saved by the admin for the IDP in the plugin settings.
-     */
-    public function getX509Cert(): mixed
-    {
-        return $this->oauthUtility->getStoreConfig(OAuthConstants::X509CERT);
-    }
-
-    /**
-     * Retrieve the configured license type.
-     */
-    public function getJwksUrl(): mixed
-    {
-        return $this->oauthUtility->getStoreConfig(OAuthConstants::JWKS_URL);
-    }
-
-    /**
-     * Retrieve the current license plan.
-     *
-     * @return string|null
-     */
-    public function getProductVersion()
-    {
-        return $this->oauthUtility->getProductVersion();
-    }
-
-    /**
-     * Retrieve the license expiry date.
-     */
-    public function getEdition(): string
-    {
-        return $this->oauthUtility->getEdition();
-    }
-
-    /**
-     * Retrieve the current date.
-     */
-    public function getCurrentDate(): string
-    {
-        return $this->oauthUtility->getCurrentDate();
     }
 
     /**
@@ -988,5 +368,33 @@ class OAuth extends \Magento\Framework\View\Element\Template
             }
         }
         return false;
+    }
+
+    /**
+     * Validate a per-provider SSO button color, falling back to a sane default.
+     *
+     * L45: extracted from the duplicated "validate #rrggbb, else fallback" logic
+     * previously inlined in adminssobutton.phtml and customerssobutton.phtml.
+     *
+     * @param string|null $raw      Raw `button_color` value from the provider row
+     * @param string      $fallback Fallback hex color used when $raw is missing/invalid
+     */
+    public function resolveButtonColor(?string $raw, string $fallback): string
+    {
+        return preg_match('/^#[0-9a-fA-F]{6}$/', (string) $raw) ? (string) $raw : $fallback;
+    }
+
+    /**
+     * Resolve the SSO button label.
+     *
+     * L45: extracted from the duplicated "button_label, else 'Login with %1'" logic
+     * previously inlined in adminssobutton.phtml and customerssobutton.phtml.
+     *
+     * @param string|null $rawLabel    Raw `button_label` value from the provider row
+     * @param string      $displayName Provider display name used in the fallback phrase
+     */
+    public function resolveButtonLabel(?string $rawLabel, string $displayName): string
+    {
+        return in_array($rawLabel, [null, '', '0'], true) ? (string) __('Login with %1', $displayName) : $rawLabel;
     }
 }

@@ -16,13 +16,13 @@ use M2Oidc\OAuth\Helper\TestResults;
 use Psr\Log\LoggerInterface;
 
 /**
- * Main OAuth observer — listens to `controller_action_predispatch`.
+ * Test-config request observer — listens to `controller_action_predispatch`.
  *
- * Checks every incoming request for the `option` query parameter and,
- * when present, routes the request to the appropriate OAuth action
- * (e.g. authorization-code callback, test-config display).
+ * Detects requests carrying `option=m2oidc_test` (`OAuthConstants::TEST_CONFIG_OPT`)
+ * in the query string and renders the attribute-mapping test results inline
+ * via the TestResults helper instead of the dispatched controller output.
  */
-class OAuthObserver implements ObserverInterface
+class TestConfigRequestObserver implements ObserverInterface
 {
     /**
      * Query-parameter keys this observer reacts to.
@@ -31,7 +31,7 @@ class OAuthObserver implements ObserverInterface
     private const REQUEST_PARAMS = ['option'];
 
     /**
-     * Initialize OAuth observer.
+     * Initialize test-config request observer.
      *
      * @param ManagerInterface $messageManager
      * @param HttpRequest      $request
@@ -80,7 +80,7 @@ class OAuthObserver implements ObserverInterface
             }
 
             $this->messageManager->addErrorMessage($e->getMessage());
-            $this->logger->error('OAuthObserver: ' . $e->getMessage(), ['exception' => $e]);
+            $this->logger->error('TestConfigRequestObserver: ' . $e->getMessage(), ['exception' => $e]);
         }
     }
 

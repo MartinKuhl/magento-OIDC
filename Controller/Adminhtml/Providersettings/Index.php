@@ -10,7 +10,6 @@ use Magento\Framework\App\Action\HttpPostActionInterface;
 use Magento\Framework\Message\ManagerInterface;
 use Magento\Framework\View\Result\PageFactory;
 use M2Oidc\OAuth\Controller\Actions\BaseAdminAction;
-use M2Oidc\OAuth\Helper\OAuthConstants;
 use M2Oidc\OAuth\Helper\OAuthMessages;
 use M2Oidc\OAuth\Helper\OAuthUtility;
 use M2Oidc\OAuth\Model\M2oidcOauthClientAppsFactory;
@@ -29,6 +28,13 @@ use Psr\Log\LoggerInterface;
  */
 class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetActionInterface
 {
+    /**
+     * ACL resource checked by \Magento\Backend\App\Action::_isAllowed() (C-01/M-30).
+     *
+     * @var string
+     */
+    public const ADMIN_RESOURCE = 'M2Oidc_OAuth::provider_settings';
+
     /** @var M2oidcOauthClientAppsFactory */
     private readonly M2oidcOauthClientAppsFactory $clientAppsFactory;
 
@@ -112,16 +118,5 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
         $resultPage = $this->resultPageFactory->create();
         $resultPage->getConfig()->getTitle()->prepend((string)__('M2Oidc OAuth'));
         return $resultPage;
-    }
-
-    /**
-     * ACL check for Provider Settings access.
-     *
-     * @return bool
-     */
-    #[\Override]
-    protected function _isAllowed()
-    {
-        return $this->_authorization->isAllowed(OAuthConstants::MODULE_DIR . 'provider_settings');
     }
 }

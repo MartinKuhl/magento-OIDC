@@ -27,12 +27,12 @@ use Magento\Backend\Model\Auth;
 use Magento\Backend\Model\Auth\Session as AuthSession;
 use Magento\Backend\Model\UrlInterface as BackendUrlInterface;
 use Magento\Framework\App\ResponseInterface;
-use Magento\Framework\HTTP\Adapter\CurlFactory;
 use Magento\Framework\HTTP\PhpEnvironment\Response as HttpResponse;
 use Magento\Framework\Stdlib\Cookie\CookieMetadataFactory;
 use Magento\Framework\Stdlib\CookieManagerInterface;
 use M2Oidc\OAuth\Helper\OAuthConstants;
 use M2Oidc\OAuth\Helper\OAuthUtility;
+use M2Oidc\OAuth\Model\Service\RpInitiatedLogoutService;
 use Magento\Backend\App\Area\FrontNameResolver;
 use Magento\Framework\App\ResourceConnection;
 
@@ -59,8 +59,8 @@ class OidcLogoutPlugin
     /** @var FrontNameResolver */
     private readonly FrontNameResolver $frontNameResolver;
 
-    /** @var CurlFactory */
-    private readonly CurlFactory $curlFactory;
+    /** @var RpInitiatedLogoutService */
+    private readonly RpInitiatedLogoutService $rpInitiatedLogoutService;
 
     /** @var ResourceConnection */
     private readonly ResourceConnection $resourceConnection;
@@ -68,15 +68,15 @@ class OidcLogoutPlugin
     /**
      * Initialize OIDC logout plugin.
      *
-     * @param CookieManagerInterface $cookieManager
-     * @param CookieMetadataFactory  $cookieMetadataFactory
-     * @param OAuthUtility           $oauthUtility
-     * @param AuthSession            $authSession
-     * @param BackendUrlInterface    $backendUrl
-     * @param ResponseInterface      $response
-     * @param FrontNameResolver      $frontNameResolver
-     * @param CurlFactory            $curlFactory
-     * @param ResourceConnection     $resourceConnection
+     * @param CookieManagerInterface   $cookieManager
+     * @param CookieMetadataFactory    $cookieMetadataFactory
+     * @param OAuthUtility             $oauthUtility
+     * @param AuthSession              $authSession
+     * @param BackendUrlInterface      $backendUrl
+     * @param ResponseInterface        $response
+     * @param FrontNameResolver        $frontNameResolver
+     * @param RpInitiatedLogoutService $rpInitiatedLogoutService
+     * @param ResourceConnection       $resourceConnection
      */
     public function __construct(
         CookieManagerInterface $cookieManager,
@@ -86,18 +86,18 @@ class OidcLogoutPlugin
         BackendUrlInterface $backendUrl,
         ResponseInterface $response,
         FrontNameResolver $frontNameResolver,
-        CurlFactory $curlFactory,
+        RpInitiatedLogoutService $rpInitiatedLogoutService,
         ResourceConnection $resourceConnection
     ) {
-        $this->cookieManager         = $cookieManager;
-        $this->cookieMetadataFactory = $cookieMetadataFactory;
-        $this->oauthUtility          = $oauthUtility;
-        $this->authSession           = $authSession;
-        $this->backendUrl            = $backendUrl;
-        $this->response              = $response;
-        $this->frontNameResolver     = $frontNameResolver;
-        $this->curlFactory           = $curlFactory;
-        $this->resourceConnection    = $resourceConnection;
+        $this->cookieManager            = $cookieManager;
+        $this->cookieMetadataFactory    = $cookieMetadataFactory;
+        $this->oauthUtility             = $oauthUtility;
+        $this->authSession              = $authSession;
+        $this->backendUrl               = $backendUrl;
+        $this->response                 = $response;
+        $this->frontNameResolver        = $frontNameResolver;
+        $this->rpInitiatedLogoutService = $rpInitiatedLogoutService;
+        $this->resourceConnection       = $resourceConnection;
     }
 
     /**
@@ -221,14 +221,7 @@ class OidcLogoutPlugin
         }
 
         // ── 5b. RFC 7009 token revocation (non-fatal, fire-and-forget) ──
-        if ($provider !== null && !empty($provider['revocation_endpoint']) && $accessToken !== '') {
-            $this->revokeToken(
-                (string) $provider['revocation_endpoint'],
-                $accessToken,
-                (string) ($provider['clientID'] ?? ''),
-                (string) ($provider['client_secret'] ?? '')
-            );
-        }
+        $this->rpInitiatedLogoutService->revokeToken($provider, $accessToken, 'OidcLogoutPlugin');
 
         // ── 6. Build Logout URL ──
         // Zwei Modi:
@@ -236,28 +229,17 @@ class OidcLogoutPlugin
         //  b) Authelia Forward-Auth /logout → "rd" mit STATISCHER URL.
         //     NIEMALS die aktuelle Request-URL verwenden — sie enthält einen
         //     dynamischen key/-Token, der nicht als redirect_uri registriert werden kann.
-        $isForwardAuthLogout = $this->isAutheliaForwardAuthLogout($endSessionEndpoint);
-        $postLogoutUri       = $this->resolvePostLogoutRedirectUri($provider, $isForwardAuthLogout);
-        $params              = [];
-
-        if ($isForwardAuthLogout) {
-            // Authelia Forward-Auth: "rd" = statische Admin-Base-URL
-            if ($postLogoutUri !== '') {
-                $params['rd'] = $postLogoutUri;
-            }
-        } else {
-            // Standard OIDC RP-Initiated Logout
-            if ($idToken !== '') {
-                $params['id_token_hint'] = $idToken;
-            }
-            $params['state'] = 'admin:' . bin2hex(random_bytes(16));
-            if ($postLogoutUri !== '' && filter_var($postLogoutUri, FILTER_VALIDATE_URL) !== false) {
-                $params['post_logout_redirect_uri'] = $postLogoutUri;
-            }
-        }
-
-        $separator = (strpos($endSessionEndpoint, '?') !== false) ? '&' : '?';
-        $logoutUrl = $endSessionEndpoint . ($params !== [] ? $separator . http_build_query($params) : '');
+        $isForwardAuthLogout = $this->rpInitiatedLogoutService->isAutheliaForwardAuthLogout($endSessionEndpoint);
+        $postLogoutUri       = $this->rpInitiatedLogoutService->resolvePostLogoutRedirectUri(
+            $provider,
+            $this->resolveFallbackPostLogoutUri($isForwardAuthLogout)
+        );
+        $logoutUrl           = $this->rpInitiatedLogoutService->buildLogoutUrl(
+            $endSessionEndpoint,
+            $idToken,
+            'admin:' . bin2hex(random_bytes(16)),
+            $postLogoutUri
+        );
 
         $this->oauthUtility->customlog(sprintf(
             'OidcLogoutPlugin: Redirecting to IdP — mode=%s, endpoint=%s, redirect=%s',
@@ -276,9 +258,10 @@ class OidcLogoutPlugin
     }
 
     /**
-     * Resolve post_logout_redirect_uri for Admin context.
+     * Resolve the Admin-context fallback post_logout_redirect_uri.
      *
-     * Order: 1) provider.post_logout_url  2) Unified callback URL (standard OIDC)
+     * The per-provider post_logout_url override is applied on top of this by
+     * RpInitiatedLogoutService::resolvePostLogoutRedirectUri() (M28-validated).
      *
      * The unified callback URL (m2oidc/actions/postlogout) allows providers that
      * only accept a single registered Post Logout Redirect URI to serve both the
@@ -289,15 +272,10 @@ class OidcLogoutPlugin
      * of post_logout_redirect_uri, so this method returns the static admin base
      * URL when $isForwardAuth is true (no dynamic tokens, safe to register).
      *
-     * @param mixed[]|null $provider Provider data array or null
      * @param bool $isForwardAuth True when the endpoint is Authelia-style
      */
-    private function resolvePostLogoutRedirectUri(?array $provider, bool $isForwardAuth = false): string
+    private function resolveFallbackPostLogoutUri(bool $isForwardAuth): string
     {
-        if ($provider !== null && !empty($provider['post_logout_url'])) {
-            return rtrim((string) $provider['post_logout_url'], '/') . '/';
-        }
-
         // Authelia uses ?rd=<url> — must be the static admin base URL, not the callback.
         if ($isForwardAuth) {
             try {
@@ -325,66 +303,5 @@ class OidcLogoutPlugin
         // cannot be registered as an allowed Post Logout Redirect URI at the IdP.
         $baseUrl = rtrim($this->backendUrl->getBaseUrl(), '/');
         return $baseUrl . '/m2oidc/actions/postlogout';
-    }
-
-    /**
-     * Erkennt Authelia's Forward-Auth /logout-Endpoint.
-     *
-     * Heuristik: Pfad endet auf /logout, enthält aber kein /oauth2/ oder /oidc/.
-     * Damit wird zwischen Authelia-Forward-Auth und echtem OIDC end_session_endpoint
-     * unterschieden.
-     *
-     * @param string $endpoint The end session endpoint URL to check
-     */
-    private function isAutheliaForwardAuthLogout(string $endpoint): bool
-    {
-        // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
-        $path = (string) parse_url($endpoint, PHP_URL_PATH);
-        return str_ends_with(rtrim($path, '/'), '/logout')
-            && !str_contains($path, '/oauth2/')
-            && !str_contains($path, '/oidc/');
-    }
-
-    /**
-     * Call the RFC 7009 token revocation endpoint (fire-and-forget).
-     *
-     * Failure is non-fatal: we log and continue the logout flow.
-     *
-     * @param string $revocationEndpoint
-     * @param string $accessToken
-     * @param string $clientId
-     * @param string $clientSecret  Plaintext secret (already decrypted by getClientDetailsById)
-     */
-    private function revokeToken(
-        string $revocationEndpoint,
-        string $accessToken,
-        string $clientId,
-        string $clientSecret
-    ): void {
-        try {
-            $curl = $this->curlFactory->create();
-            $curl->setConfig(['timeout' => 5]);
-            $curl->write(
-                'POST',
-                $revocationEndpoint,
-                '1.1',
-                ['Content-Type: application/x-www-form-urlencoded'],
-                http_build_query([
-                    'token'           => $accessToken,
-                    'token_type_hint' => 'access_token',
-                    'client_id'       => $clientId,
-                    'client_secret'   => $clientSecret,
-                ])
-            );
-            $curl->read();
-            $curl->close();
-            $this->oauthUtility->customlog(
-                'OidcLogoutPlugin: Token revocation request sent to ' . $revocationEndpoint
-            );
-        } catch (\Exception $e) {
-            $this->oauthUtility->customlog(
-                'OidcLogoutPlugin: Token revocation failed (non-fatal): ' . $e->getMessage()
-            );
-        }
     }
 }

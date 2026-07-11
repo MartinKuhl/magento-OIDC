@@ -102,9 +102,11 @@ class AuthorizationRequest
     {
         $requestStr = "";
 
-        if (strpos($this->authorizeURL, '?') === false) {
-            $requestStr .= '?';
-        }
+        // H-04: When the authorize endpoint already contains a query string
+        // (e.g. Azure AD B2C policy URLs like ...?p=policy), join the appended
+        // parameters with '&' — otherwise client_id would be concatenated
+        // directly onto the existing query value.
+        $requestStr .= (strpos($this->authorizeURL, '?') === false) ? '?' : '&';
 
         $requestStr .=
             'client_id=' . urlencode($this->clientID) .
