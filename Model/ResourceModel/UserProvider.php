@@ -114,6 +114,7 @@ class UserProvider extends AbstractDb
             ->limit(1);
         // AdapterInterface::fetchOne()'s docblock claims string, but the real
         // Zend_Db/PDO-backed implementation returns false on no matching row.
+        // @phpstan-ignore-next-line notIdentical.alwaysTrue
         $result = $connection->fetchOne($select);
         return $result !== false && $result !== '' ? (int) $result : null;
     }
