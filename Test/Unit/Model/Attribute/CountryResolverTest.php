@@ -13,7 +13,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Unit tests for CountryResolver (L43).
+ * Unit tests for CountryResolver.
  *
  * Verifies the unified country-resolution chain shared by CustomerAttributeMapper
  * (customer creation) and CustomerProfileSyncService (address re-sync):

@@ -8,7 +8,7 @@ use M2Oidc\OAuth\Helper\OAuthUtility;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Unit tests for OAuthUtility::extractNameFromEmail() (REF-02).
+ * Unit tests for OAuthUtility::extractNameFromEmail().
  *
  * This method is the single source of truth for deriving first/last name
  * from an email address when OIDC attributes are missing.

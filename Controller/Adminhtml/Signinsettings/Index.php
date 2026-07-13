@@ -33,14 +33,14 @@ use Psr\Log\LoggerInterface;
 class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetActionInterface
 {
     /**
-     * ACL resource checked by \Magento\Backend\App\Action::_isAllowed() (C-01/M-30).
+     * ACL resource checked by \Magento\Backend\App\Action::_isAllowed().
      *
      * @var string
      */
     public const ADMIN_RESOURCE = 'M2Oidc_OAuth::signin_settings';
 
     /**
-     * Runtime/diagnostic provider fields excluded from configuration exports (M-31).
+     * Runtime/diagnostic provider fields excluded from configuration exports.
      *
      * @var string[]
      */
@@ -183,7 +183,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
             $data = $provider->getData();
             // Remove internal DB primary key
             unset($data['id']);
-            // M-31: strip runtime/diagnostic fields from the export
+            // Strip runtime/diagnostic fields from the export
             foreach (self::EXPORT_EXCLUDED_FIELDS as $excludedField) {
                 unset($data[$excludedField]);
             }
@@ -293,7 +293,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
             // Remove DB-specific fields
             unset($providerData['id']);
 
-            // C-03: shared whitelist / SSRF / lockout validation before persisting
+            // Shared whitelist / SSRF / lockout validation before persisting
             $validation = $this->providerDataValidator->validate($providerData, 0);
             foreach ($validation->getWarnings() as $warning) {
                 $this->messageManager->addWarningMessage($warning);
@@ -407,7 +407,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
      *
      * @param (false|mixed|string)[] $values
      * @psalm-param list{string, mixed, mixed, mixed, mixed, mixed, mixed, mixed, mixed, mixed, mixed, mixed,
-     *                    'v4.2.0', string, false|string} $values
+     *                    '1.0.0', string, false|string} $values
      */
     private function customerConfigurationSettings(array $values): void
     {

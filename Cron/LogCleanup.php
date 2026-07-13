@@ -17,8 +17,8 @@ use M2Oidc\OAuth\Logger\OidcLogger;
  *  - Debug logging was disabled in the admin UI while the log file still exists.
  *
  * Note: this class intentionally deletes the log rather than rotating it.
- * A future improvement (see Docs/Code-Review.md #16) would rename the file to
- * M2Oidc.log.1 and keep up to 3 historical copies before deleting.
+ * A future improvement would rename the file to M2Oidc.log.1 and keep up to
+ * 3 historical copies before deleting.
  */
 class LogCleanup
 {

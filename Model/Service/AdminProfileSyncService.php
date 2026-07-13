@@ -57,7 +57,7 @@ class AdminProfileSyncService
      * the attribute is skipped.  When no normalized row exists (legacy mode) the attribute
      * is always synced (the coarse global flag still guards the call-site).
      *
-     * @param \Magento\User\Model\User $user           Already-loaded admin user (M17)
+     * @param \Magento\User\Model\User $user           Already-loaded admin user
      * @param mixed[]                  $flattenedAttrs Flattened OIDC attributes
      * @param mixed[]                  $rawAttrs       Raw (nested) OIDC attributes
      * @param string                   $firstNameKey   OIDC claim key for firstname
@@ -104,7 +104,7 @@ class AdminProfileSyncService
         if ($this->shouldSync($attrMap, 'username')) {
             $un = $this->extract($usernameKey, $flattenedAttrs, $rawAttrs);
             if ($un !== null && $user->getUserName() !== $un) {
-                // M-08: Check-then-save has a small TOCTOU window. Acceptable since
+                // Check-then-save has a small TOCTOU window. Acceptable since
                 // admin logins are low-frequency and MySQL UNIQUE constraint provides a safety net.
                 $existing = $this->userFactory->create();
                 $this->userResource->load($existing, $un, 'username');
@@ -147,11 +147,11 @@ class AdminProfileSyncService
      * Re-evaluate and update admin role from OIDC group claims.
      *
      * Uses the same role-mapping logic as AdminUserCreator (via
-     * GroupMappingResolver::matchGroups(), M18): iterate provider role
+     * GroupMappingResolver::matchGroups()): iterate provider role
      * mappings, match against OIDC groups case-insensitively, assign the
      * first matching role.
      *
-     * @param \Magento\User\Model\User $user           Already-loaded admin user (M17)
+     * @param \Magento\User\Model\User $user           Already-loaded admin user
      * @param mixed[]                  $flattenedAttrs Flattened OIDC attributes
      * @param mixed[]                  $rawAttrs       Raw (nested) OIDC attributes
      * @param string                   $groupAttribute OIDC claim key for groups

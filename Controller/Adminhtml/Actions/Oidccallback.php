@@ -153,6 +153,9 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
         }
 
         $nonce = $this->cookieManager->getCookie('oidc_admin_nonce');
+        // Read early so it can be used to cross-validate the nonce's bound provider
+        // context at redemption time (persistSessionData() also reads this cookie later).
+        $providerIdForNonce = (int) $this->cookieManager->getCookie('oidc_provider_id_transport');
 
         $this->oauthUtility->customlog("OIDC Admin Callback: Starting authentication");
 
@@ -163,7 +166,7 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
             );
         }
 
-        $email = $this->securityHelper->redeemAdminLoginNonce($nonce);
+        $email = $this->securityHelper->redeemAdminLoginNonce($nonce, $providerIdForNonce);
         if ($email === null) {
             $this->oauthUtility->customlog("ERROR: Nonce is invalid or expired");
             return $this->redirectToLoginWithError(
@@ -171,7 +174,7 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
             );
         }
 
-        // H-05: Delete the cookie AFTER successful nonce redemption (not before)
+        // Delete the cookie AFTER successful nonce redemption (not before)
         $adminPath = '/' . $this->backendUrl->getAreaFrontName();
         $cookieMeta = $this->cookieMetadataFactory->createCookieMetadata()->setPath($adminPath);
         $this->cookieManager->deleteCookie('oidc_admin_nonce', $cookieMeta);
@@ -179,7 +182,7 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
         $this->oauthUtility->customlog("Email resolved from nonce: " . $email);
 
         try {
-            // C-01: Generate a single-use ephemeral auth token for this login attempt.
+            // Generate a single-use ephemeral auth token for this login attempt.
             // The token is stored in cache (TTL 120s) keyed by hash(token) → email.
             // OidcCredentialAdapter::authenticate() will validate and consume it.
             $oidcAuthToken = $this->securityHelper->createOidcAuthToken($email);
@@ -241,7 +244,7 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
      */
     private function persistSessionData(string $email): void
     {
-        // H-04: Mark session as OIDC-authenticated so OidcPasswordExpirationPlugin
+        // Mark session as OIDC-authenticated so OidcPasswordExpirationPlugin
         // (and any other plugin checking this flag) can skip inapplicable checks.
         /** @psalm-suppress UndefinedInterfaceMethod */
         // @phpstan-ignore-next-line
@@ -357,7 +360,7 @@ class Oidccallback implements ActionInterface, HttpGetActionInterface
             "OIDC cookie set with path '/' and duration " . $adminSessionLifetime . "s"
         );
 
-        // H-03: Use post-login auth storage to get user for the welcome message.
+        // Use post-login auth storage to get user for the welcome message.
         // The user was loaded and validated inside OidcCredentialAdapter::authenticate().
         /** @psalm-suppress UndefinedInterfaceMethod */
         // @phpstan-ignore-next-line

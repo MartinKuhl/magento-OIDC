@@ -130,6 +130,11 @@ class OAuthConstants
      * @var int
      */
     public const HTTP_TIMEOUT_DEFAULT = 30;
+    /** Fixed timeout (seconds) for outbound health-alert webhook POSTs — deliberately short
+     * and independent of the per-provider HTTP_TIMEOUT (5-300s) so a slow/unreachable
+     * alerting endpoint (Slack/PagerDuty/etc.) can never stall the 5-minute health-check cron.
+     * @var int */
+    public const WEBHOOK_TIMEOUT_DEFAULT = 5;
     /**
      * @var string
      */
@@ -470,7 +475,7 @@ class OAuthConstants
     /**
      * @var string
      */
-    public const VERSION = "v4.2.0";
+    public const VERSION = "1.0.0";
     /**
      * @var string
      */

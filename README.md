@@ -44,6 +44,7 @@ Modern e-commerce platforms require secure, centralized authentication. This mod
 - ✅ **Comprehensive Debug Logging**: Detailed flow logs for troubleshooting, with automatic log rotation via a daily cron job; optional JSON Lines mode (`oidc/logging/json_lines`) for structured log ingestion
 - ✅ **Test Configuration UI**: Verify OIDC claims before production deployment
 - ✅ **OIDC Discovery Auto-Refresh**: Endpoints automatically re-fetched every 6 hours via cron — no manual provider re-save needed when IdP endpoints change
+- ✅ **Health-Check Webhook Alerting**: Configure a webhook URL (Slack, PagerDuty, or any HTTP endpoint) and a failure threshold per provider; after that many consecutive reachability-check failures (checked every 5 minutes), the module posts a JSON alert, plus an optional one-time recovery notification once the provider is reachable again — no repeated alerts while the outage continues
 - ✅ **Per-Attribute Sync Control**: Fine-grained `sync_on_sso` flag per mapped attribute in the normalized mappings table, enabling selective sync instead of all-or-nothing toggles
 - ✅ **Per-Provider Attribute Mapper Overrides**: Third-party modules can inject custom `AttributeMapperInterface` implementations per OIDC provider via DI (`MapperPool`)
 - ✅ **Sliding-Window Rate Limiter**: Redis deployments can switch to the `OidcSlidingWindowRateLimiter` virtual type for burst-tolerant sliding-window rate limiting

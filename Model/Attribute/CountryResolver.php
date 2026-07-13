@@ -8,7 +8,7 @@ use M2Oidc\OAuth\Helper\OAuthUtility;
 use Magento\Directory\Model\ResourceModel\Country\CollectionFactory as CountryCollectionFactory;
 
 /**
- * Resolves an OIDC country claim to a Magento country_id (L43).
+ * Resolves an OIDC country claim to a Magento country_id.
  *
  * Single source of truth for country resolution, shared by
  * CustomerAttributeMapper (customer creation) and CustomerProfileSyncService

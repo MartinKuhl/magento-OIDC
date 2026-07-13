@@ -44,7 +44,7 @@ class AdminAttributeMapper implements AttributeMapperInterface
      * 1. Apply any configured claim transforms for firstname / lastname.
      * 2. If both firstname and lastname are non-empty after transforms, return them.
      * 3. Derive first/last name from the email address prefix using
-     *    OAuthUtility::extractNameFromEmail() as the single source of truth (REF-02).
+     *    OAuthUtility::extractNameFromEmail() as the single source of truth.
      * 4. If lastname is still empty after derivation, reuse firstname.
      */
     #[\Override]

@@ -13,7 +13,7 @@ use M2Oidc\OAuth\Model\M2oidcOauthClientAppsFactory;
 use M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps as AppResource;
 
 /**
- * Admin controller — Delete OIDC Provider (MP-06).
+ * Admin controller — Delete OIDC Provider.
  *
  * Route: POST /admin/m2oidc/provider/delete
  *

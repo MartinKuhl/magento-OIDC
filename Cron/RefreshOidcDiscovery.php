@@ -149,7 +149,7 @@ class RefreshOidcDiscovery
             return null;
         }
 
-        // H-09: SSRF protection — never fetch discovery documents from private hosts.
+        // SSRF protection — never fetch discovery documents from private hosts.
         // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
         $host = (string) parse_url($validated, PHP_URL_HOST);
         if ($this->ssrfUrlValidator->isPrivateHost($host)) {

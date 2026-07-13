@@ -45,7 +45,7 @@ class JwtVerifier
     /**
      * Verify and decode a JWT id_token using the provider's JWKS endpoint.
      *
-     * H-01: When $expectedNonce is non-null the nonce claim in the token payload
+     * When $expectedNonce is non-null the nonce claim in the token payload
      * MUST match exactly; a missing or mismatched nonce is rejected. Pass null
      * to skip nonce validation (e.g. when the IdP does not support nonces).
      *
@@ -53,7 +53,7 @@ class JwtVerifier
      * @param  string      $jwksUrl       The JWKS endpoint URL
      * @param  string|null $issuer        Expected issuer (iss claim), null to skip
      * @param  string|null $audience      Expected audience (aud claim), null to skip
-     * @param  string|null $expectedNonce Expected nonce claim value (H-01), null to skip
+     * @param  string|null $expectedNonce Expected nonce claim value, null to skip
      * @return array<string, mixed>|null Decoded payload array, or null on failure
      */
     public function verifyAndDecode(
@@ -228,7 +228,7 @@ class JwtVerifier
             }
         }
 
-        // H-01: Validate nonce — prevents id_token replay attacks (OIDC Core 1.0 §3.1.2.1)
+        // Validate nonce — prevents id_token replay attacks (OIDC Core 1.0 §3.1.2.1)
         if ($expectedNonce !== null) {
             $tokenNonce = $payload['nonce'] ?? null;
             if ($tokenNonce === null) {
@@ -323,7 +323,7 @@ class JwtVerifier
             return null;
         }
 
-        $data = json_decode((string) $response, true);
+        $data = json_decode($response, true);
         if (!isset($data['keys']) || !is_array($data['keys'])) {
             $this->oauthUtility->customlog("JwtVerifier: Invalid JWKS format from: " . $jwksUrl);
             return null;

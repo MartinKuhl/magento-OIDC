@@ -366,7 +366,7 @@
                 sortOrder="10"/>
     </type>
 
-    <!-- MP-09: Dynamic CSP -->
+    <!-- Dynamic CSP for multiple configured OIDC providers -->
     <type name="Magento\Csp\Model\Collector\MergeCollector">
         <arguments>
             <argument name="collectors" xsi:type="array">

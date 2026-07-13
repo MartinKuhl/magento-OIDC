@@ -951,7 +951,7 @@ namespace Magento\Customer\Model {
     }
 }
 
-// ─── Encryption (WS-A: SsrfUrlValidator / data patch tests) ──────────────────
+// ─── Encryption (used by SsrfUrlValidator / data patch tests) ──────────────────
 
 namespace Magento\Framework\Encryption {
     /**
@@ -973,7 +973,7 @@ namespace Magento\Framework\Encryption {
     }
 }
 
-// ─── Setup / data patches (WS-A: EncryptPlaintextClientSecrets tests) ────────
+// ─── Setup / data patches (used by EncryptPlaintextClientSecrets tests) ────────
 
 namespace Magento\Framework\Setup {
     /**
@@ -1019,7 +1019,7 @@ namespace Magento\Framework\Setup\Patch {
     }
 }
 
-// ─── DB adapter / select (WS-A: EncryptPlaintextClientSecrets tests) ─────────
+// ─── DB adapter / select (used by EncryptPlaintextClientSecrets tests) ─────────
 
 namespace Magento\Framework\DB {
     /**
@@ -1074,7 +1074,7 @@ namespace Magento\Framework\DB\Adapter {
     }
 }
 
-// ─── Directory (WS-B: CountryResolver / CustomerAttributeMapper tests) ───────
+// ─── Directory (used by CountryResolver / CustomerAttributeMapper tests) ───────
 
 namespace Magento\Directory\Model {
     /**
@@ -1145,7 +1145,7 @@ namespace Magento\Directory\Model\ResourceModel\Country {
     }
 }
 
-// ─── HTTP curl adapter (WS-B: Curl / JwtVerifier / RpInitiatedLogoutService) ─
+// ─── HTTP curl adapter (used by Curl / JwtVerifier / RpInitiatedLogoutService) ─
 
 namespace Magento\Framework\HTTP\Adapter {
     /**
@@ -1196,7 +1196,7 @@ namespace Magento\Framework\HTTP\Adapter {
     }
 }
 
-// ─── Backend URL (WS-B: CheckAttributeMappingActionIdpBindingTest) ──────────
+// ─── Backend URL (used by CheckAttributeMappingActionIdpBindingTest) ──────────
 
 namespace Magento\Backend\Model {
     interface UrlInterface
@@ -1215,7 +1215,7 @@ namespace Magento\Backend\Model {
     }
 }
 
-// ─── Customer API (WS-B: ProcessUserAction / CustomerProfileSyncService) ────
+// ─── Customer API (used by ProcessUserAction / CustomerProfileSyncService) ────
 
 namespace Magento\Customer\Api {
     interface CustomerRepositoryInterface
@@ -1251,7 +1251,7 @@ namespace Magento\Customer\Api {
     }
 }
 
-// ─── Controller Result factories (WS-B: BackChannelLogout / IdpInitiatedLogin)
+// ─── Controller Result factories (used by BackChannelLogout / IdpInitiatedLogin)
 
 namespace Magento\Framework\Controller {
     /**
@@ -1330,7 +1330,7 @@ namespace Magento\Framework\Controller\Result {
     }
 }
 
-// ─── Authentication exception (WS-B: OidcCredentialAdapterTest) ────────────
+// ─── Authentication exception (used by OidcCredentialAdapterTest) ────────────
 
 namespace Magento\Framework\Exception {
     class AuthenticationException extends \Exception
@@ -1338,7 +1338,7 @@ namespace Magento\Framework\Exception {
     }
 }
 
-// ─── Deployment config (WS-B: RedisConnectionFactoryTest) ──────────────────
+// ─── Deployment config (used by RedisConnectionFactoryTest) ──────────────────
 
 namespace Magento\Framework\App {
     class DeploymentConfig
@@ -1351,7 +1351,7 @@ namespace Magento\Framework\App {
     }
 }
 
-// ─── Generic data object (WS-B: OidcProviderRepositoryTest) ────────────────
+// ─── Generic data object (used by OidcProviderRepositoryTest) ────────────────
 
 namespace Magento\Framework {
     /**
@@ -1394,7 +1394,7 @@ namespace Magento\Framework {
     }
 }
 
-// ─── Authorization / admin roles (WS-B: AdminProfileSyncServiceTest) ───────
+// ─── Authorization / admin roles (used by AdminProfileSyncServiceTest) ───────
 
 namespace Magento\Authorization\Model {
     class Role extends \Magento\Framework\Model\AbstractModel
@@ -1433,7 +1433,7 @@ namespace Magento\Authorization\Model\ResourceModel\Role {
     }
 }
 
-// ─── HTTP response (WS-B: OAuthLogoutObserverTest) ─────────────────────────
+// ─── HTTP response (used by OAuthLogoutObserverTest) ─────────────────────────
 
 namespace Magento\Framework\HTTP\PhpEnvironment {
     class Response implements \Magento\Framework\App\ResponseInterface
@@ -1526,7 +1526,7 @@ namespace Magento\Customer\Api\Data {
     }
 }
 
-// ─── Cookie manager (WS-B: OidcLogoutPluginTest) ───────────────────────────
+// ─── Cookie manager (used by OidcLogoutPluginTest) ───────────────────────────
 
 namespace Magento\Framework\Stdlib {
     interface CookieManagerInterface
@@ -1551,7 +1551,7 @@ namespace Magento\Framework\Stdlib {
     }
 }
 
-// ─── Cookie metadata (WS-B: OidcLogoutPluginTest / CheckAttributeMappingActionIdpBindingTest)
+// ─── Cookie metadata (used by OidcLogoutPluginTest / CheckAttributeMappingActionIdpBindingTest)
 
 namespace Magento\Framework\Stdlib\Cookie {
     class PublicCookieMetadata
@@ -1596,7 +1596,7 @@ namespace Magento\Framework\Stdlib\Cookie {
     }
 }
 
-// ─── Action Context, base (WS-B: BackChannelLogoutTest / IdpInitiatedLoginTest)
+// ─── Action Context, base (used by BackChannelLogoutTest / IdpInitiatedLoginTest)
 
 namespace Magento\Framework\App\Action {
     /**
@@ -1673,7 +1673,7 @@ namespace Magento\Framework\App\Action {
     }
 }
 
-// ─── Store (WS-B: ProcessUserActionRelayStateTest) ─────────────────────────
+// ─── Store (used by ProcessUserActionRelayStateTest) ─────────────────────────
 
 namespace Magento\Framework {
     interface UrlInterface
@@ -1733,7 +1733,7 @@ namespace Magento\Store\Model {
     }
 }
 
-// ─── Customer data interfaces (WS-B: CustomerUserCreatorAddressTest, etc.) ──
+// ─── Customer data interfaces (used by CustomerUserCreatorAddressTest, etc.) ──
 
 namespace Magento\Customer\Api\Data {
     interface CustomerInterface

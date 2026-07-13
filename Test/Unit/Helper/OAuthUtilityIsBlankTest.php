@@ -8,7 +8,7 @@ use M2Oidc\OAuth\Helper\OAuthUtility;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Unit tests for OAuthUtility::isBlank() (L38).
+ * Unit tests for OAuthUtility::isBlank().
  *
  * empty() treats the literal string "0" as blank, which misclassifies a
  * legitimately non-empty claim value (username, employee ID, group name)

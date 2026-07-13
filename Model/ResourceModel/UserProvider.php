@@ -7,7 +7,7 @@ namespace M2Oidc\OAuth\Model\ResourceModel;
 use Magento\Framework\Model\ResourceModel\Db\AbstractDb;
 
 /**
- * Resource model forfinal  the m2oidc_oauth_user_provider mapping table.
+ * Resource model for the m2oidc_oauth_user_provider mapping table.
  * Provides helpers for saving and retrieving the OIDC provider that created a user.
  */
 class UserProvider extends AbstractDb
@@ -115,7 +115,6 @@ class UserProvider extends AbstractDb
         // AdapterInterface::fetchOne()'s docblock claims string, but the real
         // Zend_Db/PDO-backed implementation returns false on no matching row.
         $result = $connection->fetchOne($select);
-        // @phpstan-ignore notIdentical.alwaysTrue
         return $result !== false && $result !== '' ? (int) $result : null;
     }
 

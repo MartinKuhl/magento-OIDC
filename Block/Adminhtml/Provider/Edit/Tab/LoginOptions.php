@@ -291,4 +291,15 @@ class LoginOptions extends Template implements TabInterface
     {
         return $this->providerVal('headless_mode');
     }
+
+    // ── Post-Logout Redirect ─────────────────────────────────
+    /**
+     * Return the per-provider post-logout landing page override, if configured.
+     *
+     * Falls back to the unified /m2oidc/actions/postlogout URL when empty.
+     */
+    public function getPostLogoutUrl(): string
+    {
+        return (string) ($this->getProviderData()['post_logout_url'] ?? '');
+    }
 }

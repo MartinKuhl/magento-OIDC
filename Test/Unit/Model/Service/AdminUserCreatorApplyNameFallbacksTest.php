@@ -17,7 +17,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Unit tests for AdminUserCreator name-fallback behaviour (REF-02).
+ * Unit tests for AdminUserCreator name-fallback behaviour.
  *
  * Tests that applyNameFallbacks() correctly delegates to
  * OAuthUtility::extractNameFromEmail() when first/last name are empty.

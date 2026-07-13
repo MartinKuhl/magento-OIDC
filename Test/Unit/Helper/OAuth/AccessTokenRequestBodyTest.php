@@ -9,7 +9,7 @@ use M2Oidc\OAuth\Helper\OAuthConstants;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Unit tests for AccessTokenRequestBody (H-06).
+ * Unit tests for AccessTokenRequestBody.
  *
  * Verifies:
  *  - Public clients (no Authorization header) get client_id in the body
@@ -34,7 +34,7 @@ class AccessTokenRequestBodyTest extends TestCase
             'public-client-id'
         ))->build();
 
-        $this->assertArrayHasKey('client_id', $body, 'H-06: public client must carry client_id in the body');
+        $this->assertArrayHasKey('client_id', $body, 'public client must carry client_id in the body');
         $this->assertSame('public-client-id', $body['client_id']);
         $this->assertSame(self::REDIRECT_URL, $body['redirect_uri']);
         $this->assertSame(OAuthConstants::GRANT_TYPE, $body['grant_type']);

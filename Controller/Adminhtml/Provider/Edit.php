@@ -15,7 +15,7 @@ use M2Oidc\OAuth\Model\M2oidcOauthClientAppsFactory;
 use M2Oidc\OAuth\Model\ResourceModel\M2OidcOauthClientApps as AppResource;
 
 /**
- * Admin controller — Edit / Add OIDC Provider form (MP-06).
+ * Admin controller — Edit / Add OIDC Provider form.
  *
  * Route: GET /admin/m2oidc/provider/edit[/id/<providerId>]
  *

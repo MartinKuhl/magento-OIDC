@@ -8,13 +8,9 @@ use M2Oidc\OAuth\Helper\OAuth\SAML2Utilities;
 use M2Oidc\OAuth\Helper\OAuthConstants;
 
 /**
- * This class is used to generate our AuthnRequest object.
- * The generate function is called to generate an XML
- * document that can then be passed to the IDP for
- * validation.
- *
- * @todo - the generateXML function uses string. Need to convert it so that request
- *        - is generated using \Dom functions
+ * Builds the associative-array body for an OAuth2/OIDC access token exchange request
+ * when client credentials are sent in the body rather than an Authorization header
+ * (see AccessTokenRequest for the header-based alternative).
  */
 class AccessTokenRequestBody
 {
@@ -29,12 +25,12 @@ class AccessTokenRequestBody
     private $code;
 
     /**
-     * @var string|null PKCE code_verifier to include in the token request (FEAT-01)
+     * @var string|null PKCE code_verifier to include in the token request
      */
     private readonly ?string $codeVerifier;
 
     /**
-     * @var string|null OAuth client ID to include in the body for public clients (H-06);
+     * @var string|null OAuth client ID to include in the body for public clients;
      *                  null when the client authenticates via HTTP Basic (RFC 6749 §2.3.1)
      */
     private readonly ?string $clientID;
@@ -45,7 +41,7 @@ class AccessTokenRequestBody
      * @param string      $redirectURL
      * @param string      $code
      * @param string|null $codeVerifier PKCE code_verifier (RFC 7636 §4.5); null when PKCE is disabled
-     * @param string|null $clientID     Client ID for public clients (H-06); null when HTTP Basic auth is used
+     * @param string|null $clientID     Client ID for public clients; null when HTTP Basic auth is used
      */
     public function __construct($redirectURL, $code, ?string $codeVerifier = null, ?string $clientID = null)
     {
@@ -68,7 +64,7 @@ class AccessTokenRequestBody
             'code'         => $this->code,
         ];
 
-        // H-06: Public clients send no Authorization header, so the token endpoint
+        // Public clients send no Authorization header, so the token endpoint
         // can only identify them via a client_id body parameter (RFC 6749 §3.2.1).
         // Confidential clients authenticate via HTTP Basic and must not duplicate
         // client_id in the body (RFC 6749 §2.3.1) — they pass null here.

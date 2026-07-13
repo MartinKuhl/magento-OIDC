@@ -8,13 +8,9 @@ use M2Oidc\OAuth\Helper\OAuth\SAML2Utilities;
 use M2Oidc\OAuth\Helper\OAuthConstants;
 
 /**
- * This class is used to generate our AuthnRequest object.
- * The generate function is called to generate an XML
- * document that can then be passed to the IDP for
- * validation.
- *
- * @todo - the generateXML function uses string. Need to convert it so that request
- *        - is generated using \Dom functions
+ * Builds the query-string body for an OAuth2/OIDC access token exchange request
+ * (used when the client credentials are sent in the Authorization header rather
+ * than the request body — see AccessTokenRequestBody for the alternative shape).
  */
 class AccessTokenRequest
 {

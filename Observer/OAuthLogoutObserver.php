@@ -25,8 +25,8 @@ use M2Oidc\OAuth\Model\Service\RpInitiatedLogoutService;
  * (no end_session_endpoint in OIDC discovery), uses /logout?rd=<url>
  * instead of the standard OIDC parameters.
  *
- * MP-08: Per-provider endsession_endpoint via oidc_provider_id in session.
- * MP-09: Sets oidc_logout_guard cookie before redirect so that
+ * Uses the per-provider endsession_endpoint via oidc_provider_id in session.
+ * Sets oidc_logout_guard cookie before redirect so that
  *        CustomerLoginAutoRedirectObserver suppresses the auto-redirect
  *        on the returning login page (cookie survives session destruction).
  */
@@ -137,7 +137,7 @@ class OAuthLogoutObserver implements ObserverInterface
         $endSessionEndpoint = '';
         $provider           = null;
 
-        // MP-08: prefer per-provider endsession_endpoint
+        // Prefer per-provider endsession_endpoint
         if ($providerId > 0) {
             $provider = $this->oauthUtility->getClientDetailsById($providerId);
             if ($provider !== null && !empty($provider['endsession_endpoint'])) {
@@ -218,7 +218,7 @@ class OAuthLogoutObserver implements ObserverInterface
      * Resolve the customer-context fallback post_logout_redirect_uri.
      *
      * The per-provider post_logout_url override is applied on top of this by
-     * RpInitiatedLogoutService::resolvePostLogoutRedirectUri() (M28-validated).
+     * RpInitiatedLogoutService::resolvePostLogoutRedirectUri().
      *
      * Priority:
      *  1) Unified callback URL (standard OIDC) — allows one registered URI for both flows

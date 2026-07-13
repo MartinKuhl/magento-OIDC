@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace M2Oidc\OAuth\Model\Validation;
 
 /**
- * SSRF URL validator (H-09 / SEC-04).
+ * SSRF URL validator.
  *
  * Central place for the module's outbound-URL safety rules: any URL that the
  * module fetches server-side (OIDC discovery documents, endpoints imported

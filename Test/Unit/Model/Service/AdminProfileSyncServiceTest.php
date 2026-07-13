@@ -21,7 +21,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * Unit tests for AdminProfileSyncService.
  *
- * M17: syncProfile()/syncRole() now accept an already-loaded \Magento\User\Model\User
+ * syncProfile()/syncRole() now accept an already-loaded \Magento\User\Model\User
  * instead of an email string (the caller, CheckAttributeMappingAction, loads the user
  * once and reuses it). Tests below pass a pre-built user mock directly.
  *
@@ -154,7 +154,7 @@ class AdminProfileSyncServiceTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // syncProfile – user not found (M17: caller passes an unloaded User)
+    // syncProfile – user not found (caller passes an unloaded User)
     // -------------------------------------------------------------------------
 
     public function testSyncProfileDoesNothingWhenUserNotFound(): void
@@ -260,7 +260,7 @@ class AdminProfileSyncServiceTest extends TestCase
         $user         = $this->makeUserMock(id: 1, username: 'old_user');
         $notFoundUser = $this->makeNotFoundUserMock(); // username check: no conflict
 
-        // Only the uniqueness check now goes through the factory (M17: the primary
+        // Only the uniqueness check now goes through the factory (the primary
         // user is passed in directly, no longer loaded via userFactory->create()).
         $this->userFactory->expects($this->once())->method('create')->willReturn($notFoundUser);
 
@@ -609,7 +609,7 @@ class AdminProfileSyncServiceTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // syncRole – user not found (M17: caller passes an unloaded User)
+    // syncRole – user not found (caller passes an unloaded User)
     // -------------------------------------------------------------------------
 
     public function testSyncRoleDoesNothingWhenUserNotFound(): void

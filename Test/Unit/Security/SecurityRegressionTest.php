@@ -12,8 +12,7 @@ use PHPUnit\Framework\TestCase;
  * These tests parse source files with simple grep/string checks to ensure
  * previously fixed vulnerabilities have not been re-introduced.
  *
- * Every test documents the vulnerability it guards against and the sprint
- * ticket that fixed it (SEC-01 … SEC-09).
+ * Every test documents the vulnerability it guards against.
  */
 class SecurityRegressionTest extends TestCase
 {
@@ -31,13 +30,13 @@ class SecurityRegressionTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // SEC-01 — SSL verification must be enabled
+    // SSL verification must be enabled
     // -------------------------------------------------------------------------
 
     /**
      * Curl.php must NOT set CURLOPT_SSL_VERIFYPEER to false.
      *
-     * Fixes: SEC-01 (man-in-the-middle via disabled certificate validation)
+     * Fixes: man-in-the-middle via disabled certificate validation
      */
     public function testCurlHelperDoesNotDisableSslVerification(): void
     {
@@ -47,19 +46,19 @@ class SecurityRegressionTest extends TestCase
         $this->assertStringNotContainsString(
             'CURLOPT_SSL_VERIFYPEER\' => false',
             $content,
-            'SEC-01: Curl.php must not disable CURLOPT_SSL_VERIFYPEER'
+            'Curl.php must not disable CURLOPT_SSL_VERIFYPEER'
         );
         $this->assertStringNotContainsString(
             'CURLOPT_SSL_VERIFYPEER", false',
             $content,
-            'SEC-01: Curl.php must not disable CURLOPT_SSL_VERIFYPEER'
+            'Curl.php must not disable CURLOPT_SSL_VERIFYPEER'
         );
     }
 
     /**
      * JwtVerifier.php must set CURLOPT_SSL_VERIFYPEER to true.
      *
-     * Fixes: SEC-01
+     * Fixes: man-in-the-middle via disabled certificate validation
      */
     public function testJwtVerifierEnablesSslVerification(): void
     {
@@ -69,24 +68,24 @@ class SecurityRegressionTest extends TestCase
         $this->assertStringContainsString(
             'CURLOPT_SSL_VERIFYPEER',
             $content,
-            'SEC-01: JwtVerifier.php must configure CURLOPT_SSL_VERIFYPEER'
+            'JwtVerifier.php must configure CURLOPT_SSL_VERIFYPEER'
         );
         // The value next to it must NOT be false
         $this->assertStringNotContainsString(
             "'CURLOPT_SSL_VERIFYPEER' => false",
             $content,
-            'SEC-01: JwtVerifier.php must not disable CURLOPT_SSL_VERIFYPEER'
+            'JwtVerifier.php must not disable CURLOPT_SSL_VERIFYPEER'
         );
     }
 
     // -------------------------------------------------------------------------
-    // SEC-03 — Alpine.js XSS via x-html
+    // Alpine.js XSS via x-html
     // -------------------------------------------------------------------------
 
     /**
      * The Hyva authentication popup must not use x-html for the message binding.
      *
-     * Fixes: SEC-03 (stored XSS via x-html Alpine.js directive)
+     * Fixes: stored XSS via x-html Alpine.js directive
      */
     public function testAuthenticationPopupDoesNotUseXHtml(): void
     {
@@ -102,18 +101,18 @@ class SecurityRegressionTest extends TestCase
         $this->assertStringNotContainsString(
             'x-html="message"',
             $content,
-            'SEC-03: authentication-popup.phtml must not use x-html for the message binding'
+            'authentication-popup.phtml must not use x-html for the message binding'
         );
     }
 
     // -------------------------------------------------------------------------
-    // SEC-04 — Deprecated FILTER_SANITIZE_URL removed
+    // Deprecated FILTER_SANITIZE_URL removed
     // -------------------------------------------------------------------------
 
     /**
      * OAuthsettings/Index.php must not use the deprecated FILTER_SANITIZE_URL.
      *
-     * Fixes: SEC-04 (SSRF via insufficient URL sanitisation)
+     * Fixes: SSRF via insufficient URL sanitisation
      */
     public function testOauthSettingsDoesNotUseSanitizeUrl(): void
     {
@@ -123,14 +122,14 @@ class SecurityRegressionTest extends TestCase
         $this->assertStringNotContainsString(
             'FILTER_SANITIZE_URL',
             $content,
-            'SEC-04: OAuthsettings/Index.php must not use deprecated FILTER_SANITIZE_URL'
+            'OAuthsettings/Index.php must not use deprecated FILTER_SANITIZE_URL'
         );
     }
 
     /**
      * Providersettings/Index.php must not use the deprecated FILTER_SANITIZE_URL.
      *
-     * Fixes: SEC-04 (parity with OAuthsettings/Index.php check)
+     * Fixes: parity with OAuthsettings/Index.php check
      */
     public function testProviderSettingsControllerDoesNotUseSanitizeUrl(): void
     {
@@ -140,18 +139,18 @@ class SecurityRegressionTest extends TestCase
         $this->assertStringNotContainsString(
             'FILTER_SANITIZE_URL',
             $content,
-            'SEC-04: Providersettings/Index.php must not use deprecated FILTER_SANITIZE_URL'
+            'Providersettings/Index.php must not use deprecated FILTER_SANITIZE_URL'
         );
     }
 
     // -------------------------------------------------------------------------
-    // SEC-05 — Hardcoded customer domain removed from CSP whitelist
+    // Hardcoded customer domain removed from CSP whitelist
     // -------------------------------------------------------------------------
 
     /**
      * csp_whitelist.xml files must not contain any hardcoded provider hostnames.
      *
-     * Fixes: SEC-05 (customer domain shipped in module, privacy + security)
+     * Fixes: customer domain shipped in module, privacy + security
      */
     public function testCspWhitelistHasNoPolicyEntries(): void
     {
@@ -166,19 +165,19 @@ class SecurityRegressionTest extends TestCase
             $this->assertStringNotContainsString(
                 '<value>',
                 $content,
-                "SEC-05: $file must not contain hardcoded <value> entries"
+                "$file must not contain hardcoded <value> entries"
             );
         }
     }
 
     // -------------------------------------------------------------------------
-    // SEC-06 — OidcCredentialPlugin must reset flags unconditionally
+    // OidcCredentialPlugin must reset flags unconditionally
     // -------------------------------------------------------------------------
 
     /**
      * OidcCredentialPlugin::beforeLogin() must reset both flags before checking the password.
      *
-     * Fixes: SEC-06 (flag state leaks between PHP-FPM worker requests)
+     * Fixes: flag state leaks between PHP-FPM worker requests
      */
     public function testOidcCredentialPluginResetsIsOidcAuthFlag(): void
     {
@@ -189,18 +188,18 @@ class SecurityRegressionTest extends TestCase
         $resetPos  = strpos($content, '$this->isOidcAuth    = false;');
         $markerPos = strpos($content, 'isOidcAuthToken');
 
-        $this->assertNotFalse($resetPos, 'SEC-06: isOidcAuth reset not found in beforeLogin()');
-        $this->assertNotFalse($markerPos, 'SEC-06: isOidcAuthToken check not found');
+        $this->assertNotFalse($resetPos, 'isOidcAuth reset not found in beforeLogin()');
+        $this->assertNotFalse($markerPos, 'isOidcAuthToken check not found');
         $this->assertLessThan(
             $markerPos,
             $resetPos,
-            'SEC-06: isOidcAuth must be reset BEFORE the isOidcAuthToken check'
+            'isOidcAuth must be reset BEFORE the isOidcAuthToken check'
         );
     }
 
     // -------------------------------------------------------------------------
-    // SEC-07 — Error messages must be consistently base64-encoded on send and
-    //          base64-decoded on receive so human-readable text is shown.
+    // Error messages must be consistently base64-encoded on send and
+    // base64-decoded on receive so human-readable text is shown.
     // -------------------------------------------------------------------------
 
     /**
@@ -211,8 +210,6 @@ class SecurityRegressionTest extends TestCase
      * decode, producing raw base64 garbage in the UI. The fix standardises every
      * error path: encode with base64_encode() at source, decode with
      * base64_decode() in OidcErrorMessage::getOidcErrorMessage().
-     *
-     * Fixes: SEC-07
      */
     public function testAdminOidcCallbackBase64EncodesErrors(): void
     {
@@ -222,7 +219,7 @@ class SecurityRegressionTest extends TestCase
         $this->assertStringContainsString(
             'base64_encode',
             $content,
-            'SEC-07: Oidccallback.php must base64_encode OIDC error messages for consistent encoding'
+            'Oidccallback.php must base64_encode OIDC error messages for consistent encoding'
         );
     }
 
@@ -234,7 +231,7 @@ class SecurityRegressionTest extends TestCase
         $this->assertStringContainsString(
             'base64_decode',
             $content,
-            'SEC-07: OidcErrorMessage.php must base64_decode the oidc_error URL parameter'
+            'OidcErrorMessage.php must base64_decode the oidc_error URL parameter'
         );
     }
 
@@ -246,12 +243,12 @@ class SecurityRegressionTest extends TestCase
         $this->assertStringContainsString(
             'base64_encode($errorMessage)',
             $content,
-            'SEC-07: CheckAttributeMappingAction must base64_encode error messages for consistent encoding'
+            'CheckAttributeMappingAction must base64_encode error messages for consistent encoding'
         );
     }
 
     // -------------------------------------------------------------------------
-    // SEC-09 — Relay state validated by host comparison, not str_contains
+    // Relay state validated by host comparison, not str_contains
     // -------------------------------------------------------------------------
 
     /**
@@ -259,8 +256,6 @@ class SecurityRegressionTest extends TestCase
      *
      * str_contains(relayState, storeUrl) can be bypassed:
      *   evil.com/?x=https://legit.store.com
-     *
-     * Fixes: SEC-09
      */
     public function testProcessUserActionValidatesRelayStateByHost(): void
     {
@@ -271,25 +266,25 @@ class SecurityRegressionTest extends TestCase
         $this->assertStringContainsString(
             'parse_url',
             $content,
-            'SEC-09: ProcessUserAction must use parse_url for relay state validation'
+            'ProcessUserAction must use parse_url for relay state validation'
         );
 
         // Must NOT use str_contains with the store URL as the relay state guard
         $this->assertStringNotContainsString(
             "str_contains((string) \$this->attrs['relayState'], \$store_url)",
             $content,
-            'SEC-09: ProcessUserAction must not use str_contains for relay state validation'
+            'ProcessUserAction must not use str_contains for relay state validation'
         );
     }
 
     // -------------------------------------------------------------------------
-    // REF-02 — extractNameFromEmail() exists in OAuthUtility
+    // extractNameFromEmail() exists in OAuthUtility
     // -------------------------------------------------------------------------
 
     /**
      * OAuthUtility must expose extractNameFromEmail() as the shared name-extraction helper.
      *
-     * Fixes: REF-02 (duplicate name-fallback logic in multiple classes)
+     * Fixes duplicate name-fallback logic that previously existed in multiple classes.
      */
     public function testOAuthUtilityExposesExtractNameFromEmail(): void
     {
@@ -299,18 +294,18 @@ class SecurityRegressionTest extends TestCase
         $this->assertStringContainsString(
             'function extractNameFromEmail',
             $content,
-            'REF-02: OAuthUtility must define extractNameFromEmail()'
+            'OAuthUtility must define extractNameFromEmail()'
         );
     }
 
     // -------------------------------------------------------------------------
-    // REF-05 — ACL title corrected
+    // ACL title corrected
     // -------------------------------------------------------------------------
 
     /**
      * acl.xml must use "M2Oidc OIDC", not the old "Authelia OIDC" title.
      *
-     * Fixes: REF-05 (branding error)
+     * Fixes a branding error in the ACL title.
      */
     public function testAclXmlHasCorrectModuleTitle(): void
     {
@@ -320,17 +315,17 @@ class SecurityRegressionTest extends TestCase
         $this->assertStringNotContainsString(
             'Authelia OIDC',
             $content,
-            'REF-05: acl.xml must not contain old "Authelia OIDC" title'
+            'acl.xml must not contain old "Authelia OIDC" title'
         );
         $this->assertStringContainsString(
             'M2Oidc OIDC',
             $content,
-            'REF-05: acl.xml must contain "M2Oidc OIDC" title'
+            'acl.xml must contain "M2Oidc OIDC" title'
         );
     }
 
     // -------------------------------------------------------------------------
-    // MP-06 — Provider Settings ACL resource ID consistency
+    // Provider Settings ACL resource ID consistency
     // -------------------------------------------------------------------------
 
     /**
@@ -348,12 +343,12 @@ class SecurityRegressionTest extends TestCase
         $this->assertStringContainsString(
             'provider_settings',
             $controllerContent,
-            'MP-06: Providersettings/Index.php must reference the provider_settings ACL resource'
+            'Providersettings/Index.php must reference the provider_settings ACL resource'
         );
         $this->assertStringContainsString(
             'M2Oidc_OAuth::provider_settings',
             $aclContent,
-            'MP-06: acl.xml must declare the M2Oidc_OAuth::provider_settings resource'
+            'acl.xml must declare the M2Oidc_OAuth::provider_settings resource'
         );
     }
 

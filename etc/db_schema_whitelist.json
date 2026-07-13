@@ -71,7 +71,15 @@
             "autoredirect_admin": true,
             "autoredirect_customer": true,
             "revocation_endpoint": true,
-            "idp_initiated_enabled": true
+            "idp_initiated_enabled": true,
+            "post_logout_url": true,
+            "health_alert_webhook_url": true,
+            "health_alert_failure_threshold": true,
+            "health_alert_notify_on_recovery": true,
+            "health_alert_consecutive_failures": true,
+            "health_alert_last_status": true,
+            "health_alert_first_failure_at": true,
+            "health_alert_last_notified_at": true
         },
         "index": {
             "M2OIDC_OAUTH_CLIENT_APPS_IS_ACTIVE_LOGIN_TYPE_SORT_ORDER": true

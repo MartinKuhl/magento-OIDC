@@ -333,7 +333,7 @@ class CustomerUserCreatorAddressTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // mapGender (M19) — extracted to GenderMapper, exercised directly here;
+    // mapGender — extracted to GenderMapper, exercised directly here;
     // full coverage lives in Test/Unit/Model/Attribute/GenderMapperTest.php
     // -------------------------------------------------------------------------
 

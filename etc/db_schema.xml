@@ -8,6 +8,7 @@
       <column xsi:type="text" name="scope" nullable="false" comment="The scope of the Provider" />
       <column xsi:type="text" name="endsession_endpoint" nullable="false" comment="The endsession endpoint" />
       <column xsi:type="text" name="revocation_endpoint" nullable="true" comment="RFC 7009 token revocation endpoint (optional)" />
+      <column xsi:type="varchar" name="post_logout_url" length="500" nullable="true" comment="Optional per-provider override for the post-logout landing page; falls back to the unified /m2oidc/actions/postlogout URL when empty" />
       <column xsi:type="text" name="authorize_endpoint" nullable="false" comment="The authorize endpoint" />
       <column xsi:type="text" name="access_token_endpoint" nullable="false" comment="The token endpoint" />
       <column xsi:type="text" name="user_info_endpoint" nullable="false" comment="The user info endpoint" />
@@ -95,6 +96,25 @@
 
       <column xsi:type="smallint" name="headless_mode" padding="1" unsigned="true" nullable="false" default="0"
               comment="Enable Headless / PWA mode. When 1, the OIDC flow returns a customer token via postMessage instead of a session cookie." />
+
+      <!-- Health-check webhook alerting: notify an external webhook (Slack/PagerDuty/etc.)
+           after N consecutive IdP reachability-check failures. Checked every 5 minutes by
+           Cron/HealthCheckAlert. Disabled by default (health_alert_failure_threshold=0) so
+           existing providers are unaffected after upgrade. -->
+      <column xsi:type="text" name="health_alert_webhook_url" nullable="true"
+              comment="Webhook URL (Slack/PagerDuty/etc.) for outage alerts. Magento-encrypted at rest — the URL commonly embeds a bearer-token-equivalent secret, same treatment as client_secret." />
+      <column xsi:type="smallint" name="health_alert_failure_threshold" padding="3" unsigned="true" nullable="false" default="0"
+              comment="Consecutive reachability-check failures before firing the webhook. 0 = alerting disabled (default). Max 20 enforced in the admin form." />
+      <column xsi:type="smallint" name="health_alert_notify_on_recovery" padding="1" unsigned="true" nullable="false" default="1"
+              comment="1 = also POST a one-time recovery notification when the provider becomes reachable again after an alerted outage." />
+      <column xsi:type="smallint" name="health_alert_consecutive_failures" padding="3" unsigned="true" nullable="false" default="0"
+              comment="Runtime counter maintained by Cron/HealthCheckAlert. Not user-editable; reset to 0 on any successful probe." />
+      <column xsi:type="varchar" name="health_alert_last_status" length="10" nullable="false" default="ok"
+              comment="Runtime alert dedupe flag: 'ok' or 'down'. Tracks whether an alert has already fired for the current outage, independent of the raw failure counter." />
+      <column xsi:type="datetime" name="health_alert_first_failure_at" nullable="true"
+              comment="Runtime: timestamp of the first failure in the current consecutive-failure streak. Cleared on success." />
+      <column xsi:type="datetime" name="health_alert_last_notified_at" nullable="true"
+              comment="Runtime: timestamp the last webhook (down or recovered) was actually sent for this provider." />
 
       <constraint xsi:type="primary" referenceId="PRIMARY">
          <column name="id" />

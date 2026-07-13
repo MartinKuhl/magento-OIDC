@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace M2Oidc\OAuth\Model\Attribute;
 
 /**
- * Maps an OIDC gender claim value to a Magento gender ID (M19).
+ * Maps an OIDC gender claim value to a Magento gender ID.
  *
  * Single source of truth for gender recognition, shared by
  * CustomerAttributeMapper (customer creation) and CustomerProfileSyncService

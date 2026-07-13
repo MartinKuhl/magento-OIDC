@@ -14,5 +14,16 @@
              method="execute">
             <schedule>0 */6 * * *</schedule>
         </job>
+
+        <!-- Fire a webhook alert after N consecutive IdP reachability-check failures (per
+             provider, via health_alert_webhook_url / health_alert_failure_threshold). Runs
+             every 5 minutes — far tighter than the 6h discovery-refresh cadence above, since
+             this cron exists specifically for fast outage detection. No-op for any provider
+             that hasn't set a failure threshold and webhook URL. -->
+        <job name="m2oidc_health_check_alert"
+             instance="M2Oidc\OAuth\Cron\HealthCheckAlert"
+             method="execute">
+            <schedule>*/5 * * * *</schedule>
+        </job>
     </group>
 </config>

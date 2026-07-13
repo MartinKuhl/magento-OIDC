@@ -10,6 +10,7 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use M2Oidc\OAuth\Helper\OAuthConstants;
 use M2Oidc\OAuth\Helper\OAuthUtility;
 use M2Oidc\OAuth\Model\Provider\MappingRepository;
 use M2Oidc\OAuth\Model\ResourceModel\OauthRoleMapping as RoleMappingResource;
@@ -33,10 +34,14 @@ use M2Oidc\OAuth\Model\ResourceModel\OauthRoleMapping as RoleMappingResource;
 class ExportOidcConfig extends Command
 {
     /** Fields that contain sensitive credentials. */
-    private const SENSITIVE_FIELDS = ['client_secret'];
+    private const SENSITIVE_FIELDS = ['client_secret', 'health_alert_webhook_url'];
 
-    /** Fields excluded entirely from the export (runtime / internal) — M-31. */
-    private const EXCLUDED_FIELDS = ['received_oidc_claims', 'last_test_status', 'last_test_at'];
+    /** Fields excluded entirely from the export (runtime / internal metadata, not secrets). */
+    private const EXCLUDED_FIELDS = [
+        'received_oidc_claims', 'last_test_status', 'last_test_at',
+        'health_alert_consecutive_failures', 'health_alert_last_status',
+        'health_alert_first_failure_at', 'health_alert_last_notified_at',
+    ];
 
     /** @var OAuthUtility */
     private readonly OAuthUtility $oauthUtility;
@@ -155,7 +160,7 @@ class ExportOidcConfig extends Command
         // Prepare payload
         $exportData = [
             'exported_at'    => (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM),
-            'module_version' => '4.2.0',
+            'module_version' => OAuthConstants::VERSION,
             'providers'      => [],
         ];
 

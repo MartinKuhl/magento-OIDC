@@ -8,7 +8,7 @@ use M2Oidc\OAuth\Helper\OAuth\AuthorizationRequest;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Unit tests for AuthorizationRequest query-string generation (H-04).
+ * Unit tests for AuthorizationRequest query-string generation.
  *
  * Verifies:
  *  - An authorize endpoint without a query string gets a '?' separator
@@ -83,7 +83,7 @@ class AuthorizationRequestTest extends TestCase
         $this->assertStringNotContainsString(
             'policyclient_id',
             $fullUrl,
-            'H-04: client_id must not be concatenated directly onto the existing query value'
+            'client_id must not be concatenated directly onto the existing query value'
         );
     }
 

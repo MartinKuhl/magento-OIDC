@@ -83,9 +83,9 @@ class SendAuthorizationRequest extends BaseAction
         $currentSessionId = $this->sessionManager->getSessionId();
         $this->oauthUtility->customlog("SendAuthorizationRequest: Current session ID: " . $currentSessionId);
 
-        // Determine provider: prefer numeric provider_id, fall back to app_name lookup (MP-04)
+        // Determine provider: prefer numeric provider_id, fall back to app_name lookup
         $providerId = isset($params['provider_id']) ? (int) $params['provider_id'] : 0;
-        // MP-05: Set provider context — all getStoreConfig() calls resolve from correct provider row
+        // Set provider context — all getStoreConfig() calls resolve from correct provider row
         $this->oauthUtility->setActiveProviderId($providerId);
 
         // Determine app name for authentication
@@ -130,7 +130,7 @@ class SendAuthorizationRequest extends BaseAction
 
         // Combine relayState with session ID, app name, login type, CSRF token, and provider ID
         $stateToken = $this->securityHelper->createStateToken($currentSessionId);
-        // H-02: Read login_type from params but clamp to known valid values.
+        // Read login_type from params but clamp to known valid values.
         // The admin SSO button legitimately passes login_type=admin via this frontend route.
         // Any value other than LOGIN_TYPE_ADMIN is coerced to LOGIN_TYPE_CUSTOMER, preventing
         // injection of unexpected values while preserving the admin login flow.
@@ -166,7 +166,7 @@ class SendAuthorizationRequest extends BaseAction
         );
         $this->oauthUtility->customlog("SendAuthorizationRequest: Combined relayState: " . $relayState);
 
-        // H-01: Generate and store a per-flow nonce for id_token replay protection.
+        // Generate and store a per-flow nonce for id_token replay protection.
         // The nonce is added to the authorization request params so the IdP includes
         // it in the id_token. It is consumed in ReadAuthorizationResponse and passed
         // to JwtVerifier::verifyAndDecode() for validation.
@@ -177,7 +177,7 @@ class SendAuthorizationRequest extends BaseAction
         $clientDetails = null;
         $this->oauthUtility->setSessionData(OAuthConstants::APP_NAME, $app_name);
 
-        // MP-04: reuse early-loaded provider details to avoid duplicate DB call
+        // Reuse early-loaded provider details to avoid duplicate DB call
         $clientDetails = $providerId > 0
             ? ($earlyProviderDetails ?? $this->oauthUtility->getClientDetailsById($providerId))
             : $this->oauthUtility->getClientDetailsByAppName($app_name);

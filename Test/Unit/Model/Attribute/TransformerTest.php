@@ -14,7 +14,7 @@ use PHPUnit\Framework\TestCase;
  *
  * Covers:
  *  - regex_replace happy path
- *  - regex_replace length cap (M20): values over REGEX_VALUE_MAX_LENGTH (4096)
+ *  - regex_replace length cap: values over REGEX_VALUE_MAX_LENGTH (4096)
  *    bytes skip the transform with a WARNING log and return the raw value
  *
  * @covers \M2Oidc\OAuth\Model\Attribute\Transformer
@@ -46,7 +46,7 @@ class TransformerTest extends TestCase
     }
 
     /**
-     * M20: a value longer than 4096 bytes must skip the transform entirely —
+     * A value longer than 4096 bytes must skip the transform entirely —
      * the raw value comes back unchanged and a WARNING is logged.
      */
     public function testRegexReplaceSkipsValuesOverLengthCap(): void

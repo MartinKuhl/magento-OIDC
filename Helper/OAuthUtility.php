@@ -282,7 +282,7 @@ class OAuthUtility extends Data
     }
 
     // =========================================================================
-    // MP-05: Provider-aware config resolution — delegates to OidcConfigReader
+    // Provider-aware config resolution — delegates to OidcConfigReader
     // =========================================================================
     /**
      * Read a config value — provider-specific keys from the app table, global keys from core_config_data.

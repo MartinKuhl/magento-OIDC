@@ -36,7 +36,7 @@ class ImportOidcConfig extends Command
     private const REQUIRED_FIELDS = ['app_name'];
 
     /** Fields that are re-encrypted on import. */
-    private const SENSITIVE_FIELDS = ['client_secret'];
+    private const SENSITIVE_FIELDS = ['client_secret', 'health_alert_webhook_url'];
 
     /** @var OAuthUtility */
     private readonly OAuthUtility $oauthUtility;
@@ -315,7 +315,7 @@ class ImportOidcConfig extends Command
         OutputInterface $output,
         string $label
     ): void {
-        // C-03: shared whitelist / SSRF / lockout validation before persisting
+        // Shared whitelist / SSRF / lockout validation before persisting
         $validation = $this->providerDataValidator->validate($importData, (int) $model->getId());
         foreach ($validation->getWarnings() as $warning) {
             $output->writeln("<comment>  [{$label}] WARNING: {$warning}</comment>");

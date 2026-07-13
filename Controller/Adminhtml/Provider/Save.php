@@ -21,7 +21,7 @@ use M2Oidc\OAuth\Model\Validation\ProviderDataValidator;
 use M2Oidc\OAuth\Model\Validation\SsrfUrlValidator;
 
 /**
- * Admin controller — Save OIDC Provider (MP-06).
+ * Admin controller — Save OIDC Provider.
  *
  * Route: POST /admin/m2oidc/provider/save
  *
@@ -175,7 +175,7 @@ class Save extends Action implements HttpPostActionInterface
                 );
             }
 
-            // C-03: shared validation — enum whitelists, SSRF-safe endpoint URLs, and
+            // Shared validation — enum whitelists, SSRF-safe endpoint URLs, and
             // the "no OIDC users yet" lockout guard are enforced by the validator.
             $validation = $this->providerDataValidator->validate($data, $providerId);
             foreach ($validation->getWarnings() as $validationWarning) {
@@ -189,6 +189,10 @@ class Save extends Action implements HttpPostActionInterface
             $model->setData('is_active', (int) ($data['is_active'] ?? 0));
             $model->setData('login_type', (string) ($data['login_type'] ?? 'customer'));
             $model->setData('sort_order', max(0, (int) ($data['sort_order'] ?? 0)));
+            $model->setData(
+                'health_alert_failure_threshold',
+                max(0, min(20, (int) ($data['health_alert_failure_threshold'] ?? 0)))
+            );
             $model->setData('button_label', $this->sanitizeString($data['button_label'] ?? ''));
             $model->setData('button_color', $this->validateHexColor($data['button_color'] ?? ''));
             // Per-provider log file suffix: restrict to safe characters to prevent path traversal
@@ -200,7 +204,7 @@ class Save extends Action implements HttpPostActionInterface
                 'clientID', 'scope', 'grant_type',
                 'authorize_endpoint', 'access_token_endpoint',
                 'user_info_endpoint', 'jwks_endpoint', 'well_known_config_url',
-                'endsession_endpoint', 'revocation_endpoint', 'issuer',
+                'endsession_endpoint', 'revocation_endpoint', 'issuer', 'post_logout_url',
                 // Attribute mapping — basic claims
                 'email_attribute', 'username_attribute',
                 'firstname_attribute', 'lastname_attribute', 'group_attribute',
@@ -215,7 +219,7 @@ class Save extends Action implements HttpPostActionInterface
                 }
             }
 
-            // Claim value encoding — whitelist-validated by ProviderDataValidator (C-03).
+            // Claim value encoding — whitelist-validated by ProviderDataValidator.
             $model->setData('claim_encoding', (string) ($data['claim_encoding'] ?? 'none'));
 
             // Checkbox/Toggle fields.
@@ -249,6 +253,8 @@ class Save extends Action implements HttpPostActionInterface
                 'idp_initiated_enabled',
                 // Public client (RFC 6749 §2.1): no client secret required/expected
                 'public_client',
+                // Health-check webhook alerting
+                'health_alert_notify_on_recovery',
             ] as $field) {
                 // FIX: use $field (not $checkbox) — variable name matches the foreach above.
                 // (int) cast reads the actual "0"/"1" value sent by the hidden+checkbox pair.
@@ -302,7 +308,17 @@ class Save extends Action implements HttpPostActionInterface
                 $model->setData('client_secret', $this->encryptor->encrypt($data['client_secret']));
             }
 
-            // PKCE method — whitelist-validated by ProviderDataValidator (C-03).
+            // Health-check alert webhook URL: same "blank = keep existing" semantics as
+            // client_secret above — it commonly embeds a bearer-token-equivalent secret in
+            // its path/query (e.g. a Slack incoming-webhook URL), so it is encrypted at rest.
+            if (!empty($data['health_alert_webhook_url'])) {
+                $model->setData(
+                    'health_alert_webhook_url',
+                    $this->encryptor->encrypt($data['health_alert_webhook_url'])
+                );
+            }
+
+            // PKCE method — whitelist-validated by ProviderDataValidator.
             $model->setData('pkce_flow', (string) ($data['pkce_flow'] ?? ''));
 
             // Require client_secret when creating a new confidential (non-public) client.
@@ -336,12 +352,12 @@ class Save extends Action implements HttpPostActionInterface
                 // Save still proceeds so the user does not lose other field values.
             }
 
-            // H-11: Capture old JWKS endpoint before save for cache invalidation
+            // Capture old JWKS endpoint before save for cache invalidation
             $oldJwksEndpoint = (string) ($model->getOrigData('jwks_endpoint') ?? '');
 
             $this->appResource->save($model);
 
-            // H-11: Invalidate stale JWKS cache when endpoint changes
+            // Invalidate stale JWKS cache when endpoint changes
             $newJwksEndpoint = (string) ($model->getData('jwks_endpoint') ?? '');
             if ($oldJwksEndpoint !== '' && $oldJwksEndpoint !== $newJwksEndpoint) {
                 $this->cache->remove('m2oidc_jwks_' . hash('sha256', $oldJwksEndpoint));
@@ -422,7 +438,7 @@ class Save extends Action implements HttpPostActionInterface
     /**
      * Apply auto-discovered OIDC endpoints from a discovery document to the provider model.
      *
-     * Skips (and warns about) any discovered endpoint that is not HTTPS (H-10) and
+     * Skips (and warns about) any discovered endpoint that is not HTTPS and
      * pre-enables the public-client toggle on CREATE when the IdP advertises 'none'
      * as a supported token-endpoint auth method.
      *
@@ -435,7 +451,7 @@ class Save extends Action implements HttpPostActionInterface
         M2oidcOauthClientApps $model,
         int $providerId
     ): void {
-        // H-10: Validate discovered endpoints are HTTPS
+        // Validate discovered endpoints are HTTPS
         $epKeys = [
             'authorization_endpoint', 'token_endpoint', 'userinfo_endpoint',
             'jwks_uri', 'end_session_endpoint', 'revocation_endpoint',
@@ -495,7 +511,7 @@ class Save extends Action implements HttpPostActionInterface
      * Fetch and parse an OIDC discovery document.
      *
      * Validates that the URL is HTTPS and does not point to a private/loopback address
-     * (SEC-04 SSRF protection, same rules as OAuthsettings/Index.php).
+     * (SSRF protection, same rules as OAuthsettings/Index.php).
      *
      * @param string $url Raw Discovery URL from the form.
      * @return \stdClass|null Parsed document on success; null on any validation or fetch error.

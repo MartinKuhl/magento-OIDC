@@ -245,13 +245,13 @@ class CheckAttributeMappingAction extends BaseAction
      */
     public function handle(OidcAttributeMappingContext $context): \Magento\Framework\Controller\ResultInterface
     {
-        // MP-07: apply per-provider attribute mappings and metadata from the client details row
+        // Apply per-provider attribute mappings and metadata from the client details row
         $this->applyClientDetails($context->clientDetails);
         $this->userEmail = $context->userEmail;
         $this->loginType = $context->loginType;
         $this->headless  = $context->headless;
 
-        // MP-05: Initialize attribute mappings from active provider context
+        // Initialize attribute mappings from active provider context
         $this->initAttributeMappings();
         $attrs = $context->userInfoResponse ?? [];
         $flattenedAttrs = $context->flattenedUserInfoResponse;
@@ -303,7 +303,7 @@ class CheckAttributeMappingAction extends BaseAction
             if ($userEmail === null) {
                 return $this->resultRedirectFactory->create()->setPath('customer/account/login');
             }
-            // M17: single load reused for both the existence check and the user object
+            // Single load reused for both the existence check and the user object
             // (previously isAdminUser() + getAdminUserByEmail() each queried admin_user separately)
             $adminUser = $this->adminUserCreator->getAdminUserByEmail($userEmail);
             $hasAdminAccount = $adminUser instanceof \Magento\User\Model\User && $adminUser->getId();
@@ -343,7 +343,7 @@ class CheckAttributeMappingAction extends BaseAction
                 $this->syncAdminProfileIfEnabled($adminUser, $flattenedAttrs, $attrs);
                 $this->syncAdminRoleIfEnabled($adminUser, $flattenedAttrs, $attrs);
 
-                $nonce = $this->securityHelper->createAdminLoginNonce($userEmail);
+                $nonce = $this->securityHelper->createAdminLoginNonce($userEmail, $this->providerId);
                 $this->cookieManager->setPublicCookie(
                     'oidc_admin_nonce',
                     $nonce,
@@ -413,7 +413,7 @@ class CheckAttributeMappingAction extends BaseAction
                         $this->syncAdminRoleIfEnabled($adminUser, $flattenedAttrs, $attrs);
 
                         // Redirect to admin callback for login
-                        $nonce = $this->securityHelper->createAdminLoginNonce($userEmail);
+                        $nonce = $this->securityHelper->createAdminLoginNonce($userEmail, $this->providerId);
                         $this->cookieManager->setPublicCookie(
                             'oidc_admin_nonce',
                             $nonce,
@@ -697,7 +697,7 @@ class CheckAttributeMappingAction extends BaseAction
     }
 
     /**
-     * Apply per-provider attribute mappings and metadata from the client details row (MP-07).
+     * Apply per-provider attribute mappings and metadata from the client details row.
      *
      * When a numeric provider_id is known, ReadAuthorizationResponse passes the provider's
      * DB row here (via OidcAttributeMappingContext::$clientDetails). Any non-empty attribute
@@ -728,7 +728,7 @@ class CheckAttributeMappingAction extends BaseAction
             $this->groupName = (string) $clientDetails['group_attribute'];
         }
 
-        // MP-08: persist provider ID in customer session so the logout observer
+        // Persist provider ID in customer session so the logout observer
         // can load the correct end_session_endpoint for IdP-initiated logout.
         $providerId = (int) ($clientDetails['id'] ?? 0);
         if ($providerId > 0) {
@@ -795,7 +795,7 @@ class CheckAttributeMappingAction extends BaseAction
 
             $actual = $claims[$claim] ?? null;
 
-            // M-02: Handle array-valued claims (e.g. groups: ["admin", "users"]).
+            // Handle array-valued claims (e.g. groups: ["admin", "users"]).
             // For equality/containment operators, check if *any* element matches
             // rather than comparing against a comma-joined string, which would
             // require the rule value to contain commas to match multi-valued claims.
@@ -879,7 +879,7 @@ class CheckAttributeMappingAction extends BaseAction
      * Called in the admin routing path before the nonce cookie is set so that
      * profile data is up-to-date by the time the admin logs in.
      *
-     * @param \Magento\User\Model\User $adminUser Already-loaded admin user (M17)
+     * @param \Magento\User\Model\User $adminUser Already-loaded admin user
      * @param mixed[]                  $flat      Flattened OIDC attributes
      * @param mixed[]                  $raw       Raw (nested) OIDC attributes
      */
@@ -910,7 +910,7 @@ class CheckAttributeMappingAction extends BaseAction
     /**
      * Re-evaluate and update admin role from OIDC group claims when sync_admin_role_on_sso is enabled.
      *
-     * @param \Magento\User\Model\User $adminUser Already-loaded admin user (M17)
+     * @param \Magento\User\Model\User $adminUser Already-loaded admin user
      * @param mixed[]                  $flat      Flattened OIDC attributes
      * @param mixed[]                  $raw       Raw (nested) OIDC attributes
      */

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace M2Oidc\OAuth\Model\Validation;
 
 /**
- * Value object returned by ProviderDataValidator::validate() (C-03).
+ * Value object returned by ProviderDataValidator::validate().
  *
  * Carries the normalized provider data together with any warnings
  * (auto-corrections applied) and errors (conditions that must abort the save).

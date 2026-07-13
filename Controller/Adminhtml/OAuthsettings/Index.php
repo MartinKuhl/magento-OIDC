@@ -28,7 +28,7 @@ use M2Oidc\OAuth\Model\Validation\SsrfUrlValidator;
 class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetActionInterface
 {
     /**
-     * ACL resource checked by \Magento\Backend\App\Action::_isAllowed() (C-01/M-30).
+     * ACL resource checked by \Magento\Backend\App\Action::_isAllowed().
      *
      * @var string
      */
@@ -115,7 +115,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
                     $rawUrl = trim((string) ($params['endpoint_url'] ?? ''));
                     if ($rawUrl !== '') {
 
-                        // SEC-04: Validate — must be a well-formed HTTPS URL
+                        // Validate — must be a well-formed HTTPS URL
                         $url = filter_var($rawUrl, FILTER_VALIDATE_URL);
                         // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
                         if ($url === false || parse_url($url, PHP_URL_SCHEME) !== 'https') {
@@ -124,7 +124,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
                                 . '(e.g. https://provider.example.com/.well-known/openid-configuration).'
                             );
                         } else {
-                            // SEC-04: Block SSRF — reject loopback and RFC-1918 private ranges
+                            // Block SSRF — reject loopback and RFC-1918 private ranges
                             // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
                             $host = (string) parse_url($url, PHP_URL_HOST);
 
@@ -133,7 +133,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
                                     'Discovery URL must not point to a private or internal network address.'
                                 );
                                 $this->oauthUtility->customlog(
-                                    'SEC-04: Blocked SSRF attempt — private host in discovery URL: ' . $host
+                                    'Blocked SSRF attempt — private host in discovery URL: ' . $host
                                 );
                             } else {
                                 // Fetch the OIDC discovery document
@@ -272,7 +272,7 @@ class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetA
             $model->setData('values_in_header', (int) $send_header);
             $model->setData('values_in_body', (int) $send_body);
             if ($m2oidc_client_secret !== '') {
-                // C-02: never store the client secret in plain text
+                // Never store the client secret in plain text
                 $model->setData('client_secret', $this->encryptor->encrypt($m2oidc_client_secret));
             }
             $this->appResource->save($model);

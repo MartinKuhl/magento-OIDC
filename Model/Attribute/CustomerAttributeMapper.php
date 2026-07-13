@@ -72,7 +72,7 @@ class CustomerAttributeMapper implements AttributeMapperInterface
         );
         $genderRaw = $this->applyTransform($genderRaw, $flattenedAttrs, $transforms, 'gender');
         if (!in_array($genderRaw, [null, '', '0'], true)) {
-            // Unrecognized values default to 3 (Not Specified) on customer creation (M19)
+            // Unrecognized values default to 3 (Not Specified) on customer creation
             $result['gender'] = $this->genderMapper->map($genderRaw) ?? 3;
         }
 

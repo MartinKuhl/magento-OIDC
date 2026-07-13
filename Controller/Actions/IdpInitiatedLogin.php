@@ -145,7 +145,7 @@ class IdpInitiatedLogin extends BaseAction implements HttpGetActionInterface
         $rawRelayState = isset($params['relay_state']) ? (string) $params['relay_state'] : '/';
         $relayState    = $this->securityHelper->validateRedirectUrl($rawRelayState, '/');
 
-        // 6. Determine login type (H-02 clamping, two-level fallback).
+        // 6. Determine login type (clamped to known values, two-level fallback).
         // URL param takes precedence — allows separate IdP tiles for admin vs customer
         // on login_type=both providers (?login_type=admin / ?login_type=customer).
         // Falls back to provider row when not supplied. Any value other than 'admin'

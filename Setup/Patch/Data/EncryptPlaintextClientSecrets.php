@@ -10,7 +10,7 @@ use Magento\Framework\Setup\Patch\DataPatchInterface;
 use Psr\Log\LoggerInterface;
 
 /**
- * Data patch (C-02): encrypt legacy plain-text client secrets.
+ * Data patch: encrypt legacy plain-text client secrets.
  *
  * Older module versions stored `client_secret` in plain text in
  * m2oidc_oauth_client_apps. This patch encrypts every non-empty secret that

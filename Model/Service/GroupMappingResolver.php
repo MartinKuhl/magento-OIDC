@@ -10,7 +10,7 @@ use M2Oidc\OAuth\Model\Provider\MappingRepository;
 use M2Oidc\OAuth\Model\ResourceModel\OauthRoleMapping;
 
 /**
- * Resolves a Magento role/group ID from OIDC group claims (M18).
+ * Resolves a Magento role/group ID from OIDC group claims.
  *
  * Single source of truth for the mapping fallback chain that was previously
  * duplicated in AdminUserCreator, CustomerUserCreator and AdminProfileSyncService:

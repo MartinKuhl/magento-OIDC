@@ -9,12 +9,12 @@ use M2Oidc\OAuth\Model\Service\RandomPasswordGenerator;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Unit tests for RandomPasswordGenerator (M25).
+ * Unit tests for RandomPasswordGenerator.
  *
  * Verifies the shared password-generation logic previously duplicated in
  * AdminUserCreator and CustomerUserCreator: a 32-character password built from
  * Magento's Math\Random utility with guaranteed special-character and digit
- * character classes, shuffled to avoid predictable ordering (SEC-12).
+ * character classes, shuffled to avoid predictable ordering.
  *
  * @covers \M2Oidc\OAuth\Model\Service\RandomPasswordGenerator
  */

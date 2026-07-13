@@ -210,7 +210,7 @@ class OidcAuthenticationService
             return $flattenedResponse[$emailAttribute];
         }
 
-        // Fallback to recursive search — H-08: log a warning so operators know the mapping is misconfigured
+        // Fallback to recursive search — log a warning so operators know the mapping is misconfigured
         $email = $this->findEmailRecursive($rawResponse);
         if ($email !== '' && $email !== '0') {
             $this->oauthUtility->customlog(

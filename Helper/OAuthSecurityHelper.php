@@ -11,7 +11,7 @@ use M2Oidc\OAuth\Model\Cache\AtomicCacheInterface;
  *
  * Provides cryptographic nonce-based admin login gates (preventing direct URL access),
  * CSRF state tokens for OAuth flows, redirect URL validation, PKCE helpers,
- * ephemeral OIDC auth tokens (C-01), and per-flow OIDC nonces (H-01).
+ * ephemeral OIDC auth tokens, and per-flow OIDC nonces.
  */
 class OAuthSecurityHelper
 {
@@ -37,7 +37,7 @@ class OAuthSecurityHelper
      */
     private const STATE_TTL = 600;     // 10 minutes
     /**
-     * Cache prefix for ephemeral OIDC auth tokens (C-01).
+     * Cache prefix for ephemeral OIDC auth tokens.
      * Key: hash('sha256', token) → value: email address.
      * @var string
      */
@@ -46,14 +46,14 @@ class OAuthSecurityHelper
      * @var int */
     private const OIDC_AUTH_TOKEN_TTL = 300; // 5 minutes
     /**
-     * Prefix used as a fast, non-secret distinguisher for OIDC auth tokens (C-01).
+     * Prefix used as a fast, non-secret distinguisher for OIDC auth tokens.
      * The token itself is a cryptographically random hex string — this prefix merely
      * lets plugin code skip the cache lookup when the password is clearly not an OIDC token.
      * @var string
      */
     private const OIDC_AUTH_TOKEN_MARKER = 'OIDC_';
 
-    /** Cache prefix for per-flow OIDC id_token nonces (H-01).
+    /** Cache prefix for per-flow OIDC id_token nonces.
      * @var string */
     private const OIDC_NONCE_CACHE_PREFIX = 'm2oidc_oidcnonce_';
     /** TTL matches STATE_TTL so nonce stays available until state is consumed.
@@ -94,42 +94,65 @@ class OAuthSecurityHelper
     /**
      * Create a one-time nonce that maps to an admin email address.
      *
-     * Used to prevent direct URL-based admin login (C1 fix).
+     * Used to prevent direct URL-based admin login. The nonce payload also binds the
+     * OIDC provider that authenticated this user, so redeemAdminLoginNonce() can reject
+     * redemption under a different provider context (e.g. a stale nonce cookie left
+     * over from a different IdP, or a multi-tab race between two providers).
      *
-     * @param  string $email The admin user's email
+     * @param  string $email      The admin user's email
+     * @param  int    $providerId The OIDC provider that authenticated this user (0 = unknown/legacy)
      * @return string The generated nonce (32-char hex)
      */
-    // TODO M-14: Include provider_id in nonce payload to cross-validate provider context on redemption
-    public function createAdminLoginNonce(string $email): string
+    public function createAdminLoginNonce(string $email, int $providerId = 0): string
     {
         $nonce = bin2hex(random_bytes(16));
         $cacheKey = self::NONCE_CACHE_PREFIX . $nonce;
-        $this->atomicCache->save($cacheKey, $email, self::NONCE_TTL);
+        $payload = json_encode(['email' => $email, 'providerId' => $providerId], JSON_THROW_ON_ERROR);
+        $this->atomicCache->save($cacheKey, $payload, self::NONCE_TTL);
         return $nonce;
     }
 
     /**
      * Redeem (validate and consume) an admin login nonce.
      *
-     * Returns the associated email and deletes the nonce so it cannot be reused.
+     * Returns the associated email and deletes the nonce so it cannot be reused. When
+     * $expectedProviderId is non-zero and the nonce was minted with a non-zero provider
+     * ID, the two must match — otherwise redemption fails even though the nonce itself
+     * is otherwise valid, preventing a nonce minted under one provider's context from
+     * being redeemed under another.
      *
-     * @param  string $nonce The nonce to redeem
-     * @return string|null The email if valid, null if expired/invalid
+     * @param  string $nonce              The nonce to redeem
+     * @param  int    $expectedProviderId The provider context redemption is happening under (0 = skip the check)
+     * @return string|null The email if valid, null if expired/invalid/provider-mismatched
      */
-    public function redeemAdminLoginNonce(string $nonce): ?string
+    public function redeemAdminLoginNonce(string $nonce, int $expectedProviderId = 0): ?string
     {
         if ($nonce === '' || $nonce === '0' || !preg_match('/^[a-f0-9]{32}$/', $nonce)) {
             return null;
         }
 
         $cacheKey = self::NONCE_CACHE_PREFIX . $nonce;
-        $email    = $this->atomicCache->getAndDelete($cacheKey);
+        $stored   = $this->atomicCache->getAndDelete($cacheKey);
 
-        if (in_array($email, [null, ''], true)) {
+        if (in_array($stored, [null, ''], true)) {
             return null;
         }
 
-        return $email;
+        $decoded = json_decode($stored, true);
+        if (!is_array($decoded) || empty($decoded['email']) || !is_string($decoded['email'])) {
+            return null;
+        }
+
+        $noncedProviderId = (int) ($decoded['providerId'] ?? 0);
+        if ($expectedProviderId > 0 && $noncedProviderId > 0 && $noncedProviderId !== $expectedProviderId) {
+            $this->oauthUtility->customlog(
+                "OAuthSecurityHelper: Admin login nonce provider mismatch (nonce=" . $noncedProviderId
+                . ", expected=" . $expectedProviderId . ") — rejecting redemption"
+            );
+            return null;
+        }
+
+        return $decoded['email'];
     }
 
     /**
@@ -233,7 +256,7 @@ class OAuthSecurityHelper
     /**
      * Validate and consume a CSRF state token.
      *
-     * C-03 (resolved): read-and-delete goes through AtomicCacheInterface::getAndDelete(),
+     * Read-and-delete goes through AtomicCacheInterface::getAndDelete(),
      * a single one-shot consume operation. With the default RedisAtomicCache backend this
      * is truly atomic (Redis GETDEL / Lua), so two concurrent callbacks carrying the same
      * state token can never both pass validation. The FileAtomicCache fallback performs a
@@ -263,7 +286,7 @@ class OAuthSecurityHelper
     /**
      * Encode relay state data as a URL-safe JSON+Base64 string for the OAuth state parameter.
      *
-     * MP-02: Added optional $providerId for multi-provider support. When provided the
+     * Added optional $providerId for multi-provider support. When provided the
      * encoded payload gains a 'p' key (integer). Decoders that receive state without
      * 'p' default to 0 (let callers fall back to getFirstItem()).
      *
@@ -288,7 +311,7 @@ class OAuthSecurityHelper
         ?int $providerId = null,
         bool $headless = false
     ): string {
-        // M-20: Guard against excessively large relay states that could exceed URL limits
+        // Guard against excessively large relay states that could exceed URL limits
         if (strlen($relayState) > 2048) {
             $relayState = substr($relayState, 0, 2048);
         }
@@ -312,7 +335,7 @@ class OAuthSecurityHelper
     /**
      * Decode a URL-safe JSON+Base64 relay state string.
      *
-     * MP-02: Returns 'providerId' (int, 0 if absent) alongside existing keys for
+     * Returns 'providerId' (int, 0 if absent) alongside existing keys for
      * backward-compat with state tokens encoded before this sprint.
      *
      * FEAT-09: Returns 'headless' (bool, false if absent) for headless PWA flow.
@@ -338,7 +361,7 @@ class OAuthSecurityHelper
             'appName'    => $data['a'],
             'loginType'  => $data['l'],
             'stateToken' => $data['t'],
-            // MP-02: 0 = unknown/legacy (callers use getFirstItem() as fallback)
+            // 0 = unknown/legacy (callers use getFirstItem() as fallback)
             'providerId' => isset($data['p']) ? (int) $data['p'] : 0,
             // FEAT-09: headless PWA flow
             'headless'   => !empty($data['h']),
@@ -487,13 +510,13 @@ class OAuthSecurityHelper
     }
 
     // -------------------------------------------------------------------------
-    // Ephemeral OIDC auth tokens — C-01
+    // Ephemeral OIDC auth tokens
     // -------------------------------------------------------------------------
 
     /**
      * Create a single-use, time-limited OIDC auth token for the given admin email.
      *
-     * C-01: Replaces the static OIDC_TOKEN_MARKER constant. The token is stored in
+     * Replaces the static OIDC_TOKEN_MARKER constant. The token is stored in
      * cache keyed by a SHA-256 hash of itself (to avoid leaking the raw value in the
      * cache layer). The caller passes the returned token as the "password" argument to
      * Auth::login() so that OidcCredentialAdapter can validate and consume it.
@@ -513,7 +536,7 @@ class OAuthSecurityHelper
     }
 
     /**
-     * Return true if $password looks like an OIDC auth token (C-01).
+     * Return true if $password looks like an OIDC auth token.
      *
      * This is a non-consuming check used by plugins to detect OIDC login attempts
      * without touching the cache. It validates format only — the actual email binding
@@ -533,7 +556,7 @@ class OAuthSecurityHelper
     /**
      * Validate an OIDC auth token against the given email and consume it (one-time use).
      *
-     * C-01: Verifies that the token was created for the specified email address and
+     * Verifies that the token was created for the specified email address and
      * immediately removes it from cache to prevent replay. Returns false if the token
      * is malformed, expired, or was issued for a different email.
      *
@@ -554,11 +577,11 @@ class OAuthSecurityHelper
     }
 
     // -------------------------------------------------------------------------
-    // Per-flow OIDC id_token nonces — H-01
+    // Per-flow OIDC id_token nonces
     // -------------------------------------------------------------------------
 
     /**
-     * Persist a nonce value keyed by its associated state token (H-01).
+     * Persist a nonce value keyed by its associated state token.
      *
      * Call this in SendAuthorizationRequest immediately after generating the
      * OAuth state token. The nonce is later retrieved in the callback controller
@@ -574,7 +597,7 @@ class OAuthSecurityHelper
     }
 
     /**
-     * Retrieve and consume the OIDC nonce associated with a state token (H-01).
+     * Retrieve and consume the OIDC nonce associated with a state token.
      *
      * Returns null if no nonce was stored (e.g. IdP does not support nonce,
      * or the state token has expired). JwtVerifier skips nonce validation when

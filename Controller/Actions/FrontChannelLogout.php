@@ -24,7 +24,7 @@ use M2Oidc\OAuth\Model\Service\SessionDestructionService;
  * This controller:
  *  1. Validates and sanitises the `sid` query parameter.
  *  2. Looks up the matching PHP session(s) via OidcSessionRegistry.
- *  3. Destroys each session using the shared SessionDestructionService (C-02 pattern).
+ *  3. Destroys each session using the shared SessionDestructionService.
  *  4. Returns a 1×1 transparent GIF — required by the OIDC spec so the
  *     iframe receives a valid HTTP 200 response.
  *

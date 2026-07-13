@@ -16,14 +16,14 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
- * Unit tests for OidcProviderRepository (H10d, M22).
+ * Unit tests for OidcProviderRepository.
  *
- * H10d: getAllActiveProviders() must treat an empty/NULL `login_type` as a
+ * getAllActiveProviders() must treat an empty/NULL `login_type` as a
  * wildcard — such a row matches any requested login type, not just 'both'.
  *
- * M22: every client_secret decrypt call site must log a WARNING when a
- * non-empty ciphertext (matching the `^\d+:\d+:` envelope) decrypts to an
- * empty string (a silent decryption failure).
+ * Every client_secret / health_alert_webhook_url decrypt call site must log a
+ * WARNING when a non-empty ciphertext (matching the `^\d+:\d+:` envelope)
+ * decrypts to an empty string (a silent decryption failure).
  *
  * @covers \M2Oidc\OAuth\Model\ResourceModel\OidcProviderRepository
  */
@@ -86,7 +86,7 @@ class OidcProviderRepositoryTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // H10d — empty/NULL login_type is a wildcard
+    // empty/NULL login_type is a wildcard
     // -------------------------------------------------------------------------
 
     public function testGetAllActiveProvidersTreatsEmptyLoginTypeAsWildcardForCustomer(): void
@@ -132,7 +132,7 @@ class OidcProviderRepositoryTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // M22 — decrypt logging
+    // decrypt logging
     // -------------------------------------------------------------------------
 
     public function testGetAllActiveProvidersLogsWarningWhenDecryptReturnsEmptyString(): void
@@ -227,6 +227,86 @@ class OidcProviderRepositoryTest extends TestCase
         $result = $this->repository->getClientDetailsById(5);
 
         $this->assertSame('plaintext-secret', $result['client_secret']);
+    }
+
+    // -------------------------------------------------------------------------
+    // health_alert_webhook_url — decrypt-on-read round-trip
+    // -------------------------------------------------------------------------
+
+    public function testGetClientDetailsByIdDecryptsWebhookUrl(): void
+    {
+        $row = new DataObject([
+            'id' => 5,
+            'public_client' => 1,
+            'health_alert_webhook_url' => self::ENCRYPTED_SECRET,
+        ]);
+
+        $collection = $this->getMockBuilder(Collection::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['addFieldToFilter', 'getSize', 'getFirstItem'])
+            ->getMock();
+        $collection->method('addFieldToFilter')->willReturnSelf();
+        $collection->method('getSize')->willReturn(1);
+        $collection->method('getFirstItem')->willReturn($row);
+
+        $this->clientCollectionFactory->method('create')->willReturn($collection);
+        $this->encryptor->method('decrypt')
+            ->with(self::ENCRYPTED_SECRET)
+            ->willReturn('https://hooks.slack.com/services/T000/B000/XXXX');
+
+        $result = $this->repository->getClientDetailsById(5);
+
+        $this->assertSame('https://hooks.slack.com/services/T000/B000/XXXX', $result['health_alert_webhook_url']);
+    }
+
+    public function testGetClientDetailsByIdLogsWarningWhenWebhookUrlDecryptReturnsEmptyString(): void
+    {
+        $row = new DataObject([
+            'id' => 5,
+            'public_client' => 1,
+            'health_alert_webhook_url' => self::ENCRYPTED_SECRET,
+        ]);
+
+        $collection = $this->getMockBuilder(Collection::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['addFieldToFilter', 'getSize', 'getFirstItem'])
+            ->getMock();
+        $collection->method('addFieldToFilter')->willReturnSelf();
+        $collection->method('getSize')->willReturn(1);
+        $collection->method('getFirstItem')->willReturn($row);
+
+        $this->clientCollectionFactory->method('create')->willReturn($collection);
+        $this->encryptor->method('decrypt')->with(self::ENCRYPTED_SECRET)->willReturn('');
+
+        $this->logger->expects($this->once())->method('warning');
+
+        $result = $this->repository->getClientDetailsById(5);
+
+        $this->assertSame('', $result['health_alert_webhook_url']);
+    }
+
+    public function testGetClientDetailsByIdDoesNotDecryptPlaintextWebhookUrl(): void
+    {
+        $row = new DataObject([
+            'id' => 5,
+            'public_client' => 1,
+            'health_alert_webhook_url' => 'https://hooks.slack.com/services/T000/B000/XXXX',
+        ]);
+
+        $collection = $this->getMockBuilder(Collection::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['addFieldToFilter', 'getSize', 'getFirstItem'])
+            ->getMock();
+        $collection->method('addFieldToFilter')->willReturnSelf();
+        $collection->method('getSize')->willReturn(1);
+        $collection->method('getFirstItem')->willReturn($row);
+
+        $this->clientCollectionFactory->method('create')->willReturn($collection);
+        $this->encryptor->expects($this->never())->method('decrypt');
+
+        $result = $this->repository->getClientDetailsById(5);
+
+        $this->assertSame('https://hooks.slack.com/services/T000/B000/XXXX', $result['health_alert_webhook_url']);
     }
 
     // -------------------------------------------------------------------------

@@ -65,7 +65,7 @@ class AuthorizationRequest
      * @param string      $authorizeURL        Authorization endpoint URL
      * @param string      $responseType        OAuth response type
      * @param string      $redirectURL         Redirect URI
-     * @param string      $relayState          The pre-validated, encoded state string (SEC-09)
+     * @param string      $relayState          The pre-validated, encoded state string
      * @param mixed       $params              Extra OAuth parameters (nonce, prompt, …)
      * @param string|null $codeChallenge       PKCE code_challenge (FEAT-01); null disables PKCE
      * @param string|null $codeChallengeMethod PKCE method ('S256' or 'plain'); null when disabled
@@ -83,7 +83,7 @@ class AuthorizationRequest
     ) {
         $this->clientID             = $clientID;
         $this->scope                = $scope;
-        $this->state                = $relayState; // SEC-09: relay state is pre-validated by OAuthSecurityHelper
+        $this->state                = $relayState; // relay state is pre-validated by OAuthSecurityHelper
         $this->authorizeURL         = $authorizeURL;
         $this->responseType         = $responseType;
         $this->redirectURL          = $redirectURL;
@@ -102,7 +102,7 @@ class AuthorizationRequest
     {
         $requestStr = "";
 
-        // H-04: When the authorize endpoint already contains a query string
+        // When the authorize endpoint already contains a query string
         // (e.g. Azure AD B2C policy URLs like ...?p=policy), join the appended
         // parameters with '&' — otherwise client_id would be concatenated
         // directly onto the existing query value.

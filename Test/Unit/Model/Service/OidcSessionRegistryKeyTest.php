@@ -10,7 +10,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Unit tests for OidcSessionRegistry cache-key derivation (M16).
+ * Unit tests for OidcSessionRegistry cache-key derivation.
  *
  * buildKey() is private, so the key material is observed through the public
  * register() API with a mocked cache: every register() call saves under the

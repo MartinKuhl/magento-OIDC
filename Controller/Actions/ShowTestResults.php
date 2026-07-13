@@ -228,7 +228,7 @@ class ShowTestResults extends Action
             'greetingName'   => '',
             'rightImage'     => $this->oauthUtility->getImageUrl(OAuthConstants::IMAGE_RIGHT),
             'wrongImage'     => $this->oauthUtility->getImageUrl(OAuthConstants::IMAGE_WRONG),
-            // Raw value — the template escapes it at the render site (M33)
+            // Raw value — the template escapes it at the render site
             'errorMessage'   => $errorMessage,
             'providerConfig' => $providerConfig,
         ]);
