@@ -228,10 +228,9 @@ class CustomerUserCreator
             if ($oidcGroups !== []) {
                 $resolvedGroupId = $this->getCustomerGroupFromOidcGroups($oidcGroups, $providerId);
                 if ($resolvedGroupId === null) {
-                    $groupList = implode(', ', $oidcGroups);
                     $msg = OAuthMessages::parse(
                         'CUSTOMER_GROUP_MAPPING_NO_MATCH',
-                        ['groups' => $groupList !== '' ? $groupList : '(none)']
+                        ['groups' => implode(', ', $oidcGroups)]
                     );
                     $this->oauthUtility->customlog($msg);
                     throw new \Magento\Framework\Exception\LocalizedException(__($msg));

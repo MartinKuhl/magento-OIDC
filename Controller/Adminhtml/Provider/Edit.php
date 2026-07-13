@@ -73,7 +73,7 @@ class Edit extends Action implements HttpGetActionInterface
     public function execute(): Page|Redirect
     {
         $providerId = (int) $this->getRequest()->getParam('id', 0);
-        $model = null;
+        $providerName = '';
 
         if ($providerId > 0) {
             $model = $this->clientAppsFactory->create();
@@ -86,15 +86,13 @@ class Edit extends Action implements HttpGetActionInterface
 
             // Share the loaded model with Block\Adminhtml\Provider\Edit and its tabs.
             $this->registry->register('current_oidc_provider', $model);
+
+            $providerName = $model->getData('display_name') ?: $model->getData('app_name') ?: (string) $providerId;
         }
 
         $page = $this->pageFactory->create();
         /** @var \Magento\Backend\Model\View\Result\Page $page */
         $page->setActiveMenu('M2Oidc_OAuth::provider_management');
-
-        $providerName = $providerId > 0 && $model instanceof \M2Oidc\OAuth\Model\M2oidcOauthClientApps
-            ? ($model->getData('display_name') ?: $model->getData('app_name') ?: (string) $providerId)
-            : '';
         $title = $providerId > 0
             ? __('Edit OIDC Provider (%1)', $providerName)
             : __('Add New OIDC Provider');

@@ -295,7 +295,7 @@ class ProcessUserAction
          */
         $store = $this->storeManager->getStore();
         $store_url = $store->getBaseUrl(\Magento\Framework\UrlInterface::URL_TYPE_WEB);
-        $store_url = rtrim($store_url, '/\\');
+        $store_url = rtrim((string) $store_url, '/\\');
 
         // SEC-09: Validate relay state by comparing parsed hosts — str_contains allows open-redirect bypass
         // (e.g. https://evil.com?q=real-store.com would have passed str_contains).

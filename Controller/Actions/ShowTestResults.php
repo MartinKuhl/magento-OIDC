@@ -276,7 +276,7 @@ class ShowTestResults extends Action
         /** @psalm-suppress UnresolvableInclude */
         include $this->templatePath; // phpcs:ignore Magento2.Security.IncludeFile.FoundIncludeFile
         $output = ob_get_clean();
-        return $output === false ? '' : $output;
+        return (string) $output;
     }
 
     /**

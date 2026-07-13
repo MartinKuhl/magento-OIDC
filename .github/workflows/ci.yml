@@ -193,8 +193,8 @@ jobs:
       - name: Adapt psalm.xml for CI environment
         run: |
           # Lokal zeigt ../../../vendor auf den Magento-Root vendor-Ordner.
-          # Im CI liegt vendor/ direkt im Workspace – Pfad anpassen.
-          sed -i 's|<directory name="../../../vendor" />|<directory name="vendor" />|' Test/psalm.xml
+          # Im CI liegt vendor/ eine Ebene über Test/ (Workspace-Root) – Pfad anpassen.
+          sed -i 's|<directory name="../../../vendor" />|<directory name="../vendor" />|' Test/psalm.xml
 
       - name: Run Psalm
         run: |

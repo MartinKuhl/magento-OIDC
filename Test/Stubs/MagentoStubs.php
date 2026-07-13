@@ -77,6 +77,54 @@ namespace Magento\Framework\App\Action {
     interface HttpPostActionInterface
     {
     }
+
+    /**
+     * Minimal stub for the frontend/base controller Action class
+     * (\Magento\Framework\App\Action\Action) that BaseAction/ShowTestResults extend.
+     */
+    abstract class Action
+    {
+        /** @var Context|null */
+        protected $context;
+
+        /** @var mixed */
+        protected $messageManager;
+
+        /** @var mixed */
+        protected $resultRedirectFactory;
+
+        /** @var mixed */
+        protected $resultFactory;
+
+        /** @var mixed */
+        protected $_eventManager;
+
+        public function __construct(?Context $context = null)
+        {
+            $this->context = $context;
+            $this->messageManager = $context?->getMessageManager();
+            $this->resultRedirectFactory = $context?->getResultRedirectFactory();
+            $this->resultFactory = $context?->getResultFactory();
+            $this->_eventManager = $context?->getEventManager();
+        }
+
+        /** @return mixed */
+        public function getRequest()
+        {
+            return $this->context?->getRequest();
+        }
+
+        /** @return mixed */
+        public function getResponse()
+        {
+            return $this->context?->getResponse();
+        }
+
+        /**
+         * @return mixed
+         */
+        abstract public function execute();
+    }
 }
 
 namespace Magento\Framework\GraphQl\Config\Element {
@@ -130,14 +178,11 @@ namespace Magento\Framework\Message {
     }
 }
 
-namespace Magento\Framework\Event {
-    interface ManagerInterface
-    {
-        public function dispatch($eventName, array $data = []);
-    }
-
+namespace Magento\Framework {
     /**
-     * Minimal stub for Magento\Framework\Event data class.
+     * Minimal stub for Magento\Framework\Event data class (FQCN is
+     * `Magento\Framework\Event` directly — it does NOT live under the
+     * `Magento\Framework\Event` sub-namespace; `Observer`/`ManagerInterface` do).
      *
      * Provides dynamic getters used in observer tests (getObject, getCustomer, etc.).
      * Uses __call so that any get<X>() call returns null by default; individual test
@@ -181,6 +226,13 @@ namespace Magento\Framework\Event {
             return null;
         }
     }
+}
+
+namespace Magento\Framework\Event {
+    interface ManagerInterface
+    {
+        public function dispatch($eventName, array $data = []);
+    }
 
     interface ObserverInterface
     {
@@ -189,19 +241,30 @@ namespace Magento\Framework\Event {
 
     /**
      * Minimal stub for Magento\Framework\Event\Observer.
+     *
+     * The real Observer extends DataObject and is constructed with a plain
+     * data array (e.g. `new Observer(['event' => $event])` or `new Observer([])`
+     * in tests) — not with an Event instance directly.
      */
     class Observer
     {
-        private ?Event $event;
+        /** @var array<string, mixed> */
+        private array $data;
 
-        public function __construct(?Event $event = null)
+        public function __construct(array $data = [])
         {
-            $this->event = $event;
+            $this->data = $data;
         }
 
-        public function getEvent(): Event
+        public function getEvent(): \Magento\Framework\Event
         {
-            return $this->event ?? new Event();
+            return $this->data['event'] ?? new \Magento\Framework\Event($this->data);
+        }
+
+        /** @return mixed */
+        public function getData(string $key = '')
+        {
+            return $key === '' ? $this->data : ($this->data[$key] ?? null);
         }
     }
 }
@@ -214,6 +277,99 @@ namespace Magento\Framework\App {
         public function save(string $data, string $identifier, array $tags = [], ?int $lifeTime = null): bool;
         public function remove(string $identifier): bool;
         public function clean(array $tags = []): bool;
+    }
+
+    /** Minimal stub — only mocked wholesale (createMock), no methods configured directly. */
+    class ActionFlag
+    {
+    }
+
+    /** Minimal stub — only mocked wholesale (createMock), no methods configured directly. */
+    interface ViewInterface
+    {
+    }
+
+    interface RequestInterface
+    {
+        /** @return string|null */
+        public function getClientIp();
+
+        /**
+         * @param  string $key
+         * @param  mixed  $default
+         * @return mixed
+         */
+        public function getParam($key, $default = null);
+
+        /** @return array<string, mixed> */
+        public function getParams(): array;
+    }
+
+    interface ResponseInterface
+    {
+    }
+
+    interface CsrfAwareActionInterface
+    {
+        public function createCsrfValidationException(
+            RequestInterface $request
+        ): ?\Magento\Framework\App\Request\InvalidRequestException;
+
+        public function validateForCsrf(RequestInterface $request): ?bool;
+    }
+
+    /** Minimal stub — only mocked wholesale (createMock), no methods configured directly. */
+    class ResourceConnection
+    {
+        /** @return \Magento\Framework\DB\Adapter\AdapterInterface */
+        public function getConnection($resourceName = 'default')
+        {
+            return new class implements \Magento\Framework\DB\Adapter\AdapterInterface {
+                public function select()
+                {
+                    return new \Magento\Framework\DB\Select();
+                }
+
+                public function fetchAll($sql, $bind = [])
+                {
+                    return [];
+                }
+
+                public function update($table, array $bind, $where = '')
+                {
+                    return 0;
+                }
+
+                public function beginTransaction()
+                {
+                    return $this;
+                }
+
+                public function commit()
+                {
+                    return $this;
+                }
+
+                public function rollBack()
+                {
+                    return $this;
+                }
+            };
+        }
+
+        /** @return string */
+        public function getTableName($tableName, $resourceName = 'default')
+        {
+            return (string) $tableName;
+        }
+    }
+}
+
+namespace Magento\Framework\App\Response {
+    interface RedirectInterface
+    {
+        /** @return string */
+        public function getRedirectUrl();
     }
 }
 
@@ -352,10 +508,25 @@ namespace Magento\Framework\Model\ResourceModel\Db {
 }
 
 namespace Magento\Framework\Model\ResourceModel\Db\Collection {
-    abstract class AbstractCollection
+    abstract class AbstractCollection implements \IteratorAggregate
     {
+        /** Subclasses override this to call _init(). */
+        protected function _construct(): void
+        {
+        }
+
+        protected function _init(string $model, string $resourceModel): void
+        {
+        }
+
         /** @return static */
         public function addFieldToFilter($field, $condition = null)
+        {
+            return $this;
+        }
+
+        /** @return static */
+        public function setOrder($field, $direction = 'DESC')
         {
             return $this;
         }
@@ -364,18 +535,45 @@ namespace Magento\Framework\Model\ResourceModel\Db\Collection {
         {
             return 0;
         }
+
+        /** @return mixed */
+        public function getFirstItem()
+        {
+            return null;
+        }
+
+        public function getIterator(): \Iterator
+        {
+            return new \ArrayIterator([]);
+        }
     }
 }
 
 // ─── Concrete Magento classes (directly mocked in tests) ─────────────────────
 
 namespace Magento\Framework\App\Request {
-    class Http
+    class InvalidRequestException extends \Exception
+    {
+    }
+
+    class Http implements \Magento\Framework\App\RequestInterface
     {
         /** @return array<string,mixed> */
         public function getParams(): array
         {
             return [];
+        }
+
+        /** @return string|null */
+        public function getClientIp()
+        {
+            return null;
+        }
+
+        /** @return mixed */
+        public function getParam($key, $default = null)
+        {
+            return $default;
         }
     }
 }
@@ -438,12 +636,62 @@ namespace Magento\Backend\Model {
     }
 }
 
+namespace Magento\Backend\Model\Auth {
+    /**
+     * The real AuthSession extends DataObject, whose magic __call() resolves
+     * undeclared getX()/setX() calls (e.g. getUser()) to getData()/setData().
+     * PHPUnit's mock generator does not override magic methods, so __call
+     * stays intact on mocks — only getData()/setData() need to be configured.
+     */
+    class Session
+    {
+        /** @return mixed */
+        public function getData(string $key = '', $clear = false)
+        {
+            return null;
+        }
+
+        /** @return static */
+        public function unsetData($key = null)
+        {
+            return $this;
+        }
+
+        /**
+         * @param  string $key
+         * @param  mixed  $value
+         * @return static
+         */
+        public function setData($key, $value = null)
+        {
+            return $this;
+        }
+
+        /** @return mixed */
+        public function __call(string $name, array $args)
+        {
+            if (str_starts_with($name, 'get')) {
+                return $this->getData(lcfirst(substr($name, 3)));
+            }
+            if (str_starts_with($name, 'set')) {
+                return $this->setData(lcfirst(substr($name, 3)), $args[0] ?? null);
+            }
+            return null;
+        }
+    }
+}
+
 namespace Magento\Framework\Math {
     class Random
     {
-        public function getRandomString(int $length): string
+        public function getRandomString(int $length, ?string $chars = null): string
         {
-            return str_repeat('x', $length);
+            $chars ??= 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            $result = '';
+            for ($i = 0; $i < $length; $i++) {
+                $result .= $chars[random_int(0, strlen($chars) - 1)];
+            }
+            return $result;
         }
     }
 }
@@ -487,6 +735,72 @@ namespace Magento\User\Model {
         {
             return $this;
         }
+
+        /** @return static */
+        public function setUsername(string $username)
+        {
+            return $this;
+        }
+
+        /** @return static */
+        public function setFirstname(string $firstname)
+        {
+            return $this;
+        }
+
+        /** @return static */
+        public function setLastname(string $lastname)
+        {
+            return $this;
+        }
+
+        /** @return static */
+        public function setEmail(string $email)
+        {
+            return $this;
+        }
+
+        /** @return static */
+        public function setPassword(string $password)
+        {
+            return $this;
+        }
+
+        /** @return static */
+        public function setIsActive($isActive)
+        {
+            return $this;
+        }
+
+        /** @return mixed */
+        public function getFirstName()
+        {
+            return null;
+        }
+
+        /** @return mixed */
+        public function getLastName()
+        {
+            return null;
+        }
+
+        /** @return mixed */
+        public function getEmail()
+        {
+            return null;
+        }
+
+        /** @return mixed */
+        public function getRoles()
+        {
+            return null;
+        }
+
+        /** @return static */
+        public function setHasDataChanges(bool $flag)
+        {
+            return $this;
+        }
     }
 }
 
@@ -499,6 +813,42 @@ namespace Magento\User\Model\ResourceModel {
 
         public function save($model): void
         {
+        }
+
+        /** @return \Magento\Framework\DB\Adapter\AdapterInterface */
+        public function getConnection()
+        {
+            return new class implements \Magento\Framework\DB\Adapter\AdapterInterface {
+                public function select()
+                {
+                    return new \Magento\Framework\DB\Select();
+                }
+
+                public function fetchAll($sql, $bind = [])
+                {
+                    return [];
+                }
+
+                public function update($table, array $bind, $where = '')
+                {
+                    return 0;
+                }
+
+                public function beginTransaction()
+                {
+                    return $this;
+                }
+
+                public function commit()
+                {
+                    return $this;
+                }
+
+                public function rollBack()
+                {
+                    return $this;
+                }
+            };
         }
 
         public function recordLogin($model): void
@@ -550,6 +900,53 @@ namespace Magento\Customer\Model {
         public function getEmail(): string
         {
             return '';
+        }
+
+        /** @return \Magento\Customer\Api\Data\CustomerInterface */
+        public function getDataModel()
+        {
+            return new \Magento\Customer\Api\Data\CustomerData();
+        }
+    }
+
+    /** Minimal stub for Magento\Customer\Model\Session. */
+    class Session
+    {
+        /**
+         * Matches real Magento\Framework\Session\SessionManager::getData()
+         * signature exactly — PHPUnit's mock generator binds unpassed params
+         * to these declared defaults, so `$clear`'s default must be `false`
+         * (not `null`) for willReturnMap()'s argument-list matching to work.
+         *
+         * @return mixed
+         */
+        public function getData(string $key = '', $clear = false)
+        {
+            return null;
+        }
+
+        /** @return static */
+        public function unsetData($key = null)
+        {
+            return $this;
+        }
+
+        /**
+         * @param  string $key
+         * @param  mixed  $value
+         * @return static
+         */
+        public function setData($key, $value = null)
+        {
+            return $this;
+        }
+    }
+
+    class CustomerFactory
+    {
+        public function create(array $data = []): Customer
+        {
+            return new Customer();
         }
     }
 }
@@ -665,5 +1062,976 @@ namespace Magento\Framework\DB\Adapter {
          * @return int
          */
         public function update($table, array $bind, $where = '');
+
+        /** @return $this */
+        public function beginTransaction();
+
+        /** @return $this */
+        public function commit();
+
+        /** @return $this */
+        public function rollBack();
+    }
+}
+
+// ─── Directory (WS-B: CountryResolver / CustomerAttributeMapper tests) ───────
+
+namespace Magento\Directory\Model {
+    /**
+     * `getCountryId()` is deliberately NOT declared here — real Magento only
+     * defines `getId()`, and `getCountryId()` is resolved dynamically like any
+     * other AbstractModel magic getter. Tests rely on `addMethods(['getCountryId'])`,
+     * which requires the method to not already exist on the class.
+     */
+    class Country
+    {
+        /** @return mixed */
+        public function getId()
+        {
+            return null;
+        }
+
+        /** @return mixed */
+        public function getName()
+        {
+            return null;
+        }
+
+        /** @return mixed */
+        public function __call(string $name, array $args)
+        {
+            return null;
+        }
+    }
+}
+
+namespace Magento\Directory\Model\ResourceModel\Country {
+    class Collection implements \IteratorAggregate
+    {
+        /** @var \Magento\Directory\Model\Country[] */
+        private array $items = [];
+
+        /** @return static */
+        public function addFieldToFilter($field, $condition = null)
+        {
+            return $this;
+        }
+
+        /** @return \Magento\Directory\Model\Country */
+        public function getFirstItem()
+        {
+            return $this->items[0] ?? new \Magento\Directory\Model\Country();
+        }
+
+        /** @return string[] */
+        public function getColumnValues(string $column): array
+        {
+            return [];
+        }
+
+        public function getIterator(): \Iterator
+        {
+            return new \ArrayIterator($this->items);
+        }
+    }
+
+    class CollectionFactory
+    {
+        /** @return Collection */
+        public function create(array $data = [])
+        {
+            return new Collection();
+        }
+    }
+}
+
+// ─── HTTP curl adapter (WS-B: Curl / JwtVerifier / RpInitiatedLogoutService) ─
+
+namespace Magento\Framework\HTTP\Adapter {
+    /**
+     * Minimal cURL adapter stub — only the methods used by Helper/Curl.php.
+     */
+    class Curl
+    {
+        /** @return void */
+        public function setConfig(array $options)
+        {
+        }
+
+        /**
+         * @param  string $method
+         * @param  string $url
+         * @param  string $httpVer
+         * @param  array  $headers
+         * @param  mixed  $body
+         * @return void
+         */
+        public function write($method, $url, $httpVer = '1.1', $headers = [], $body = '')
+        {
+        }
+
+        public function read(): string
+        {
+            return '';
+        }
+
+        /** @return mixed */
+        public function getInfo($type)
+        {
+            return null;
+        }
+
+        /** @return void */
+        public function close()
+        {
+        }
+    }
+
+    class CurlFactory
+    {
+        public function create(): Curl
+        {
+            return new Curl();
+        }
+    }
+}
+
+// ─── Backend URL (WS-B: CheckAttributeMappingActionIdpBindingTest) ──────────
+
+namespace Magento\Backend\Model {
+    interface UrlInterface
+    {
+        /**
+         * @param  string $routePath
+         * @param  array  $routeParams
+         * @return string
+         */
+        public function getUrl($routePath = null, $routeParams = null);
+
+        public function getAreaFrontName(): string;
+
+        /** @return string */
+        public function getBaseUrl(array $params = []);
+    }
+}
+
+// ─── Customer API (WS-B: ProcessUserAction / CustomerProfileSyncService) ────
+
+namespace Magento\Customer\Api {
+    interface CustomerRepositoryInterface
+    {
+        /**
+         * @param  string   $email
+         * @param  int|null $websiteId
+         * @return \Magento\Customer\Api\Data\CustomerInterface
+         */
+        public function get($email, $websiteId = null);
+
+        /**
+         * @param  \Magento\Customer\Api\Data\CustomerInterface $customer
+         * @param  string|null                                  $passwordHash
+         * @return \Magento\Customer\Api\Data\CustomerInterface
+         */
+        public function save($customer, $passwordHash = null);
+    }
+
+    interface AddressRepositoryInterface
+    {
+        /**
+         * @param  int $addressId
+         * @return \Magento\Customer\Api\Data\AddressInterface
+         */
+        public function getById($addressId);
+
+        /**
+         * @param  \Magento\Customer\Api\Data\AddressInterface $address
+         * @return \Magento\Customer\Api\Data\AddressInterface
+         */
+        public function save($address);
+    }
+}
+
+// ─── Controller Result factories (WS-B: BackChannelLogout / IdpInitiatedLogin)
+
+namespace Magento\Framework\Controller {
+    /**
+     * Minimal stub for Magento\Framework\Controller\ResultFactory — only the
+     * TYPE_* constants and create() actually used by this module.
+     */
+    class ResultFactory
+    {
+        public const TYPE_REDIRECT = 'redirect';
+        public const TYPE_JSON = 'json';
+
+        /** @return mixed */
+        public function create(string $type, array $data = [])
+        {
+            return match ($type) {
+                self::TYPE_REDIRECT => new \Magento\Framework\Controller\Result\Redirect(),
+                self::TYPE_JSON => new \Magento\Framework\Controller\Result\Json(),
+                default => null,
+            };
+        }
+    }
+}
+
+namespace Magento\Framework\Controller {
+    /** Marker interface implemented by all Result\* stubs below. */
+    interface ResultInterface
+    {
+    }
+}
+
+namespace Magento\Framework\Controller\Result {
+    class Json implements \Magento\Framework\Controller\ResultInterface
+    {
+        /** @return static */
+        public function setData($data)
+        {
+            return $this;
+        }
+
+        /** @return static */
+        public function setHttpResponseCode($code)
+        {
+            return $this;
+        }
+    }
+
+    class JsonFactory
+    {
+        public function create(): Json
+        {
+            return new Json();
+        }
+    }
+
+    class Redirect implements \Magento\Framework\Controller\ResultInterface
+    {
+        /** @return static */
+        public function setPath($path, array $params = [])
+        {
+            return $this;
+        }
+
+        /** @return static */
+        public function setUrl($url)
+        {
+            return $this;
+        }
+    }
+
+    class RedirectFactory
+    {
+        public function create(): Redirect
+        {
+            return new Redirect();
+        }
+    }
+}
+
+// ─── Authentication exception (WS-B: OidcCredentialAdapterTest) ────────────
+
+namespace Magento\Framework\Exception {
+    class AuthenticationException extends \Exception
+    {
+    }
+}
+
+// ─── Deployment config (WS-B: RedisConnectionFactoryTest) ──────────────────
+
+namespace Magento\Framework\App {
+    class DeploymentConfig
+    {
+        /** @return mixed */
+        public function get(string $configPath, $defaultValue = null)
+        {
+            return $defaultValue;
+        }
+    }
+}
+
+// ─── Generic data object (WS-B: OidcProviderRepositoryTest) ────────────────
+
+namespace Magento\Framework {
+    /**
+     * Minimal stub for Magento\Framework\DataObject — real callers just need
+     * array-backed getData()/getDataByKey() semantics for building fixtures.
+     */
+    class DataObject
+    {
+        /** @param array<string, mixed> $data */
+        public function __construct(private array $data = [])
+        {
+        }
+
+        /** @return mixed */
+        public function getData(string $key = '', $index = null)
+        {
+            return $key === '' ? $this->data : ($this->data[$key] ?? null);
+        }
+
+        /** @return mixed */
+        public function getDataByKey(string $key)
+        {
+            return $this->data[$key] ?? null;
+        }
+
+        /** @return mixed */
+        public function __call(string $name, array $args)
+        {
+            if (str_starts_with($name, 'get')) {
+                $key = lcfirst(substr($name, 3));
+                return $this->data[$key] ?? null;
+            }
+            if (str_starts_with($name, 'set')) {
+                $key = lcfirst(substr($name, 3));
+                $this->data[$key] = $args[0] ?? null;
+                return $this;
+            }
+            return null;
+        }
+    }
+}
+
+// ─── Authorization / admin roles (WS-B: AdminProfileSyncServiceTest) ───────
+
+namespace Magento\Authorization\Model {
+    class Role extends \Magento\Framework\Model\AbstractModel
+    {
+    }
+}
+
+namespace Magento\Authorization\Model\ResourceModel\Role {
+    class Collection
+    {
+        /** @return static */
+        public function addFieldToFilter($field, $condition = null)
+        {
+            return $this;
+        }
+
+        /** @return static */
+        public function setPageSize(int $size)
+        {
+            return $this;
+        }
+
+        /** @return \Magento\Authorization\Model\Role */
+        public function getFirstItem()
+        {
+            return new \Magento\Authorization\Model\Role();
+        }
+    }
+
+    class CollectionFactory
+    {
+        public function create(): Collection
+        {
+            return new Collection();
+        }
+    }
+}
+
+// ─── HTTP response (WS-B: OAuthLogoutObserverTest) ─────────────────────────
+
+namespace Magento\Framework\HTTP\PhpEnvironment {
+    class Response implements \Magento\Framework\App\ResponseInterface
+    {
+        /**
+         * @param  string $url
+         * @param  int    $code
+         * @return static
+         */
+        public function setRedirect($url, $code = 302)
+        {
+            return $this;
+        }
+
+        /** @return void */
+        public function sendResponse()
+        {
+        }
+    }
+}
+
+namespace Magento\Framework\App\Response {
+    /** Minimal stub — only mocked wholesale (createMock), no methods configured directly. */
+    class Http implements \Magento\Framework\App\ResponseInterface
+    {
+    }
+}
+
+namespace Magento\Framework\Exception {
+    class NoSuchEntityException extends \Exception
+    {
+    }
+}
+
+namespace Magento\Backend\App\Area {
+    /** Minimal stub for Magento\Backend\App\Area\FrontNameResolver. */
+    class FrontNameResolver
+    {
+        /** @return string */
+        public function getFrontName(bool $checkCookie = false)
+        {
+            return 'admin';
+        }
+    }
+}
+
+namespace Magento\Store\Api\Data {
+    interface WebsiteInterface
+    {
+        /** @return mixed */
+        public function getId();
+    }
+}
+
+namespace Magento\Customer\Api\Data {
+    interface RegionInterface
+    {
+        /** @return static */
+        public function setRegion($region);
+
+        /** @return static */
+        public function setRegionCode($regionCode);
+
+        /** @return static */
+        public function setRegionId($regionId);
+    }
+
+    class RegionInterfaceFactory
+    {
+        /** @return RegionInterface */
+        public function create(array $data = [])
+        {
+            return new class implements RegionInterface {
+                public function setRegion($region)
+                {
+                    return $this;
+                }
+
+                public function setRegionCode($regionCode)
+                {
+                    return $this;
+                }
+
+                public function setRegionId($regionId)
+                {
+                    return $this;
+                }
+            };
+        }
+    }
+}
+
+// ─── Cookie manager (WS-B: OidcLogoutPluginTest) ───────────────────────────
+
+namespace Magento\Framework\Stdlib {
+    interface CookieManagerInterface
+    {
+        /** @return mixed */
+        public function getCookie(string $name, $defaultValue = null);
+
+        /**
+         * @param  string $name
+         * @param  string $value
+         * @param  mixed  $metadata
+         * @return void
+         */
+        public function setPublicCookie($name, $value, $metadata = null);
+
+        /**
+         * @param  string $name
+         * @param  mixed  $metadata
+         * @return void
+         */
+        public function deleteCookie($name, $metadata = null);
+    }
+}
+
+// ─── Cookie metadata (WS-B: OidcLogoutPluginTest / CheckAttributeMappingActionIdpBindingTest)
+
+namespace Magento\Framework\Stdlib\Cookie {
+    class PublicCookieMetadata
+    {
+        /** @return static */
+        public function setDuration(int $duration)
+        {
+            return $this;
+        }
+
+        /** @return static */
+        public function setPath(string $path)
+        {
+            return $this;
+        }
+
+        /** @return static */
+        public function setHttpOnly(bool $httpOnly)
+        {
+            return $this;
+        }
+
+        /** @return static */
+        public function setSecure(bool $secure)
+        {
+            return $this;
+        }
+
+        /** @return static */
+        public function setSameSite(string $sameSite)
+        {
+            return $this;
+        }
+    }
+
+    class CookieMetadataFactory
+    {
+        public function createPublicCookieMetadata(): PublicCookieMetadata
+        {
+            return new PublicCookieMetadata();
+        }
+    }
+}
+
+// ─── Action Context, base (WS-B: BackChannelLogoutTest / IdpInitiatedLoginTest)
+
+namespace Magento\Framework\App\Action {
+    /**
+     * Minimal stub for Magento\Framework\App\Action\Context — only the
+     * getters actually invoked/configured by test doubles.
+     */
+    class Context
+    {
+        /** @return mixed */
+        public function getRequest()
+        {
+            return null;
+        }
+
+        /** @return mixed */
+        public function getResponse()
+        {
+            return null;
+        }
+
+        /** @return mixed */
+        public function getResultRedirectFactory()
+        {
+            return null;
+        }
+
+        /** @return mixed */
+        public function getResultFactory()
+        {
+            return null;
+        }
+
+        /** @return mixed */
+        public function getMessageManager()
+        {
+            return null;
+        }
+
+        /** @return mixed */
+        public function getEventManager()
+        {
+            return null;
+        }
+
+        /** @return mixed */
+        public function getObjectManager()
+        {
+            return null;
+        }
+
+        /** @return mixed */
+        public function getUrl()
+        {
+            return null;
+        }
+
+        /** @return mixed */
+        public function getRedirect()
+        {
+            return null;
+        }
+
+        /** @return mixed */
+        public function getActionFlag()
+        {
+            return null;
+        }
+
+        /** @return mixed */
+        public function getView()
+        {
+            return null;
+        }
+    }
+}
+
+// ─── Store (WS-B: ProcessUserActionRelayStateTest) ─────────────────────────
+
+namespace Magento\Framework {
+    interface UrlInterface
+    {
+        public const URL_TYPE_WEB = 'web';
+
+        /**
+         * @param  string|null $routePath
+         * @param  array|null  $routeParams
+         * @return string
+         */
+        public function getUrl($routePath = null, $routeParams = null);
+    }
+
+    interface ObjectManagerInterface
+    {
+        /**
+         * @param  string $type
+         * @return mixed
+         */
+        public function get($type);
+
+        /**
+         * @param  string $type
+         * @param  array  $arguments
+         * @return mixed
+         */
+        public function create($type, array $arguments = []);
+    }
+}
+
+namespace Magento\Framework\Session {
+    interface SessionManagerInterface
+    {
+        /** @return string */
+        public function getSessionId();
+    }
+}
+
+namespace Magento\Store\Model {
+    class Store
+    {
+        /** @return mixed */
+        public function getBaseUrl($type = null, $secure = null)
+        {
+            return '';
+        }
+    }
+
+    interface StoreManagerInterface
+    {
+        /** @return Store */
+        public function getStore($storeId = null);
+
+        /** @return \Magento\Store\Api\Data\WebsiteInterface */
+        public function getWebsite($websiteId = null);
+    }
+}
+
+// ─── Customer data interfaces (WS-B: CustomerUserCreatorAddressTest, etc.) ──
+
+namespace Magento\Customer\Api\Data {
+    interface CustomerInterface
+    {
+        /** @return mixed */
+        public function getId();
+
+        /** @return string|null */
+        public function getEmail();
+
+        /** @return static */
+        public function setEmail($email);
+
+        /** @return string|null */
+        public function getFirstname();
+
+        /** @return static */
+        public function setFirstname($firstname);
+
+        /** @return string|null */
+        public function getLastname();
+
+        /** @return static */
+        public function setLastname($lastname);
+
+        /** @return string|null */
+        public function getDob();
+
+        /** @return static */
+        public function setDob($dob);
+
+        /** @return int|null */
+        public function getGender();
+
+        /** @return static */
+        public function setGender($gender);
+
+        /** @return int|null */
+        public function getDefaultBilling();
+
+        /** @return int|null */
+        public function getDefaultShipping();
+    }
+
+    /** Minimal concrete CustomerInterface used only as a Customer::getDataModel() return value. */
+    class CustomerData implements CustomerInterface
+    {
+        /** @var array<string, mixed> */
+        private array $data = [];
+
+        /** @return mixed */
+        public function getId()
+        {
+            return $this->data['id'] ?? null;
+        }
+
+        public function getEmail()
+        {
+            return $this->data['email'] ?? null;
+        }
+
+        public function setEmail($email)
+        {
+            $this->data['email'] = $email;
+            return $this;
+        }
+
+        public function getFirstname()
+        {
+            return $this->data['firstname'] ?? null;
+        }
+
+        public function setFirstname($firstname)
+        {
+            $this->data['firstname'] = $firstname;
+            return $this;
+        }
+
+        public function getLastname()
+        {
+            return $this->data['lastname'] ?? null;
+        }
+
+        public function setLastname($lastname)
+        {
+            $this->data['lastname'] = $lastname;
+            return $this;
+        }
+
+        public function getDob()
+        {
+            return $this->data['dob'] ?? null;
+        }
+
+        public function setDob($dob)
+        {
+            $this->data['dob'] = $dob;
+            return $this;
+        }
+
+        public function getGender()
+        {
+            return $this->data['gender'] ?? null;
+        }
+
+        public function setGender($gender)
+        {
+            $this->data['gender'] = $gender;
+            return $this;
+        }
+
+        public function getDefaultBilling()
+        {
+            return $this->data['default_billing'] ?? null;
+        }
+
+        public function getDefaultShipping()
+        {
+            return $this->data['default_shipping'] ?? null;
+        }
+    }
+
+    interface AddressInterface
+    {
+        /** @return mixed */
+        public function getId();
+
+        /** @return static */
+        public function setCustomerId($customerId);
+
+        /** @return static */
+        public function setFirstname($firstname);
+
+        /** @return static */
+        public function setLastname($lastname);
+
+        /** @return string[]|null */
+        public function getStreet();
+
+        /** @return static */
+        public function setStreet(array $street);
+
+        /** @return string|null */
+        public function getCity();
+
+        /** @return static */
+        public function setCity($city);
+
+        /** @return string|null */
+        public function getPostcode();
+
+        /** @return static */
+        public function setPostcode($postcode);
+
+        /** @return string|null */
+        public function getCountryId();
+
+        /** @return static */
+        public function setCountryId($countryId);
+
+        /** @return string|null */
+        public function getRegion();
+
+        /** @return static */
+        public function setRegion($region);
+
+        /** @return static */
+        public function setRegionId($regionId);
+
+        /** @return string|null */
+        public function getTelephone();
+
+        /** @return static */
+        public function setTelephone($telephone);
+
+        /** @return static */
+        public function setIsDefaultBilling($isDefaultBilling);
+
+        /** @return static */
+        public function setIsDefaultShipping($isDefaultShipping);
+    }
+
+    class AddressInterfaceFactory
+    {
+        /** @return AddressInterface */
+        public function create(array $data = [])
+        {
+            return new class implements AddressInterface {
+                /** @var array<string, mixed> */
+                private array $data = [];
+
+                public function getId()
+                {
+                    return $this->data['id'] ?? null;
+                }
+
+                public function setCustomerId($customerId)
+                {
+                    $this->data['customer_id'] = $customerId;
+                    return $this;
+                }
+
+                public function setFirstname($firstname)
+                {
+                    $this->data['firstname'] = $firstname;
+                    return $this;
+                }
+
+                public function setLastname($lastname)
+                {
+                    $this->data['lastname'] = $lastname;
+                    return $this;
+                }
+
+                public function getStreet()
+                {
+                    return $this->data['street'] ?? null;
+                }
+
+                public function setStreet(array $street)
+                {
+                    $this->data['street'] = $street;
+                    return $this;
+                }
+
+                public function getCity()
+                {
+                    return $this->data['city'] ?? null;
+                }
+
+                public function setCity($city)
+                {
+                    $this->data['city'] = $city;
+                    return $this;
+                }
+
+                public function getPostcode()
+                {
+                    return $this->data['postcode'] ?? null;
+                }
+
+                public function setPostcode($postcode)
+                {
+                    $this->data['postcode'] = $postcode;
+                    return $this;
+                }
+
+                public function getCountryId()
+                {
+                    return $this->data['country_id'] ?? null;
+                }
+
+                public function setCountryId($countryId)
+                {
+                    $this->data['country_id'] = $countryId;
+                    return $this;
+                }
+
+                public function getRegion()
+                {
+                    return $this->data['region'] ?? null;
+                }
+
+                public function setRegion($region)
+                {
+                    $this->data['region'] = $region;
+                    return $this;
+                }
+
+                public function setRegionId($regionId)
+                {
+                    $this->data['region_id'] = $regionId;
+                    return $this;
+                }
+
+                public function getTelephone()
+                {
+                    return $this->data['telephone'] ?? null;
+                }
+
+                public function setTelephone($telephone)
+                {
+                    $this->data['telephone'] = $telephone;
+                    return $this;
+                }
+
+                public function setIsDefaultBilling($isDefaultBilling)
+                {
+                    $this->data['is_default_billing'] = $isDefaultBilling;
+                    return $this;
+                }
+
+                public function setIsDefaultShipping($isDefaultShipping)
+                {
+                    $this->data['is_default_shipping'] = $isDefaultShipping;
+                    return $this;
+                }
+            };
+        }
     }
 }

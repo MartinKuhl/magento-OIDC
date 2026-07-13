@@ -220,9 +220,6 @@ class OidcLogger
         try {
             $logDir = $this->directoryList->getPath(DirectoryList::VAR_DIR) . '/log/';
             $files = \Magento\Framework\Filesystem\Glob::glob($logDir . 'M2Oidc_*.log');
-            if (!is_array($files)) {
-                return;
-            }
             foreach ($files as $file) {
                 try {
                     if ($this->fileDriver->isExists($file)) {

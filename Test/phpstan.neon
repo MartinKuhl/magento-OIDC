@@ -63,3 +63,11 @@ parameters:
             message: '#Class M2Oidc\\OAuth\\Model\\Cache\\RedisConnectionFactory does not have a constructor and must be instantiated without any parameters\.#'
             identifier: new.noConstructor
             reportUnmatched: false
+        # Cm_Cache_Backend_Redis (colinmollenhour/cache-backend-redis) is an intentionally
+        # optional runtime dependency for SlidingWindowStrategy's Redis-only fast path —
+        # guarded by instanceof + try/catch with graceful degradation, not required by
+        # this module's composer.json, so PHPStan can't resolve it in this analysis run.
+        -
+            message: '#Class Cm_Cache_Backend_Redis not found\.#'
+            identifier: class.notFound
+            reportUnmatched: false

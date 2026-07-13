@@ -313,28 +313,27 @@ class CheckAttributeMappingAction extends BaseAction
 
             if ($hasAdminAccount) {
                 // Provider binding check: reject if account is bound to a different IdP
-                if ($adminUser->getId()) {
-                    $boundProvider = $this->userProviderResource->getBoundProviderId(
-                        'admin',
-                        (int) $adminUser->getId()
+                // ($adminUser->getId() is already known truthy here — $hasAdminAccount requires it.)
+                $boundProvider = $this->userProviderResource->getBoundProviderId(
+                    'admin',
+                    (int) $adminUser->getId()
+                );
+                if ($boundProvider !== null && $boundProvider !== $this->providerId) {
+                    $this->oauthUtility->customlog(
+                        "Provider mismatch for admin " . $userEmail
+                        . " (bound=" . $boundProvider . ", current=" . $this->providerId . ")"
                     );
-                    if ($boundProvider !== null && $boundProvider !== $this->providerId) {
-                        $this->oauthUtility->customlog(
-                            "Provider mismatch for admin " . $userEmail
-                            . " (bound=" . $boundProvider . ", current=" . $this->providerId . ")"
-                        );
-                        $errorMessage = OAuthMessages::parse('PROVIDER_MISMATCH', ['email' => $userEmail]);
-                        $this->messageManager->addErrorMessage((string) __($errorMessage));
-                        return $this->resultRedirectFactory->create()->setUrl($this->backendUrl->getUrl('admin'));
-                    }
-                    // First OIDC login of a pre-existing admin account — claim the binding
-                    if ($boundProvider === null && $this->providerId > 0) {
-                        $this->userProviderResource->saveMapping('admin', (int) $adminUser->getId(), $this->providerId);
-                        $this->oauthUtility->customlog(
-                            "Provider binding claimed for existing admin " . $userEmail
-                            . " → provider " . $this->providerId
-                        );
-                    }
+                    $errorMessage = OAuthMessages::parse('PROVIDER_MISMATCH', ['email' => $userEmail]);
+                    $this->messageManager->addErrorMessage((string) __($errorMessage));
+                    return $this->resultRedirectFactory->create()->setUrl($this->backendUrl->getUrl('admin'));
+                }
+                // First OIDC login of a pre-existing admin account — claim the binding
+                if ($boundProvider === null && $this->providerId > 0) {
+                    $this->userProviderResource->saveMapping('admin', (int) $adminUser->getId(), $this->providerId);
+                    $this->oauthUtility->customlog(
+                        "Provider binding claimed for existing admin " . $userEmail
+                        . " → provider " . $this->providerId
+                    );
                 }
 
                 // Redirect admin users to dedicated admin login endpoint

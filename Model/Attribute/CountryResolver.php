@@ -156,6 +156,11 @@ class CountryResolver
             try {
                 $values = $this->countryCollectionFactory->create()->getColumnValues('country_id');
                 $this->countryCodes = array_map(
+                    /**
+                     * getColumnValues() is typed as returning mixed per-row; country_id is a
+                     * varchar column so this is always a scalar string in practice.
+                     * @psalm-suppress InvalidCast
+                     */
                     static fn(mixed $code): string => (string) $code,
                     array_values($values)
                 );

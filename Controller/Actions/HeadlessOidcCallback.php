@@ -155,7 +155,7 @@ class HeadlessOidcCallback extends BaseAction
         }
 
         $email      = $nonceData['email'];
-        $relayState = (string) ($nonceData['relayState'] ?? '');
+        $relayState = $nonceData['relayState'];
         $this->oauthUtility->customlog("HeadlessOidcCallback: Email from nonce: " . $email);
 
         // Load customer
