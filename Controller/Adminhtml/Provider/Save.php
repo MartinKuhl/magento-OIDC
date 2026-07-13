@@ -295,8 +295,10 @@ class Save extends Action implements HttpPostActionInterface
             }
             $model->setData('oauth_customer_group_mapping', json_encode($cgMappings));
 
-            // Encrypt client secret only when a new value is provided
-            if (!empty($data['client_secret'])) {
+            // Encrypt client secret only when a new value is provided; clear it entirely for public clients.
+            if ((int) ($data['public_client'] ?? 0) === 1) {
+                $model->setData('client_secret', '');
+            } elseif (!empty($data['client_secret'])) {
                 $model->setData('client_secret', $this->encryptor->encrypt($data['client_secret']));
             }
 

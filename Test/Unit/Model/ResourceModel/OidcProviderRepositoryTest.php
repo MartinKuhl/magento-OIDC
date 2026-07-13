@@ -228,4 +228,73 @@ class OidcProviderRepositoryTest extends TestCase
 
         $this->assertSame('plaintext-secret', $result['client_secret']);
     }
+
+    // -------------------------------------------------------------------------
+    // public_client — stale ciphertext must never be decrypted or warned about
+    // -------------------------------------------------------------------------
+
+    public function testGetAllActiveProvidersSkipsDecryptionForPublicClient(): void
+    {
+        $row = new DataObject([
+            'id' => 3,
+            'login_type' => 'both',
+            'public_client' => 1,
+            'client_secret' => self::ENCRYPTED_SECRET,
+        ]);
+
+        $this->clientCollectionFactory->method('create')->willReturn($this->makeCollection([$row]));
+        $this->encryptor->expects($this->never())->method('decrypt');
+        $this->logger->expects($this->never())->method('warning');
+
+        $result = $this->repository->getAllActiveProviders('customer');
+
+        $this->assertSame(self::ENCRYPTED_SECRET, $result[0]['client_secret']);
+    }
+
+    public function testGetClientDetailsByIdSkipsDecryptionForPublicClient(): void
+    {
+        $row = new DataObject(['id' => 3, 'public_client' => 1, 'client_secret' => self::ENCRYPTED_SECRET]);
+
+        $collection = $this->getMockBuilder(Collection::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['addFieldToFilter', 'getSize', 'getFirstItem'])
+            ->getMock();
+        $collection->method('addFieldToFilter')->willReturnSelf();
+        $collection->method('getSize')->willReturn(1);
+        $collection->method('getFirstItem')->willReturn($row);
+
+        $this->clientCollectionFactory->method('create')->willReturn($collection);
+        $this->encryptor->expects($this->never())->method('decrypt');
+        $this->logger->expects($this->never())->method('warning');
+
+        $result = $this->repository->getClientDetailsById(3);
+
+        $this->assertSame(self::ENCRYPTED_SECRET, $result['client_secret']);
+    }
+
+    public function testGetClientDetailsByAppNameSkipsDecryptionForPublicClient(): void
+    {
+        $row = new DataObject([
+            'id' => 3,
+            'app_name' => 'zitadel',
+            'public_client' => 1,
+            'client_secret' => self::ENCRYPTED_SECRET,
+        ]);
+
+        $collection = $this->getMockBuilder(Collection::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['addFieldToFilter', 'getSize', 'getFirstItem'])
+            ->getMock();
+        $collection->method('addFieldToFilter')->willReturnSelf();
+        $collection->method('getSize')->willReturn(1);
+        $collection->method('getFirstItem')->willReturn($row);
+
+        $this->clientCollectionFactory->method('create')->willReturn($collection);
+        $this->encryptor->expects($this->never())->method('decrypt');
+        $this->logger->expects($this->never())->method('warning');
+
+        $result = $this->repository->getClientDetailsByAppName('zitadel');
+
+        $this->assertSame(self::ENCRYPTED_SECRET, $result['client_secret']);
+    }
 }

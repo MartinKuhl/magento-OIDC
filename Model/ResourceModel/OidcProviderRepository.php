@@ -61,7 +61,8 @@ class OidcProviderRepository
         $collection->addFieldToFilter('app_name', $appName);
         $data = $collection->getSize() > 0 ? $collection->getFirstItem()->getData() : null;
 
-        if ($data !== null && isset($data['client_secret']) && !empty($data['client_secret'])
+        if ($data !== null && (int) ($data['public_client'] ?? 0) !== 1
+            && isset($data['client_secret']) && !empty($data['client_secret'])
             && preg_match('/^\d+:\d+:/', (string) $data['client_secret'])) {
             $data['client_secret'] = $this->decryptSecretWithLogging((string) $data['client_secret'], $appName);
         }
@@ -88,7 +89,8 @@ class OidcProviderRepository
         $collection->addFieldToFilter('id', ['eq' => $providerId]);
         $data = $collection->getSize() > 0 ? $collection->getFirstItem()->getData() : null;
 
-        if ($data !== null && isset($data['client_secret']) && !empty($data['client_secret'])
+        if ($data !== null && (int) ($data['public_client'] ?? 0) !== 1
+            && isset($data['client_secret']) && !empty($data['client_secret'])
             && preg_match('/^\d+:\d+:/', (string) $data['client_secret'])) {
             $data['client_secret'] = $this->decryptSecretWithLogging(
                 (string) $data['client_secret'],
@@ -225,7 +227,8 @@ class OidcProviderRepository
                 continue;
             }
 
-            if (isset($data['client_secret']) && !empty($data['client_secret'])
+            if ((int) ($data['public_client'] ?? 0) !== 1
+                && isset($data['client_secret']) && !empty($data['client_secret'])
                 && preg_match('/^\d+:\d+:/', (string) $data['client_secret'])) {
                 $data['client_secret'] = $this->decryptSecretWithLogging(
                     (string) $data['client_secret'],
