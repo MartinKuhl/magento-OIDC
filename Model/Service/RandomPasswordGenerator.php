@@ -7,12 +7,12 @@ namespace M2Oidc\OAuth\Model\Service;
 use Magento\Framework\Math\Random;
 
 /**
- * Generates random placeholder passwords for SSO-provisioned users (M25).
+ * Generates random placeholder passwords for SSO-provisioned users.
  *
  * Shared by AdminUserCreator and CustomerUserCreator so both use the same
  * character-class guarantees: 28 alphanumeric characters plus at least
  * 2 special characters and 2 digits, shuffled to avoid a predictable
- * character-class ordering (SEC-12). Total length: 32 characters.
+ * character-class ordering. Total length: 32 characters.
  *
  * Stateless; safe to share between consumers.
  */

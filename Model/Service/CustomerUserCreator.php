@@ -23,7 +23,7 @@ use M2Oidc\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
 class CustomerUserCreator
 {
     /**
-     * Attribute-mapping config lookups (M24): attribute type => [config key, default claim name].
+     * Attribute-mapping config lookups: attribute type => [config key, default claim name].
      */
     private const ATTRIBUTE_CONFIG = [
         'dob'     => [OAuthConstants::MAP_DOB,     OAuthConstants::DEFAULT_MAP_DOB],
@@ -146,7 +146,7 @@ class CustomerUserCreator
     }
 
     /**
-     * Initialize attribute mapping from configuration (M24).
+     * Initialize attribute mapping from configuration.
      *
      * For each attribute type in ATTRIBUTE_CONFIG the configured claim name is
      * read from store config; blank values fall back to the module default.
@@ -185,7 +185,7 @@ class CustomerUserCreator
         $this->oauthUtility->customlog("CustomerUserCreator: Starting creation for " . $email);
 
         try {
-            // Name fallbacks — delegate to shared helper (REF-02)
+            // Name fallbacks — delegate to shared helper
             if ($firstName === '' || $firstName === '0' || $lastName === '' || $lastName === '0') {
                 $derived = $this->oauthUtility->extractNameFromEmail($email);
                 if ($firstName === '' || $firstName === '0') {
@@ -198,7 +198,7 @@ class CustomerUserCreator
 
             $userName = $this->oauthUtility->isBlank($userName) ? $email : $userName;
 
-            // Generate a 32-char password with guaranteed special/digit characters (SEC-12, M25).
+            // Generate a 32-char password with guaranteed special/digit characters.
             $randomPassword = $this->passwordGenerator->generate();
 
             $websiteId = $this->storeManager->getWebsite()->getId();
@@ -228,10 +228,9 @@ class CustomerUserCreator
             if ($oidcGroups !== []) {
                 $resolvedGroupId = $this->getCustomerGroupFromOidcGroups($oidcGroups, $providerId);
                 if ($resolvedGroupId === null) {
-                    $groupList = implode(', ', $oidcGroups);
                     $msg = OAuthMessages::parse(
                         'CUSTOMER_GROUP_MAPPING_NO_MATCH',
-                        ['groups' => $groupList !== '' ? $groupList : '(none)']
+                        ['groups' => implode(', ', $oidcGroups)]
                     );
                     $this->oauthUtility->customlog($msg);
                     throw new \Magento\Framework\Exception\LocalizedException(__($msg));
@@ -274,7 +273,7 @@ class CustomerUserCreator
     /**
      * Resolve Magento customer group ID from OIDC group claims.
      *
-     * Delegates to GroupMappingResolver (M18): normalized m2oidc_oauth_role_mappings
+     * Delegates to GroupMappingResolver: normalized m2oidc_oauth_role_mappings
      * table first, legacy JSON column fallback, case-insensitive group match,
      * configured default group. When the deny policy
      * (m2oidc_dont_create_customer_if_group_not_mapped) is active, an unmatched

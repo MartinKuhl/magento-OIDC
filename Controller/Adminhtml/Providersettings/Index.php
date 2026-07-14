@@ -29,7 +29,7 @@ use Psr\Log\LoggerInterface;
 class Index extends BaseAdminAction implements HttpPostActionInterface, HttpGetActionInterface
 {
     /**
-     * ACL resource checked by \Magento\Backend\App\Action::_isAllowed() (C-01/M-30).
+     * ACL resource checked by \Magento\Backend\App\Action::_isAllowed().
      *
      * @var string
      */

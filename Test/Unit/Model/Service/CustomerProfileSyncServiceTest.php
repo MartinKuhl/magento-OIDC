@@ -316,7 +316,7 @@ class CustomerProfileSyncServiceTest extends TestCase
     }
 
     /**
-     * GenderMapper (M19) only recognizes male/female vocabulary; "other"/"diverse"/"3"
+     * GenderMapper only recognizes male/female vocabulary; "other"/"diverse"/"3"
      * are no longer special-cased to gender ID 3 (that bucket was CustomerProfileSyncService-
      * only behaviour prior to unification). They now behave like any other unrecognized
      * value: sync is skipped rather than forcing "Not Specified".

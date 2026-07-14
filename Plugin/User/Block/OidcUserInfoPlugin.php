@@ -72,8 +72,8 @@ class OidcUserInfoPlugin
     {
         $form = $subject->getForm();
 
-        // Guard: form not prepared yet, or field already added (multiple render passes)
-        if (!is_object($form) || $form->getElement('oidc_provider_info')) {
+        // Guard: field already added (multiple render passes)
+        if ($form->getElement('oidc_provider_info')) {
             return $proceed();
         }
 
@@ -98,7 +98,7 @@ class OidcUserInfoPlugin
         $fieldset = $form->getElement('base_fieldset');
         if ($fieldset) {
             $unlinkHtml = '';
-            if ($info && $userId > 0) {
+            if ($info) {
                 $configJson = $this->escaper->escapeHtmlAttr((string) json_encode([
                     'unlinkUrl'      => $this->backendUrl->getUrl('m2oidc/provider/unlinkuser'),
                     'userType'       => 'admin',

@@ -13,10 +13,10 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Unit tests for RpInitiatedLogoutService (M28 + M29).
+ * Unit tests for RpInitiatedLogoutService.
  *
  * Verifies:
- *  - M28 regression: an invalid per-provider post_logout_url override is
+ *  - Regression: an invalid per-provider post_logout_url override is
  *    rejected (FILTER_VALIDATE_URL) and the caller fallback is used instead
  *  - A valid post_logout_url override is honored verbatim
  *  - Authelia detection heuristic: /logout yes, /oauth2/logout and
@@ -52,7 +52,7 @@ class RpInitiatedLogoutServiceTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // resolvePostLogoutRedirectUri — M28 regression
+    // resolvePostLogoutRedirectUri — regression
     // -------------------------------------------------------------------------
 
     /**
@@ -80,7 +80,7 @@ class RpInitiatedLogoutServiceTest extends TestCase
         $this->assertSame(
             self::FALLBACK_URI,
             $result,
-            'Invalid post_logout_url override must be rejected in favor of the fallback (M28)'
+            'Invalid post_logout_url override must be rejected in favor of the fallback'
         );
     }
 

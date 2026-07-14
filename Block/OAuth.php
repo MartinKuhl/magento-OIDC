@@ -277,7 +277,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     /**
      * Return all active providers for the given login type, ordered by sort_order.
      *
-     * MP-05: Powers the multi-provider SSO button loop in customerssobutton.phtml.
+     * Powers the multi-provider SSO button loop in customerssobutton.phtml.
      * Each element is a plain data array (same shape as getClientDetailsByAppName()).
      *
      * @param  string $loginType 'customer' | 'admin' | 'both'
@@ -373,7 +373,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     /**
      * Validate a per-provider SSO button color, falling back to a sane default.
      *
-     * L45: extracted from the duplicated "validate #rrggbb, else fallback" logic
+     * Extracted from the duplicated "validate #rrggbb, else fallback" logic
      * previously inlined in adminssobutton.phtml and customerssobutton.phtml.
      *
      * @param string|null $raw      Raw `button_color` value from the provider row
@@ -387,7 +387,7 @@ class OAuth extends \Magento\Framework\View\Element\Template
     /**
      * Resolve the SSO button label.
      *
-     * L45: extracted from the duplicated "button_label, else 'Login with %1'" logic
+     * Extracted from the duplicated "button_label, else 'Login with %1'" logic
      * previously inlined in adminssobutton.phtml and customerssobutton.phtml.
      *
      * @param string|null $rawLabel    Raw `button_label` value from the provider row

@@ -8,7 +8,7 @@ use M2Oidc\OAuth\Model\Validation\SsrfUrlValidator;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Unit tests for the shared SSRF URL validator (H-09).
+ * Unit tests for the shared SSRF URL validator.
  *
  * Verifies that:
  *  - loopback and RFC-1918 private hosts are rejected

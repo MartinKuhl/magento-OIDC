@@ -19,7 +19,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
- * Unit tests for Providersettings/Index controller (MP-06).
+ * Unit tests for Providersettings/Index controller.
  *
  * Tests the execute() save path:
  *  - GET request renders page without saving
@@ -325,13 +325,13 @@ class ProviderSettingsIndexTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // C-01 / M-30 — ADMIN_RESOURCE constant must match etc/acl.xml
+    // ADMIN_RESOURCE constant must match etc/acl.xml
     // -------------------------------------------------------------------------
 
     /**
      * Index::ADMIN_RESOURCE must be the correctly namespaced ACL resource ID.
      *
-     * Regression guard for C-01: the removed hand-built _isAllowed() override
+     * Regression guard: a previously removed hand-built _isAllowed() override
      * concatenated OAuthConstants::MODULE_DIR . 'provider_settings' without a
      * '::' separator, producing the non-existent resource
      * 'M2Oidc_OAuthprovider_settings' and silently granting access to any

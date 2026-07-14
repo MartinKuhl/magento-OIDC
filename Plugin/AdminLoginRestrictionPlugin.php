@@ -57,7 +57,7 @@ class AdminLoginRestrictionPlugin
      */
     public function beforeLogin(Auth $subject, string $username, $password): null
     {
-        // C-01: Allow OIDC-authenticated logins — detect by ephemeral token format (non-consuming)
+        // Allow OIDC-authenticated logins — detect by ephemeral token format (non-consuming)
         if ($this->securityHelper->isOidcAuthToken($password)) {
             return null;
         }

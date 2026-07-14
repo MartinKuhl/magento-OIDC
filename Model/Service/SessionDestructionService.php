@@ -11,7 +11,7 @@ use M2Oidc\OAuth\Helper\OAuthUtility;
  * Shared service for destroying PHP sessions and clearing Magento Online status.
  *
  * Extracted from BackChannelLogout so that FrontChannelLogout can reuse the
- * same session-destruction logic (C-02 pattern) without code duplication.
+ * same session-destruction logic without code duplication.
  *
  * Thread safety: PHP's file-based session handler holds an exclusive flock()
  * for the duration of session_start(), so concurrent reads from the target
@@ -41,7 +41,7 @@ class SessionDestructionService
     /**
      * Destroy a PHP session by its session ID.
      *
-     * C-02: destroying a session belonging to a different browser request.
+     * This destroys a session belonging to a different browser request.
      * PHP has no direct API for this; switching session IDs via session_id()
      * is the de-facto standard approach used by Symfony, Laravel, and others.
      *

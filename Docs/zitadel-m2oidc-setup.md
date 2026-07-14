@@ -294,7 +294,9 @@ directly.
 
 Zitadel sends project role assignments in the claim `urn:zitadel:iam:org:project:roles`, but this
 is a nested object (not a flat string array), which makes direct group mapping in the M2Oidc plugin
-difficult.
+difficult. The plugin's automatic nested-role normalization (which reconstructs group names from
+that nested shape) only matters if you map that raw claim directly — the recommended approach below
+never produces a nested object in the first place, so it doesn't rely on that normalization.
 
 The recommended approach for group/role mapping is to store group membership as a metadata field
 and emit it as a flat claim via the Action:
@@ -310,7 +312,7 @@ and emit it as a flat claim via the Action:
      api.v1.claims.setClaim('groups', meta.groups.split(','));
    }
    ```
-3. In the Magento plugin, set the **Group Attribute** to `groups` (see Part B, Step 4).
+3. In the Magento plugin, set the **Group / Role Claim** to `groups` (see Part B, Step 4).
 
 ---
 
@@ -331,7 +333,7 @@ and emit it as a flat claim via the Action:
 | Login Type     | `both` (or `customer` / `admin` as needed) |
 | Is Active      | Yes                                        |
 | Button Label   | `Login with Zitadel`                       |
-| Button Color   | e.g. `84, 105, 212` (Zitadel brand blue)        |
+| Button Color   | A 6-digit hex color via the color picker, e.g. `#2073c4` |
 | Sort Order     | `0`                                        |
 
 ---
@@ -342,14 +344,14 @@ Open the **OAuth Settings** tab.
 
 | Field                 | Value                                                                                      |
 |-----------------------|--------------------------------------------------------------------------------------------|
-| **Well-Known Config URL** | `https://zitadel.casa-kuhl.de/.well-known/openid-configuration`              |
+| **Discovery URL** *(stored as `well_known_config_url`)* | `https://zitadel.casa-kuhl.de/.well-known/openid-configuration` |
 | **Client ID**         | *(copy from Zitadel application overview)*                                                 |
 | **Client Secret**     | *(leave empty — this is a public client; see "Public Client" below)*                       |
 | **Public Client**     | ✅ Enable (check the "Public Client" checkbox)                                             |
-| **Scope**             | `openid profile email phone urn:zitadel:iam:user:metadata urn:zitadel:iam:org:project:roles`                                                                     |
-| **Grant Type**        | Authorization Code *(PKCE is a separate field — see "PKCE Flow" below)*                    |
-| **Send Credentials**  | *(leave both checkboxes unchecked — public client sends no secret)*                        |
-| **PKCE Flow**         | S256 (recommended)                                                                         |
+| **Scope**             | `openid profile email phone` — see note below on the two Zitadel-specific scopes           |
+| **Grant Type**        | Authorization Code *(the only option in the dropdown; the stored value has no effect on the actual token request, which always uses `authorization_code` — PKCE is the field that actually matters, see "PKCE Method" below)* |
+| **Send Credentials**  | *(leave both "In Authorization Header" and "In Request Body" checkboxes unchecked — public client sends no secret)* |
+| **PKCE Method**       | S256 (recommended)                                                                         |
 
 > **Why "Public Client"?** Zitadel with Authentication Method **None** is a public client
 > (RFC 6749 §2.1) — it does not issue a `client_secret`. Enabling this checkbox tells the
@@ -358,11 +360,20 @@ Open the **OAuth Settings** tab.
 
 > **Confidential client settings (if you changed Authentifizierungsmethode to Basic or POST):**
 > Leave "Public Client" **unchecked**, enter the Client Secret copied from Zitadel, keep
-> PKCE = S256, and check **"Send Credentials In Authorization Header"** (for Basic) or
-> **"In Request Body"** (for POST). Leave both credential checkboxes unchecked only for
-> public clients.
+> PKCE Method = S256, and under "Send Credentials" check **"In Authorization Header"** (for
+> Basic) or **"In Request Body"** (for POST). Leave both credential checkboxes unchecked only
+> for public clients.
 
-> **Auto-Discovery:** When you save with only the Well-Known Config URL filled in, the plugin
+> **About the two Zitadel-specific scopes:** `urn:zitadel:iam:user:metadata` and
+> `urn:zitadel:iam:org:project:roles` are **not required** for the Action-based approach this
+> guide recommends (Part A, Step 3) — the Action reads user metadata server-side via
+> `ctx.v1.user.getMetadata()`, independent of whatever scopes the client requests. Only add
+> `urn:zitadel:iam:user:metadata` if you use the no-Action alternative in
+> [Step 3.4](#34-alternative-expose-metadata-via-scope-without-an-action), or
+> `urn:zitadel:iam:org:project:roles` if you map Zitadel's raw project-role claim directly
+> instead of the metadata-based `groups` field from Part A Step 4.
+
+> **Auto-Discovery:** When you save with only the Discovery URL filled in, the plugin
 > automatically fetches Zitadel's discovery document and populates all endpoint URLs
 > (Authorize, Token, UserInfo, JWKS, End Session) for you. You do not need to enter them
 > manually.
@@ -405,33 +416,44 @@ auto-populated with your Zitadel instance's URLs.
 
 Open the **Attribute Mapping** tab of the provider.
 
+#### Claim Value Encoding
+
+Leave **Claim Value Encoding** set to `None` for the Action-based setup in this guide — the
+Zitadel Action decodes metadata to plain text before calling `setClaim()`, so the claims Magento
+receives are already plain text. Only set this to `Base64` if you instead use the
+[Step 3.4 alternative](#34-alternative-expose-metadata-via-scope-without-an-action) (metadata
+exposed directly via scope, unprocessed by an Action) — see
+[Troubleshooting: Metadata values arrive as base64 strings](#metadata-values-arrive-as-base64-strings).
+
 #### Core claims (standard Zitadel)
 
-| Plugin Field    | OIDC Claim Name       |
-|-----------------|-----------------------|
-| Email           | `email`               |
-| Username        | `preferred_username`  |
-| First Name      | `given_name`          |
-| Last Name       | `family_name`         |
+| Plugin Field      | OIDC Claim Name       |
+|-------------------|-----------------------|
+| Email Claim       | `email`               |
+| Username Claim    | `preferred_username`  |
+| First Name Claim  | `given_name`          |
+| Last Name Claim   | `family_name`         |
 
 #### Extended claims (from Zitadel Action + metadata)
 
-| Plugin Field          | OIDC Claim Name   | Notes                                                                                       |
-|-----------------------|-------------------|---------------------------------------------------------------------------------------------|
-| Phone Number          | `phone_number`    |                                                                                             |
-| Date of Birth         | `birthdate`       | Plugin expects YYYY-MM-DD format                                                            |
-| Gender                | `gender`          | Accepted values: `male`/`m`/`1`/`mann`/`männlich` → Male; `female`/`f`/`2`/`frau`/`weiblich` → Female; all others → Not Specified |
-| Billing Street        | `address_street`  | Required for billing address creation                                                       |
-| Billing ZIP / Postcode| `address_zip`     | Required for billing address creation                                                       |
-| Billing City          | `address_city`    | Required for billing address creation                                                       |
-| Billing Country       | `address_country` | Required for billing address creation. Use ISO 3166-1 alpha-2 codes (e.g. `DE`, `US`)     |
+| Plugin Field               | OIDC Claim Name   | Notes                                                                                       |
+|-----------------------------|-------------------|---------------------------------------------------------------------------------------------|
+| Phone Number Claim          | `phone_number`    |                                                                                             |
+| Date of Birth Claim         | `birthdate`       | Plugin expects YYYY-MM-DD format                                                            |
+| Gender Claim                | `gender`          | Accepted values: `male`/`m`/`1`/`mann`/`männlich` → Male; `female`/`f`/`2`/`frau`/`weiblich` → Female; all others → Not Specified |
+| Street *(Billing Address)*  | `address_street`  | Required for billing address creation                                                       |
+| ZIP / Postal Code *(Billing Address)* | `address_zip` | Required for billing address creation                                                  |
+| City *(Billing Address)*    | `address_city`    | Required for billing address creation                                                       |
+| Country *(Billing Address)* | `address_country` | Required for billing address creation. Use ISO 3166-1 alpha-2 codes (e.g. `DE`, `US`)      |
 
 > **Billing address rule:** The plugin only creates the billing address object when **all four**
-> fields — street, ZIP, city, and country — are mapped **and** all four values are non-empty in
-> the token. If any one is missing, no address is created (this prevents partial / invalid
-> addresses).
+> fields — Street, ZIP / Postal Code, City, and Country — are mapped **and** all four values are
+> non-empty in the token. If any one is missing, no address is created (this prevents partial /
+> invalid addresses). A separate **State / Region** field also exists on this tab; it is not part
+> of the four-field billing address gate and is not currently used when creating the billing
+> address, so it's fine to leave it unmapped for this setup.
 
-> **Group Attribute** (only needed if using role/group mapping): set to `groups` if you
+> **Group / Role Claim** (only needed if using role/group mapping): set to `groups` if you
 > configured the group emission in Part A Step 4.
 
 Click **Save**.
@@ -442,20 +464,27 @@ Click **Save**.
 
 Open the **Login Options** tab.
 
-| Setting                            | Recommended Value                                |
-|------------------------------------|--------------------------------------------------|
-| Show Customer SSO Link             | Yes                                              |
-| Show Admin SSO Link                | Yes                                              |
-| Auto Create Customer users         | Yes (users are created on first login)           |
-| Auto Create Admin users            | Optional (only if admins log in via Zitadel)     |
-| Auto Redirect Customer to IdP      | No (keep off until flow is verified)             |
-| Auto Redirect Admin to IdP         | No (keep off until flow is verified)             |
-| Disable non-OIDC customer login    | No (enable only after verifying OIDC works)      |
-| Disable non-OIDC admin login       | No (enable only after verifying OIDC works)      |
+| Setting                                                        | Recommended Value                                |
+|-------------------------------------------------------------------|--------------------------------------------------|
+| Show SSO button on customer login page                          | Yes                                              |
+| Show SSO button on admin login page                             | Yes                                              |
+| Auto-create customer accounts on first SSO login                 | Yes (users are created on first login)           |
+| Auto-create admin users on first SSO login                       | Optional (only if admins log in via Zitadel)     |
+| Auto redirect to IdP on customer login page                     | No (keep off until flow is verified)             |
+| Auto redirect to IdP on admin login page                        | No (keep off until flow is verified)             |
+| Disable non-OIDC login for customers (OIDC login only)           | No (enable only after verifying OIDC works)      |
+| Disable non-OIDC login for admins (OIDC login only)              | No (enable only after verifying OIDC works)      |
+| Sync customer profile fields (name, email) on every SSO login    | Yes — so name/email edits made in Zitadel propagate on the customer's next login |
+| Sync customer address on every SSO login                        | Yes — so billing address metadata edits made in Zitadel propagate on the customer's next login |
 
-> **Debug Logging:** Enable **Debug Logging** during initial setup. Logs are written to
-> `var/log/M2Oidc.log` and automatically rotated daily. This is the first place to look when
-> troubleshooting.
+> **Post-Logout Landing Page** (`post_logout_url`) also lives on this tab — leave it blank unless
+> you want to override the module's unified `/m2oidc/actions/postlogout` redirect for this
+> provider specifically.
+
+> **Debug Logging is not on this tab.** It's a global setting at **Stores > Configuration >
+> M2Oidc > OAuth/OIDC > Sign In Settings > Enable debug logging**, applying to all providers.
+> Enable it during initial setup; logs are written to `var/log/M2Oidc.log` and automatically
+> rotated daily. This is the first place to look when troubleshooting.
 
 Click **Save**.
 
@@ -623,5 +652,5 @@ bin/magento cache:flush
 | `var/log/system.log`        | General Magento system messages               |
 | `var/log/exception.log`     | PHP exceptions                                |
 
-Enable debug logging in **M2 OIDC → Manage Providers → [provider] → Login Options → Enable Debug Logging**.
+Enable debug logging in **Stores → Configuration → M2Oidc → OAuth/OIDC → Sign In Settings → Enable debug logging**.
 Logs auto-rotate and are deleted after 7 days.

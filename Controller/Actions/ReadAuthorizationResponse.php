@@ -153,7 +153,7 @@ class ReadAuthorizationResponse extends BaseAction
             }
 
             if (isset($params['error'])) {
-                // H-05: Strip non-printable/non-ASCII characters from the IdP-supplied
+                // Strip non-printable/non-ASCII characters from the IdP-supplied
                 // error_description before logging or embedding in any redirect URL.
                 $rawError = (string) ($params['error_description'] ?? $params['error']);
                 // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
@@ -193,7 +193,7 @@ class ReadAuthorizationResponse extends BaseAction
                 $stateToken = $stateData['stateToken'];
                 $providerId = $stateData['providerId'] ?? 0;
                 $headless = (bool) ($stateData['headless'] ?? false);
-                // M-24: headless flag is re-validated against provider config after lookup below
+                // Headless flag is re-validated against provider config after lookup below
                 $this->oauthUtility->setActiveProviderId($providerId);
             } else {
                 /** @psalm-suppress RedundantCast */
@@ -226,12 +226,12 @@ class ReadAuthorizationResponse extends BaseAction
                 "ReadAuthResponse: State token validation PASSED"
             );
 
-            // H-01: Consume the OIDC nonce that was stored when the authorization request was
+            // Consume the OIDC nonce that was stored when the authorization request was
             // sent. Returns null when no nonce was stored (e.g. non-OIDC flow), in which case
             // JwtVerifier will skip nonce validation rather than fail.
             $expectedNonce = $this->securityHelper->consumeOidcNonce($stateToken);
 
-            // MP-04: prefer direct-by-ID lookup
+            // Prefer direct-by-ID lookup
             $clientDetails = ($providerId > 0)
                 ? $this->oauthUtility->getClientDetailsById($providerId)
                 : $this->oauthUtility->getClientDetailsByAppName($app_name);
@@ -245,7 +245,7 @@ class ReadAuthorizationResponse extends BaseAction
                 return $this->_redirect($this->resolveErrorLoginUrl($loginType, $encodedError));
             }
 
-            // M-24: Re-validate headless flag against provider config
+            // Re-validate headless flag against provider config
             if ($headless && empty($clientDetails['headless_mode'])) {
                 $headless = false;
             }
@@ -299,7 +299,7 @@ class ReadAuthorizationResponse extends BaseAction
             }
 
             if ($header === 1 && $body === 0) {
-                // H-06: Public clients (empty secret) get no Authorization header from
+                // Public clients (empty secret) get no Authorization header from
                 // Curl::sendAccessTokenRequest(), so client_id must be carried in the
                 // body (RFC 6749 §3.2.1). Confidential clients authenticate via HTTP
                 // Basic and must not duplicate client_id in the body (RFC 6749 §2.3.1).
@@ -433,7 +433,7 @@ class ReadAuthorizationResponse extends BaseAction
                     $userInfoResponse = $this->curl->sendUserInfoRequest($userInfoURL, $authHeader);
                     $userInfoResponseData = json_decode($userInfoResponse, true);
 
-                    // M-06: When user data comes from the userinfo endpoint but the token
+                    // When user data comes from the userinfo endpoint but the token
                     // response also contains an id_token, validate that token's nonce.
                     // This prevents replay attacks in the hybrid flow.
                     if (!empty($accessTokenResponseData['id_token'])) {
@@ -483,7 +483,7 @@ class ReadAuthorizationResponse extends BaseAction
                 }
 
                 // ==== TEST REDIRECT LOGIC ====
-                // M-09: Removed user-controlled $params['option'] trigger. Test mode is now
+                // Removed user-controlled $params['option'] trigger. Test mode is now
                 // only activated by server-side config (IS_TEST) or a relay state that
                 // originates from the admin-only "Test Configuration" button
                 // (which embeds 'showTestResults' in the relay state it sends to the IdP).
@@ -498,7 +498,7 @@ class ReadAuthorizationResponse extends BaseAction
                     $testKey = $matches[1] ?? '';
                     $this->storeTestResultInSession($testKey, $userInfoResponseData);
 
-                    // MP-04: Append provider_id as URL parameter to the relayState URL.
+                    // Append provider_id as URL parameter to the relayState URL.
                     // Session-based approach removed — sessions are unreliable across
                     // cross-domain OIDC redirects (SameSite cookies, session regeneration).
                     if ($providerId > 0 && strpos((string) $relayState, 'showTestResults') !== false) {
@@ -559,7 +559,7 @@ class ReadAuthorizationResponse extends BaseAction
 
                 $this->oauthUtility->customlog("ReadAuthorizationResponse: loginType = " . $loginType);
 
-                // MP-07: pass per-provider attribute mappings via the immutable context DTO
+                // Pass per-provider attribute mappings via the immutable context DTO
                 $mappingContext = new OidcAttributeMappingContext(
                     $userInfoResponseData,
                     $flattenedResponse,
@@ -633,7 +633,7 @@ class ReadAuthorizationResponse extends BaseAction
      * @param  string      $clientID      OAuth client identifier
      * @param  string      $relayState    Relay state URL for test-mode error redirect
      * @param  string      $loginType     Login type (admin|customer) for error routing
-     * @param  string|null $expectedNonce H-01: OIDC nonce to validate, null to skip
+     * @param  string|null $expectedNonce OIDC nonce to validate, null to skip
      * @return mixed
      */
     private function resolveUserInfoFromIdToken(
@@ -659,7 +659,7 @@ class ReadAuthorizationResponse extends BaseAction
                     );
                 }
             }
-            // H-01: Pass expectedNonce so JwtVerifier validates the nonce claim
+            // Pass expectedNonce so JwtVerifier validates the nonce claim
             $decoded = $this->jwtVerifier->verifyAndDecode(
                 $idToken,
                 $jwksEndpoint,

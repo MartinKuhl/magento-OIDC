@@ -1,4 +1,4 @@
-# Magento 2 OAuth/OIDC Single Sign-On Module
+# Magento 2 OIDC Single Sign-On Module
 
 <p align="center">
   <img src="view/adminhtml/web/images/m2oidc_logo.png" alt="M2Oidc Logo" width="160" />
@@ -44,6 +44,7 @@ Modern e-commerce platforms require secure, centralized authentication. This mod
 - ✅ **Comprehensive Debug Logging**: Detailed flow logs for troubleshooting, with automatic log rotation via a daily cron job; optional JSON Lines mode (`oidc/logging/json_lines`) for structured log ingestion
 - ✅ **Test Configuration UI**: Verify OIDC claims before production deployment
 - ✅ **OIDC Discovery Auto-Refresh**: Endpoints automatically re-fetched every 6 hours via cron — no manual provider re-save needed when IdP endpoints change
+- ✅ **Health-Check Webhook Alerting**: Configure a webhook URL (Slack, PagerDuty, or any HTTP endpoint) and a failure threshold per provider; after that many consecutive reachability-check failures (checked every 5 minutes), the module posts a JSON alert, plus an optional one-time recovery notification once the provider is reachable again — no repeated alerts while the outage continues
 - ✅ **Per-Attribute Sync Control**: Fine-grained `sync_on_sso` flag per mapped attribute in the normalized mappings table, enabling selective sync instead of all-or-nothing toggles
 - ✅ **Per-Provider Attribute Mapper Overrides**: Third-party modules can inject custom `AttributeMapperInterface` implementations per OIDC provider via DI (`MapperPool`)
 - ✅ **Sliding-Window Rate Limiter**: Redis deployments can switch to the `OidcSlidingWindowRateLimiter` virtual type for burst-tolerant sliding-window rate limiting
@@ -551,7 +552,7 @@ OAuth/OIDC **requires HTTPS** in production:
 - **Access tokens**, **ID tokens**, and **refresh tokens** stored in PHP session only, never in database
 - **Session lifetime**: Standard Magento session timeout (default: 86400 seconds = 24 hours)
 - **Refresh tokens**: Stored in session (`oidc_refresh_token`) and used by `TokenRefreshService` / `AdminTokenRefreshService` for silent token renewal
-- **Client secrets**: The OAuth `client_secret` is always Magento-encrypted at rest, regardless of which admin page saved it. If you're upgrading from a version where this wasn't consistently enforced, a one-time setup patch runs automatically on `bin/magento setup:upgrade` and encrypts any provider row that still has a plaintext secret — no manual action needed.
+- **Client secrets**: The OAuth `client_secret` is always Magento-encrypted at rest, regardless of which admin page saved it. A setup patch runs automatically on `bin/magento setup:upgrade` and encrypts any provider row that still has a plaintext secret — no manual action needed.
 
 ### JWT Verification
 

@@ -19,7 +19,7 @@ use M2Oidc\OAuth\Helper\OAuthUtility;
  * Called automatically by AdminTokenAutoRefreshObserver on every admin request.
  *
  * Storage: Magento admin auth session keys
- *   oidc_access_token           — Magento-encrypted access token (M-01)
+ *   oidc_access_token           — Magento-encrypted access token
  *   oidc_access_token_expires   — Unix timestamp when it expires
  *   oidc_refresh_token          — Magento-encrypted refresh token
  *   oidc_provider_id            — provider row ID (set by Oidccallback)

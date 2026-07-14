@@ -11,7 +11,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Unit tests for the shared provider-data validator (C-03).
+ * Unit tests for the shared provider-data validator.
  *
  * Verifies that:
  *  - invalid enum values (login_type, claim_encoding, pkce_flow) are
@@ -136,7 +136,22 @@ class ProviderDataValidatorTest extends TestCase
                 'well_known_config_url',
                 'https://192.168.0.1/.well-known/openid-configuration',
             ],
+            'private health_alert_webhook_url' => ['health_alert_webhook_url', 'https://127.0.0.1/hooks/alert'],
+            'http health_alert_webhook_url'    => [
+                'health_alert_webhook_url',
+                'http://hooks.slack.com/services/T000/B000/XXXX',
+            ],
         ];
+    }
+
+    public function testSafeWebhookUrlIsKeptWithoutWarning(): void
+    {
+        $data = ['health_alert_webhook_url' => 'https://hooks.slack.com/services/T000/B000/XXXX'];
+
+        $result = $this->validator->validate($data, 0);
+
+        $this->assertSame($data, $result->getData());
+        $this->assertSame([], $result->getWarnings());
     }
 
     public function testSafeEndpointUrlsAreKeptWithoutWarning(): void

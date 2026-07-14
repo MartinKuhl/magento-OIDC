@@ -8,7 +8,7 @@ use M2Oidc\OAuth\Model\Attribute\GenderMapper;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Unit tests for GenderMapper (M19).
+ * Unit tests for GenderMapper.
  *
  * Verifies the unified gender recognizer shared by CustomerAttributeMapper
  * (customer creation) and CustomerProfileSyncService (profile re-sync) —

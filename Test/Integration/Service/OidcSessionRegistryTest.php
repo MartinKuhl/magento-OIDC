@@ -35,11 +35,12 @@ class OidcSessionRegistryTest extends TestCase
 
     public function testRegisterAndResolveRoundTrip(): void
     {
-        $sub          = 'user-sub-123';
-        $sid          = 'sess-id-abc';
-        $phpSessionId = 'php-session-xyz';
-        $expectedKey  = 'oidc_sess_' . hash('sha256', $sub . '|' . $sid);
-        $expectedJson = json_encode([[
+        $sub            = 'user-sub-123';
+        $sid            = 'sess-id-abc';
+        $phpSessionId   = 'php-session-xyz';
+        $expectedKey    = 'oidc_sess_' . hash('sha256', hash('sha256', $sub) . hash('sha256', $sid));
+        $expectedSidKey = 'oidc_sess_sid_' . hash('sha256', $sid);
+        $expectedJson   = json_encode([[
             'php_session_id' => $phpSessionId,
             'user_type'      => 'customer',
             'user_id'        => 42,
@@ -47,12 +48,23 @@ class OidcSessionRegistryTest extends TestCase
             'sid'            => $sid,
         ]]);
 
+        // register() with a non-empty sid writes both the primary (sub+sid) key
+        // and the secondary sid-only index used by front-channel logout.
+        $savedCalls = [];
         $this->cache
-            ->expects($this->once())
+            ->expects($this->exactly(2))
             ->method('save')
-            ->with($expectedJson, $expectedKey, $this->anything(), 3600);
+            ->willReturnCallback(function ($json, $key, $tags, $ttl) use (&$savedCalls) {
+                $savedCalls[] = [$json, $key, $ttl];
+                return true;
+            });
 
         $this->registry->register($sub, $sid, $phpSessionId, 'customer', 42, 3600);
+
+        $this->assertSame([
+            [$expectedJson, $expectedKey, 3600],
+            [$expectedJson, $expectedSidKey, 3600],
+        ], $savedCalls);
 
         // Simulate a cache hit — return the stored JSON
         $this->cache
@@ -77,16 +89,25 @@ class OidcSessionRegistryTest extends TestCase
 
     public function testRevokeRemovesSessionFromCache(): void
     {
-        $sub = 'user-sub-456';
-        $sid = 'sess-id-def';
-        $key = 'oidc_sess_' . hash('sha256', $sub . '|' . $sid);
+        $sub    = 'user-sub-456';
+        $sid    = 'sess-id-def';
+        $key    = 'oidc_sess_' . hash('sha256', hash('sha256', $sub) . hash('sha256', $sid));
+        $sidKey = 'oidc_sess_sid_' . hash('sha256', $sid);
 
+        // revoke() with a non-empty sid removes both the primary key and the
+        // secondary sid-only index written by register().
+        $removedKeys = [];
         $this->cache
-            ->expects($this->once())
+            ->expects($this->exactly(2))
             ->method('remove')
-            ->with($key);
+            ->willReturnCallback(function ($k) use (&$removedKeys) {
+                $removedKeys[] = $k;
+                return true;
+            });
 
         $this->registry->revoke($sub, $sid);
+
+        $this->assertSame([$key, $sidKey], $removedKeys);
     }
 
     // ------------------------------------------------------------- cache key stability

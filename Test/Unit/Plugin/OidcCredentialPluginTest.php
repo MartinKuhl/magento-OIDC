@@ -16,8 +16,8 @@ use PHPUnit\Framework\TestCase;
  * Unit tests for OidcCredentialPlugin.
  *
  * Verifies that:
- *  - OIDC flag is set only when the token marker password is used (SEC-06)
- *  - Flag is unconditionally reset at the start of every beforeLogin() call (SEC-06)
+ *  - OIDC flag is set only when the token marker password is used
+ *  - Flag is unconditionally reset at the start of every beforeLogin() call
  *  - aroundGetCredentialStorage() returns the OIDC adapter during OIDC flow
  *  - aroundGetCredentialStorage() delegates to $proceed() for normal logins
  *  - afterLogin() clears the flag
@@ -100,7 +100,7 @@ class OidcCredentialPluginTest extends TestCase
     }
 
     /**
-     * SEC-06: A second beforeLogin() call (for a normal login) must reset the flag
+     * A second beforeLogin() call (for a normal login) must reset the flag
      * even if a previous OIDC login left it set (simulating PHP-FPM worker reuse).
      */
     public function testBeforeLoginAlwaysResetsFlag(): void
@@ -128,7 +128,7 @@ class OidcCredentialPluginTest extends TestCase
 
         $this->plugin->aroundGetCredentialStorage($this->auth, $proceed);
 
-        $this->assertTrue($called, 'SEC-06: $proceed() must be called after flag reset');
+        $this->assertTrue($called, '$proceed() must be called after flag reset');
     }
 
     // -------------------------------------------------------------------------

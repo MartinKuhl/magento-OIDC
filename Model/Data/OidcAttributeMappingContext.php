@@ -30,7 +30,7 @@ class OidcAttributeMappingContext
     /** @var bool Headless PWA mode flag (FEAT-09) */
     public readonly bool $headless;
 
-    /** @var mixed[] Provider row data array (MP-07) */
+    /** @var mixed[] Provider row data array */
     public readonly array $clientDetails;
 
     /**
@@ -39,7 +39,7 @@ class OidcAttributeMappingContext
      * @param string|null $userEmail                 User email extracted from attributes
      * @param string|null $loginType                 Login type (admin|customer)
      * @param bool        $headless                  Headless PWA mode flag (FEAT-09)
-     * @param mixed[]     $clientDetails             Provider row data array (MP-07)
+     * @param mixed[]     $clientDetails             Provider row data array
      */
     public function __construct(
         mixed $userInfoResponse,

@@ -7,7 +7,7 @@ namespace M2Oidc\OAuth\Model\Validation;
 use M2Oidc\OAuth\Model\ResourceModel\UserProvider as UserProviderResource;
 
 /**
- * Shared provider-data validation (C-03).
+ * Shared provider-data validation.
  *
  * Single source of truth for the whitelist, SSRF, and lockout-prevention rules
  * that were previously duplicated (or missing) across the admin Save controller,
@@ -37,6 +37,7 @@ class ProviderDataValidator
         'endsession_endpoint',
         'revocation_endpoint',
         'well_known_config_url',
+        'health_alert_webhook_url',
     ];
 
     /** @var SsrfUrlValidator */

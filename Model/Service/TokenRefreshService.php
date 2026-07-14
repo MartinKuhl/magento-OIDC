@@ -21,7 +21,7 @@ use M2Oidc\OAuth\Helper\OAuthUtility;
  * access token, call `refreshIfNeeded()`.
  *
  * Storage: Magento customer session keys
- *   oidc_access_token           — Magento-encrypted access token (M-01)
+ *   oidc_access_token           — Magento-encrypted access token
  *   oidc_access_token_expires   — Unix timestamp when it expires
  *   oidc_refresh_token          — Magento-encrypted refresh token
  *   oidc_provider_id            — provider row ID (set by CheckAttributeMappingAction)

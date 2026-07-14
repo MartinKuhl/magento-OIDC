@@ -85,7 +85,7 @@ class SendAuthorizationRequest extends BaseAction
 
         $currentSessionId = $this->sessionManager->getSessionId();
 
-        // Prefer numeric provider_id (set by multi-provider SSO buttons), fall back to app_name (MP-04)
+        // Prefer numeric provider_id (set by multi-provider SSO buttons), fall back to app_name
         $providerId = isset($params['provider_id']) ? (int) $params['provider_id'] : 0;
         if ($providerId > 0) {
             $this->oauthUtility->setActiveProviderId($providerId);
@@ -187,7 +187,7 @@ class SendAuthorizationRequest extends BaseAction
             $providerId
         );
 
-        // H-01: Generate and store a per-flow nonce for id_token replay protection.
+        // Generate and store a per-flow nonce for id_token replay protection.
         // The nonce is added to the authorization request params so the IdP includes
         // it in the id_token. It is consumed in ReadAuthorizationResponse and passed
         // to JwtVerifier::verifyAndDecode() for validation.

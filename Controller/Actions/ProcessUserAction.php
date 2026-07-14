@@ -180,7 +180,7 @@ class ProcessUserAction
         $this->providerId = $context->providerId;
         $this->headless = $context->headless;
 
-        // MP-05: Initialize attribute mappings from active provider context
+        // Initialize attribute mappings from active provider context
         $this->initAttributeMappings();
         $this->oauthUtility->customlog("ProcessUserAction: execute");
         if (empty($this->attrs)) {
@@ -295,9 +295,9 @@ class ProcessUserAction
          */
         $store = $this->storeManager->getStore();
         $store_url = $store->getBaseUrl(\Magento\Framework\UrlInterface::URL_TYPE_WEB);
-        $store_url = rtrim($store_url, '/\\');
+        $store_url = rtrim((string) $store_url, '/\\');
 
-        // SEC-09: Validate relay state by comparing parsed hosts — str_contains allows open-redirect bypass
+        // Validate relay state by comparing parsed hosts — str_contains allows open-redirect bypass
         // (e.g. https://evil.com?q=real-store.com would have passed str_contains).
         if (isset($this->attrs['relayState'])
             && $this->attrs['relayState'] !== '/'
@@ -305,7 +305,7 @@ class ProcessUserAction
         ) {
             $this->attrs['relayState'] = $store_url;
             $this->oauthUtility->customlog(
-                "SEC-09: relayState host mismatch, reset to store URL."
+                "relayState host mismatch, reset to store URL."
             );
         }
 
@@ -340,7 +340,7 @@ class ProcessUserAction
     }
 
     /**
-     * SEC-09/H-05: Decide whether a relay state may be used as redirect target.
+     * Decide whether a relay state may be used as redirect target.
      *
      * A relay state is same-origin when it has no host component (a relative
      * path such as /checkout/cart) or when its host equals the store host.
@@ -359,7 +359,7 @@ class ProcessUserAction
         // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
         $storeHost = parse_url($storeUrl, PHP_URL_HOST);
 
-        // null host = relative path = same-origin by definition (H-05)
+        // null host = relative path = same-origin by definition
         return $relayHost === null || $relayHost === $storeHost;
     }
 

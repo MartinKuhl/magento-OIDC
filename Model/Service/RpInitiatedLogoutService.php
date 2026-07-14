@@ -8,7 +8,7 @@ use Magento\Framework\HTTP\Adapter\CurlFactory;
 use M2Oidc\OAuth\Helper\OAuthUtility;
 
 /**
- * Shared RP-Initiated Logout logic for the admin and customer flows (M29).
+ * Shared RP-Initiated Logout logic for the admin and customer flows.
  *
  * Extracted from OidcLogoutPlugin (admin) and OAuthLogoutObserver (customer),
  * which previously duplicated ~90% of this implementation. The callers keep
@@ -19,7 +19,7 @@ use M2Oidc\OAuth\Helper\OAuthUtility;
  *
  *  - Authelia Forward-Auth detection heuristic
  *  - post_logout_redirect_uri resolution incl. the validated per-provider
- *    post_logout_url override (M28)
+ *    post_logout_url override
  *  - end_session logout URL construction (standard OIDC vs Authelia ?rd=)
  *  - RFC 7009 token revocation (fire-and-forget, non-fatal)
  */
@@ -74,7 +74,7 @@ class RpInitiatedLogoutService
      *  2) $fallbackUri — caller-computed default (unified postlogout callback
      *     for standard OIDC, static login/admin URL for Authelia ?rd= mode).
      *
-     * M28: the override is only honored when it passes FILTER_VALIDATE_URL on
+     * The override is only honored when it passes FILTER_VALIDATE_URL on
      * BOTH the admin and the customer path; an invalid value falls back.
      *
      * @param mixed[]|null $provider    Provider data array or null

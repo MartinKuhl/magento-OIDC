@@ -12,7 +12,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Unit tests for GroupMappingResolver (M18).
+ * Unit tests for GroupMappingResolver.
  *
  * Verifies the unified fallback chain previously duplicated across
  * AdminUserCreator::getAdminRoleFromGroups(), CustomerUserCreator::getCustomerGroupFromOidcGroups()

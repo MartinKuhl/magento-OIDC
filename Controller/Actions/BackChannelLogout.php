@@ -121,7 +121,7 @@ class BackChannelLogout extends BaseAction implements HttpPostActionInterface, C
 
         $issuer   = (string) ($claims['iss'] ?? '');
         $audRaw   = $claims['aud'] ?? '';
-        // H-08: Support multi-audience tokens per OIDC spec
+        // Support multi-audience tokens per OIDC spec
         $audiences = is_array($audRaw)
             ? array_map(static fn($v): string => (string) $v, $audRaw)
             : [(string) $audRaw];
@@ -139,7 +139,7 @@ class BackChannelLogout extends BaseAction implements HttpPostActionInterface, C
         $jwksEndpoint = (string) ($provider['jwks_endpoint'] ?? '');
         $clientId     = (string) ($provider['clientID'] ?? '');
 
-        // M-12: Fail closed when the provider row has no clientID — falling back to
+        // Fail closed when the provider row has no clientID — falling back to
         // the token's own aud claim would make the audience check self-referential
         // and always pass.
         if ($clientId === '') {
@@ -193,7 +193,7 @@ class BackChannelLogout extends BaseAction implements HttpPostActionInterface, C
             return $this->jsonOk('Session not found (already expired or logged out).');
         }
 
-        // L-09: Revoke registry entries first to prevent concurrent back-channel
+        // Revoke registry entries first to prevent concurrent back-channel
         // logouts from processing the same sessions, then destroy sessions.
         $this->sessionRegistry->revoke($sub, $sid);
         foreach ($entries as $entry) {
@@ -248,7 +248,7 @@ class BackChannelLogout extends BaseAction implements HttpPostActionInterface, C
      * Find the provider row whose `issuer` column matches the token issuer.
      *
      * Falls back to matching against `well_known_config_url` prefix when no
-     * exact `issuer` match is found. L-37: when more than one active provider
+     * exact `issuer` match is found. When more than one active provider
      * matches the issuer, the first match wins and a WARNING is logged.
      *
      * @param  string $issuer Token `iss` claim value
@@ -287,7 +287,7 @@ class BackChannelLogout extends BaseAction implements HttpPostActionInterface, C
             return null;
         }
 
-        // L-37: Multiple active providers sharing one issuer is ambiguous —
+        // Multiple active providers sharing one issuer is ambiguous —
         // the first match wins, which may use the wrong clientID for the
         // audience check. Log the affected provider ids for the operator.
         if (count($matches) > 1) {

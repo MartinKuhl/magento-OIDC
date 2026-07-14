@@ -186,7 +186,7 @@ class AdminUserCreator
         int $roleId,
         int $providerId = 0
     ) {
-        // Generate a 32-char password with guaranteed special/digit characters (SEC-12, M25).
+        // Generate a 32-char password with guaranteed special/digit characters.
         $randomPassword = $this->passwordGenerator->generate();
 
         $user = $this->userFactory->create();
@@ -203,7 +203,7 @@ class AdminUserCreator
         }
         $connection->beginTransaction();
         try {
-            // M-05: User must be saved first to get an ID before role can be assigned.
+            // User must be saved first to get an ID before role can be assigned.
             // Both saves are inside this transaction — rollback reverts both on failure.
             $this->userResource->save($user);
             $this->oauthUtility->customlog("AdminUserCreator: User saved with ID: " . $user->getId());
@@ -239,7 +239,7 @@ class AdminUserCreator
     /**
      * Get admin role ID from OIDC groups using configured mappings.
      *
-     * Delegates to GroupMappingResolver (M18): normalized m2oidc_oauth_role_mappings
+     * Delegates to GroupMappingResolver: normalized m2oidc_oauth_role_mappings
      * table first, legacy JSON column fallback, case-insensitive group match,
      * configured default role, deny (null).
      *

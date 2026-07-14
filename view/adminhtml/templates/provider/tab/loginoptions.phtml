@@ -396,6 +396,42 @@ $headlessMode        = $block->getHeadlessMode();
     </table>
 </div>
 
+<!-- ── Post-Logout Redirect ─────────────────────────────────────────────── -->
+<div class="admin__fieldset-wrapper" style="margin-top:24px;">
+    <div class="admin__fieldset-wrapper-title" style="margin-bottom:12px;">
+        <span class="admin__fieldset-wrapper-title-text"
+              style="font-size:15px; font-weight:700; color:#1a1a1a; letter-spacing:0.2px;">
+            <?= $escaper->escapeHtml(__('Post-Logout Redirect')) ?>
+        </span>
+    </div>
+    <table class="admin__table-primary" style="width:100%; margin-top:16px;">
+        <tbody>
+            <tr>
+                <td style="width:220px; vertical-align:top; padding-top:6px;">
+                    <label for="loginopt_post_logout_url">
+                        <strong><?= $escaper->escapeHtml(__('Post-Logout Landing Page')) ?></strong>
+                    </label>
+                </td>
+                <td>
+                    <input type="url"
+                           id="loginopt_post_logout_url"
+                           name="post_logout_url"
+                           class="admin__control-text"
+                           placeholder="https://your-site.com/some/custom/page"
+                           value="<?= $escaper->escapeHtmlAttr($block->getPostLogoutUrl()) ?>"
+                           style="width:100%;">
+                    <p class="admin__field-note" style="color:#999; font-size:12px;">
+                        <?= $escaper->escapeHtml(__(
+                            'Optional. Overrides the unified /m2oidc/actions/postlogout landing page for this '
+                            . 'provider only. Leave blank to use the default.'
+                        )) ?>
+                    </p>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
 <script>
 (function () {
     'use strict';

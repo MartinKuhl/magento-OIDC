@@ -44,13 +44,20 @@ class OAuthSecurityHelperTest extends TestCase
     // Admin nonce
     // -------------------------------------------------------------------------
 
-    public function testCreateAdminLoginNonceSavesEmailViaAtomicCache(): void
+    public function testCreateAdminLoginNonceSavesEmailAndProviderIdViaAtomicCache(): void
     {
         $this->atomicCache->expects($this->once())
             ->method('save')
-            ->with($this->isType('string'), 'admin@example.com', $this->isType('int'));
+            ->with(
+                $this->isType('string'),
+                $this->callback(function (string $data): bool {
+                    $decoded = json_decode($data, true);
+                    return $decoded['email'] === 'admin@example.com' && $decoded['providerId'] === 3;
+                }),
+                $this->isType('int')
+            );
 
-        $nonce = $this->helper->createAdminLoginNonce('admin@example.com');
+        $nonce = $this->helper->createAdminLoginNonce('admin@example.com', 3);
         $this->assertMatchesRegularExpression('/^[a-f0-9]{32}$/', $nonce);
     }
 
@@ -89,10 +96,46 @@ class OAuthSecurityHelperTest extends TestCase
 
         $this->atomicCache->expects($this->once())
             ->method('getAndDelete')
-            ->willReturn($email);
+            ->willReturn(json_encode(['email' => $email, 'providerId' => 0]));
 
         $result = $this->helper->redeemAdminLoginNonce($nonce);
         $this->assertSame($email, $result);
+    }
+
+    public function testRedeemAdminLoginNonceSucceedsWhenProviderIdMatches(): void
+    {
+        $nonce = str_repeat('c', 32);
+        $email = 'admin@example.com';
+
+        $this->atomicCache->expects($this->once())
+            ->method('getAndDelete')
+            ->willReturn(json_encode(['email' => $email, 'providerId' => 5]));
+
+        $result = $this->helper->redeemAdminLoginNonce($nonce, 5);
+        $this->assertSame($email, $result);
+    }
+
+    public function testRedeemAdminLoginNonceRejectsProviderMismatch(): void
+    {
+        $nonce = str_repeat('d', 32);
+
+        $this->atomicCache->expects($this->once())
+            ->method('getAndDelete')
+            ->willReturn(json_encode(['email' => 'admin@example.com', 'providerId' => 5]));
+
+        $this->assertNull($this->helper->redeemAdminLoginNonce($nonce, 9));
+    }
+
+    public function testRedeemAdminLoginNonceSkipsProviderCheckWhenExpectedIsZero(): void
+    {
+        $nonce = str_repeat('e', 32);
+        $email = 'admin@example.com';
+
+        $this->atomicCache->expects($this->once())
+            ->method('getAndDelete')
+            ->willReturn(json_encode(['email' => $email, 'providerId' => 5]));
+
+        $this->assertSame($email, $this->helper->redeemAdminLoginNonce($nonce));
     }
 
     // -------------------------------------------------------------------------

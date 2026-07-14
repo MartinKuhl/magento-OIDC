@@ -11,7 +11,7 @@ use M2Oidc\OAuth\Helper\OAuthUtility;
 
 /**
  * Dynamically adds every active OIDC provider's hostname to Magento's
- * Content Security Policy at runtime (MP-09 — multi-provider CSP).
+ * Content Security Policy at runtime, supporting multiple configured providers.
  *
  * This replaces the static csp_whitelist.xml approach, which required
  * hardcoding a customer-specific domain into the module — making the
@@ -56,7 +56,7 @@ class OidcCspPolicyCollector implements PolicyCollectorInterface
     /**
      * Inject every active OIDC provider's host into all relevant fetch-directive policies.
      *
-     * MP-09: Iterates `getAllActiveProviders('both')` to collect every configured
+     * Iterates `getAllActiveProviders('both')` to collect every configured
      * provider's authorize_endpoint host. De-duplicates hosts so a single IdP
      * shared across customer and admin login only appears once. Falls back to the
      * legacy store-config AUTHORIZE_URL when no provider rows exist.
@@ -92,7 +92,7 @@ class OidcCspPolicyCollector implements PolicyCollectorInterface
     /**
      * Collect deduplicated HTTPS host strings from all active provider rows.
      *
-     * MP-09: Falls back to store-config AUTHORIZE_URL when the provider table
+     * Falls back to store-config AUTHORIZE_URL when the provider table
      * has no rows yet (pre-migration / fresh install).
      *
      * @return list<string> e.g. ['https://login.microsoftonline.com', 'https://accounts.google.com']

@@ -22,7 +22,7 @@ use M2Oidc\OAuth\Helper\OAuthUtility;
  * child operates on its own concrete session type.
  *
  * Session keys (identical for both areas):
- *   oidc_access_token           — Magento-encrypted access token (M-01)
+ *   oidc_access_token           — Magento-encrypted access token
  *   oidc_access_token_expires   — Unix timestamp when it expires
  *   oidc_refresh_token          — Magento-encrypted refresh token
  *   oidc_provider_id            — provider row ID
@@ -141,7 +141,7 @@ abstract class AbstractTokenRefreshService
             );
         }
         if ($accessToken !== '') {
-            // M-01: Encrypt access token before storing — mirrors how refresh token is stored
+            // Encrypt access token before storing — mirrors how refresh token is stored
             $this->setSessionData(
                 self::SESSION_ACCESS_TOKEN,
                 $this->encryptor->encrypt($accessToken)

@@ -117,7 +117,7 @@ class CustomerOidcCallback extends BaseAction
     #[\Override]
     public function execute(): Redirect
     {
-        // MP-05: Set provider context
+        // Set provider context
         $providerId = (int) $this->getRequest()->getParam('provider_id', 0);
         $this->oauthUtility->setActiveProviderId($providerId);
         $this->oauthUtility->customlog(
@@ -172,7 +172,7 @@ class CustomerOidcCallback extends BaseAction
             "CustomerOidcCallback: Email from nonce: " . $email
         );
 
-        // M-15: Load customer with website scope to prevent cross-site enumeration
+        // Load customer with website scope to prevent cross-site enumeration
         $websiteId = (int) $this->storeManager->getStore()->getWebsiteId();
         try {
             $customerData = $this->customerRepository->get($email, $websiteId);
@@ -209,11 +209,11 @@ class CustomerOidcCallback extends BaseAction
             return $this->resultRedirectFactory->create()->setUrl($loginUrl);
         }
 
-        // SEC-08: Enforce website context — reject cross-site login attempts
+        // Enforce website context — reject cross-site login attempts
         $websiteId = $this->storeManager->getStore()->getWebsiteId();
         if ((int) $customerModel->getWebsiteId() !== (int) $websiteId) {
             $this->oauthUtility->customlog(
-                "SEC-08: Blocked cross-website login. "
+                "Blocked cross-website login. "
                 . "Customer website: " . $customerModel->getWebsiteId()
                 . ", Current store website: " . $websiteId
             );

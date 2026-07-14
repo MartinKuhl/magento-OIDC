@@ -16,6 +16,18 @@
     },
     "require": {
         "php": "~8.2.0 || ~8.3.0 || ~8.4.0 || ~8.5.0",
-        "magento/framework": "*"
+        "magento/framework": "*",
+        "magento/module-backend": "*",
+        "magento/module-authorization": "*",
+        "magento/module-user": "*",
+        "magento/module-customer": "*",
+        "magento/module-captcha": "*",
+        "magento/module-csp": "*",
+        "magento/module-store": "*",
+        "magento/module-directory": "*",
+        "magento/module-integration": "*",
+        "magento/module-cron": "*",
+        "magento/module-ui": "*",
+        "magento/module-graph-ql": "*"
     }
 }

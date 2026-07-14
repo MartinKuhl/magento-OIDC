@@ -61,9 +61,13 @@ class OidcProviderRepository
         $collection->addFieldToFilter('app_name', $appName);
         $data = $collection->getSize() > 0 ? $collection->getFirstItem()->getData() : null;
 
-        if ($data !== null && isset($data['client_secret']) && !empty($data['client_secret'])
+        if ($data !== null && (int) ($data['public_client'] ?? 0) !== 1
+            && isset($data['client_secret']) && !empty($data['client_secret'])
             && preg_match('/^\d+:\d+:/', (string) $data['client_secret'])) {
             $data['client_secret'] = $this->decryptSecretWithLogging((string) $data['client_secret'], $appName);
+        }
+        if ($data !== null) {
+            $data = $this->decryptWebhookUrl($data, $appName);
         }
 
         return $data;
@@ -88,12 +92,16 @@ class OidcProviderRepository
         $collection->addFieldToFilter('id', ['eq' => $providerId]);
         $data = $collection->getSize() > 0 ? $collection->getFirstItem()->getData() : null;
 
-        if ($data !== null && isset($data['client_secret']) && !empty($data['client_secret'])
+        if ($data !== null && (int) ($data['public_client'] ?? 0) !== 1
+            && isset($data['client_secret']) && !empty($data['client_secret'])
             && preg_match('/^\d+:\d+:/', (string) $data['client_secret'])) {
             $data['client_secret'] = $this->decryptSecretWithLogging(
                 (string) $data['client_secret'],
                 'id=' . $providerId
             );
+        }
+        if ($data !== null) {
+            $data = $this->decryptWebhookUrl($data, 'id=' . $providerId);
         }
 
         return $data;
@@ -225,13 +233,13 @@ class OidcProviderRepository
                 continue;
             }
 
-            if (isset($data['client_secret']) && !empty($data['client_secret'])
+            $context = 'id=' . (string) ($data['id'] ?? '');
+            if ((int) ($data['public_client'] ?? 0) !== 1
+                && isset($data['client_secret']) && !empty($data['client_secret'])
                 && preg_match('/^\d+:\d+:/', (string) $data['client_secret'])) {
-                $data['client_secret'] = $this->decryptSecretWithLogging(
-                    (string) $data['client_secret'],
-                    'id=' . (string) ($data['id'] ?? '')
-                );
+                $data['client_secret'] = $this->decryptSecretWithLogging((string) $data['client_secret'], $context);
             }
+            $data = $this->decryptWebhookUrl($data, $context);
             $results[] = $data;
         }
 
@@ -256,5 +264,32 @@ class OidcProviderRepository
         }
 
         return $decrypted;
+    }
+
+    /**
+     * Decrypt health_alert_webhook_url in-place when it holds a Magento-encrypted value.
+     *
+     * Same treatment as client_secret: a Slack/PagerDuty-style webhook URL commonly embeds
+     * a bearer-token-equivalent secret in its path/query, so it is encrypted at rest.
+     *
+     * @param  mixed[] $data    Provider data
+     * @param  string  $context Human-readable identifier for the affected provider (for the log line)
+     * @return mixed[]
+     */
+    private function decryptWebhookUrl(array $data, string $context): array
+    {
+        if (isset($data['health_alert_webhook_url']) && !empty($data['health_alert_webhook_url'])
+            && preg_match('/^\d+:\d+:/', (string) $data['health_alert_webhook_url'])) {
+            $decrypted = $this->encryptor->decrypt((string) $data['health_alert_webhook_url']);
+            if ($decrypted === '') {
+                $this->logger->warning(
+                    'OidcProviderRepository: health_alert_webhook_url decrypted to an empty string '
+                    . 'for provider (' . $context . ')'
+                );
+            }
+            $data['health_alert_webhook_url'] = $decrypted;
+        }
+
+        return $data;
     }
 }

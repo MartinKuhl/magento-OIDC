@@ -11,7 +11,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Unit tests for OAuthSecurityHelper — multi-provider state extension (TEST-05 / MP-02).
+ * Unit tests for OAuthSecurityHelper — multi-provider state extension (TEST-05).
  *
  * Verifies that:
  *  - encodeRelayState() embeds providerId under key 'p' when provided

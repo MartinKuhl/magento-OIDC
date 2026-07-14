@@ -22,7 +22,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Unit tests for ProcessUserAction relay-state validation (SEC-09 / H-05).
+ * Unit tests for ProcessUserAction relay-state validation.
  *
  * Exercises the runtime host-comparison guard through the public handle()
  * path and asserts which relay state reaches CustomerLoginAction:
@@ -157,7 +157,7 @@ class ProcessUserActionRelayStateTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // H-05: relative relay states are same-origin and must be preserved
+    // Relative relay states are same-origin and must be preserved
     // -------------------------------------------------------------------------
 
     public function testRelativeRelayStateIsPreserved(): void
@@ -174,7 +174,7 @@ class ProcessUserActionRelayStateTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // SEC-09: foreign-host relay states are reset to the store URL
+    // Foreign-host relay states are reset to the store URL
     // -------------------------------------------------------------------------
 
     public function testForeignHostRelayStateIsReset(): void

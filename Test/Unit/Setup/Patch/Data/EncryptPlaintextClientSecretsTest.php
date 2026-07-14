@@ -14,7 +14,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 /**
- * Unit tests for the C-02 data patch.
+ * Unit tests for the data patch.
  *
  * Verifies that:
  *  - plain-text client secrets are encrypted in place

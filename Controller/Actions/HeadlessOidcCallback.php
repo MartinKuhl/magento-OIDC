@@ -113,7 +113,7 @@ class HeadlessOidcCallback extends BaseAction
     {
         $this->oauthUtility->customlog("HeadlessOidcCallback: Starting headless token flow");
 
-        // H-03: Rate limiting — prevent nonce brute-force
+        // Rate limiting — prevent nonce brute-force
         $request = $this->getRequest();
         $clientIp = ($request instanceof \Magento\Framework\App\Request\Http)
             ? (string) $request->getClientIp()
@@ -155,7 +155,7 @@ class HeadlessOidcCallback extends BaseAction
         }
 
         $email      = $nonceData['email'];
-        $relayState = (string) ($nonceData['relayState'] ?? '');
+        $relayState = $nonceData['relayState'];
         $this->oauthUtility->customlog("HeadlessOidcCallback: Email from nonce: " . $email);
 
         // Load customer
@@ -169,13 +169,13 @@ class HeadlessOidcCallback extends BaseAction
             return $this->buildErrorPage('Authentication failed. Please try again.');
         }
 
-        // SEC-08: Enforce website context
+        // Enforce website context
         /** @phpstan-ignore-next-line */
         $customerModel = $this->customerFactory->create()->load($customerId);
         $websiteId     = $this->storeManager->getStore()->getWebsiteId();
         if ((int) $customerModel->getWebsiteId() !== (int) $websiteId) {
             $this->oauthUtility->customlog(
-                "HeadlessOidcCallback: SEC-08 cross-website login blocked for customer " . $customerId
+                "HeadlessOidcCallback: cross-website login blocked for customer " . $customerId
             );
             return $this->buildErrorPage('Authentication failed: This account is not registered on this website.');
         }
@@ -196,7 +196,7 @@ class HeadlessOidcCallback extends BaseAction
         );
 
         // Determine allowed postMessage origin from store base URL
-        // M-18: Warn if store base URL is not HTTPS (postMessage will fail cross-origin)
+        // Warn if store base URL is not HTTPS (postMessage will fail cross-origin)
         $baseUrl = rtrim($this->oauthUtility->getBaseUrl(), '/');
         if (!str_starts_with($baseUrl, 'https://')) {
             $this->oauthUtility->customlog(
@@ -265,7 +265,7 @@ HTML;
     /**
      * Build an error HTML page that posts an error status to the opener window.
      *
-     * L-36: The error postMessage target is restricted to the store origin —
+     * The error postMessage target is restricted to the store origin —
      * the same origin computation used by the success page — instead of the
      * '*' wildcard, so error details never leak to a foreign opener.
      *
@@ -312,7 +312,7 @@ HTML;
      * Compute the allowed postMessage target origin from the store base URL.
      *
      * Shared by the success (buildTokenPage) and error (buildErrorPage) pages
-     * so both restrict postMessage to the store's own origin (L-36).
+     * so both restrict postMessage to the store's own origin.
      *
      * @return string Origin in scheme://host[:port] form
      */

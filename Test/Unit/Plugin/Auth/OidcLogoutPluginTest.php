@@ -86,7 +86,7 @@ class OidcLogoutPluginTest extends TestCase
         $this->oauthUtility->method('customlog');
 
         // Real service wired with the shared mocks so revocation assertions on
-        // the CurlFactory keep working after the M29 extraction.
+        // the CurlFactory keep working after the extraction into a shared service.
         $this->rpInitiatedLogoutService = new RpInitiatedLogoutService(
             $this->oauthUtility,
             $this->curlFactory

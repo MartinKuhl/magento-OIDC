@@ -11,7 +11,7 @@ use Magento\Framework\View\Result\Page;
 use Magento\Framework\View\Result\PageFactory;
 
 /**
- * Admin controller final — OIDC Provider listing (MP-06).
+ * Admin controller — OIDC Provider listing.
  *
  * Route: GET /admin/m2oidc/provider/index
  *

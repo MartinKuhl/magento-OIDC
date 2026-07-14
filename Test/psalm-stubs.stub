@@ -23,7 +23,7 @@ namespace Magento\Framework\App {
 namespace Magento\User\Model {
     class UserFactory
     {
-        public function create(array $data = [])
+        public function create(array $data = []): \Magento\User\Model\User
         {
             return new \Magento\User\Model\User();
         }
@@ -56,6 +56,90 @@ namespace Magento\Customer\Api\Data {
         public function create(array $data = [])
         {
             return new class implements \Magento\Customer\Api\Data\AddressInterface {};
+        }
+    }
+
+    interface RegionInterface
+    {
+        public function setRegion(?string $region): static;
+        public function setRegionCode(?string $regionCode): static;
+        public function setRegionId(?int $regionId): static;
+    }
+
+    class RegionInterfaceFactory
+    {
+        public function create(array $data = []): RegionInterface
+        {
+            return new class implements RegionInterface {
+                public function setRegion(?string $region): static
+                {
+                    return $this;
+                }
+                public function setRegionCode(?string $regionCode): static
+                {
+                    return $this;
+                }
+                public function setRegionId(?int $regionId): static
+                {
+                    return $this;
+                }
+            };
+        }
+    }
+}
+
+namespace Magento\Framework\Controller\Result {
+    class Raw implements \Magento\Framework\Controller\ResultInterface
+    {
+        public function renderResult(\Magento\Framework\App\ResponseInterface $response): static
+        {
+            return $this;
+        }
+
+        public function setHttpResponseCode(int $code): static
+        {
+            return $this;
+        }
+
+        public function setHeader(string $name, $value, bool $replace = false): static
+        {
+            return $this;
+        }
+
+        public function setContents(string $contents): static
+        {
+            return $this;
+        }
+    }
+
+    class RawFactory
+    {
+        public function create(array $data = []): Raw
+        {
+            return new Raw();
+        }
+    }
+}
+
+namespace Magento\Integration\Model\Oauth {
+    class Token
+    {
+        public function createCustomerToken(int $customerId): static
+        {
+            return $this;
+        }
+
+        public function getToken(): string
+        {
+            return '';
+        }
+    }
+
+    class TokenFactory
+    {
+        public function create(array $data = []): Token
+        {
+            return new Token();
         }
     }
 }
@@ -105,4 +189,16 @@ namespace MiniOrange\OAuth\Model {
             return new \MiniOrange\OAuth\Model\M2oidcOauthClientApps();
         }
     }
+}
+
+// Cm_Cache_Backend_Redis (colinmollenhour/cache-backend-redis) and Credis_Client
+// (colinmollenhour/credis) are intentionally optional runtime dependencies for
+// SlidingWindowStrategy's Redis-only fast path — guarded by instanceof + try/catch
+// with graceful degradation, not required by this module's composer.json.
+class Cm_Cache_Backend_Redis
+{
+}
+
+class Credis_Client
+{
 }

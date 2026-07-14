@@ -8,7 +8,7 @@ use Magento\Framework\HTTP\Adapter\CurlFactory;
 use M2Oidc\OAuth\Helper\OAuthConstants;
 
 /**
- * HTTP client helper for OAuth/OIDC API requestsfinal .
+ * HTTP client helper for OAuth/OIDC API requests.
  *
  * Instance methods are preferred. Static methods are kept for backward
  * compatibility but are deprecated.
@@ -64,7 +64,7 @@ class Curl
             // Public client (RFC 6749 §2.1): no client secret — no Authorization header
             // is sent. Callers MUST include client_id in $postData themselves
             // (RFC 6749 §3.2.1); both AccessTokenRequest and AccessTokenRequestBody
-            // support this for public clients (H-06).
+            // support this for public clients.
             $authHeader = [
                 "Content-Type: application/x-www-form-urlencoded",
                 'Accept: application/json',
@@ -90,6 +90,58 @@ class Curl
     public function sendUserInfoRequest(string $url, $headers): string
     {
         return $this->callAPI($url, [], $headers);
+    }
+
+    /**
+     * Send a JSON POST notification to an outbound webhook (Slack/PagerDuty/etc.).
+     *
+     * Deliberately does not delegate to callAPI(): that method decides GET vs POST based
+     * on whether the JSON payload is empty, which must never leak into webhook delivery
+     * (a webhook call must always be a real POST). Uses a short, fixed timeout independent
+     * of the per-provider http_timeout so a slow/unreachable alerting endpoint can never
+     * stall the caller. Never throws — a webhook delivery failure must not crash a cron job.
+     *
+     * @param  string  $url     Destination webhook URL (caller must have already validated it)
+     * @param  mixed[] $payload JSON-serializable payload body
+     * @return array{success: bool, httpCode: int}
+     */
+    public function sendWebhookNotification(string $url, array $payload): array
+    {
+        try {
+            $curl = $this->curlFactory->create();
+            $curl->setConfig(['header' => false]);
+            $curl->setConfig([
+                'CURLOPT_FOLLOWLOCATION' => true,
+                'CURLOPT_ENCODING' => "",
+                'CURLOPT_RETURNTRANSFER' => true,
+                'CURLOPT_AUTOREFERER' => true,
+                'CURLOPT_TIMEOUT' => OAuthConstants::WEBHOOK_TIMEOUT_DEFAULT,
+                'CURLOPT_MAXREDIRS' => 10,
+                'CURLOPT_SSL_VERIFYPEER' => true,
+                'CURLOPT_SSL_VERIFYHOST' => 2,
+            ]);
+
+            $headers = ['Content-Type: application/json', 'Accept: application/json'];
+            $body    = (string) json_encode($payload);
+
+            $curl->write('POST', $url, '1.1', $headers, $body);
+            $curl->read();
+            $httpCode = (int) $curl->getInfo(CURLINFO_HTTP_CODE);
+            $curl->close();
+
+            if ($httpCode < 200 || $httpCode >= 300) {
+                $this->oauthUtility->customlog(
+                    "Curl: Webhook notification to {$url} returned non-success HTTP {$httpCode}"
+                );
+            }
+
+            return ['success' => $httpCode >= 200 && $httpCode < 300, 'httpCode' => $httpCode];
+        } catch (\Throwable $e) {
+            $this->oauthUtility->customlog(
+                "Curl: Webhook notification to {$url} failed: " . $e->getMessage()
+            );
+            return ['success' => false, 'httpCode' => 0];
+        }
     }
 
     /**
@@ -146,7 +198,7 @@ class Curl
 
         if ($httpCode >= 400) {
             $this->oauthUtility->customlog("Curl: HTTP error " . $httpCode . " from: " . $url);
-            $preview = mb_substr($content, 0, 500);
+            $preview = mb_substr((string) $content, 0, 500);
             $this->oauthUtility->customlog("Curl: Error response body: " . $preview);
         }
 

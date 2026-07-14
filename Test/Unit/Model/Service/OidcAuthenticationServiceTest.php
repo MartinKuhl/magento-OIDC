@@ -247,7 +247,7 @@ class OidcAuthenticationServiceTest extends TestCase
     // =========================================================================
 
     /**
-     * M21: a response producing more flattened keys than MAX_FLATTENED_KEYS
+     * A response producing more flattened keys than MAX_FLATTENED_KEYS
      * must be rejected via the same failure mechanism as validateUserInfo().
      */
     public function testFlattenAttributesRejectsMoreThanMaxFlattenedKeys(): void
@@ -284,7 +284,7 @@ class OidcAuthenticationServiceTest extends TestCase
     }
 
     /**
-     * M21: the claim_encoding config lookup is hoisted out of the recursion —
+     * The claim_encoding config lookup is hoisted out of the recursion —
      * one flattenAttributes() call resolves it exactly once, no matter how
      * deeply the input nests.
      */

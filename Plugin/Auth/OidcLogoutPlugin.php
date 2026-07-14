@@ -109,7 +109,7 @@ class OidcLogoutPlugin
     public function aroundLogout(Auth $subject, callable $proceed): void
     {
         // ── 1. Read session data BEFORE session is destroyed ──
-        // M-03: Session is locked during this read; concurrent logout race is mitigated
+        // Session is locked during this read; concurrent logout race is mitigated
         // by PHP's session locking mechanism. Probability is negligible.
         $idToken     = (string) $this->authSession->getData('oidc_id_token');
         $accessToken = (string) $this->authSession->getData('oidc_access_token');
@@ -261,7 +261,7 @@ class OidcLogoutPlugin
      * Resolve the Admin-context fallback post_logout_redirect_uri.
      *
      * The per-provider post_logout_url override is applied on top of this by
-     * RpInitiatedLogoutService::resolvePostLogoutRedirectUri() (M28-validated).
+     * RpInitiatedLogoutService::resolvePostLogoutRedirectUri().
      *
      * The unified callback URL (m2oidc/actions/postlogout) allows providers that
      * only accept a single registered Post Logout Redirect URI to serve both the
