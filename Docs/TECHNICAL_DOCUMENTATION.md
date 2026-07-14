@@ -36,7 +36,7 @@ Out of the box, Magento has no OIDC support. Enterprises with a corporate identi
 - **Admin flow**: uses Magento's native `Auth::login()` with a plugin-injected credential adapter — no bootstrap hacking, all security events fire normally. A nonce cookie bridges from the OIDC callback into the admin-authenticated context.
 - **Token auto-refresh**: `TokenAutoRefreshObserver` (frontend) and `AdminTokenAutoRefreshObserver` (adminhtml) fire on every `controller_action_predispatch` and silently refresh the access token 60 seconds before expiry using the stored refresh token.
 - **JIT provisioning**: auto-creates customers and admins on first login (configurable per provider).
-- **Attribute mapping**: maps OIDC claims to Magento user fields (email, name, groups, address, DOB, gender, phone). Per-provider overrides take priority over global config. Legacy single-column mappings and a normalized `m2oidc_oauth_attribute_mappings` table (Phase 4) both exist; the normalized table takes priority when populated.
+- **Attribute mapping**: maps OIDC claims to Magento user fields (email, name, groups, address, DOB, gender, phone). Per-provider overrides take priority over global config. Legacy single-column mappings and a normalized `m2oidc_oauth_attribute_mappings` table both exist; the normalized table takes priority when populated.
 - **Per-attribute claim transformers**: each row in `m2oidc_oauth_attribute_mappings` can specify a `transform_function` (`concat`, `split`, `prefix`, `regex_replace`) with JSON `transform_params`, applied by `Model/Attribute/Transformer.php` before the value is written to the Magento field. See [§4](#claim-value-transformers).
 - **Auto-discovery**: if a `well_known_config_url` is configured, all OIDC endpoints (authorize, token, userinfo, JWKS, logout, revocation, issuer) are auto-populated from the provider's discovery document on save.
 - **Group-to-role/group mapping**: maps OIDC groups to Magento admin roles or customer groups with a configurable fallback. Stored in a normalized `m2oidc_oauth_role_mappings` table.
@@ -53,7 +53,7 @@ Out of the box, Magento has no OIDC support. Enterprises with a corporate identi
 - **Rate limiting**: `OidcRateLimiter` enforces a fixed-window IP-based rate limit (10 attempts / 60 s) on the customer callback, admin callback, back-channel logout, front-channel logout, IdP-initiated login, and headless callback endpoints.
 - **CSRF protection**: a token is embedded in the OAuth `state` parameter, generated on authorization request and validated on callback.
 - **RP-Initiated Logout**: on admin logout, `OidcLogoutPlugin` captures session tokens before destruction, calls the IdP's `end_session_endpoint`, and optionally revokes the access token via RFC 7009. Supports both standard OIDC and Authelia Forward-Auth logout modes. When the IdP only allows registering a single Post Logout Redirect URI, both admin and customer flows are routed through a unified callback (`m2oidc/actions/postlogout`, controller class `Postlogout`) that uses a context-prefix in the `state` parameter to determine the final redirect destination.
-- **Back-Channel Logout**: `POST /m2oidc/actions/backchannellogout` accepts a signed JWT logout token from the IdP and destroys the matching PHP session via `OidcSessionRegistry` + `SessionDestructionService`. The `aud` claim is supported in both string and array formats per the OIDC spec. The audience check now fails closed (HTTP 400 + ERROR log) when the resolved provider's `clientID` is empty, instead of falling back to a token-controlled value.
+- **Back-Channel Logout**: `POST /m2oidc/actions/backchannellogout` accepts a signed JWT logout token from the IdP and destroys the matching PHP session via `OidcSessionRegistry` + `SessionDestructionService`. The `aud` claim is supported in both string and array formats per the OIDC spec. The audience check fails closed (HTTP 400 + ERROR log) when the resolved provider's `clientID` is empty.
 - **Front-Channel Logout**: `GET /m2oidc/actions/frontchannellogout?sid=<sid>` — for IdPs (Entra, some Keycloak configs) that perform logout via a hidden `<iframe>` per service provider instead of a server-to-server POST. Shares session-destruction logic with Back-Channel Logout via `SessionDestructionService`; always returns a 1×1 transparent GIF so the iframe gets a valid image response.
 - **Headless / PWA login**: per-provider `headless_mode` flag. When enabled, `HeadlessOidcCallback` issues a Magento customer token and delivers it to the calling PWA via `window.postMessage` instead of a session cookie — see [§4](#headless--pwa-login).
 - **Per-provider log isolation**: an optional `log_file_suffix` column routes a given provider's log lines to `var/log/M2Oidc_<suffix>.log` instead of the shared `var/log/M2Oidc.log`, useful when running many providers and wanting to debug one in isolation.
@@ -61,9 +61,9 @@ Out of the box, Magento has no OIDC support. Enterprises with a corporate identi
 - **Debug log cleanup**: a dedicated cron job (`Cron/LogCleanup.php`, registered as `m2oidc_log_rotation`, scheduled `0 3 * * *`) deletes `var/log/M2Oidc.log` (and any `M2Oidc_*.log` provider-suffixed files) and disables debug logging when the log exceeds 7 days or when debug logging has been disabled in the admin UI.
 - **OIDC discovery auto-refresh**: `Cron/RefreshOidcDiscovery.php` (registered as `m2oidc_refresh_oidc_discovery`, schedule `0 */6 * * *`) re-fetches `.well-known/openid-configuration` for every active provider every 6 hours and dirty-checks before writing.
 - **Structured logging service**: `Logger/OidcLogger.php` is the dedicated logging service extracted from `OAuthUtility`. Supports dual format: legacy Monolog envelope (default) and true JSON Lines (`{"ts":"...","level":"debug","message":"..."}`) controlled by `oidc/logging/json_lines` config. Automatically masks sensitive fields (`client_secret`, `access_token`, `id_token`, `refresh_token`, `password`, `token`).
-- **Extracted services (god-class split)**: `OAuthUtility` is now a thin facade. `Logger/OidcLogger` handles all log output, `Model/Provider/ProviderResolver` handles per-request provider context and resolution, `Model/Config/OidcConfigReader` maps `OAuthConstants` keys to `m2oidc_oauth_client_apps` columns. `Helper/Data` delegates DB operations to `Model/ResourceModel/OidcProviderRepository`. `OAuthUtility` no longer overrides `Data`'s three DB-write methods with a diverged raw-SQL copy — it fully inherits them now. The same split was later applied to `Block/OAuth.php` (cut from ~76 to 26 public methods) and to provider-listing logic (`ProviderResolver` no longer reimplements `getAllActiveProviders()`; it delegates to `OidcProviderRepository`).
-- **Shared validation layer**: `Model/Validation/SsrfUrlValidator.php` (loopback/RFC-1918 host blocking) and `Model/Validation/ProviderDataValidator.php` (+ `ProviderValidationResult.php`) centralize the whitelisting, SSRF checks, and lockout-prevention guard that used to live only in `Provider/Save.php`, now also enforced on both config-import paths (CLI and admin UI) and the discovery-refresh cron.
-- **DTO-based controller invocation**: `Controller/Actions/CheckAttributeMappingAction.php` and `Controller/Actions/ProcessUserAction.php` no longer use a public setter-chain-then-`execute()` pattern; each now exposes `handle(DtoType $context): ResultInterface`, taking an immutable `Model/Data/OidcAttributeMappingContext` or `Model/Data/OidcUserProvisioningContext`. See [§2 Key Classes Reference](#key-classes-reference) and [Gotcha #13](#5-gotchas).
+- **Layered service architecture**: `OAuthUtility` is a thin facade — `Logger/OidcLogger` handles all log output, `Model/Provider/ProviderResolver` handles per-request provider context and resolution, and `Model/Config/OidcConfigReader` maps `OAuthConstants` keys to `m2oidc_oauth_client_apps` columns. `Helper/Data` delegates DB operations to `Model/ResourceModel/OidcProviderRepository`, and `OAuthUtility` inherits those methods directly. `Block/OAuth.php` and the provider-listing logic in `ProviderResolver` (which delegates to `OidcProviderRepository::getAllActiveProviders()`) follow the same delegation pattern.
+- **Shared validation layer**: `Model/Validation/SsrfUrlValidator.php` (loopback/RFC-1918 host blocking) and `Model/Validation/ProviderDataValidator.php` (+ `ProviderValidationResult.php`) centralize the whitelisting, SSRF checks, and lockout-prevention guard, enforced consistently across `Provider/Save.php`, both config-import paths (CLI and admin UI), and the discovery-refresh cron.
+- **DTO-based controller invocation**: `Controller/Actions/CheckAttributeMappingAction.php` and `Controller/Actions/ProcessUserAction.php` expose `handle(DtoType $context): ResultInterface`, taking an immutable `Model/Data/OidcAttributeMappingContext` or `Model/Data/OidcUserProvisioningContext`. See [§2 Key Classes Reference](#key-classes-reference) and [Gotcha #13](#5-gotchas).
 - **First data patch**: `Setup/Patch/Data/EncryptPlaintextClientSecrets.php` encrypts legacy plaintext `client_secret` values and backfills empty `login_type` to `'both'` on `setup:upgrade`.
 - **Atomic token consumption**: `Model/Cache/AtomicCacheInterface` (`save()` / `getAndDelete()`) eliminates the TOCTOU race condition in one-time token consumption (nonces, state tokens, PKCE verifiers, ephemeral auth tokens). Default implementation: `RedisAtomicCache` — opens its own dedicated Redis connection from `cache/frontend/default/backend_options` via `RedisConnectionFactory` and uses `GETDEL`/Lua for true atomicity; transparently falls back to sequential load + remove (`FileAtomicCache`-equivalent behavior) when that connection is unavailable.
 - **Per-provider attribute mapper overrides**: `Model/Attribute/MapperPool` is a DI-registered registry that resolves the correct `AttributeMapperInterface` for a given provider and type via `{providerId}_{type}` keys in `etc/di.xml`.
@@ -146,7 +146,7 @@ M2Oidc_OAuth/
 │       ├── OAuthsettings/Index.php           # Admin page: OAuth Settings; encrypts client_secret via EncryptorInterface before save; ADMIN_RESOURCE const
 │       ├── Attrsettings/Index.php            # Admin page: Attribute Mapping; ADMIN_RESOURCE const
 │       ├── Signinsettings/Index.php          # Admin page: Sign In Settings; import/export paths run through ProviderDataValidator / EXPORT_EXCLUDED_FIELDS; ADMIN_RESOURCE const
-│       ├── Providersettings/Index.php        # Admin page: Provider Settings (display_name, login_type, is_active, sort_order, button_label, button_color); ADMIN_RESOURCE const (previously a malformed hand-built ACL string that threw for every user)
+│       ├── Providersettings/Index.php        # Admin page: Provider Settings (display_name, login_type, is_active, sort_order, button_label, button_color); ADMIN_RESOURCE const
 │       ├── Provider/
 │       │   ├── Index.php                     # Provider management grid
 │       │   ├── Edit.php                      # Provider edit form
@@ -180,7 +180,7 @@ M2Oidc_OAuth/
 │   │   └── OidcUserProvisioningContext.php   # Immutable input for ProcessUserAction::handle(); replaces the former public setter chain
 │   ├── Provider/
 │   │   ├── MappingRepository.php             # Repository for normalized attribute/role mapping tables (incl. transform_function/transform_params)
-│   │   └── ProviderResolver.php              # Extracted from OAuthUtility — per-request provider context; setActiveProviderId() guards against caching 0/negative IDs; no-explicit-ID fallback delegates to OidcProviderRepository::getAllActiveProviders() (no longer reimplements listing)
+│   │   └── ProviderResolver.php              # Per-request provider context; setActiveProviderId() guards against caching 0/negative IDs; no-explicit-ID fallback delegates to OidcProviderRepository::getAllActiveProviders()
 │   ├── Security/
 │   │   ├── OidcRateLimiter.php               # Thin facade delegating to StrategyInterface
 │   │   └── RateLimiterStrategy/
@@ -211,8 +211,8 @@ M2Oidc_OAuth/
 │   └── ResourceModel/
 │       ├── OidcProviderRepository.php        # All DB ops on m2oidc_oauth_client_apps; extracted from Data.php; decrypt failures logged as WARNING; getAllActiveProviders() treats login_type='' as matching any type
 │       ├── UserProvider.php                  # Tracks provider → Magento user binding
-│       ├── OauthAttributeMapping.php         # Resource model for m2oidc_oauth_attribute_mappings (Phase 4)
-│       ├── OauthRoleMapping.php              # Resource model for m2oidc_oauth_role_mappings (Phase 4)
+│       ├── OauthAttributeMapping.php         # Resource model for m2oidc_oauth_attribute_mappings
+│       ├── OauthRoleMapping.php              # Resource model for m2oidc_oauth_role_mappings
 │       └── M2OidcOauthClientApps/
 │           ├── Collection.php                # Collection model
 │           └── (ResourceModel).php           # Resource model
@@ -242,7 +242,7 @@ M2Oidc_OAuth/
 │
 ├── Helper/
 │   ├── Data.php                              # Base config; DB ops delegated to OidcProviderRepository
-│   ├── OAuthUtility.php                      # Thin facade: delegates logging→OidcLogger, provider→ProviderResolver, config→OidcConfigReader; fully inherits Data's DB-write methods; 8 dead methods removed; isBlank() no longer treats "0" as blank
+│   ├── OAuthUtility.php                      # Thin facade: delegates logging→OidcLogger, provider→ProviderResolver, config→OidcConfigReader; inherits Data's DB-write methods; isBlank() does not treat "0" as blank
 │   ├── OAuthConstants.php                    # All constants (config keys, defaults, URLs); single VERSION constant (PLUGIN_VERSION and the dead PKCE_VERIFIER_SESSION_KEY constant were removed)
 │   ├── OAuthMessages.php                     # User-facing message templates
 │   ├── OAuthSecurityHelper.php               # PKCE (cache-based), state tokens, nonces, relay state, all via AtomicCacheInterface
@@ -291,7 +291,7 @@ M2Oidc_OAuth/
 │                   └── ProviderSettings.php  # Provider identity fields tab
 │
 ├── Observer/
-│   ├── TestConfigRequestObserver.php         # Renamed from OAuthObserver.php (old name suggested a general handler; actual job is detecting a test-config request and rendering results inline); registered on controller_action_predispatch in both frontend and adminhtml events.xml
+│   ├── TestConfigRequestObserver.php         # Detects a test-config request and renders test results inline; registered on controller_action_predispatch in both frontend and adminhtml events.xml
 │   ├── OAuthLogoutObserver.php               # Redirects to IDP logout URL; bound to controller_action_postdispatch_customer_account_logout (NOT customer_logout); delegates to RpInitiatedLogoutService
 │   ├── CustomerLoginAutoRedirectObserver.php # Bound to controller_action_predispatch_customer_account_login; respects oidc_logout_guard
 │   ├── CustomerSetLogoutFlagObserver.php     # Bound to customer_logout; sets logout flag on customer session destruction
@@ -499,7 +499,7 @@ Two different extension mechanisms are used and it's worth keeping them straight
 | `customer_delete_after` | `CustomerDeleteObserver` | `etc/events.xml` (global) | Removes `m2oidc_oauth_user_provider` row — **not** `customer_delete` |
 | `controller_action_predispatch` | `TokenAutoRefreshObserver` | `etc/frontend/events.xml` | Silent customer access-token refresh |
 | `controller_action_predispatch` | `AdminTokenAutoRefreshObserver` | `etc/adminhtml/events.xml` | Silent admin access-token refresh |
-| `controller_action_predispatch` | `TestConfigRequestObserver` | both `etc/frontend/events.xml` and `etc/adminhtml/events.xml` | Detects a test-config request and renders test results inline; renamed from `OAuthObserver` — easy to miss since it shares the event name with two other observers above |
+| `controller_action_predispatch` | `TestConfigRequestObserver` | both `etc/frontend/events.xml` and `etc/adminhtml/events.xml` | Detects a test-config request and renders test results inline — easy to miss since it shares the event name with two other observers above |
 | `controller_action_predispatch_adminhtml_auth_login` | `AdminLoginAutoRedirectObserver` | `etc/adminhtml/events.xml` | Auto-redirects unauthenticated admins to IdP when enabled; respects `oidc_logout_guard` |
 | `adminhtml_user_logout` | `AdminSetLogoutFlagObserver` | `etc/adminhtml/events.xml` | Sets logout flag on admin session destruction |
 | `admin_user_delete_after` | `AdminUserDeleteObserver` | `etc/events.xml` (global) | Removes `m2oidc_oauth_user_provider` row |
@@ -701,7 +701,7 @@ Click **Test Configuration** in the admin panel. You'll be redirected to your Id
 ### Security Use Cases
 
 **Passwordless Authentication**
-- Eliminates password-based attack vectors entirely; random 32-char passwords generated but never used (28 alphanumeric + 2 special + 2 digit, shuffled), via the shared `Model/Service/RandomPasswordGenerator` (previously duplicated verbatim in both `AdminUserCreator` and `CustomerUserCreator` with unnamed magic numbers).
+- Eliminates password-based attack vectors entirely; random 32-char passwords generated but never used (28 alphanumeric + 2 special + 2 digit, shuffled), via the shared `Model/Service/RandomPasswordGenerator`, used by both `AdminUserCreator` and `CustomerUserCreator`.
 
 **Claims-Based Access Control**
 - Per-provider JSON rules against OIDC claims, evaluated before any user routing or provisioning. Operators: `eq`, `neq`, `contains`, `not_contains`, `exists`, `not_exists`. AND-combined — first failure denies access and JIT provisioning never runs.
@@ -732,10 +732,10 @@ An array-valued `groups` claim is joined with commas before string comparison.
 - `CustomerUserCreator` only creates a billing address when all four required fields (street, ZIP, city, country) are mapped and non-empty — partial mappings are skipped entirely to avoid Magento address-validation failures at checkout.
 
 **JWT Verification**
-- RS256/384/512 signatures; JWKS fetched with a configurable per-provider cache TTL (`jwks_cache_ttl`, default 86400s); circuit-breaker opens a `m2oidc_jwks_fail_*` cache key for 60s after a failed re-fetch. Nonce validation logs a WARNING if `expectedNonce` is `null` (misconfigured hybrid flow). The JWKS cache is now only evicted/refetched when the token's `kid` is unknown to the cached key set — a signature failure against a *known* `kid` no longer forces a live re-fetch, closing a trivially-triggerable-from-the-unauthenticated-`BackChannelLogout`-endpoint DoS vector.
+- RS256/384/512 signatures; JWKS fetched with a configurable per-provider cache TTL (`jwks_cache_ttl`, default 86400s); circuit-breaker opens a `m2oidc_jwks_fail_*` cache key for 60s after a failed re-fetch. Nonce validation logs a WARNING if `expectedNonce` is `null` (misconfigured hybrid flow). The JWKS cache is evicted/refetched only when the token's `kid` is unknown to the cached key set — a signature failure against a *known* `kid` does not force a live re-fetch, which prevents an unauthenticated caller (e.g. via `BackChannelLogout`) from forcing repeated JWKS fetches.
 
 **PKCE (RFC 7636)**
-- Code verifier is generated in `SendAuthorizationRequest` and stored in the shared **atomic cache** (Redis by default, file-based fallback), keyed by a random nonce that travels in a cookie (`oidc_pkce_nonce` for customer, `oidc_admin_pkce_nonce` for admin). Retrieved and deleted (one-time use) in `ReadAuthorizationResponse`. This is not session-based and not DB-based — see [Gotcha #12](#5-gotchas) for the history.
+- Code verifier is generated in `SendAuthorizationRequest` and stored in the shared **atomic cache** (Redis by default, file-based fallback), keyed by a random nonce that travels in a cookie (`oidc_pkce_nonce` for customer, `oidc_admin_pkce_nonce` for admin). Retrieved and deleted (one-time use) in `ReadAuthorizationResponse`. This is not session-based and not DB-based — see [Gotcha #12](#5-gotchas) for details.
 
 **RP-Initiated Logout with Token Revocation**
 - Admin: `OidcLogoutPlugin::aroundLogout()` reads `oidc_id_token`/`oidc_access_token` before `Auth::logout()` destroys the session, optionally revokes via RFC 7009, then redirects to `end_session_endpoint` in either standard OIDC mode (`id_token_hint`, `state=admin:<hex>`, unified `post_logout_redirect_uri`) or Authelia forward-auth mode (`rd=<adminBaseUrl>`).
@@ -859,13 +859,13 @@ If no group-to-role mapping matches and no default role is configured, admin aut
 
 `OidcIdentityVerificationPlugin` skips the "enter your current password" prompt for admins carrying the `oidc_authenticated` cookie (set on login, cleared on logout, admin-session lifetime).
 
-### 7. `SessionCookieObserver` has been removed (was dead code)
+### 7. There is no module-wired global cookie-rewrite observer
 
-It was never wired to any event in this module — no `events.xml` registered it on `controller_front_send_response_before` or anything else — and was deleted as part of a dead-code cleanup rather than being wired up. If you're debugging cross-origin session cookie issues, there is currently no module-provided global cookie rewrite observer; `Helper/SessionHelper.php::updateSessionCookies()` still exists and does the rewrite, but its only caller (`configureSSOSession()`) is itself unused (see Gotcha #29). If you need this behavior, write a new observer bound to an explicit event.
+If you're debugging cross-origin session cookie issues, note that no `events.xml` in this module registers a global cookie-rewrite observer on `controller_front_send_response_before` or any other event. `Helper/SessionHelper.php::updateSessionCookies()` exists and performs the rewrite, but its only caller (`configureSSOSession()`) is itself unused (see Gotcha #29). If you need this behavior, write a new observer bound to an explicit event.
 
 ### 8. Debug logs auto-expire after 7 days
 
-`Cron/LogCleanup.php` (`m2oidc_log_rotation`, `0 3 * * *`) disables logging and **deletes** (does not rotate) `var/log/M2Oidc.log` — and any per-provider `M2Oidc_<suffix>.log` files — when the log exceeds 7 days or debug logging has been disabled. You'll need to re-enable debug logging afterward. `Cron/LogRotation.php` (the old `@deprecated 3.0.8` BC wrapper) has since been deleted — `crontab.xml` has only ever used `LogCleanup`.
+`Cron/LogCleanup.php` (`m2oidc_log_rotation`, `0 3 * * *`, registered in `crontab.xml`) disables logging and **deletes** (does not rotate) `var/log/M2Oidc.log` — and any per-provider `M2Oidc_<suffix>.log` files — when the log exceeds 7 days or debug logging has been disabled. You'll need to re-enable debug logging afterward.
 
 ### 9. The OAuth `state` parameter encodes multiple values
 
@@ -881,16 +881,14 @@ JSON+Base64 containing relay state, session ID, app name, login type, CSRF token
 
 ### 12. PKCE verifier storage: cache, not session, not DB
 
-The verifier has never lived in a stable place across this module's history, so old comments/constants are easy to trust by mistake:
-- There is **no `pkce_code_verifier` column** in `etc/db_schema.xml`.
-- `OAuthConstants::PKCE_VERIFIER_SESSION_KEY` used to exist as a dead constant (nothing read or wrote it) — it has since been deleted along with the duplicate `PLUGIN_VERSION` version constant.
-- The verifier is actually stored via `OAuthSecurityHelper::storePkceVerifier()` in the shared **atomic cache**, keyed by a nonce carried in the `oidc_pkce_nonce` (customer) / `oidc_admin_pkce_nonce` (admin) cookie, 600s TTL, one-time-use.
+- There is **no `pkce_code_verifier` column** in `etc/db_schema.xml`, and no PKCE-related session key in `OAuthConstants`.
+- The verifier is stored via `OAuthSecurityHelper::storePkceVerifier()` in the shared **atomic cache**, keyed by a nonce carried in the `oidc_pkce_nonce` (customer) / `oidc_admin_pkce_nonce` (admin) cookie, 600s TTL, one-time-use.
 
-If you see a reference to "session-based PKCE" or a `pkce_code_verifier` column anywhere (including older internal notes), it's describing a state that predates the current implementation.
+If you see a reference to "session-based PKCE" or a `pkce_code_verifier` column anywhere, it does not match the current implementation.
 
-### 13. `CheckAttributeMappingAction`/`ProcessUserAction` are invoked via `handle()`, not `execute()` — and `ProcessResponseAction` no longer exists
+### 13. `CheckAttributeMappingAction`/`ProcessUserAction` are invoked via `handle()`, not `execute()`
 
-`Controller/Actions/ProcessResponseAction.php` (the old `@deprecated` shim superseded by `CheckAttributeMappingAction`) has been deleted entirely — it's not just unused, it's gone. All attribute mapping and routing logic lives in `CheckAttributeMappingAction`, but the entry point is no longer its `execute()` method. `CheckAttributeMappingAction` still `extends BaseAction extends Magento\Framework\App\Action\Action`, so it still carries the zero-arg `execute(): ResultInterface` required by `ActionInterface` — but that override is now a dead stub that unconditionally throws `\LogicException`. The real logic lives in `handle(OidcAttributeMappingContext $context): ResultInterface`, called by `ReadAuthorizationResponse`. `ProcessUserAction` went further: it doesn't extend any Magento action base class or implement `ActionInterface` at all, so it has no `execute()` whatsoever — just `handle(OidcUserProvisioningContext $context): Result\Redirect`, called by `CheckAttributeMappingAction`. If you're adding a plugin, target `CheckAttributeMappingAction::handle()`, not `execute()` — an `execute()` plugin will never fire.
+All attribute mapping and routing logic lives in `CheckAttributeMappingAction`, but the entry point is not its `execute()` method. `CheckAttributeMappingAction` still `extends BaseAction extends Magento\Framework\App\Action\Action`, so it still carries the zero-arg `execute(): ResultInterface` required by `ActionInterface` — but that override is a dead stub that unconditionally throws `\LogicException`. The real logic lives in `handle(OidcAttributeMappingContext $context): ResultInterface`, called by `ReadAuthorizationResponse`. `ProcessUserAction` doesn't extend any Magento action base class or implement `ActionInterface` at all, so it has no `execute()` whatsoever — just `handle(OidcUserProvisioningContext $context): Result\Redirect`, called by `CheckAttributeMappingAction`. If you're adding a plugin, target `CheckAttributeMappingAction::handle()`, not `execute()` — an `execute()` plugin will never fire.
 
 ### 14. Do not remove the flag reset in `OidcCredentialPlugin::beforeLogin()`
 
@@ -910,7 +908,7 @@ Rules are evaluated before any user lookup or creation. A denying rule means the
 
 ### 18. Single Post Logout Redirect URI — use the unified callback
 
-Register only `https://your-site.com/m2oidc/actions/postlogout` with IdPs that allow just one URL. The controller class is `Postlogout` (`Controller/Actions/Postlogout.php`) — there is no class or file named `PostLogoutCallback`, despite that name showing up in some older notes.
+Register only `https://your-site.com/m2oidc/actions/postlogout` with IdPs that allow just one URL. The controller class is `Postlogout` (`Controller/Actions/Postlogout.php`) — there is no class or file named `PostLogoutCallback`.
 
 ### 19. Zitadel sends claims Base64-encoded
 
@@ -954,7 +952,7 @@ Every save with a `well_known_config_url` set re-fetches and overwrites all endp
 
 ### 29. `configureSSOSession()` is intentionally unused
 
-An earlier version called it from `SendAuthorizationRequest` to force `SameSite=None`; this conflicted with `session_regenerate_id()` in the callback and caused session data loss. The observer that was meant to apply `SameSite=None` (`SessionCookieObserver`) has since been removed entirely as confirmed dead code (Gotcha #7) — there is no module-wired mechanism doing this today. Don't re-add the old `configureSSOSession()` call, and don't assume any observer is rewriting cookies for you.
+Calling it from `SendAuthorizationRequest` to force `SameSite=None` conflicts with `session_regenerate_id()` in the callback and causes session data loss. There is no module-wired observer applying `SameSite=None` globally today (see Gotcha #7) — don't call `configureSSOSession()`, and don't assume any observer is rewriting cookies for you.
 
 ### 30. Test mode is detected from the relay state URL, not `core_config_data`
 
@@ -1007,20 +1005,3 @@ Ordered roughly by impact.
 **Out of scope for this module** — SAML is a fundamentally different protocol. If needed, build a companion `M2Oidc_Saml` module that reuses the JIT provisioning services (`AdminUserCreator`, `CustomerUserCreator`, `UserProvisioningService`) via DI injection but implements its own assertion parsing and session handling.
 
 ---
-
-### Changelog — recently completed
-
-Items that used to be on this "not yet implemented" list and have since shipped. Kept for context on *why* something is shaped the way it is; not all of these carry an in-code `FEAT-NN` tag, and where a tag exists it's noted — don't assume every item has one, and don't assume this section's numbering matches the code's `FEAT-NN` comments (some don't overlap at all).
-
-- **OIDC Front-Channel Logout** — `Controller/Actions/FrontChannelLogout.php`, `Model/Service/SessionDestructionService.php`. GET `.../actions/frontchannellogout?sid=<sid>`; looks up the session via `OidcSessionRegistry::resolve()`, destroys it via the shared `SessionDestructionService`, returns a 1×1 GIF; rate-limited; 400 on absent/malformed `sid`.
-- **Claims Transformation** — `Model/Attribute/Transformer.php`, `CustomerAttributeMapper.php`, `AdminAttributeMapper.php`, `OauthAttributeMapping.php`, `MappingRepository.php`. Four predefined functions (`concat`/`split`/`prefix`/`regex_replace`) per attribute row; see [§4](#claim-value-transformers) for details.
-- **Admin UI — Phase 4 Attribute Mapping Rows** — the Attribute Mapping tab was converted from static single-input fields to dynamic rows (claim key with autocomplete, attribute-type dropdown, `sync_on_sso` checkbox, transform function/params, Remove button), saved to `m2oidc_oauth_attribute_mappings`.
-- **Admin Unlink IdP Button (admin-side scope)** — `Controller/Adminhtml/Provider/UnlinkUser.php`, `Plugin/Customer/Block/OidcInfoPlugin.php`, `Plugin/User/Block/OidcUserInfoPlugin.php`. Buttons on the admin Customer Edit and Admin User Edit pages, POSTing to `UnlinkUser`, which calls `UserProviderResource::deleteMapping()`.
-- **Per-Provider Log Isolation** — optional `log_file_suffix` column on `m2oidc_oauth_client_apps`; when set, `OidcLogger` writes to `var/log/M2Oidc_<suffix>.log`. `LogCleanup` globs `M2Oidc_*.log` for the same age/disabled rotation logic.
-- **Headless / PWA Token-Based Flow** (in-code tag: `FEAT-09`) — `Controller/Actions/HeadlessOidcCallback.php` + related changes across `CustomerLoginAction`, `ProcessUserAction`, `CheckAttributeMappingAction`, `OAuthSecurityHelper`, `Model/Resolver/OidcLoginUrl.php`, `etc/schema.graphqls`. See [§4](#headless--pwa-login) for the full flow.
-- **Provider Config Export/Import** (in-code tag: `FEAT-07`) — `Console/Command/ExportOidcConfig.php`/`ImportOidcConfig.php` (`oidc:config:export`/`oidc:config:import`), including normalized `attribute_mappings`/`role_mappings` in the payload.
-- **GraphQL Support** (in-code tag: `FEAT-08`) — `oidcLoginUrl`/`oidcProviders` resolvers, `etc/schema.graphqls`.
-- **Configurable PKCE Storage for Admin** — the admin PKCE verifier moved from a (never-actually-implemented) DB column to the same atomic-cache mechanism as the customer flow; see [Gotcha #12](#5-gotchas).
-- **Health-Check Alerting** — `Cron/HealthCheckAlert.php` (registered as `m2oidc_health_check_alert`, runs every 5 minutes via `etc/crontab.xml`); for each active provider with `health_alert_failure_threshold > 0` and a configured `health_alert_webhook_url`, probes reachability via `Model/Health/ProviderReachabilityChecker` and POSTs a JSON payload to the webhook (Slack/PagerDuty/any HTTP-based alerting) after N consecutive failures, with an optional one-time recovery notification (`health_alert_notify_on_recovery`). Runtime state (`health_alert_consecutive_failures`, `health_alert_last_status`, `health_alert_first_failure_at`, `health_alert_last_notified_at`) is cron-owned.
-- **Extended test coverage and static analysis** — `Test/Unit/` and `Test/Integration/` cover the security-critical classes (JWT verification, attribute mapping, credential adapter, role mapping, rate limiting, IdP binding, back-channel logout); PHPStan/Psalm configs are in place. If you need a current test count for a given file, count it directly (`grep -c "function test"`) rather than trust a number written here — those drift and have been wrong before.
-- **Code-review remediation pass** — a full internal review pass (3 Critical, 8 High, 21 Medium, 12 Low findings, plus a confirmed dead-code table and maintainability notes) was completed and every finding addressed. Highlights: a broken admin ACL and a plaintext-client-secret path fixed (with a new `Setup/Patch/Data/EncryptPlaintextClientSecrets` data patch migrating existing rows); config import (CLI + admin UI) now runs through the same validation/SSRF/lockout-guard checks as the manual Provider Save form (`Model/Validation/SsrfUrlValidator`, `ProviderDataValidator`); `Block/OAuth.php` cut from ~76 to 26 public methods and `Block/Adminhtml/Debug.php` deleted outright (both confirmed dead by repo-wide grep); `ProviderResolver` no longer reimplements provider listing (was silently skipping `client_secret` decryption); `CheckAttributeMappingAction`/`ProcessUserAction` moved from a public setter-chain-then-`execute()` pattern to `handle(DtoType $context)` taking an immutable DTO (`Model/Data/OidcAttributeMappingContext`/`OidcUserProvisioningContext`); `GroupMappingResolver`/`GenderMapper`/`CountryResolver`/`RandomPasswordGenerator`/`RpInitiatedLogoutService`/`AbstractTokenRefreshService` extracted to de-duplicate logic that had drifted across the admin/customer code paths (one divergence, German-locale gender re-sync, was a live bug). `Observer/OAuthObserver.php` renamed to `TestConfigRequestObserver.php`; `SessionCookieObserver.php`, `ProcessResponseAction.php`, and `OidcEncryptionService.php` deleted as confirmed dead code.

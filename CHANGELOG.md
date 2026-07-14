@@ -32,5 +32,3 @@ First production release.
 - SSRF protection on every admin-configured outbound URL (discovery, endpoints, webhook alerting) — loopback and RFC-1918 private ranges are rejected.
 - Lockout-prevention guard: an OIDC-only login restriction can't be enabled for a provider until at least one user has actually authenticated through it.
 - Admin login nonces are bound to the originating OIDC provider, so a nonce minted under one provider's context cannot be redeemed under another.
-
-This module previously went through an internal security review and full remediation pass covering the authentication flow, admin configuration surface, and provider-resolution/session-management code paths; all findings were fixed prior to this release.

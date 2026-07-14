@@ -552,7 +552,7 @@ OAuth/OIDC **requires HTTPS** in production:
 - **Access tokens**, **ID tokens**, and **refresh tokens** stored in PHP session only, never in database
 - **Session lifetime**: Standard Magento session timeout (default: 86400 seconds = 24 hours)
 - **Refresh tokens**: Stored in session (`oidc_refresh_token`) and used by `TokenRefreshService` / `AdminTokenRefreshService` for silent token renewal
-- **Client secrets**: The OAuth `client_secret` is always Magento-encrypted at rest, regardless of which admin page saved it. If you're upgrading from a version where this wasn't consistently enforced, a one-time setup patch runs automatically on `bin/magento setup:upgrade` and encrypts any provider row that still has a plaintext secret — no manual action needed.
+- **Client secrets**: The OAuth `client_secret` is always Magento-encrypted at rest, regardless of which admin page saved it. A setup patch runs automatically on `bin/magento setup:upgrade` and encrypts any provider row that still has a plaintext secret — no manual action needed.
 
 ### JWT Verification
 
