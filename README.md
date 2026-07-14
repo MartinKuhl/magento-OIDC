@@ -1,4 +1,4 @@
-# Magento 2 OAuth/OIDC Single Sign-On Module
+# Magento 2 OIDC Single Sign-On Module
 
 <p align="center">
   <img src="view/adminhtml/web/images/m2oidc_logo.png" alt="M2Oidc Logo" width="160" />
